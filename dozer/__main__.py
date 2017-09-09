@@ -19,4 +19,9 @@ if sys.version_info < (3, 5):
 from . import Dozer # After version check
 
 bot = Dozer(config)
+
+for ext in os.listdir('dozer/cogs'):
+	if not ext.startswith('_'):
+		bot.load_extension('dozer.cogs.' + ext[:-3]) # Remove '.py'
+
 bot.run()
