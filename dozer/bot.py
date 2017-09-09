@@ -14,3 +14,8 @@ class Dozer(commands.Bot):
 		token = self.config['discord_token']
 		del self.config['discord_token'] # Prevent token dumping
 		super().run(token)
+	
+	async def shutdown(self):
+		await self.logout()
+		await self.close()
+		self.loop.stop()
