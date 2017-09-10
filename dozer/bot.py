@@ -1,5 +1,6 @@
 import discord, re, traceback
 from discord.ext import commands
+from . import utils
 
 class Dozer(commands.Bot):
 	def __init__(self, config):
@@ -14,7 +15,7 @@ class Dozer(commands.Bot):
 		if isinstance(err, commands.NoPrivateMessage):
 			await ctx.send('This command cannot be used in DMs.')
 		elif isinstance(err, commands.UserInputError):
-			await ctx.send(self.format_error(err))
+			await ctx.send(self.format_error(ctx, err))
 		else:
 			await ctx.send('```\n%s\n```' % ''.join(traceback.format_exception_only(type(err), err)).strip())
 			if isinstance(ctx.channel, discord.TextChannel):
@@ -24,7 +25,7 @@ class Dozer(commands.Bot):
 			traceback.print_exception(type(err), err, err.__traceback__)
 	
 	@staticmethod
-	def format_error(err, *, word_re=re.compile('[A-Z][a-z]+')):
+	def format_error(ctx, err, *, word_re=re.compile('[A-Z][a-z]+')):
 		type_words = word_re.findall(type(err).__name__)
 		if len(type_words) == 1:
 			type_msg = type_words[0]
@@ -32,7 +33,7 @@ class Dozer(commands.Bot):
 			type_msg = type_words[0] + ' ' + ' '.join(map(str.lower, type_words[1:]))
 		
 		if err.args:
-			return '%s: %s' % (type_msg, err.args[0])
+			return '%s: %s' % (type_msg, utils.clean(ctx, err.args[0]))
 		else:
 			return type_msg
 
