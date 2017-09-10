@@ -16,6 +16,8 @@ class Dozer(commands.Bot):
 			await ctx.send('This command cannot be used in DMs.')
 		elif isinstance(err, commands.UserInputError):
 			await ctx.send(self.format_error(ctx, err))
+		elif isinstance(err, commands.NotOwner):
+			await ctx.send(err.args[0])
 		else:
 			await ctx.send('```\n%s\n```' % ''.join(traceback.format_exception_only(type(err), err)).strip())
 			if isinstance(ctx.channel, discord.TextChannel):
