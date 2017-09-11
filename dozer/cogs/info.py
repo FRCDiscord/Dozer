@@ -58,7 +58,9 @@ class Info(Cog):
 	@command()
 	async def invite(self, ctx):
 		"""Gives you the bot's invite link"""
-		await ctx.send("Invite me with the following link:\n<https://discordapp.com/oauth2/authorize?client_id=355848233081110531&scope=bot&permissions=2146561239>")		
+		app_info = await ctx.bot.application_info()
+		url = discord.utils.oauth_url(app_info.id, discord.Permissions(2146561239))
+		await ctx.send("Invite me with the following link:\n<" + url + ">")
 
 def setup(bot):
 	bot.add_cog(Info(bot))
