@@ -54,13 +54,6 @@ class Info(Cog):
 		e.set_thumbnail(url=self.bot.user.avatar_url)
 		e.add_field(name='About', value="Dozer: A collaborative bot for FIRST Discord servers, developed by the FRC Discord Server Development Team")
 		await ctx.send(embed=e)
-		
-	@command()
-	async def invite(self, ctx):
-		"""Gives you the bot's invite link"""
-		app_info = await ctx.bot.application_info()
-		url = discord.utils.oauth_url(app_info.id, discord.Permissions(2146561239))
-		await ctx.send("Invite me with the following link:\n<" + url + ">")
 
 def setup(bot):
 	bot.add_cog(Info(bot))
