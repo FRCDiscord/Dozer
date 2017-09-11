@@ -1,5 +1,5 @@
 import discord
-from discord.ext.commands import bot_has_permissions, BadArgument
+from discord.ext.commands import bot_has_permissions, has_permissions, BadArgument
 from .. import db
 from ._utils import *
 
@@ -28,6 +28,7 @@ class Roles(Cog):
 	
 	@giveme.command()
 	@bot_has_permissions(manage_roles=True)
+	@has_permissions(manage_guild=True)
 	async def add(self, ctx, *, name):
 		"""Makes an existing role givable, or creates one if it doesn't exist. Name must not contain commas.
 		Similar to create, but will use an existing role if one exists."""
@@ -49,6 +50,7 @@ class Roles(Cog):
 	
 	@giveme.command()
 	@bot_has_permissions(manage_roles=True)
+	@has_permissions(manage_guild=True)
 	async def create(self, ctx, *, name):
 		"""Create a givable role. Name must not contain commas.
 		Similar to add, but will always create a new role."""

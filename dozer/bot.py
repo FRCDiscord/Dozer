@@ -13,11 +13,17 @@ class Dozer(commands.Bot):
 	
 	async def on_command_error(self, ctx, err):
 		if isinstance(err, commands.NoPrivateMessage):
-			await ctx.send('%s, This command cannot be used in DMs.' % ctx.author.mention)
+			await ctx.send('{}, This command cannot be used in DMs.'.format(ctx.author.mention))
 		elif isinstance(err, commands.UserInputError):
-			await ctx.send('%s, %s' % (ctx.author.mention, self.format_error(ctx, err)))
+			await ctx.send('{}, {}'.format(ctx.author.mention, self.format_error(ctx, err)))
 		elif isinstance(err, commands.NotOwner):
-			await ctx.send('%s, %s' % (ctx.author.mention, err.args[0]))
+			await ctx.send('{}, {}'.format(ctx.author.mention, err.args[0]))
+		elif isinstance(err, commands.MissingPermissions):
+			permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in err.missing_perms]
+			await ctx.send('{}, you need {} permissions to run this command!'.format(ctx.author.mention, utils.pretty_concat(permission_names)))
+		elif isinstance(err, commands.BotMissingPermissions):
+			permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in err.missing_perms]
+			await ctx.send('{}, I need {} permissions to run this command!'.format(ctx.author.mention, utils.pretty_concat(permission_names)))
 		else:
 			await ctx.send('```\n%s\n```' % ''.join(traceback.format_exception_only(type(err), err)).strip())
 			if isinstance(ctx.channel, discord.TextChannel):
