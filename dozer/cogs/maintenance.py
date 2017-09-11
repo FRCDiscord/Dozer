@@ -38,7 +38,7 @@ class Maintenance(Cog):
 			await ctx.send('```\n' + res + '```')
 		else:
 			await ctx.send('```\n' + res + '```')
-			ctx.bot.get_command('restart').callback
+			await ctx.bot.get_command('restart').callback(self, ctx)
 
 def setup(bot):
 	bot.add_cog(Maintenance(bot))
