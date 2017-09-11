@@ -10,7 +10,7 @@ class Development(Cog):
 	
 	def __local_check(self, ctx): # All of this cog is only available to devs
 		if ctx.author.id not in ctx.bot.config['developers']:
-			raise NotOwner('You are not a developer.')
+			raise NotOwner('you are not a developer!')
 		return True
 
 	@command()
