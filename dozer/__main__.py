@@ -1,6 +1,6 @@
 import json, os.path, sys
 
-config = {'prefix': '&'}
+config = {'prefix': '&', 'developers': []}
 config_file = 'config.json'
 
 if os.path.isfile(config_file):

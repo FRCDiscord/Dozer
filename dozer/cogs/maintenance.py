@@ -22,7 +22,6 @@ class Maintenance(Cog):
 			args = [sys.executable, '-m', script[:-len('__main__.py')].rstrip(os.sep).replace(os.sep, '.')]
 		else:
 			args = [sys.executable, script]
-		print(sys.executable, args, sys.argv[1:])
 		os.execv(sys.executable, args + sys.argv[1:])
 	
 	@command()
