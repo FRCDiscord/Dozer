@@ -46,7 +46,7 @@ class Roles(Cog):
 				session.add(givables)
 			else:
 				givables.role_ids += ' ' + str(role.id)
-		await ctx.send('Created givable role {0}! Use `{1}{2} {0}` to get it!'.format(role, ctx.prefix, ctx.command.parent))
+		await ctx.send('Added givable role {0.name!r}! Use `{1}{2} {0}` to get it!'.format(role, ctx.prefix, ctx.command.parent))
 	
 	@giveme.command()
 	@bot_has_permissions(manage_roles=True)
@@ -66,7 +66,45 @@ class Roles(Cog):
 				session.add(givables)
 			else:
 				givables.role_ids += ' ' + str(role.id)
-		await ctx.send('Created givable role {0}! Use `{1}{2} {0}` to get it!'.format(role, ctx.prefix, ctx.command.parent))
+		await ctx.send('Created givable role {0.name!r}! Use `{1}{2} {0}` to get it!'.format(role, ctx.prefix, ctx.command.parent))
+	
+	@giveme.command()
+	@bot_has_permissions(manage_roles=True)
+	async def remove(self, ctx, *, roles):
+		"""Removes multiple givable roles from you. Names must be separated by commas."""
+		requests = set(name.strip().casefold() for name in roles.split(','))
+		givables = self.givable_roles(ctx.guild)
+		
+		valid = set(role for name, role in givables.items() if name in requests and role in ctx.author.roles)
+		dont_have = set(role for name, role in givables.items() if name in requests and role not in valid)
+		
+		await ctx.author.remove_roles(*valid)
+		
+		e = discord.Embed(color=discord.Color.blue())
+		if valid:
+			e.add_field(name='Removed {} role(s)!'.format(len(valid)), value='\n'.join(role.name for role in valid), inline=False)
+		if dont_have:
+			e.add_field(name='You didn\'t have {} role(s)!'.format(len(dont_have)), value='\n'.join(role.name for role in dont_have), inline=False)
+		extra = len(requests) - (len(valid) + len(dont_have))
+		if extra > 0:
+			e.add_field(name='{} role(s) could not be found!'.format(extra), value='Use `{0.prefix}{0.command.parent} list` to find valid givable roles!'.format(ctx), inline=False)
+		await ctx.send(embed=e)
+	
+	@giveme.command()
+	@bot_has_permissions(manage_roles=True)
+	@has_permissions(manage_guild=True)
+	async def delete(self, ctx, *, name):
+		"""Deletes and removes a givable role."""
+		roles = self.givable_roles(ctx.guild)
+		stripped = name.casefold().strip()
+		if stripped not in roles:
+			raise BadArgument('{} is not a givable role!'.format(name))
+		role = roles[stripped]
+		await role.delete()
+		with db.Session() as session:
+			givables = session.query(GivableRoles).filter_by(guild_id=ctx.guild.id).first() # Null-checked by givables containing name
+			givables.role_ids = givables.role_ids.replace(str(role), '').replace('  ', ' ').strip()
+		await ctx.send('Role {0.name!r} has been deleted!'.format(role))
 	
 	@staticmethod
 	def givable_roles(guild):
