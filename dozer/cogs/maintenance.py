@@ -1,7 +1,13 @@
 import os, sys
 from ._utils import *
+from discord.ext.commands import NotOwner
 
 class Maintenance(Cog):
+	def __local_check(self, ctx): # All of this cog is only available to devs
+		if ctx.author.id not in ctx.bot.config['developers']:
+			raise NotOwner('you are not a developer!')
+		return True
+	
 	@command()
 	async def shutdown(self, ctx):
 		"""Force-stops the bot."""
@@ -23,6 +29,16 @@ class Maintenance(Cog):
 		else:
 			args = [sys.executable, script]
 		os.execv(sys.executable, args + sys.argv[1:])
+	
+	@command()
+	async def update(self, ctx):
+		"""Pulls code from GitHub and restarts."""
+		res = os.popen("git pull origin master").read()
+		if res.startswith('Already up-to-date.'):
+			await ctx.send('```\n' + res + '```')
+		else:
+			await ctx.send('```\n' + res + '```')
+			await ctx.bot.get_command('restart').callback(self, ctx)
 
 def setup(bot):
 	bot.add_cog(Maintenance(bot))
