@@ -1,18 +1,12 @@
 import discord, re, traceback
 from discord.ext import commands
 from . import utils
-from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+
 
 class Dozer(commands.Bot):
 	def __init__(self, config):
 		super().__init__(command_prefix=config['prefix'])
 		self.config = config
-		self.engine = create_engine('sqlite:///data.db')
-		# TODO: make this a more permanent db like mySQL
-		self.base = declarative_base()
-		self.session = sessionmaker(bind=self.engine)
 	
 	async def on_ready(self):
 		print('Signed in as {0!s} ({0.id})'.format(self.user))
