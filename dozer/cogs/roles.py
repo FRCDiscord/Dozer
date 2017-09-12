@@ -139,6 +139,21 @@ class Roles(Cog):
 	@staticmethod
 	def normalize(name):
 		return name.strip().casefold()
+	
+	@command()
+	@bot_has_permissions(manage_roles=True)
+	@has_permissions(manage_roles=True)
+	async def give(self, ctx, member : discord.Member, *, role : discord.Role):
+		"""Gives a member a role. Not restricted to giveable roles."""
+		await member.add_roles(role)
+		await ctx.send('Successfully gave {} "{}"!'.format(member, role))
+	
+	@command()
+	@bot_has_permissions(manage_roles=True)
+	@has_permissions(manage_roles=True)
+	async def take(self, ctx, member : discord.Member, *, role : discord.Role):
+		await member.remove_roles(role)
+		await ctx.send('Successfully removed "{}" from {}!'.format(role, member))
 
 class GuildSettings(db.DatabaseObject):
 	__tablename__ = 'guilds'
