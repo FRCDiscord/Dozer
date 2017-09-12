@@ -7,7 +7,28 @@ class Roles(Cog):
 	@group(invoke_without_command=True)
 	@bot_has_permissions(manage_roles=True)
 	async def giveme(self, ctx, *, roles):
-		"""[DISABLED] Give you one or more giveable roles, separated by commas."""
+		"""Give you one or more giveable roles, separated by commas."""
+		norm_names = [self.normalize(name) for name in roles.split(',')]
+		with db.Session() as session:
+			giveable_ids = [tup[0] for tup in session.query(GiveableRole.id).filter(GiveableRole.guild_id == ctx.guild.id, GiveableRole.norm_name.in_(norm_names)).all()]
+			
+			valid = set(role for role in ctx.guild.roles if role.id in giveable_ids)
+		
+		already_have = valid & set(ctx.author.roles)
+		given = valid - already_have
+		await ctx.author.add_roles(*given)
+		
+		e = discord.Embed(color=discord.Color.blue())
+		if given:
+			given_names = sorted((role.name for role in given), key=str.casefold)
+			e.add_field(name='Gave you {} role(s)!'.format(len(given)), value='\n'.join(given_names), inline=False)
+		if already_have:
+			already_have_names = sorted((role.name for role in already_have), key=str.casefold)
+			e.add_field(name='You already have {} role(s)!'.format(len(already_have)), value='\n'.join(already_have_names), inline=False)
+		extra = len(norm_names) - len(valid)
+		if extra > 0:
+			e.add_field(name='{} role(s) could not be found!'.format(extra), value='Use `{0.prefix}{0.invoked_with} list` to find valid giveable roles!'.format(ctx), inline=False)
+		await ctx.send(embed=e)
 	
 	@giveme.command()
 	@bot_has_permissions(manage_roles=True)
@@ -40,8 +61,22 @@ class Roles(Cog):
 	@bot_has_permissions(manage_roles=True)
 	@has_permissions(manage_guild=True)
 	async def create(self, ctx, *, name):
-		"""[DISABLED] Create a giveable role. Name must not contain commas.
+		"""Create a giveable role. Name must not contain commas.
 		Similar to add, but will always create a new role."""
+		if ',' in name:
+			raise BadArgument('giveable role names must not contain commas!')
+		norm_name = self.normalize(name)
+		with db.Session() as session:
+			settings = session.query(GuildSettings).one_or_none()
+			if settings is None:
+				settings = GuildSettings(id=ctx.guild.id)
+				session.add(settings)
+			if norm_name in (giveable.norm_name for giveable in settings.giveable_roles):
+				raise BadArgument('that role already exists and is giveable!')
+			
+			role = await ctx.guild.create_role(name=name, reason='Giveable role created by {}'.format(ctx.author))
+			settings.giveable_roles.append(GiveableRole.from_role(role))
+		await ctx.send('Role "{0}" created! Use `{1}{2} {0}` to get it!'.format(role.name, ctx.prefix, ctx.command.parent))
 	
 	@giveme.command()
 	@bot_has_permissions(manage_roles=True)
