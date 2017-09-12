@@ -40,7 +40,7 @@ class Roles(Cog):
 			raise BadArgument('giveable role names must not contain commas!')
 		norm_name = self.normalize(name)
 		with db.Session() as session:
-			settings = session.query(GuildSettings).one_or_none()
+			settings = session.query(GuildSettings).filter_by(id=ctx.guild.id).one_or_none()
 			if settings is None:
 				settings = GuildSettings(id=ctx.guild.id)
 				session.add(settings)
@@ -67,7 +67,7 @@ class Roles(Cog):
 			raise BadArgument('giveable role names must not contain commas!')
 		norm_name = self.normalize(name)
 		with db.Session() as session:
-			settings = session.query(GuildSettings).one_or_none()
+			settings = session.query(GuildSettings).filter_by(id=ctx.guild.id).one_or_none()
 			if settings is None:
 				settings = GuildSettings(id=ctx.guild.id)
 				session.add(settings)
