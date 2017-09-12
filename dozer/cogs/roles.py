@@ -1,5 +1,6 @@
 import discord, discord.utils
 from discord.ext.commands import bot_has_permissions, has_permissions, BadArgument
+from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from .. import db
 from ._utils import *
 
@@ -11,7 +12,6 @@ class Roles(Cog):
 		norm_names = [self.normalize(name) for name in roles.split(',')]
 		with db.Session() as session:
 			giveable_ids = [tup[0] for tup in session.query(GiveableRole.id).filter(GiveableRole.guild_id == ctx.guild.id, GiveableRole.norm_name.in_(norm_names)).all()]
-			
 			valid = set(role for role in ctx.guild.roles if role.id in giveable_ids)
 		
 		already_have = valid & set(ctx.author.roles)
@@ -81,18 +81,60 @@ class Roles(Cog):
 	@giveme.command()
 	@bot_has_permissions(manage_roles=True)
 	async def remove(self, ctx, *, roles):
-		"""[DISABLED] Removes multiple giveable roles from you. Names must be separated by commas."""
+		"""Removes multiple giveable roles from you. Names must be separated by commas."""
+		norm_names = [self.normalize(name) for name in roles.split(',')]
+		with db.Session() as session:
+			query = session.query(GiveableRole.id).filter(GiveableRole.guild_id == ctx.guild.id, GiveableRole.norm_name.in_(norm_names))
+			removable_ids = [tup[0] for tup in query.all()]
+			valid = set(role for role in ctx.guild.roles if role.id in removable_ids)
+		
+		removed = valid & set(ctx.author.roles)
+		dont_have = valid - removed
+		await ctx.author.remove_roles(*removed)
+		
+		e = discord.Embed(color=discord.Color.blue())
+		if removed:
+			removed_names = sorted((role.name for role in removed), key=str.casefold)
+			e.add_field(name='Removed {} role(s)!'.format(len(removed)), value='\n'.join(removed_names), inline=False)
+		if dont_have:
+			dont_have_names = sorted((role.name for role in dont_have), key=str.casefold)
+			e.add_field(name='You didn\'t have {} role(s)!'.format(len(dont_have)), value='\n'.join(dont_have_names), inline=False)
+		extra = len(norm_names) - len(valid)
+		if extra > 0:
+			e.add_field(name='{} role(s) could not be found!'.format(extra), value='Use `{0.prefix}{0.invoked_with} list` to find valid giveable roles!'.format(ctx), inline=False)
+		await ctx.send(embed=e)
 	
 	@giveme.command()
 	@bot_has_permissions(manage_roles=True)
 	@has_permissions(manage_guild=True)
 	async def delete(self, ctx, *, name):
-		"""[DISABLED] Deletes and removes a giveable role."""
+		"""Deletes and removes a giveable role."""
+		if ',' in name:
+			raise BadArgument('this command only works with single roles!')
+		norm_name = self.normalize(name)
+		valid_ids = set(role.id for role in ctx.guild.roles)
+		with db.Session() as session:
+			try:
+				role = session.query(GiveableRole).filter(GiveableRole.guild_id == ctx.guild.id, GiveableRole.norm_name == norm_name, GiveableRole.id.in_(valid_ids)).one()
+			except MultipleResultsFound:
+				raise BadArgument('multiple giveable roles with that name exist!')
+			except NoResultFound:
+				raise BadArgument('that role does not exist or is not giveable!')
+			else:
+				session.delete(role)
+		role = discord.utils.get(ctx.guild.roles, id=role.id) # Not null because we already checked for id in valid_ids
+		await role.delete(reason='Giveable role deleted by {}'.format(ctx.author))
+		await ctx.send('Role "{0}" deleted!'.format(role))
 	
 	@giveme.command(name='list')
 	@bot_has_permissions(manage_roles=True)
 	async def list_roles(self, ctx):
-		"""[DISABLED] Lists all giveable roles for this server."""
+		"""Lists all giveable roles for this server."""
+		with db.Session() as session:
+			names = [tup[0] for tup in session.query(GiveableRole.name).filter_by(guild_id=ctx.guild.id)]
+		e = discord.Embed(title='Roles available to self-assign', color=discord.Color.blue())
+		e.description = '\n'.join(sorted(names, key=str.casefold))
+		await ctx.send(embed=e)
 	
 	@staticmethod
 	def normalize(name):
