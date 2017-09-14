@@ -5,6 +5,25 @@ from .. import db
 from ._utils import *
 
 class Roles(Cog):
+	async def on_member_join(self, member):
+		with db.Session() as session:
+			restore = session.query(MissingMember).filter_by(guild_id=member.guild.id, member_id=member.id).one_or_none()
+			if restore is None:
+				return # New member - nothing to restore
+			print([role.role_name for role in restore.missing_roles]) # TODO assign roles
+			for role in restore.missing_roles:
+				session.delete(role) # TODO do this automatically via cascade
+			session.delete(restore) # Not missing anymore - remove the record to free up the primary key
+	
+	async def on_member_remove(self, member):
+		guild_id = member.guild.id
+		member_id = member.id
+		with db.Session() as session:
+			db_member = MissingMember(guild_id=guild_id, member_id=member_id)
+			session.add(db_member)
+			for role in member.roles[1:]: # Exclude the @everyone role
+				db_member.missing_roles.append(MissingRole(role_id=role.id, role_name=role.name))
+	
 	@group(invoke_without_command=True)
 	@bot_has_permissions(manage_roles=True)
 	async def giveme(self, ctx, *, roles):
@@ -173,6 +192,23 @@ class GiveableRole(db.DatabaseObject):
 		return cls(id=role.id, name=role.name, norm_name=Roles.normalize(role.name))
 
 GuildSettings.giveable_roles = db.relationship('GiveableRole', order_by=GiveableRole.id, back_populates='guild_settings')
+
+class MissingMember(db.DatabaseObject):
+	__tablename__ = 'missing_members'
+	guild_id = db.Column(db.Integer, primary_key=True)
+	member_id = db.Column(db.Integer, primary_key=True)
+
+class MissingRole(db.DatabaseObject):
+	__tablename__ = 'missing_roles'
+	__table_args__ = (db.ForeignKeyConstraint(['guild_id', 'member_id'], ['missing_members.guild_id', 'missing_members.member_id']),)
+	pk = db.Column(db.Integer, primary_key=True, autoincrement=True) # Composite of foreign primary keys (guild/member id) caused errors
+	role_id = db.Column(db.Integer)
+	guild_id = db.Column(db.Integer)
+	member_id = db.Column(db.Integer)
+	member = db.relationship('MissingMember', back_populates='missing_roles')
+	role_name = db.Column(db.String(100), nullable=False)
+
+MissingMember.missing_roles = db.relationship('MissingRole', back_populates='member')
 
 def setup(bot):
 	bot.add_cog(Roles(bot))
