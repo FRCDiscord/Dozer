@@ -1,4 +1,5 @@
 import copy, discord, importlib, re
+from discord.ext.commands import NotOwner
 from ._utils import *
 
 class Development(Cog):
@@ -7,6 +8,11 @@ class Development(Cog):
 		eval_globals[module] = __import__(module)
 	eval_globals['__builtins__'] = __import__('builtins')
 	
+	def __local_check(self, ctx): # All of this cog is only available to devs
+		if ctx.author.id not in ctx.bot.config['developers']:
+			raise NotOwner('you are not a developer!')
+		return True
+
 	@command()
 	async def reload(self, ctx, cog):
 		"""Reloads a cog."""

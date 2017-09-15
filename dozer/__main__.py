@@ -1,6 +1,7 @@
 import json, os.path, sys
+from . import db
 
-config = {'prefix': '&'}
+config = {'prefix': '&', 'developers': []}
 config_file = 'config.json'
 
 if os.path.isfile(config_file):
@@ -23,5 +24,7 @@ bot = Dozer(config)
 for ext in os.listdir('dozer/cogs'):
 	if not ext.startswith('_'):
 		bot.load_extension('dozer.cogs.' + ext[:-3]) # Remove '.py'
+
+db.DatabaseObject.metadata.create_all()
 
 bot.run()
