@@ -6,24 +6,44 @@ from ._utils import *
 
 class Roles(Cog):
 	async def on_member_join(self, member):
+		me = member.guild.me
+		top_restoreable = me.top_role.position if me.guild_permissions.manage_roles else 0
 		with db.Session() as session:
 			restore = session.query(MissingMember).filter_by(guild_id=member.guild.id, member_id=member.id).one_or_none()
 			if restore is None:
 				return # New member - nothing to restore
-			valid, missing = set(), set()
+			
+			valid, cant_give, missing = set(), set(), set()
 			role_ids = {role.id: role for role in member.guild.roles}
 			for missing_role in restore.missing_roles:
 				role = role_ids.get(missing_role.role_id)
 				if role is None: # Role with that ID does not exist
 					missing.add(missing_role.role_name)
+				elif role.position > top_restoreable:
+					cant_give.add(role.name)
 				else:
 					valid.add(role)
+			
 			session.delete(restore) # Not missing anymore - remove the record to free up the primary key
+		
 		await member.add_roles(*valid)
-		if not missing:
+		if not missing and not cant_give:
 			return
 		
-		# TODO handle missing roles
+		e = discord.Embed(title='Welcome back to the {} server, {}!'.format(member.guild.name, member), color=discord.Color.blue())
+		if missing:
+			e.add_field(name='I couldn\'t restore these roles, as they don\'t exist.', value='\n'.join(sorted(missing)))
+		if cant_give:
+			e.add_field(name='I couldn\'t restore these roles, as I don\'t have permission.', value='\n'.join(sorted(cant_give)))
+		
+		send_perms = discord.Permissions()
+		send_perms.update(send_messages=True, embed_links=True)
+		try:
+			dest = next(channel for channel in member.guild.text_channels if channel.permissions_for(me) >= send_perms)
+		except StopIteration:
+			dest = await member.guild.owner.create_dm()
+		
+		await dest.send(embed=e)
 	
 	async def on_member_remove(self, member):
 		guild_id = member.guild.id
