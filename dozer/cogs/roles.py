@@ -10,10 +10,20 @@ class Roles(Cog):
 			restore = session.query(MissingMember).filter_by(guild_id=member.guild.id, member_id=member.id).one_or_none()
 			if restore is None:
 				return # New member - nothing to restore
-			print([role.role_name for role in restore.missing_roles]) # TODO assign roles
-			for role in restore.missing_roles:
-				session.delete(role) # TODO do this automatically via cascade
+			valid, missing = set(), set()
+			role_ids = {role.id: role for role in member.guild.roles}
+			for missing_role in restore.missing_roles:
+				role = role_ids.get(missing_role.role_id)
+				if role is None: # Role with that ID does not exist
+					missing.add(missing_role.role_name)
+				else:
+					valid.add(role)
 			session.delete(restore) # Not missing anymore - remove the record to free up the primary key
+		await member.add_roles(*valid)
+		if not missing:
+			return
+		
+		# TODO handle missing roles
 	
 	async def on_member_remove(self, member):
 		guild_id = member.guild.id
@@ -177,6 +187,7 @@ class Roles(Cog):
 class GuildSettings(db.DatabaseObject):
 	__tablename__ = 'guilds'
 	id = db.Column(db.Integer, primary_key=True)
+	giveable_roles = db.relationship('GiveableRole', back_populates='guild_settings')
 
 class GiveableRole(db.DatabaseObject):
 	__tablename__ = 'giveable_roles'
@@ -191,12 +202,11 @@ class GiveableRole(db.DatabaseObject):
 		"""Creates a GiveableRole record from a discord.Role."""
 		return cls(id=role.id, name=role.name, norm_name=Roles.normalize(role.name))
 
-GuildSettings.giveable_roles = db.relationship('GiveableRole', order_by=GiveableRole.id, back_populates='guild_settings')
-
 class MissingMember(db.DatabaseObject):
 	__tablename__ = 'missing_members'
 	guild_id = db.Column(db.Integer, primary_key=True)
 	member_id = db.Column(db.Integer, primary_key=True)
+	missing_roles = db.relationship('MissingRole', back_populates='member', cascade='all, delete, delete-orphan')
 
 class MissingRole(db.DatabaseObject):
 	__tablename__ = 'missing_roles'
@@ -206,8 +216,6 @@ class MissingRole(db.DatabaseObject):
 	member_id = db.Column(db.Integer, primary_key=True)
 	role_name = db.Column(db.String(100), nullable=False)
 	member = db.relationship('MissingMember', back_populates='missing_roles')
-
-MissingMember.missing_roles = db.relationship('MissingRole', back_populates='member')
 
 def setup(bot):
 	bot.add_cog(Roles(bot))
