@@ -5,6 +5,55 @@ from .. import db
 from ._utils import *
 
 class Roles(Cog):
+	async def on_member_join(self, member):
+		me = member.guild.me
+		top_restoreable = me.top_role.position if me.guild_permissions.manage_roles else 0
+		with db.Session() as session:
+			restore = session.query(MissingMember).filter_by(guild_id=member.guild.id, member_id=member.id).one_or_none()
+			if restore is None:
+				return # New member - nothing to restore
+			
+			valid, cant_give, missing = set(), set(), set()
+			role_ids = {role.id: role for role in member.guild.roles}
+			for missing_role in restore.missing_roles:
+				role = role_ids.get(missing_role.role_id)
+				if role is None: # Role with that ID does not exist
+					missing.add(missing_role.role_name)
+				elif role.position > top_restoreable:
+					cant_give.add(role.name)
+				else:
+					valid.add(role)
+			
+			session.delete(restore) # Not missing anymore - remove the record to free up the primary key
+		
+		await member.add_roles(*valid)
+		if not missing and not cant_give:
+			return
+		
+		e = discord.Embed(title='Welcome back to the {} server, {}!'.format(member.guild.name, member), color=discord.Color.blue())
+		if missing:
+			e.add_field(name='I couldn\'t restore these roles, as they don\'t exist.', value='\n'.join(sorted(missing)))
+		if cant_give:
+			e.add_field(name='I couldn\'t restore these roles, as I don\'t have permission.', value='\n'.join(sorted(cant_give)))
+		
+		send_perms = discord.Permissions()
+		send_perms.update(send_messages=True, embed_links=True)
+		try:
+			dest = next(channel for channel in member.guild.text_channels if channel.permissions_for(me) >= send_perms)
+		except StopIteration:
+			dest = await member.guild.owner.create_dm()
+		
+		await dest.send(embed=e)
+	
+	async def on_member_remove(self, member):
+		guild_id = member.guild.id
+		member_id = member.id
+		with db.Session() as session:
+			db_member = MissingMember(guild_id=guild_id, member_id=member_id)
+			session.add(db_member)
+			for role in member.roles[1:]: # Exclude the @everyone role
+				db_member.missing_roles.append(MissingRole(role_id=role.id, role_name=role.name))
+	
 	@group(invoke_without_command=True)
 	@bot_has_permissions(manage_roles=True)
 	async def giveme(self, ctx, *, roles):
@@ -158,6 +207,7 @@ class Roles(Cog):
 class GuildSettings(db.DatabaseObject):
 	__tablename__ = 'guilds'
 	id = db.Column(db.Integer, primary_key=True)
+	giveable_roles = db.relationship('GiveableRole', back_populates='guild_settings')
 
 class GiveableRole(db.DatabaseObject):
 	__tablename__ = 'giveable_roles'
@@ -172,7 +222,20 @@ class GiveableRole(db.DatabaseObject):
 		"""Creates a GiveableRole record from a discord.Role."""
 		return cls(id=role.id, name=role.name, norm_name=Roles.normalize(role.name))
 
-GuildSettings.giveable_roles = db.relationship('GiveableRole', order_by=GiveableRole.id, back_populates='guild_settings')
+class MissingMember(db.DatabaseObject):
+	__tablename__ = 'missing_members'
+	guild_id = db.Column(db.Integer, primary_key=True)
+	member_id = db.Column(db.Integer, primary_key=True)
+	missing_roles = db.relationship('MissingRole', back_populates='member', cascade='all, delete, delete-orphan')
+
+class MissingRole(db.DatabaseObject):
+	__tablename__ = 'missing_roles'
+	__table_args__ = (db.ForeignKeyConstraint(['guild_id', 'member_id'], ['missing_members.guild_id', 'missing_members.member_id']),)
+	role_id = db.Column(db.Integer, primary_key=True)
+	guild_id = db.Column(db.Integer) # Guild ID doesn't have to be primary because role IDs are unique across guilds
+	member_id = db.Column(db.Integer, primary_key=True)
+	role_name = db.Column(db.String(100), nullable=False)
+	member = db.relationship('MissingMember', back_populates='missing_roles')
 
 def setup(bot):
 	bot.add_cog(Roles(bot))
