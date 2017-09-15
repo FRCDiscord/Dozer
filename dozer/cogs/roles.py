@@ -201,12 +201,11 @@ class MissingMember(db.DatabaseObject):
 class MissingRole(db.DatabaseObject):
 	__tablename__ = 'missing_roles'
 	__table_args__ = (db.ForeignKeyConstraint(['guild_id', 'member_id'], ['missing_members.guild_id', 'missing_members.member_id']),)
-	pk = db.Column(db.Integer, primary_key=True, autoincrement=True) # Composite of foreign primary keys (guild/member id) caused errors
-	role_id = db.Column(db.Integer)
-	guild_id = db.Column(db.Integer)
-	member_id = db.Column(db.Integer)
-	member = db.relationship('MissingMember', back_populates='missing_roles')
+	role_id = db.Column(db.Integer, primary_key=True)
+	guild_id = db.Column(db.Integer) # Guild ID doesn't have to be primary because role IDs are unique across guilds
+	member_id = db.Column(db.Integer, primary_key=True)
 	role_name = db.Column(db.String(100), nullable=False)
+	member = db.relationship('MissingMember', back_populates='missing_roles')
 
 MissingMember.missing_roles = db.relationship('MissingRole', back_populates='member')
 
