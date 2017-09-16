@@ -7,8 +7,7 @@ class Moderation(Cog):
         usertoban = user_mentions
         usertobanstr = str(usertoban)
         print("Ban detected for user", usertobanstr)
-        await ctx.send("Testing! Banning " + usertobanstr)
-        #banmember = discord.ext.commands.MemberConverter(usertoban)
+        await ctx.send("Banning " + usertobanstr)
         print(usertoban)
         await ctx.guild.ban(usertoban)
 
