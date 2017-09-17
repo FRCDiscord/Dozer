@@ -25,6 +25,7 @@ class Moderation(Cog):
         haspermissions = ctx.channel.permissions_for(ctx.message.author)
         print(haspermissions)
         usertokick = user_mentions
+        usertokickstr = str(usertokick)
         await ctx.guild.kick(usertokick)
         await ctx.send(usertokickstr + " has been kicked")
 def setup(bot):
