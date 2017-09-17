@@ -17,13 +17,20 @@ class Moderation(Cog):
         await ctx.send(howtounban)
     @command()
     async def unban(self, ctx, user_mentions: discord.User):
-        "Unbans the user ID mentioned"
+        "Unbans the user ID mentioned."
         usertoban = user_mentions
         usertobanstr = str(usertoban)
         print("Unban detected for user", usertobanstr)
         await ctx.send("Unbanning " + usertobanstr)
         print(usertoban)
         await ctx.guild.unban(usertoban)
-
+    @command()
+    async def kick(self, ctx, user_mentions: discord.User):
+        "Kicks the user mentioned."
+        usertokick = user_mentions
+        usertokickstr = str(usertokick)
+        await ctx.send("Kicking " + usertokickstr)
+        print("Kick detected for " + usertokickstr)
+        await ctx.guild.kick(usertokick)
 def setup(bot):
     bot.add_cog(Moderation(bot))
