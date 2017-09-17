@@ -23,6 +23,7 @@ class Moderation(Cog):
     async def kick(self, ctx, user_mentions: discord.User):
         "Kicks the user mentioned."
         usertokick = user_mentions
+        usertokickstr = str(usertokick)
         await ctx.guild.kick(usertokick)
         await ctx.send(usertokickstr + " has been kicked")
 def setup(bot):
