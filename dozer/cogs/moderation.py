@@ -27,6 +27,8 @@ class Moderation(Cog):
     @command()
     async def kick(self, ctx, user_mentions: discord.User):
         "Kicks the user mentioned."
+        haspermissions = ctx.channel.permissions_for(ctx.message.author)
+        print(haspermissions)
         usertokick = user_mentions
         usertokickstr = str(usertokick)
         await ctx.send("Kicking " + usertokickstr)
