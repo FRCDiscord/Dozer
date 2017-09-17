@@ -19,4 +19,4 @@ class CtxSession(Session):
 			self.rollback()
 		return False
 
-Session = sessionmaker(bind=engine, class_=CtxSession)
+Session = sessionmaker(bind=engine, class_=CtxSession, extend_existing=True)
