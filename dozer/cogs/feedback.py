@@ -6,11 +6,24 @@ from ._utils import *
 
 class Feedback(Cog):
     @group(invoke_without_command=True)
-    async def feedback(self, ctx, input):
+    async def feedback(self, ctx, *, input):
+        content = ctx.message.content
         """Send feedback to a specific guild"""
         with db.Session() as session:
-            channel = session.query(GuildFeedback).filter_by(id=ctx.guild.id).one_or_none()
-        await ctx.send(channel.feedback_channel if channel is not None else 'woops')
+            settings = session.query(GuildFeedback).filter_by(id=ctx.guild.id).one_or_none()
+        if settings is not None:
+            channel = discord.utils.get(ctx.guild.channels, id=settings.feedback_channel)
+            if channel is not None:
+                e = discord.Embed(title="Feedback Message", color=discord.Color.blue())
+                e.description = input
+                e.set_author(name=ctx.message.author.name, icon_url=ctx.message.author.avatar_url)
+                e.add_field(name="Sent by", value=ctx.message.author.name + "#" + ctx.message.author.discriminator)
+                await channel.send(embed=e)
+            else: 
+                await ctx.send('Configured channel does not exist! Please consult your guild\'s admin to fix this!')
+        else:
+            await ctx.send('Your server\'s feedback system is not yet configured! Please tell your guild\'s admin to set the channel!')
+        
 
     @feedback.command()
     async def config(self, ctx, id):
