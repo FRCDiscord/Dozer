@@ -53,6 +53,7 @@ class Info(Cog):
 		e = discord.Embed(color=discord.Color.blue())
 		e.set_thumbnail(url=self.bot.user.avatar_url)
 		e.add_field(name='About', value="Dozer: A collaborative bot for FIRST Discord servers, developed by the FRC Discord Server Development Team")
+		e.add_field(name='Support', value="Join our development server at https://discord.gg/bB8tcQ8 for support, to help with development, or if you have any questions or comments!")
 		await ctx.send(embed=e)
 
 def setup(bot):
