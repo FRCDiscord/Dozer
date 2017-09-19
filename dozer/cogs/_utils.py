@@ -36,7 +36,8 @@ class Reactor:
 		"""
 		self.dest = ctx.channel
 		self.bot = ctx.bot
-		self.member = ctx.author
+		self.caller = ctx.author
+		self.me = ctx.me
 		self._reactions = tuple(initial_reactions)
 		self._remove_reactions = auto_remove
 		self.timeout = timeout
@@ -62,7 +63,8 @@ class Reactor:
 				pass
 			else:
 				await self._action
-		await self.message.delete()
+		for emoji in reversed(self._reactions):
+			await self.message.remove_reaction(emoji, self.me)
 	
 	def do(self, action):
 		self._action = action
@@ -71,7 +73,7 @@ class Reactor:
 		self._action = self._stop_reaction
 	
 	def _check_reaction(self, reaction, member):
-		return reaction.message.id == self.message.id and member.id == self.member.id
+		return reaction.message.id == self.message.id and member.id == self.caller.id
 
 class Paginator(Reactor):
 	"""
