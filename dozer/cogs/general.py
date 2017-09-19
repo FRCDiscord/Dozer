@@ -1,3 +1,5 @@
+import discord
+from discord.ext.commands import BadArgument
 from ._utils import *
 
 class General(Cog):
@@ -11,6 +13,51 @@ class General(Cog):
 		response = await ctx.send('Pong! We\'re in %s.' % location)
 		delay = response.created_at - ctx.message.created_at
 		await response.edit(content=response.content + '\nTook %d ms to respond.' % (delay.seconds * 1000 + delay.microseconds // 1000))
+	
+	@command(name='help')
+	async def base_help(self, ctx, *target):
+		"""Show this message."""
+		if not target: # No commands - general help
+			await self._help_all(ctx)
+		elif len(target) == 1: # Cog or command
+			target_name = target[0]
+			if target_name in ctx.bot.cogs:
+				await self._help_cog(ctx, ctx.bot.cogs[target_name])
+			else:
+				command = ctx.bot.get_command(target_name)
+				if command is None:
+					raise BadArgument('that command/cog does not exist!')
+				else:
+					await self._help_command(ctx, command)
+		else: # Command with subcommand
+			command = ctx.bot.get_command(' '.join(target))
+			if command is None:
+				raise BadArgument('that command does not exist!')
+			else:
+				await self._help_command(ctx, command)
+	
+	async def _help_all(self, ctx):
+		"""Gets the help message for all commands."""
+		pages = []
+		command_chunks = list(chunk(sorted(ctx.bot.commands, key=lambda cmd: cmd.qualified_name), 4))
+		for page_num, page_commands in enumerate(command_chunks):
+			page = discord.Embed(color=discord.Color.blue())
+			for command in page_commands:
+				page.add_field(name=ctx.prefix + command.signature, value=command.help.splitlines()[0], inline=False)
+			page.set_footer(text='Page {} of {}'.format(page_num + 1, len(command_chunks)))
+			pages.append(page)
+		await paginate(ctx, pages, auto_remove=ctx.channel.permissions_for(ctx.me))
+	
+	async def _help_command(self, ctx, command):
+		"""Gets the help message for one command."""
+		await ctx.send('help command {}'.format(command))
+		# TODO show help on specific command and its subcommands
+	
+	async def _help_cog(self, ctx, cog):
+		"""Gets the help message for one cog."""
+		await ctx.send('help cog {}'.format(type(cog).__name__))
+		# TODO show top-level help on all commands in this cog
 
 def setup(bot):
+	bot.remove_command('help')
 	bot.add_cog(General(bot))

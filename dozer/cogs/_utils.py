@@ -1,7 +1,7 @@
 import asyncio, itertools
 from discord.ext.commands import command, group
 
-__all__ = ['command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate']
+__all__ = ['command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk']
 
 class Cog:
 	def __init__(self, bot):
@@ -139,3 +139,13 @@ async def paginate(ctx, pages, *, start=0, auto_remove=True, timeout=60):
 	paginator = Paginator(ctx, (), pages, start=start, auto_remove=auto_remove, timeout=timeout)
 	async for reaction in paginator:
 		pass # The normal pagination reactions are handled - just drop anything else
+
+def chunk(iterable, size):
+	"""
+	Break an iterable into chunks of a fixed size. Returns an iterable of iterables.
+	Almost-inverse of itertools.chain.from_iterable - passing the output of this into that function will reconstruct the original iterable.
+	If the last chunk is not the full length, it will be returned but not padded.
+	"""
+	contents = list(iterable)
+	for i in range(0, len(contents), size):
+		yield contents[i:i+size]
