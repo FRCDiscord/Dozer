@@ -1,5 +1,5 @@
 import discord
-from discord.ext.commands import BadArgument
+from discord.ext.commands import BadArgument, Group
 from ._utils import *
 
 class General(Cog):
@@ -44,14 +44,27 @@ class General(Cog):
 			page = discord.Embed(color=discord.Color.blue())
 			for command in page_commands:
 				page.add_field(name=ctx.prefix + command.signature, value=command.help.splitlines()[0], inline=False)
-			page.set_footer(text='Page {} of {}'.format(page_num + 1, len(command_chunks)))
+			page.set_footer(text='Dozer Help | Page {} of {}'.format(page_num + 1, len(command_chunks)))
 			pages.append(page)
 		await paginate(ctx, pages, auto_remove=ctx.channel.permissions_for(ctx.me))
 	
 	async def _help_command(self, ctx, command):
 		"""Gets the help message for one command."""
-		await ctx.send('help command {}'.format(command))
-		# TODO show help on specific command and its subcommands
+		if not isinstance(command, Group):
+			e = discord.Embed(title=ctx.prefix + command.signature, description=command.help, color=discord.Color.blue())
+			e.set_footer(text='Dozer Help | {}'.format(command.qualified_name))
+			await ctx.send(embed=e)
+			return
+		
+		pages = []
+		command_chunks = list(chunk(sorted(command.commands, key=lambda cmd: cmd.qualified_name), 4))
+		for page_num, page_commands in enumerate(command_chunks):
+			page = discord.Embed(title=ctx.prefix + command.signature, description=command.help, color=discord.Color.blue())
+			for command in page_commands:
+				page.add_field(name=ctx.prefix + command.signature, value=command.help.splitlines()[0], inline=False)
+			page.set_footer(text='Dozer Help | {} | Page {} of {}'.format(command.qualified_name, page_num + 1, len(command_chunks)))
+			pages.append(page)
+		await paginate(ctx, pages, auto_remove=ctx.channel.permissions_for(ctx.me))
 	
 	async def _help_cog(self, ctx, cog):
 		"""Gets the help message for one cog."""
