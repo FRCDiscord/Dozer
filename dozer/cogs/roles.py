@@ -201,6 +201,7 @@ class Roles(Cog):
 	@bot_has_permissions(manage_roles=True)
 	@has_permissions(manage_roles=True)
 	async def take(self, ctx, member : discord.Member, *, role : discord.Role):
+		"""Takes a role from a member. Not restricted to giveable roles."""
 		await member.remove_roles(role)
 		await ctx.send('Successfully removed "{}" from {}!'.format(role, member))
 
