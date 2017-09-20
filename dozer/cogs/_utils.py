@@ -18,7 +18,13 @@ class Command(commands.Command, CommandMixin):
 	pass
 
 class Group(commands.Group, CommandMixin):
-	pass
+	def command(self, **kwargs):
+		kwargs.setdefault('cls', Group)
+		return super(Group, self).command(**kwargs)
+	
+	def group(self, **kwargs):
+		kwargs.setdefault('cls', Group)
+		return super(Group, self).command(**kwargs)
 
 def command(**kwargs):
 	kwargs.setdefault('cls', Command)
