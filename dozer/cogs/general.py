@@ -16,7 +16,7 @@ class General(Cog):
 		await response.edit(content=response.content + '\nTook %d ms to respond.' % (delay.seconds * 1000 + delay.microseconds // 1000))
 	
 	ping.example_usage = """
-	`{prefix}{name}` - Calculate and display the bot's response time
+	`{prefix}ping` - Calculate and display the bot's response time
 	"""
 	
 	@command(name='help', aliases=['about'])
@@ -42,9 +42,9 @@ class General(Cog):
 				await self._help_command(ctx, command)
 	
 	base_help.example_usage = """
-	`{prefix}{name}` - General help message
-	`{prefix}{name} help` - Help about the help command
-	`{prefix}{name} General` - Help about the General category
+	`{prefix}help` - General help message
+	`{prefix}help help` - Help about the help command
+	`{prefix}help General` - Help about the General category
 	"""
 	
 	async def _help_all(self, ctx):
