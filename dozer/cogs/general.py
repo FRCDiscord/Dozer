@@ -3,6 +3,7 @@ from discord.ext.commands import BadArgument, Group
 from ._utils import *
 
 class General(Cog):
+	"""General commands common to all Discord bots."""
 	@command()
 	async def ping(self, ctx):
 		"""Check the bot is online, and calculate its response time."""
@@ -60,16 +61,25 @@ class General(Cog):
 		command_chunks = list(chunk(sorted(command.commands, key=lambda cmd: cmd.qualified_name), 4))
 		for page_num, page_commands in enumerate(command_chunks):
 			page = discord.Embed(title=ctx.prefix + command.signature, description=command.help, color=discord.Color.blue())
-			for command in page_commands:
-				page.add_field(name=ctx.prefix + command.signature, value=command.help.splitlines()[0], inline=False)
+			for subcommand in page_commands:
+				page.add_field(name=ctx.prefix + subcommand.signature, value=subcommand.help.splitlines()[0], inline=False)
 			page.set_footer(text='Dozer Help | {} | Page {} of {}'.format(command.qualified_name, page_num + 1, len(command_chunks)))
 			pages.append(page)
 		await paginate(ctx, pages, auto_remove=ctx.channel.permissions_for(ctx.me))
 	
 	async def _help_cog(self, ctx, cog):
 		"""Gets the help message for one cog."""
-		await ctx.send('help cog {}'.format(type(cog).__name__))
-		# TODO show top-level help on all commands in this cog
+		cog_name = type(cog).__name__
+		commands = sorted((command for command in ctx.bot.commands if command.instance is cog), key=lambda cmd: cmd.qualified_name)
+		command_chunks = list(chunk(commands, 4))
+		pages = []
+		for page_num, page_commands in enumerate(command_chunks):
+			page = discord.Embed(title=cog_name, description=cog.__doc__, color=discord.Color.blue())
+			for command in page_commands:
+				page.add_field(name=ctx.prefix + command.signature, value=command.help.splitlines()[0], inline=False)
+			page.set_footer(text='Dozer Help | {} cog | Page {} of {}'.format(cog_name, page_num + 1, len(command_chunks)))
+			pages.append(page)
+		await paginate(ctx, pages, auto_remove=ctx.channel.permissions_for(ctx.me))
 
 def setup(bot):
 	bot.remove_command('help')
