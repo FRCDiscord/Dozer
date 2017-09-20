@@ -39,17 +39,17 @@ class General(Cog):
 	
 	async def _help_all(self, ctx):
 		"""Gets the help message for all commands."""
-		await self._show_help(ctx, '', '', 'all commands', ctx.bot.commands)
+		await self._show_help(ctx, None, '', '', 'all commands', ctx.bot.commands)
 	
 	async def _help_command(self, ctx, command):
 		"""Gets the help message for one command."""
-		await self._show_help(ctx, 'Command: {prefix}{command.signature}', command.help, '{command.qualified_name!r} command', command.commands if isinstance(command, Group) else set(), command=command)
+		await self._show_help(ctx, None, 'Command: {prefix}{command.signature}', command.help, '{command.qualified_name!r} command', command.commands if isinstance(command, Group) else set(), command=command)
 	
 	async def _help_cog(self, ctx, cog):
 		"""Gets the help message for one cog."""
-		await self._show_help(ctx, 'Category: {cog_name}', cog.__doc__ or '', '{cog_name!r} category', (command for command in ctx.bot.commands if command.instance is cog), cog_name=type(cog).__name__)
+		await self._show_help(ctx, None, 'Category: {cog_name}', cog.__doc__ or '', '{cog_name!r} category', (command for command in ctx.bot.commands if command.instance is cog), cog_name=type(cog).__name__)
 	
-	async def _show_help(self, ctx, title, description, footer, commands, **format_args):
+	async def _show_help(self, ctx, start_page, title, description, footer, commands, **format_args):
 		"""Creates and sends a template help message, with arguments filled in."""
 		format_args['prefix'] = ctx.prefix
 		footer = 'Dozer Help | {} | Page {}'.format(footer, '{page_num} of {len_pages}') # Page info is inserted as a parameter so page_num and len_pages aren't evaluated now
@@ -65,8 +65,17 @@ class General(Cog):
 				page.set_footer(text=footer.format(**format_args))
 				pages.append(page)
 			
+			if start_page is not None:
+				pages.append({'info': start_page})
+			
 			if len(pages) == 1:
 				await ctx.send(embed=pages[0])
+			elif start_page is not None:
+				info_emoji = '\N{INFORMATION SOURCE}'
+				p = Paginator(ctx, (info_emoji, ...), pages, start='info', auto_remove=ctx.channel.permissions_for(ctx.me))
+				async for reaction in p:
+					if reaction == info_emoji:
+						p.go_to_page('info')
 			else:
 				await paginate(ctx, pages, auto_remove=ctx.channel.permissions_for(ctx.me))
 		else: # No commands - command with no subcommands, empty cog, or command-less bot

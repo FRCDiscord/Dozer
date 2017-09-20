@@ -1,4 +1,5 @@
 import asyncio, itertools
+from collections.abc import Mapping
 from discord.ext.commands import command, group
 
 __all__ = ['command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk']
@@ -99,8 +100,16 @@ class Paginator(Reactor):
 		'\N{BLACK SQUARE FOR STOP}' # :stop_button:
 	)
 	def __init__(self, ctx, initial_reactions, pages, *, start=0, auto_remove=True, timeout=60):
-		super().__init__(ctx, itertools.chain(self.pagination_reactions + initial_reactions), auto_remove=auto_remove, timeout=timeout)
-		self.pages = pages
+		all_reactions = list(initial_reactions)
+		ind = all_reactions.index(Ellipsis)
+		all_reactions[ind:ind+1] = self.pagination_reactions
+		super().__init__(ctx, all_reactions, auto_remove=auto_remove, timeout=timeout)
+		if pages and isinstance(pages[-1], Mapping):
+			named_pages = pages.pop()
+			self.pages = dict(enumerate(pages), **named_pages)
+		else:
+			self.pages = pages
+		self.len_pages = len(pages)
 		self.page = start
 	
 	async def __aiter__(self):
@@ -122,23 +131,29 @@ class Paginator(Reactor):
 				else: # Only valid option left is 4
 					self.stop()
 	
+	@property
+	def page_num(self):
+		return self.page if isinstance(self.page, int) else 0
+	
 	def go_to_page(self, page):
-		self.page = page % len(self.pages)
-		if self.page < 0:
-			self.page += len(self.pages)
+		if isinstance(page, int):
+			page = page % self.len_pages
+			if page < 0:
+				page += self.len_pages
+		self.page = page
 		self.do(self.message.edit(embed=self.pages[self.page]))
 	
 	def next(self, amt=1):
-		self.go_to_page(self.page + amt)
+		self.go_to_page(self.page_num + amt)
 	
 	def prev(self, amt=1):
-		self.go_to_page(self.page - amt)
+		self.go_to_page(self.page_num - amt)
 
 async def paginate(ctx, pages, *, start=0, auto_remove=True, timeout=60):
 	"""
 	Simple pagination based on Paginator. Pagination is handled normally and other reactions are ignored.
 	"""
-	paginator = Paginator(ctx, (), pages, start=start, auto_remove=auto_remove, timeout=timeout)
+	paginator = Paginator(ctx, (...,), pages, start=start, auto_remove=auto_remove, timeout=timeout)
 	async for reaction in paginator:
 		pass # The normal pagination reactions are handled - just drop anything else
 
