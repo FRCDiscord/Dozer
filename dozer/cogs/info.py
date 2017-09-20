@@ -46,15 +46,6 @@ class Info(Cog):
 		e.add_field(name='Region', value=guild.region.name)
 		e.add_field(name='Icon URL', value=guild.icon_url or 'This guild has no icon.')
 		await ctx.send(embed=e)
-	
-	@command()
-	async def about(self, ctx):
-		"""Shows information about the bot"""
-		e = discord.Embed(color=discord.Color.blue())
-		e.set_thumbnail(url=self.bot.user.avatar_url)
-		e.add_field(name='About', value="Dozer: A collaborative bot for FIRST Discord servers, developed by the FRC Discord Server Development Team")
-		e.add_field(name='Support', value="Join our development server at https://discord.gg/bB8tcQ8 for support, to help with development, or if you have any questions or comments!")
-		await ctx.send(embed=e)
 
 def setup(bot):
 	bot.add_cog(Info(bot))

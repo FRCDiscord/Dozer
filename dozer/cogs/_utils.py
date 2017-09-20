@@ -1,8 +1,32 @@
-import asyncio, itertools
+import asyncio, inspect, itertools
 from collections.abc import Mapping
-from discord.ext.commands import command, group
+from discord.ext import commands
 
 __all__ = ['command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk']
+
+class CommandMixin:
+	_example_usage = None
+	@property
+	def example_usage(self):
+		return self._example_usage
+	
+	@example_usage.setter
+	def example_usage(self, usage):
+		self._example_usage = inspect.cleandoc(usage)
+
+class Command(commands.Command, CommandMixin):
+	pass
+
+class Group(commands.Group, CommandMixin):
+	pass
+
+def command(**kwargs):
+	kwargs.setdefault('cls', Command)
+	return commands.command(**kwargs)
+
+def group(**kwargs):
+	kwargs.setdefault('cls', Group)
+	return commands.command(**kwargs)
 
 class Cog:
 	def __init__(self, bot):
@@ -131,10 +155,6 @@ class Paginator(Reactor):
 				else: # Only valid option left is 4
 					self.stop()
 	
-	@property
-	def page_num(self):
-		return self.page if isinstance(self.page, int) else 0
-	
 	def go_to_page(self, page):
 		if isinstance(page, int):
 			page = page % self.len_pages
@@ -144,10 +164,16 @@ class Paginator(Reactor):
 		self.do(self.message.edit(embed=self.pages[self.page]))
 	
 	def next(self, amt=1):
-		self.go_to_page(self.page_num + amt)
+		if isinstance(self.page, int):
+			self.go_to_page(self.page + amt)
+		else:
+			self.go_to_page(amt-1)
 	
 	def prev(self, amt=1):
-		self.go_to_page(self.page_num - amt)
+		if isinstance(self.page, int):
+			self.go_to_page(self.page - amt)
+		else:
+			self.go_to_page(-amt)
 
 async def paginate(ctx, pages, *, start=0, auto_remove=True, timeout=60):
 	"""
