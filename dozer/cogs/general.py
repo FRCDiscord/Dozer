@@ -52,6 +52,10 @@ class General(Cog):
 		info = discord.Embed(title='Dozer: Info', description='A guild management bot for FIRST Discord servers', color=discord.Color.blue())
 		info.set_thumbnail(url=self.bot.user.avatar_url)
 		info.add_field(name='About', value="Dozer: A collaborative bot for FIRST Discord servers, developed by the FRC Discord Server Development Team")
+		info.add_field(name='About `{}{}`'.format(ctx.prefix, ctx.invoked_with), value=inspect.cleandoc("""
+		This command can show info for all commands, a specific command, or a category of commands.
+		Use `{0}{1} {1}` for more information.
+		""".format(ctx.prefix, ctx.invoked_with)), inline=False)
 		info.add_field(name='Support', value="Join our development server at https://discord.gg/bB8tcQ8 for support, to help with development, or if you have any questions or comments!")
 		info.set_footer(text='Dozer Help | all commands | Info page')
 		await self._show_help(ctx, info, 'Dozer: Commands', '', 'all commands', ctx.bot.commands)
