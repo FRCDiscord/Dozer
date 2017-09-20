@@ -39,47 +39,42 @@ class General(Cog):
 	
 	async def _help_all(self, ctx):
 		"""Gets the help message for all commands."""
-		pages = []
-		command_chunks = list(chunk(sorted(ctx.bot.commands, key=lambda cmd: cmd.qualified_name), 4))
-		for page_num, page_commands in enumerate(command_chunks):
-			page = discord.Embed(color=discord.Color.blue())
-			for command in page_commands:
-				page.add_field(name=ctx.prefix + command.signature, value=command.help.splitlines()[0], inline=False)
-			page.set_footer(text='Dozer Help | Page {} of {}'.format(page_num + 1, len(command_chunks)))
-			pages.append(page)
-		await paginate(ctx, pages, auto_remove=ctx.channel.permissions_for(ctx.me))
+		await self._show_help(ctx, '', '', 'all commands', ctx.bot.commands)
 	
 	async def _help_command(self, ctx, command):
 		"""Gets the help message for one command."""
-		if not isinstance(command, Group):
-			e = discord.Embed(title=ctx.prefix + command.signature, description=command.help, color=discord.Color.blue())
-			e.set_footer(text='Dozer Help | {}'.format(command.qualified_name))
-			await ctx.send(embed=e)
-			return
-		
-		pages = []
-		command_chunks = list(chunk(sorted(command.commands, key=lambda cmd: cmd.qualified_name), 4))
-		for page_num, page_commands in enumerate(command_chunks):
-			page = discord.Embed(title=ctx.prefix + command.signature, description=command.help, color=discord.Color.blue())
-			for subcommand in page_commands:
-				page.add_field(name=ctx.prefix + subcommand.signature, value=subcommand.help.splitlines()[0], inline=False)
-			page.set_footer(text='Dozer Help | {} | Page {} of {}'.format(command.qualified_name, page_num + 1, len(command_chunks)))
-			pages.append(page)
-		await paginate(ctx, pages, auto_remove=ctx.channel.permissions_for(ctx.me))
+		await self._show_help(ctx, 'Command: {prefix}{command.signature}', command.help, '{command.qualified_name!r} command', command.commands if isinstance(command, Group) else set(), command=command)
 	
 	async def _help_cog(self, ctx, cog):
 		"""Gets the help message for one cog."""
-		cog_name = type(cog).__name__
-		commands = sorted((command for command in ctx.bot.commands if command.instance is cog), key=lambda cmd: cmd.qualified_name)
-		command_chunks = list(chunk(commands, 4))
-		pages = []
-		for page_num, page_commands in enumerate(command_chunks):
-			page = discord.Embed(title=cog_name, description=cog.__doc__, color=discord.Color.blue())
-			for command in page_commands:
-				page.add_field(name=ctx.prefix + command.signature, value=command.help.splitlines()[0], inline=False)
-			page.set_footer(text='Dozer Help | {} cog | Page {} of {}'.format(cog_name, page_num + 1, len(command_chunks)))
-			pages.append(page)
-		await paginate(ctx, pages, auto_remove=ctx.channel.permissions_for(ctx.me))
+		await self._show_help(ctx, 'Category: {cog_name}', cog.__doc__ or '', '{cog_name!r} category', (command for command in ctx.bot.commands if command.instance is cog), cog_name=type(cog).__name__)
+	
+	async def _show_help(self, ctx, title, description, footer, commands, **format_args):
+		"""Creates and sends a template help message, with arguments filled in."""
+		format_args['prefix'] = ctx.prefix
+		footer = 'Dozer Help | {} | Page {}'.format(footer, '{page_num} of {len_pages}') # Page info is inserted as a parameter so page_num and len_pages aren't evaluated now
+		if commands:
+			command_chunks = list(chunk(sorted(commands, key=lambda cmd: cmd.name), 4))
+			format_args['len_pages'] = len(command_chunks)
+			pages = []
+			for page_num, page_commands in enumerate(command_chunks):
+				format_args['page_num'] = page_num + 1
+				page = discord.Embed(title=title.format(**format_args), description=description.format(**format_args), color=discord.Color.blue())
+				for command in page_commands:
+					page.add_field(name=ctx.prefix + command.signature, value=command.help.splitlines()[0], inline=False)
+				page.set_footer(text=footer.format(**format_args))
+				pages.append(page)
+			
+			if len(pages) == 1:
+				await ctx.send(embed=pages[0])
+			else:
+				await paginate(ctx, pages, auto_remove=ctx.channel.permissions_for(ctx.me))
+		else: # No commands - command with no subcommands, empty cog, or command-less bot
+			format_args['len_pages'] = 1
+			format_args['page_num'] = 1
+			embed = discord.Embed(title=title.format(**format_args), description=description.format(**format_args), color=discord.Color.blue())
+			embed.set_footer(text=footer.format(**format_args))
+			await ctx.send(embed=embed)
 
 def setup(bot):
 	bot.remove_command('help')
