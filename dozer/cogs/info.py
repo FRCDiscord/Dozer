@@ -6,6 +6,7 @@ blurple = discord.Color.blurple()
 datetime_format = '%Y-%m-%d %I:%M %p'
 
 class Info(Cog):
+	"""Commands for getting information about people and things on Discord."""
 	@guild_only()
 	@command(aliases=['user', 'userinfo', 'memberinfo'])
 	async def member(self, ctx, member: discord.Member=None):

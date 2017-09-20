@@ -1,4 +1,4 @@
-import discord
+import discord, inspect
 from discord.ext.commands import BadArgument, Group
 from ._utils import *
 
@@ -67,7 +67,7 @@ class General(Cog):
 	
 	async def _help_cog(self, ctx, cog):
 		"""Gets the help message for one cog."""
-		await self._show_help(ctx, None, 'Category: {cog_name}', cog.__doc__ or '', '{cog_name!r} category', (command for command in ctx.bot.commands if command.instance is cog), cog_name=type(cog).__name__)
+		await self._show_help(ctx, None, 'Category: {cog_name}', inspect.cleandoc(cog.__doc__ or ''), '{cog_name!r} category', (command for command in ctx.bot.commands if command.instance is cog), cog_name=type(cog).__name__)
 	
 	async def _show_help(self, ctx, start_page, title, description, footer, commands, **format_args):
 		"""Creates and sends a template help message, with arguments filled in."""

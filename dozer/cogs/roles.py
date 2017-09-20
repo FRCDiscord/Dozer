@@ -5,6 +5,7 @@ from .. import db
 from ._utils import *
 
 class Roles(Cog):
+	"""Commands for role management."""
 	async def on_member_join(self, member):
 		me = member.guild.me
 		top_restoreable = me.top_role.position if me.guild_permissions.manage_roles else 0

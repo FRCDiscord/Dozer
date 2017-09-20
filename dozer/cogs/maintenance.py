@@ -3,6 +3,10 @@ from ._utils import *
 from discord.ext.commands import NotOwner
 
 class Maintenance(Cog):
+	"""
+	Commands for performing maintenance on the bot.
+	These commands are restricted to bot developers.
+	"""
 	def __local_check(self, ctx): # All of this cog is only available to devs
 		if ctx.author.id not in ctx.bot.config['developers']:
 			raise NotOwner('you are not a developer!')

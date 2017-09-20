@@ -3,6 +3,10 @@ from discord.ext.commands import NotOwner
 from ._utils import *
 
 class Development(Cog):
+	"""
+	Commands useful for developing the bot.
+	These commands are restricted to bot developers.
+	"""
 	eval_globals = {}
 	for module in ('asyncio', 'collections', 'discord', 'inspect', 'itertools'):
 		eval_globals[module] = __import__(module)

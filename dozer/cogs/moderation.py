@@ -4,6 +4,11 @@ from ._utils import *
 import discord
 
 class Moderation(Cog):
+	"""
+	Moderation commands for simplifying and improving Discord's moderation tools.
+	These commands are restricted to users who have permission to do the action manually.
+	For example, the ban and unban commands require permission to ban members.
+	"""
 	@command()
 	@has_permissions(ban_members=True)
 	@bot_has_permissions(ban_members=True)
