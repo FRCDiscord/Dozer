@@ -1,5 +1,5 @@
 import discord, inspect
-from discord.ext.commands import BadArgument, Group
+from discord.ext.commands import BadArgument, Group, bot_has_permissions
 from ._utils import *
 
 class General(Cog):
@@ -20,6 +20,7 @@ class General(Cog):
 	"""
 	
 	@command(name='help', aliases=['about'])
+	@bot_has_permissions(add_reactions=True)
 	async def base_help(self, ctx, *target):
 		"""Show this message."""
 		if not target: # No commands - general help
