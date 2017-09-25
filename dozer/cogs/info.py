@@ -1,5 +1,5 @@
 import discord, unicodedata
-from discord.ext.commands import guild_only
+from discord.ext.commands import cooldown, BucketType, guild_only
 from ._utils import *
 
 blurple = discord.Color.blurple()
@@ -8,6 +8,7 @@ datetime_format = '%Y-%m-%d %I:%M %p'
 class Info(Cog):
 	"""Commands for getting information about people and things on Discord."""
 	@guild_only()
+	@cooldown(1, 10, BucketType.channel)
 	@command(aliases=['user', 'userinfo', 'memberinfo'])
 	async def member(self, ctx, member: discord.Member=None):
 		"""
@@ -45,6 +46,7 @@ class Info(Cog):
 	"""
 	
 	@guild_only()
+	@cooldown(1, 10, BucketType.channel)
 	@command(aliases=['server', 'guildinfo', 'serverinfo'])
 	async def guild(self, ctx):
 		"""Retrieve information about this guild."""

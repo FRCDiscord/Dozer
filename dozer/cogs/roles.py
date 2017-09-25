@@ -1,5 +1,5 @@
 import discord, discord.utils
-from discord.ext.commands import bot_has_permissions, has_permissions, BadArgument
+from discord.ext.commands import bot_has_permissions, cooldown, BucketType, has_permissions, BadArgument
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from .. import db
 from ._utils import *
@@ -200,6 +200,7 @@ class Roles(Cog):
 	`{prefix}giveme delete Java` - deletes the role called "Java" if it's giveable (automatically removes it from all members)
 	"""
 	
+	@cooldown(1, 10, BucketType.channel)
 	@giveme.command(name='list')
 	@bot_has_permissions(manage_roles=True)
 	async def list_roles(self, ctx):

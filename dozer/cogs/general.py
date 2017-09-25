@@ -1,5 +1,5 @@
 import discord, inspect
-from discord.ext.commands import BadArgument, Group, bot_has_permissions
+from discord.ext.commands import BadArgument, cooldown, BucketType, Group, bot_has_permissions
 from ._utils import *
 
 class General(Cog):
@@ -19,6 +19,7 @@ class General(Cog):
 	`{prefix}ping` - Calculate and display the bot's response time
 	"""
 	
+	@cooldown(1, 10, BucketType.channel)
 	@command(name='help', aliases=['about'])
 	@bot_has_permissions(add_reactions=True)
 	async def base_help(self, ctx, *target):

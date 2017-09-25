@@ -32,6 +32,8 @@ class Dozer(commands.Bot):
 		elif isinstance(err, commands.BotMissingPermissions):
 			permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in err.missing_perms]
 			await ctx.send('{}, I need {} permissions to run this command!'.format(ctx.author.mention, utils.pretty_concat(permission_names)))
+		elif isinstance(err, commands.CommandOnCooldown):
+			await ctx.send('{}, That command is on cooldown! Try again in {:.2f}s!'.format(ctx.author.mention, err.retry_after))
 		elif isinstance(err, (commands.CommandNotFound, InvalidContext)):
 			pass # Silent ignore
 		else:
