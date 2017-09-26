@@ -8,7 +8,7 @@ class Moderation(Cog):
 	@command()
 	@has_permissions(ban_members=True)
 	@bot_has_permissions(ban_members=True)
-	async def ban(self, ctx, user_mentions: discord.User):
+	async def ban(self, ctx, user_mentions: discord.User, *, reason):
 		"Bans the user mentioned."
 		usertoban = user_mentions
 		usertobanstr = str(usertoban)
@@ -16,42 +16,42 @@ class Moderation(Cog):
 		print("Ban detected for user", usertobanstr)
 		await ctx.guild.ban(usertoban)
 		howtounban = "When it's time to unban, here's the ID to unban: <@" + bannedid + " >"
-		await ctx.send(usertobanstr + " has been banned. " + howtounban)
+		await ctx.send(usertobanstr + " has been banned because " + reason + ". " + howtounban)
 		with db.Session() as session:
 				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
-				modlogmessage = usertobanstr + "has been banned by " + str(ctx.author.mention)
+				modlogmessage = usertobanstr + "has been banned by " + str(ctx.author.mention) + " because " + reason
 				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
 				await channel.send(modlogmessage)
 	
 	@command()
 	@has_permissions(ban_members=True)
 	@bot_has_permissions(ban_members=True)
-	async def unban(self, ctx, user_mentions: discord.User):
+	async def unban(self, ctx, user_mentions: discord.User, *, reason):
 		"Unbans the user ID mentioned."
 		usertoban = user_mentions
 		usertobanstr = str(usertoban)
 		print("Unban detected for user" + usertobanstr)
 		print(usertoban)
 		await ctx.guild.unban(usertoban)
-		await ctx.send(usertobanstr + " has been unbanned")
+		await ctx.send(usertobanstr + " has been unbanned because " + reason)
 		with db.Session() as session:
 				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
-				modlogmessage = usertobanstr + " has been unbanned by " + str(ctx.author.mention)
+				modlogmessage = usertobanstr + " has been unbanned by " + str(ctx.author.mention) + " because " + reason
 				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
 				await channel.send(modlogmessage)
 	
 	@command()
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(kick_members=True)
-	async def kick(self, ctx, user_mentions: discord.User):
+	async def kick(self, ctx, user_mentions: discord.User, *, reason):
 		"Kicks the user mentioned."
 		usertokick = user_mentions
 		usertokickstr = str(usertokick)
 		await ctx.guild.kick(usertokick)
-		await ctx.send(usertokickstr + " has been kicked")
+		await ctx.send(usertokickstr + " has been kicked because " + reason)
 		with db.Session() as session:
 				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
-				modlogmessage = usertokickstr + " has been kicked by " + str(ctx.author.mention)
+				modlogmessage = usertokickstr + " has been kicked by " + str(ctx.author.mention) + " because " + reason
 				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
 				await channel.send(modlogmessage)
 	@command()
@@ -64,7 +64,7 @@ class Moderation(Cog):
 			if config is not None:
 				print("config is not none")
 				config.name = ctx.guild.name
-				config.modlog_channel =  str(channel_mentions.id)
+				config.modlog_channel = str(channel_mentions.id)
 			else:
 				print("Config is none")
 				config = Guildmodlog(id=ctx.guild.id, modlog_channel=channel_mentions.id, name=ctx.guild.name)
