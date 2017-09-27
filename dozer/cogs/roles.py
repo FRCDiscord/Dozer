@@ -5,6 +5,7 @@ from .. import db
 from ._utils import *
 
 class Roles(Cog):
+	"""Commands for role management."""
 	async def on_member_join(self, member):
 		me = member.guild.me
 		top_restoreable = me.top_role.position if me.guild_permissions.manage_roles else 0
@@ -79,6 +80,11 @@ class Roles(Cog):
 			e.add_field(name='{} role(s) could not be found!'.format(extra), value='Use `{0.prefix}{0.invoked_with} list` to find valid giveable roles!'.format(ctx), inline=False)
 		await ctx.send(embed=e)
 	
+	giveme.example_usage = """
+	`{prefix}giveme Java` - gives you the role called Java, if it exists
+	`{prefix}giveme Java, Python` - gives you the roles called Java and Python, if they exist
+	"""
+	
 	@giveme.command()
 	@bot_has_permissions(manage_roles=True)
 	@has_permissions(manage_guild=True)
@@ -106,6 +112,11 @@ class Roles(Cog):
 			settings.giveable_roles.append(GiveableRole.from_role(role))
 		await ctx.send('Role "{0}" added! Use `{1}{2} {0}` to get it!'.format(role.name, ctx.prefix, ctx.command.parent))
 	
+	add.example_usage = """
+	`{prefix}giveme add Java` - creates or finds a role named "Java" and makes it giveable
+	`{prefix}giveme Java` - gives you the Java role that was just found or created
+	"""
+	
 	@giveme.command()
 	@bot_has_permissions(manage_roles=True)
 	@has_permissions(manage_guild=True)
@@ -126,6 +137,11 @@ class Roles(Cog):
 			role = await ctx.guild.create_role(name=name, reason='Giveable role created by {}'.format(ctx.author))
 			settings.giveable_roles.append(GiveableRole.from_role(role))
 		await ctx.send('Role "{0}" created! Use `{1}{2} {0}` to get it!'.format(role.name, ctx.prefix, ctx.command.parent))
+	
+	create.example_usage = """
+	`{prefix}giveme create Python` - creates a role named "Python" and makes it giveable
+	`{prefix}giveme Python` - gives you the Python role that was just created
+	"""
 	
 	@giveme.command()
 	@bot_has_permissions(manage_roles=True)
@@ -153,6 +169,11 @@ class Roles(Cog):
 			e.add_field(name='{} role(s) could not be found!'.format(extra), value='Use `{0.prefix}{0.invoked_with} list` to find valid giveable roles!'.format(ctx), inline=False)
 		await ctx.send(embed=e)
 	
+	remove.example_usage = """
+	`{prefix}giveme remove Java` - removes the role called "Java" from you (if it can be given with `{prefix}giveme`)
+	`{prefix}giveme remove Java, Python` - removes the roles called "Java" and "Python" from you
+	"""
+	
 	@giveme.command()
 	@bot_has_permissions(manage_roles=True)
 	@has_permissions(manage_guild=True)
@@ -175,6 +196,10 @@ class Roles(Cog):
 		await role.delete(reason='Giveable role deleted by {}'.format(ctx.author))
 		await ctx.send('Role "{0}" deleted!'.format(role))
 	
+	delete.example_usage = """
+	`{prefix}giveme delete Java` - deletes the role called "Java" if it's giveable (automatically removes it from all members)
+	"""
+	
 	@giveme.command(name='list')
 	@bot_has_permissions(manage_roles=True)
 	async def list_roles(self, ctx):
@@ -184,6 +209,10 @@ class Roles(Cog):
 		e = discord.Embed(title='Roles available to self-assign', color=discord.Color.blue())
 		e.description = '\n'.join(sorted(names, key=str.casefold))
 		await ctx.send(embed=e)
+	
+	list_roles.example_usage = """
+	`{prefix}giveme list` - lists all giveable roles
+	"""
 	
 	@staticmethod
 	def normalize(name):
@@ -197,6 +226,10 @@ class Roles(Cog):
 		await member.add_roles(role)
 		await ctx.send('Successfully gave {} "{}"!'.format(member, role))
 	
+	give.example_usage = """
+	`{prefix}give cooldude#1234 Java` - gives cooldude any role, giveable or not, named Java
+	"""
+	
 	@command()
 	@bot_has_permissions(manage_roles=True)
 	@has_permissions(manage_roles=True)
@@ -204,6 +237,10 @@ class Roles(Cog):
 		"""Takes a role from a member. Not restricted to giveable roles."""
 		await member.remove_roles(role)
 		await ctx.send('Successfully removed "{}" from {}!'.format(role, member))
+	
+	take.example_usage = """
+	`{prefix}take cooldude#1234 Java` - takes any role named Java, giveable or not, from cooldude
+	"""
 
 class GuildSettings(db.DatabaseObject):
 	__tablename__ = 'guilds'

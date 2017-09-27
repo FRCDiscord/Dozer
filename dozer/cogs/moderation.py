@@ -5,6 +5,11 @@ import discord
 
 # Todo for current functions: Reasons
 class Moderation(Cog):
+	"""
+	Moderation commands for simplifying and improving Discord's moderation tools.
+	These commands are restricted to users who have permission to do the action manually.
+	For example, the ban and unban commands require permission to ban members.
+	"""
 	@command()
 	@has_permissions(ban_members=True)
 	@bot_has_permissions(ban_members=True)
@@ -23,6 +28,10 @@ class Moderation(Cog):
 				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
 				await channel.send(modlogmessage)
 	
+	ban.example_usage = """
+	`{prefix}ban cooldude#1234` - Bans cooldude
+	"""
+	
 	@command()
 	@has_permissions(ban_members=True)
 	@bot_has_permissions(ban_members=True)
@@ -40,9 +49,29 @@ class Moderation(Cog):
 				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
 				await channel.send(modlogmessage)
 	
+	unban.example_usage = """
+	`{prefix}unban cooldude#1234` - Unbans cooldude
+	"""
+	
 	@command()
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(kick_members=True)
+
+	async def kick(self, ctx, user_mentions: discord.User):
+		"""
+		Kicks the user mentioned.
+		This does not prevent the user from rejoining.
+		If there is a public invite to your server, the user may rejoin.
+		"""
+		usertokick = user_mentions
+		usertokickstr = str(usertokick)
+		await ctx.guild.kick(usertokick)
+		await ctx.send(usertokickstr + " has been kicked")
+	
+	kick.example_usage = """
+	`{prefix}kick cooldude#1234` - Kicks cooldude
+	"""
+
 	async def kick(self, ctx, user_mentions: discord.User, *, reason):
 		"Kicks the user mentioned."
 		usertokick = user_mentions
@@ -81,6 +110,7 @@ class Guildmodlog(db.DatabaseObject):
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String)
 	modlog_channel = db.Column(db.Integer)
+
 
 def setup(bot):
 	bot.add_cog(Moderation(bot))
