@@ -54,6 +54,10 @@ class Moderation(Cog):
 				modlogmessage = usertokickstr + " has been kicked by " + str(ctx.author.mention) + " because " + reason
 				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
 				await channel.send(modlogmessage)
+
+		self.kick.example_usage = """
+		`{prefix}kick cooldude#1234` - Kicks cooldude
+		"""
 	@command()
 	@has_permissions(administrator=True)
 	async def config(self, ctx, channel_mentions: discord.TextChannel):
