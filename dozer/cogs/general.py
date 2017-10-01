@@ -1,10 +1,8 @@
 import discord, inspect
 from discord.ext.commands import BadArgument, Group, bot_has_permissions
 from discord.ext.commands import has_permissions
-import discord
 
 from ._utils import *
-import discord as Discordpy
 
 class General(Cog):
 	"""General commands common to all Discord bots."""
