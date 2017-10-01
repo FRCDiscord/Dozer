@@ -3,7 +3,6 @@ from .. import db
 from ._utils import *
 import discord
 
-# Todo for current functions: Reasons
 class Moderation(Cog):
 	@command()
 	@has_permissions(ban_members=True)
