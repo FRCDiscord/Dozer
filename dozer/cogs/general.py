@@ -122,6 +122,7 @@ class General(Cog):
 	@command()
 	async def nick(self, ctx, *, nicktochangeto):
 		await discord.Member.edit(ctx.author, nick=nicktochangeto)
+		await ctx.send("Nick successfully changed to " + nicktochangeto)
 
 def setup(bot):
 	bot.remove_command('help')
