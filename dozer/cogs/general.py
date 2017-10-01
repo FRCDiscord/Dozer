@@ -4,7 +4,6 @@ from discord.ext.commands import has_permissions
 import discord
 
 from ._utils import *
-import discord as Discordpy
 
 class General(Cog):
 	"""General commands common to all Discord bots."""
@@ -18,7 +17,6 @@ class General(Cog):
 		response = await ctx.send('Pong! We\'re in %s.' % location)
 		delay = response.created_at - ctx.message.created_at
 		await response.edit(content=response.content + '\nTook %d ms to respond.' % (delay.seconds * 1000 + delay.microseconds // 1000))
-
 	
 	ping.example_usage = """
 	`{prefix}ping` - Calculate and display the bot's response time
@@ -116,12 +114,6 @@ class General(Cog):
 			embed = discord.Embed(title=title.format(**format_args), description=description.format(**format_args), color=discord.Color.blue())
 			embed.set_footer(text=footer.format(**format_args))
 			await ctx.send(embed=embed)
-
-
-	@has_permissions(change_nickname=True)
-	@command()
-	async def nick(self, ctx, *, nicktochangeto):
-		await discord.Member.edit(ctx.author, nick=nicktochangeto)
 
 def setup(bot):
 	bot.remove_command('help')
