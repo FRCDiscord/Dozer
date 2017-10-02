@@ -17,7 +17,7 @@ class Moderation(Cog):
         print("Ban detected for user", usertobanstr)
         await ctx.guild.ban(usertoban)
         howtounban = str("When it's time to unban, here's the ID to unban: <@{} >").format(bannedid)
-        await ctx.send(usertobanstr + " has been banned because " + reason + ". " + howtounban)
+        await ctx.send(modlogmessage)
         with db.Session() as session:
             modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
             if modlogchannel is not None:
