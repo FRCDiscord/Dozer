@@ -19,8 +19,11 @@ class Moderation(Cog):
 		with db.Session() as session:
 				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
 				modlogmessage = usertobanstr + "has been banned by " + str(ctx.author.mention) + " because " + reason
-				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
-				await channel.send(modlogmessage)
+				if modlogchannel is not None:
+					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+					await channel.send(modlogmessage)
+				else:
+					await ctx.send("Please configure modlog channel to enable modlog functionality")
 	
 	@command()
 	@has_permissions(ban_members=True)
@@ -36,8 +39,11 @@ class Moderation(Cog):
 		with db.Session() as session:
 				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
 				modlogmessage = usertobanstr + " has been unbanned by " + str(ctx.author.mention) + " because " + reason
-				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
-				await channel.send(modlogmessage)
+				if modlogchannel is not None:
+					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+					await channel.send(modlogmessage)
+				else:
+					await ctx.send("Please configure modlog channel to enable modlog functionality")
 	
 	@command()
 	@has_permissions(kick_members=True)
@@ -51,8 +57,11 @@ class Moderation(Cog):
 		with db.Session() as session:
 				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
 				modlogmessage = usertokickstr + " has been kicked by " + str(ctx.author.mention) + " because " + reason
-				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
-				await channel.send(modlogmessage)
+				if modlogchannel is not None:
+					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+					await channel.send(modlogmessage)
+				else:
+					await ctx.send("Please configure modlog channel to enable modlog functionality")
 	@command()
 	@has_permissions(administrator=True)
 	async def config(self, ctx, channel_mentions: discord.TextChannel):
