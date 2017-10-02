@@ -13,13 +13,13 @@ class Moderation(Cog):
         usertoban = user_mentions
         usertobanstr = str(usertoban)
         bannedid = str(usertoban.id)
+        modlogmessage = str("{} has been banned by {} because {}").format(usertobanstr, ctx.author.mention, reason)
         print("Ban detected for user", usertobanstr)
         await ctx.guild.ban(usertoban)
         howtounban = str("When it's time to unban, here's the ID to unban: <@{} >").format(bannedid)
         await ctx.send(usertobanstr + " has been banned because " + reason + ". " + howtounban)
         with db.Session() as session:
             modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
-            modlogmessage = usertobanstr + "has been banned by " + str(ctx.author.mention) + " because " + reason
             if modlogchannel is not None:
                 channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
                 await channel.send(modlogmessage)
@@ -33,13 +33,11 @@ class Moderation(Cog):
         "Unbans the user ID mentioned."
         usertoban = user_mentions
         usertobanstr = str(usertoban)
-        print("Unban detected for user" + usertobanstr)
-        print(usertoban)
         await ctx.guild.unban(usertoban)
-        await ctx.send(usertobanstr + " has been unbanned because " + reason)
+        modlogmessage = str("{} has been unbanned by {} because {}").format(usertobanstr, ctx.author.mention, reason)
+        await ctx.send(modlogmessage)
         with db.Session() as session:
             modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
-            modlogmessage = usertobanstr + " has been unbanned by " + str(ctx.author.mention) + " because " + reason
             if modlogchannel is not None:
                 channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
                 await channel.send(modlogmessage)
@@ -54,10 +52,10 @@ class Moderation(Cog):
         usertokick = user_mentions
         usertokickstr = str(usertokick)
         await ctx.guild.kick(usertokick)
-        await ctx.send(usertokickstr + " has been kicked because " + reason)
+        modlogmessage = str("{} has been kicked by {} because {}").format(usertokickstr, ctx.author.mention, reason)
+        await ctx.send(modlogmessage)
         with db.Session() as session:
             modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
-            modlogmessage = usertokickstr + " has been kicked by " + str(ctx.author.mention) + " because " + reason
             if modlogchannel is not None:
                 channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
                 await channel.send(modlogmessage)
