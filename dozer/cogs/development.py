@@ -48,7 +48,7 @@ class Development(Cog):
 			
 			e.title = 'Python Evaluation - Success'
 			e.color = 0x00FF00
-			e.add_field(name='Output', value='```\n%s (%s)\n```' % (repr(ret), type(ret)), inline=False)
+			e.add_field(name='Output', value='```\n%s (%s)\n```' % (repr(ret), type(ret).__name__), inline=False)
 		except Exception as err:
 			e.title = 'Python Evaluation - Error'
 			e.color = 0xFF0000
