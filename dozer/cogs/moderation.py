@@ -13,10 +13,10 @@ class Moderation(Cog):
         usertoban = user_mentions
         usertobanstr = str(usertoban)
         bannedid = str(usertoban.id)
-        modlogmessage = str("{} has been banned by {} because {}").format(usertobanstr, ctx.author.mention, reason)
+        howtounban = "When it's time to unban, here's the ID to unban: <@{} >".format(bannedid)
+        modlogmessage = "{} has been banned by {} because {}. {}".format(usertobanstr, ctx.author.mention, reason, howtounban)
         print("Ban detected for user", usertobanstr)
         await ctx.guild.ban(usertoban)
-        howtounban = str("When it's time to unban, here's the ID to unban: <@{} >").format(bannedid)
         await ctx.send(modlogmessage)
         with db.Session() as session:
             modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
@@ -34,7 +34,7 @@ class Moderation(Cog):
         usertoban = user_mentions
         usertobanstr = str(usertoban)
         await ctx.guild.unban(usertoban)
-        modlogmessage = str("{} has been unbanned by {} because {}").format(usertobanstr, ctx.author.mention, reason)
+        modlogmessage = "{} has been unbanned by {} because {}".format(usertobanstr, ctx.author.mention, reason)
         await ctx.send(modlogmessage)
         with db.Session() as session:
             modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
@@ -52,7 +52,7 @@ class Moderation(Cog):
         usertokick = user_mentions
         usertokickstr = str(usertokick)
         await ctx.guild.kick(usertokick)
-        modlogmessage = str("{} has been kicked by {} because {}").format(usertokickstr, ctx.author.mention, reason)
+        modlogmessage = "{} has been kicked by {} because {}".format(usertokickstr, ctx.author.mention, reason)
         await ctx.send(modlogmessage)
         with db.Session() as session:
             modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
