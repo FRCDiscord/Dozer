@@ -38,5 +38,7 @@ class Custom(Cog):
 			await ctx.send(embed=e)
 		if task == 'awards':
 			await ctx.send('Awards' + teamnum)
+		if task == 'raw':
+			await ctx.send(teamdata.raw)
 def setup(bot):
 	bot.add_cog(Custom(bot))
