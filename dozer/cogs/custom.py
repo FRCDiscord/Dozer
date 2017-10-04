@@ -24,19 +24,19 @@ class Custom(Cog):
 		"""Retrieve information about this guild."""
 		parser = tbapi.TBAParser('3572', 'Dozer', 'Alpha 0.1')
 		if task == team:
-		team = parser.get_team('frc' + teamnum)
-		guild = ctx.guild
-		e = discord.Embed(color=blurple)
-		e.add_field(name='Team Name', value=team.nickname)
-		e.add_field(name='Sponsors', value=team.name)
-		e.add_field(name='Team Number', value=team.number)
-		e.add_field(name='Team Location', value=team.location)
-		e.add_field(name='Rookie Year', value=team.rookie_year)
-		e.add_field(name='Team Motto', value=team.motto)
-		e.add_field(name='Team Website', value=team.website)
-		e.add_field(name='TBA Page', value='https://www.thebluealliance.com/team/' + teamnum)
-		await ctx.send(embed=e)
+			team = parser.get_team('frc' + teamnum)
+			guild = ctx.guild
+			e = discord.Embed(color=blurple)
+			e.add_field(name='Team Name', value=team.nickname)
+			e.add_field(name='Sponsors', value=team.name)
+			e.add_field(name='Team Number', value=team.number)
+			e.add_field(name='Team Location', value=team.location)
+			e.add_field(name='Rookie Year', value=team.rookie_year)
+			e.add_field(name='Team Motto', value=team.motto)
+			e.add_field(name='Team Website', value=team.website)
+			e.add_field(name='TBA Page', value='https://www.thebluealliance.com/team/' + teamnum)
+			await ctx.send(embed=e)
 		if task == awards:
-		await ctx.send('Awards' + teamnum)
+			await ctx.send('Awards' + teamnum)
 def setup(bot):
 	bot.add_cog(Custom(bot))
