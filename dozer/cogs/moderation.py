@@ -3,8 +3,9 @@ from .. import db
 from ._utils import *
 import discord
 
-#Member logging: In this revision: Added member log configuration settings, on_member_join added, added on_member_remove. Todo: test. (will have to do at home because I don't have the TestAccountPad at school)
-#Todo (others): Message edit and deletion logging, mutes (including timed/self mutes)
+
+# Member logging: In this revision: Added member log configuration settings, on_member_join added, added on_member_remove. Todo: test. (will have to do at home because I don't have the TestAccountPad at school)
+# Todo (others): Message edit and deletion logging, mutes (including timed/self mutes)
 class Moderation(Cog):
     @command()
     @has_permissions(ban_members=True)
@@ -13,7 +14,8 @@ class Moderation(Cog):
         "Bans the user mentioned."
         usertoban = user_mentions
         howtounban = "When it's time to unban, here's the ID to unban: <@{} >".format(usertoban.id)
-        modlogmessage = "{} has been banned by {} because {}. {}".format(usertoban, ctx.author.mention, reason, howtounban)
+        modlogmessage = "{} has been banned by {} because {}. {}".format(usertoban, ctx.author.mention, reason,
+                                                                         howtounban)
         await ctx.guild.ban(usertoban)
         await ctx.send(modlogmessage)
         with db.Session() as session:
@@ -74,48 +76,54 @@ class Moderation(Cog):
                 config = Guildmodlog(id=ctx.guild.id, modlog_channel=channel_mentions.id, name=ctx.guild.name)
                 session.add(config)
             await ctx.send(ctx.message.author.mention + ', modlog settings configured!')
+
     @command()
     @has_permissions(administrator=True)
-    async def modlogconfig(self, ctx, channel_mentions: discord.TextChannel):
+    async def memberlogconfig(self, ctx, channel_mentions: discord.TextChannel):
         """Set the modlog channel for a server by passing the channel id"""
         print(channel_mentions)
         with db.Session() as session:
-            config = session.query(Guildmodlog).filter_by(id=str(ctx.guild.id)).one_or_none()
+            config = session.query(Guildmemberlog).filter_by(id=str(ctx.guild.id)).one_or_none()
             if config is not None:
                 print("config is not none")
                 config.name = ctx.guild.name
-                config.modlog_channel = str(channel_mentions.id)
+                config.memberlog_channel = str(channel_mentions.id)
             else:
                 print("Config is none")
-                config = Guildmodlog(id=ctx.guild.id, modlog_channel=channel_mentions.id, name=ctx.guild.name)
+                config = Guildmemberlog(id=ctx.guild.id, memberlog_channel=channel_mentions.id, name=ctx.guild.name)
                 session.add(config)
-            await ctx.send(ctx.message.author.mention + ', modlog settings configured!')
-    @discord.bot.event()
-    async def on_member_join(self, member, ctx):
+            await ctx.send(ctx.message.author.mention + ', memberlog settings configured!')
+
+    async def on_member_join(member, ctx):
         memberjoinedmessage = "{} has joined the server! Enjoy your stay!".format(member)
         with db.Session() as session:
             memberlogchannel = session.query(Guildmemberlog).filter_by(id=ctx.guild.id).one_or_none()
             if memberlogchannel is not None:
-                channel = ctx.guild.get_channel(memberlogchannel.modlog_channel)
+                channel = ctx.guild.get_channel(memberlogchannel.memberlog_channel)
                 await channel.send(memberjoinedmessage)
-    @discord.bot.event()
-    async def on_member_remove(self, member, ctx):
+
+    async def on_member_remove(member, ctx):
         memberleftmessage = "{} has left the server!".format(member)
         with db.Session() as session:
             memberlogchannel = session.query(Guildmemberlog).filter_by(id=ctx.guild.id).one_or_none()
             if memberlogchannel is not None:
-                channel = ctx.guild.get_channel(memberlogchannel.modlog_channel)
+                channel = ctx.guild.get_channel(memberlogchannel.memberlog_channel)
                 await channel.send(memberleftmessage)
+
+
 class Guildmodlog(db.DatabaseObject):
     __tablename__ = 'modlogconfig'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     modlog_channel = db.Column(db.Integer)
+
+
 class Guildmemberlog(db.DatabaseObject):
     __tablename__ = 'memberlogconfig'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     memberlog_channel = db.Column(db.Integer)
+
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
