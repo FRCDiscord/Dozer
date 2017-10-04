@@ -20,8 +20,9 @@ class Custom(Cog):
 		"""This is for checking if an instance of Dozer has this command."""
 		await ctx.send('YES. This Dozer has custom!')
 	@command()
-	async def tbateam (self,ctx,argument):
+	async def tba(self,ctx,team):
 		parser = tbapi.TBAParser('3572', 'Dozer', 'Alpha 0.1')
+<<<<<<< HEAD
 		team = parser.get_team('frc' + argument)
 		"""Retrieve information about this guild."""
 		guild = ctx.guild
@@ -34,5 +35,15 @@ class Custom(Cog):
 		e.add_field(name='Team Motto', value=team.motto)
 		e.add_field(name='Team Website', value=team.website)
 		await ctx.send(embed=e)
+=======
+		team = parser.get_team('frc' + team)
+		await ctx.send('Sponsors: ' + team.name)
+		await ctx.send('Team Name: ' + team.nickname)
+		await ctx.send('Team Number: ' + argument)
+		await ctx.send('Team Location: ' + team.location)
+		await ctx.send('Team Rookie Year: ' + team.rookie_year)
+		await ctx.send('Team Motto: ' + team.motto)
+		await ctx.send(team.website)
+>>>>>>> 679112e47a5f60742ea9bf29befd670061b01c27
 def setup(bot):
 	bot.add_cog(Custom(bot))
