@@ -23,17 +23,17 @@ class Custom(Cog):
 	async def tba (self,ctx,task,teamnum):
 		"""Retrieve information about this guild."""
 		parser = tbapi.TBAParser('3572', 'Dozer', 'Alpha 0.1')
+		teamdata = parser.get_team('frc' + teamnum)
 		if task == team:
-			team = parser.get_team('frc' + teamnum)
 			guild = ctx.guild
 			e = discord.Embed(color=blurple)
-			e.add_field(name='Team Name', value=team.nickname)
-			e.add_field(name='Sponsors', value=team.name)
-			e.add_field(name='Team Number', value=team.number)
-			e.add_field(name='Team Location', value=team.location)
-			e.add_field(name='Rookie Year', value=team.rookie_year)
-			e.add_field(name='Team Motto', value=team.motto)
-			e.add_field(name='Team Website', value=team.website)
+			e.add_field(name='Team Name', value=teamdata.nickname)
+			e.add_field(name='Sponsors', value=teamdata.name)
+			e.add_field(name='Team Number', value=teamdata.number)
+			e.add_field(name='Team Location', value=teamdata.location)
+			e.add_field(name='Rookie Year', value=teamdata.rookie_year)
+			e.add_field(name='Team Motto', value=teamdata.motto)
+			e.add_field(name='Team Website', value=teamdata.website)
 			e.add_field(name='TBA Page', value='https://www.thebluealliance.com/team/' + teamnum)
 			await ctx.send(embed=e)
 		if task == awards:
