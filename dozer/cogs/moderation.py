@@ -4,7 +4,7 @@ from ._utils import *
 import discord
 
 
-# Member logging: In this revision: Added member log configuration settings, on_member_join added, added on_member_remove. Todo: test. (will have to do at home because I don't have the TestAccountPad at school)
+# Member logging: In this revision: Added member log configuration settings, on_member_join added, added on_member_remove. Todo: fix member format and test. (will have to do at home because I don't have the TestAccountPad at school)
 # Todo (others): Message edit and deletion logging, mutes (including timed/self mutes)
 class Moderation(Cog):
     @command()
@@ -95,7 +95,7 @@ class Moderation(Cog):
             await ctx.send(ctx.message.author.mention + ', memberlog settings configured!')
 
     async def on_member_join(member, ctx):
-        memberjoinedmessage = "{} has joined the server! Enjoy your stay!".format(member)
+        memberjoinedmessage = "{} has joined the server! Enjoy your stay!".format(member.nick)
         with db.Session() as session:
             memberlogchannel = session.query(Guildmemberlog).filter_by(id=ctx.guild.id).one_or_none()
             if memberlogchannel is not None:
@@ -103,7 +103,7 @@ class Moderation(Cog):
                 await channel.send(memberjoinedmessage)
 
     async def on_member_remove(member, ctx):
-        memberleftmessage = "{} has left the server!".format(member)
+        memberleftmessage = "{} has left the server!".format(member.nick)
         with db.Session() as session:
             memberlogchannel = session.query(Guildmemberlog).filter_by(id=ctx.guild.id).one_or_none()
             if memberlogchannel is not None:
