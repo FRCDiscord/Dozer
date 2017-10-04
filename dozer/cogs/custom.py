@@ -34,6 +34,8 @@ class Custom(Cog):
 		e.add_field(name='Team Motto', value=team.motto)
 		e.add_field(name='Team Website', value=team.website)
 		e.add_field(name='TBA Page', value='https://www.thebluealliance.com/team/' + teamnum)
+		e.add_field(name='Robot Name', value='team.robot)
+		
 		await ctx.send(embed=e)
 def setup(bot):
 	bot.add_cog(Custom(bot))
