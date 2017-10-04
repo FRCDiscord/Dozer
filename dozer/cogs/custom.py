@@ -17,7 +17,7 @@ class Custom(Cog):
 		"""This is for checking if an instance of Dozer has this command."""
 		await ctx.send('YES. This Dozer has custom!')
 	@command()
-	async def tba (self,ctx,team):
+	async def tba(self,ctx,team):
 		parser = tbapi.TBAParser('3572', 'Dozer', 'Alpha 0.1')
 		team = parser.get_team('frc' + team)
 		await ctx.send('Sponsors: ' + team.name)
