@@ -36,8 +36,6 @@ class Custom(Cog):
 			e.add_field(name='Team Website', value=teamdata.website)
 			e.add_field(name='TBA Page', value='https://www.thebluealliance.com/team/' + teamnum)
 			await ctx.send(embed=e)
-		if task == 'awards':
-			await ctx.send('Awards' + teamnum)
 		if task == 'raw':
 			await ctx.send(teamdata.raw)
 def setup(bot):
