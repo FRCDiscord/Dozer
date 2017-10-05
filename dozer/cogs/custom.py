@@ -30,6 +30,7 @@ class Custom(Cog):
 			e.add_field(name='Team Name', value=teamdata.nickname)
 			e.add_field(name='Sponsors', value=teamdata.name)
 			e.add_field(name='Team Number', value=teamdata.number)
+			e.add_field(name='Team Key', value=teamdata.key
 			e.add_field(name='Team Location', value=teamdata.location)
 			e.add_field(name='Rookie Year', value=teamdata.rookie_year)
 			e.add_field(name='Team Motto', value=teamdata.motto)
