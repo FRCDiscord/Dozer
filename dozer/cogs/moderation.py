@@ -94,20 +94,20 @@ class Moderation(Cog):
                 session.add(config)
             await ctx.send(ctx.message.author.mention + ', memberlog settings configured!')
 
-    async def on_member_join(member, ctx):
-        memberjoinedmessage = "{} has joined the server! Enjoy your stay!".format(member)
+    async def on_member_join(self, member):
+        memberjoinedmessage = "{} has joined the server! Enjoy your stay!".format(member.display_name)
         with db.Session() as session:
-            memberlogchannel = session.query(Guildmemberlog).filter_by(id=ctx.guild.id).one_or_none()
+            memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
             if memberlogchannel is not None:
-                channel = ctx.guild.get_channel(memberlogchannel.memberlog_channel)
+                channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
                 await channel.send(memberjoinedmessage)
 
-    async def on_member_remove(member, ctx):
-        memberleftmessage = "{} has left the server!".format(member)
+    async def on_member_remove(self, member):
+        memberleftmessage = "{} has left the server!".format(member.display_name)
         with db.Session() as session:
-            memberlogchannel = session.query(Guildmemberlog).filter_by(id=ctx.guild.id).one_or_none()
+            memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
             if memberlogchannel is not None:
-                channel = ctx.guild.get_channel(memberlogchannel.memberlog_channel)
+                channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
                 await channel.send(memberleftmessage)
 
 
