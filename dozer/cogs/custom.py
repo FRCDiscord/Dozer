@@ -35,7 +35,7 @@ class Custom(Cog):
 			e.add_field(name='Rookie Year', value=teamdata.rookie_year)
 			e.add_field(name='Team Motto', value=teamdata.motto)
 			e.add_field(name='Team Website', value=teamdata.website)
-			e.add_field(name='TBA Page', value='https://www.thebluealliance.com/team/' + teamnum)
+			e.add_field(name='TBA Page', value='https://www.thebluealliance.com/team/' + teamdata.number)
 			await ctx.send(embed=e)
 		if task == 'raw':
 			await ctx.send(teamdata.raw)
