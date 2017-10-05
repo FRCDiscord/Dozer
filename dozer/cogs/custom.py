@@ -21,7 +21,7 @@ class Custom(Cog):
 		await ctx.send('YES. This Dozer has custom!')
 	@command()
 	async def tba (self,ctx,task,teamnum):
-		"""Retrieve information about this guild."""
+		"""Pulls Team Data from TBA. Subcommand Team: Pulls team data."""
 		parser = tbapi.TBAParser('3572', 'Dozer', 'Alpha 0.1')
 		teamdata = parser.get_team('frc' + teamnum)
 		if task == 'team':
