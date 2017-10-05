@@ -119,6 +119,7 @@ class General(Cog):
 	@has_permissions(change_nickname=True)
 	@command()
 	async def nick(self, ctx, *, nicktochangeto):
+		"""Allows a member to change their nickname."""
 		await discord.Member.edit(ctx.author, nick=nicktochangeto)
 		await ctx.send("Nick successfully changed to " + nicktochangeto)
 
