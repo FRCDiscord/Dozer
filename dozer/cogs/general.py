@@ -5,6 +5,9 @@ from discord.ext.commands import BadArgument, Group, bot_has_permissions, has_pe
 from ._utils import *
 
 class General(Cog):
+	def __init__(self):
+        	self.parser = tbapi.TBAParser('0000', 'Dozer', 'Beta 0.7')
+
 	"""General commands common to all Discord bots."""
 	@command()
 	async def ping(self, ctx):
@@ -124,10 +127,9 @@ class General(Cog):
 		await ctx.send("Nick successfully changed to " + nicktochangeto)
 	
 	@command()
-	async def tba (self, ctx, task, teamnum):
+	async def tba(self, ctx, task, teamnum):
 		"""Pulls data on FRC teams from The Blue Alliance."""
-		parser = tbapi.TBAParser('0000', 'Dozer', 'Beta 0.7')
-		teamdata = parser.get_team('frc' + teamnum)
+		teamdata = self.parser.get_team('frc' + teamnum)
 		if task == 'team':
 			guild = ctx.guild
 			e = discord.Embed(color=blurple)
