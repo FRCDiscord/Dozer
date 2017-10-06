@@ -1,6 +1,5 @@
 import discord, inspect
-from discord.ext.commands import BadArgument, Group, bot_has_permissions
-from discord.ext.commands import has_permissions
+from discord.ext.commands import BadArgument, Group, bot_has_permissions, has_permissions
 
 from ._utils import *
 
@@ -122,7 +121,6 @@ class General(Cog):
 		"""Allows a member to change their nickname."""
 		await discord.Member.edit(ctx.author, nick=nicktochangeto)
 		await ctx.send("Nick successfully changed to " + nicktochangeto)
-
 def setup(bot):
 	bot.remove_command('help')
 	bot.add_cog(General(bot))
