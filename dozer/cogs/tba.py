@@ -24,7 +24,7 @@ class tba(Cog):
 		teamdata = self.parser.get_team('frc' + teamnum)
 		guild = ctx.guild
 		e = discord.Embed(color=blurple)
-		e.set_author(name='FIRST® Robotics Competition Team' + teamnum, url='https://www.thebluealliance.com/team/' + teamnum)
+		e.set_author(name='FIRST® Robotics Competition Team ' + teamnum, url='https://www.thebluealliance.com/team/' + teamnum, icon_url='http://i.imgur.com/V8nrobr.png')
 		e.add_field(name='Name', value=teamdata.nickname)
 		e.add_field(name='Rookie Year', value=teamdata.rookie_year)
 		e.add_field(name='Location', value=teamdata.location)
