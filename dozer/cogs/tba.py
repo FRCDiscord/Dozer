@@ -1,6 +1,7 @@
 import tbapi
 import discord
 from ._utils import *
+from discord.ext.commands import BadArgument, Group, bot_has_permissions, has_permissions
 
 blurple = discord.Color.blurple()
 
