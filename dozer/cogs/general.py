@@ -1,7 +1,6 @@
 import discord, inspect
 import tbapi
 from discord.ext.commands import BadArgument, Group, bot_has_permissions
-from discord.ext.commands import has_permissions
 
 from ._utils import *
 
@@ -124,7 +123,7 @@ class General(Cog):
 		await discord.Member.edit(ctx.author, nick=nicktochangeto)
 		await ctx.send("Nick successfully changed to " + nicktochangeto)
 	@command()
-	async def tba (self,ctx,task,teamnum):
+	async def tba (self, ctx, task, teamnum):
 		"""Pulls Team Data from TBA. Subcommand Team: Pulls team data."""
 		parser = tbapi.TBAParser('0000', 'Dozer', 'Beta 0.7')
 		teamdata = parser.get_team('frc' + teamnum)
@@ -143,10 +142,6 @@ class General(Cog):
 			await ctx.send(embed=e)
 		if task == 'raw':
 			await ctx.send(teamdata.raw)
-	@command()
-	async def rip(self,ctx):
-		"""Rest in Piece"""
-		await ctx.send('RIP http://worldartsme.com/images/tombstone-clipart-1.jpg')
 
 def setup(bot):
 	bot.remove_command('help')
