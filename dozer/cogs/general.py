@@ -6,9 +6,6 @@ from ._utils import *
 
 class General(Cog):
 	"""General commands common to all Discord bots."""
-	def __init__(self):
-		self.parser = tbapi.TBAParser('0000', 'Dozer', 'Beta 0.7')
-	
 	@command()
 	async def ping(self, ctx):
 		"""Check the bot is online, and calculate its response time."""
@@ -125,32 +122,6 @@ class General(Cog):
 		"""Allows a member to change their nickname."""
 		await discord.Member.edit(ctx.author, nick=nicktochangeto)
 		await ctx.send("Nick successfully changed to " + nicktochangeto)
-	
-	@command()
-	async def tba(self, ctx, task, teamnum):
-		"""Pulls data on FRC teams from The Blue Alliance."""
-		teamdata = self.parser.get_team('frc' + teamnum)
-		if task == 'team':
-			guild = ctx.guild
-			e = discord.Embed(color=blurple)
-			e.add_field(name='Team Name', value=teamdata.nickname)
-			e.add_field(name='Sponsors', value=teamdata.name)
-			e.add_field(name='Team Number', value=teamdata.number)
-			e.add_field(name='Team Key', value=teamdata.key)
-			e.add_field(name='Team Location', value=teamdata.location)
-			e.add_field(name='Rookie Year', value=teamdata.rookie_year)
-			e.add_field(name='Team Motto', value=teamdata.motto)
-			e.add_field(name='Team Website', value=teamdata.website)
-			e.add_field(name='TBA Page', value='https://www.thebluealliance.com/team/' + teamnum)
-			await ctx.send(embed=e)
-		if task == 'raw':
-			await ctx.send(teamdata.raw)
-	
-	tba.example_usage = """
-	`{prefix}tba team <team-number>` - Pulls information about an FRC team.
-	`{prefix}tba raw <team-number>` - Pulls raw data for an FRC Team.
-	"""
-
 def setup(bot):
 	bot.remove_command('help')
 	bot.add_cog(General(bot))
