@@ -111,7 +111,7 @@ class Moderation(Cog):
 
     async def on_message_delete(self, message):
         author = message.author
-        messagelog = "{} has deleted the following message: {}".format(author, message.body)
+        messagelog = "{} has deleted the following message: {}".format(author, message.content)
         with db.Session() as session:
             messagelogchannel = session.query(Guildmodlog).filter_by(id=message.guild.id).one_or_none()
             if messagelogchannel is not None:
