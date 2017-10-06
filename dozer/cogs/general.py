@@ -1,5 +1,4 @@
 import discord, inspect
-import tbapi
 from discord.ext.commands import BadArgument, Group, bot_has_permissions, has_permissions
 
 from ._utils import *
