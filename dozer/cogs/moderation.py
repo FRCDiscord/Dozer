@@ -111,11 +111,20 @@ class Moderation(Cog):
 
     async def on_message_delete(self, message):
         author = message.author
-        messagelog = "{} has deleted the following message: {}".format(author, message.body)
+        messagelog = "{} has deleted the following message: {}".format(author, message.content)
         with db.Session() as session:
             messagelogchannel = session.query(Guildmodlog).filter_by(id=message.guild.id).one_or_none()
             if messagelogchannel is not None:
                 channel = message.guild.get_channel(messagelogchannel.modlog_channel)
+                await channel.send(messagelog)
+
+    async def on_message_edit(self, before, after):
+        author = before.author
+        messagelog = "{} has edited the following message from this: {} to this: {}".format(author, before.content, after.content)
+        with db.Session() as session:
+            messagelogchannel = session.query(Guildmodlog).filter_by(id=before.guild.id).one_or_none()
+            if messagelogchannel is not None:
+                channel = before.guild.get_channel(messagelogchannel.modlog_channel)
                 await channel.send(messagelog)
 
 class Guildmodlog(db.DatabaseObject):
