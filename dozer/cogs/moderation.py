@@ -14,8 +14,7 @@ class Moderation(Cog):
         "Bans the user mentioned."
         usertoban = user_mentions
         howtounban = "When it's time to unban, here's the ID to unban: <@{} >".format(usertoban.id)
-        modlogmessage = "{} has been banned by {} because {}. {}".format(usertoban, ctx.author.mention, reason,
-                                                                         howtounban)
+        modlogmessage = "{} has been banned by {} because {}. {}".format(usertoban, ctx.author.mention, reason, howtounban)
         await ctx.guild.ban(usertoban)
         await ctx.send(modlogmessage)
         with db.Session() as session:
@@ -110,6 +109,14 @@ class Moderation(Cog):
                 channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
                 await channel.send(memberleftmessage)
 
+    async def on_message_delete(self, message):
+        author = message.author
+        messagelog = "{} has deleted the following message: {}".format(author, message.body)
+        with db.Session() as session:
+            messagelogchannel = session.query(Guildmodlog).filter_by(id=message.guild.id).one_or_none()
+            if messagelogchannel is not None:
+                channel = message.guild.get_channel(messagelogchannel.modlog_channel)
+                await channel.send(messagelog)
 
 class Guildmodlog(db.DatabaseObject):
     __tablename__ = 'modlogconfig'
