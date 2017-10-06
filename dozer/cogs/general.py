@@ -1,6 +1,6 @@
 import discord, inspect
 import tbapi
-from discord.ext.commands import BadArgument, Group, bot_has_permissions
+from discord.ext.commands import BadArgument, Group, bot_has_permissions, has_permissions
 
 from ._utils import *
 
@@ -122,9 +122,10 @@ class General(Cog):
 		"""Allows a member to change their nickname."""
 		await discord.Member.edit(ctx.author, nick=nicktochangeto)
 		await ctx.send("Nick successfully changed to " + nicktochangeto)
+	
 	@command()
 	async def tba (self, ctx, task, teamnum):
-		"""Pulls Team Data from TBA. Subcommand Team: Pulls team data."""
+		"""Pulls data on FRC teams from The Blue Alliance."""
 		parser = tbapi.TBAParser('0000', 'Dozer', 'Beta 0.7')
 		teamdata = parser.get_team('frc' + teamnum)
 		if task == 'team':
@@ -142,6 +143,11 @@ class General(Cog):
 			await ctx.send(embed=e)
 		if task == 'raw':
 			await ctx.send(teamdata.raw)
+	
+	tba.example_usage = """
+	`{prefix}tba team <team-number>` - Pulls information about an FRC team.
+	`{prefix}tba raw <team-number>` - Pulls raw data for an FRC Team.
+	"""
 
 def setup(bot):
 	bot.remove_command('help')
