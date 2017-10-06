@@ -120,7 +120,7 @@ class Moderation(Cog):
 
     async def on_message_edit(self, before, after):
         author = before.author
-        messagelog = "{} has edited the following message from this: {} to this: {}".format(author, before.content, after.content)
+        messagelog = "{} has edited a message from this: ``{}`` to this: ``{}``".format(author, before.content, after.content)
         with db.Session() as session:
             messagelogchannel = session.query(Guildmodlog).filter_by(id=before.guild.id).one_or_none()
             if messagelogchannel is not None:
