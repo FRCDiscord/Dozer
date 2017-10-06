@@ -5,10 +5,10 @@ from discord.ext.commands import BadArgument, Group, bot_has_permissions, has_pe
 from ._utils import *
 
 class General(Cog):
-	def __init__(self):
-        	self.parser = tbapi.TBAParser('0000', 'Dozer', 'Beta 0.7')
-
 	"""General commands common to all Discord bots."""
+	def __init__(self):
+		self.parser = tbapi.TBAParser('0000', 'Dozer', 'Beta 0.7')
+	
 	@command()
 	async def ping(self, ctx):
 		"""Check the bot is online, and calculate its response time."""
