@@ -13,7 +13,7 @@ class tba(Cog):
 	async def tba(self, ctx):
 		"""Pulls data on FRC teams from The Blue Alliance."""
 		
-		tba.example_usage = """
+	tba.example_usage = """
 	`{prefix}tba team <team-number>` - Pulls information about an FRC team.
 	`{prefix}tba traw <team-number>` - Pulls raw data for an FRC Team.
 	"""
