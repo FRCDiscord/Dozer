@@ -15,9 +15,10 @@ class tba(Cog):
 		
 	tba.example_usage = """
 	`{prefix}tba team <team-number>` - Pulls information about an FRC team.
-	`{prefix}tba traw <team-number>` - Pulls raw data for an FRC Team.
+	`{prefix}tba raw <team-number>` - Pulls raw data for an FRC Team.
 	"""
 	@tba.command()
+	@bot_has_permissions(embed_links=True)
 	async def team(self, ctx, teamnum):
 			teamdata = self.parser.get_team('frc' + teamnum)
 			guild = ctx.guild
