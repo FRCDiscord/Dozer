@@ -8,7 +8,7 @@ blurple = discord.Color.blurple()
 class tba(Cog):
 	def __init__(self, bot):
 		super().__init__(bot)
-		self.parser = tbapi.TBAParser(self.config['tba']['team'], self.config['tba']['application'], self.config['tba']['version'])
+		self.parser = tbapi.TBAParser(bot.config['tba']['team'], bot.config['tba']['application'], bot.config['tba']['version'])
 	
 	@group(invoke_without_command=False)
 	async def tba(self, ctx):
