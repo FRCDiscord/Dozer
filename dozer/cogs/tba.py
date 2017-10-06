@@ -32,7 +32,7 @@ class tba(Cog):
 			e.add_field(name='Team Website', value=teamdata.website)
 			e.add_field(name='TBA Page', value='https://www.thebluealliance.com/team/' + teamnum)
 			await ctx.send(embed=e)
-	@tba.command()
+	@tba.command(name='raw')
 	async def traw(self, ctx, teamnum):
 		 teamdata = self.parser.get_team('frc' + teamnum)
 		 await ctx.send(teamdata.raw)
