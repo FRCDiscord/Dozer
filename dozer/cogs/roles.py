@@ -1,5 +1,5 @@
 import discord, discord.utils
-from discord.ext.commands import bot_has_permissions, has_permissions, BadArgument
+from discord.ext.commands import bot_has_permissions, cooldown, BucketType, has_permissions, BadArgument
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from .. import db
 from ._utils import *
@@ -200,6 +200,7 @@ class Roles(Cog):
 	`{prefix}giveme delete Java` - deletes the role called "Java" if it's giveable (automatically removes it from all members)
 	"""
 	
+	@cooldown(1, 10, BucketType.channel)
 	@giveme.command(name='list')
 	@bot_has_permissions(manage_roles=True)
 	async def list_roles(self, ctx):
@@ -223,6 +224,8 @@ class Roles(Cog):
 	@has_permissions(manage_roles=True)
 	async def give(self, ctx, member : discord.Member, *, role : discord.Role):
 		"""Gives a member a role. Not restricted to giveable roles."""
+		if role > ctx.author.top_role:
+			raise BadArgument('Cannot give roles higher than your top role!')
 		await member.add_roles(role)
 		await ctx.send('Successfully gave {} "{}"!'.format(member, role))
 	
@@ -235,6 +238,8 @@ class Roles(Cog):
 	@has_permissions(manage_roles=True)
 	async def take(self, ctx, member : discord.Member, *, role : discord.Role):
 		"""Takes a role from a member. Not restricted to giveable roles."""
+		if role > ctx.author.top_role:
+			raise BadArgument('Cannot take roles higher than your top role!')
 		await member.remove_roles(role)
 		await ctx.send('Successfully removed "{}" from {}!'.format(role, member))
 	
