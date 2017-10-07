@@ -30,12 +30,26 @@ class tba(Cog):
 		e.add_field(name='Location', value=teamdata.location)
 		e.add_field(name='Website', value=teamdata.website)
 		e.add_field(name='Motto', value=teamdata.motto)
-		e.set_footer(text='Triggered by ' + ctx.author.display_name)
+		e.set_footer(text='Triggered by ' + ctx.author.display_name + ' | Command developed by Harold Griswold on Team 3572 and Michael Cao on Team 4150')
 		await ctx.send(embed=e)
 	@tba.command(name='raw')
 	async def traw(self, ctx, teamnum):
-		 teamdata = self.parser.get_team('frc' + teamnum)
-		 await ctx.send(teamdata.raw)
+		teamdata = self.parser.get_team('frc' + teamnum)
+		guild = ctx.guild
+		e = discord.Embed(color=blurple)
+		e.set_author(name='FIRST® Robotics Competition Team ' + teamnum, url='https://www.thebluealliance.com/team/' + teamnum, icon_url='http://i.imgur.com/V8nrobr.png')
+		e.add_field(name='Raw Data', value=teamdata.raw)
+		e.set_footer(text='Triggered by ' + ctx.author.display_name + ' | Command developed by Harold Griswold on Team 3572 and Michael Cao on Team 4150')
+		await ctx.send(embed=e)
+	@tba.command(name='sponsors')
+	async def sponsors(self, ctx, teamnum):
+		teamdata = self.parser.get_team('frc' + teamnum)
+		guild = ctx.guild
+		e = discord.Embed(color=blurple)
+		e.set_author(name='FIRST® Robotics Competition Team ' + teamnum, url='https://www.thebluealliance.com/team/' + teamnum, icon_url='http://i.imgur.com/V8nrobr.png')
+		e.add_field(name='Sponsors', value=teamdata.name)
+		e.set_footer(text='Triggered by ' + ctx.author.display_name + ' | Command developed by Harold Griswold on Team 3572 and Michael Cao on Team 4150')
+		await ctx.send(embed=e)
 		 
 def setup(bot):
 	bot.add_cog(tba(bot))
