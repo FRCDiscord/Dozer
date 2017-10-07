@@ -11,10 +11,18 @@ class TBA(Cog):
 		tba_config = bot.config['tba']
 		self.parser = tbapi.TBAParser(tba_config['team'], tba_config['application'], tba_config['version'])
 	
-	@group(invoke_without_command=False)
-	async def tba(self, ctx):
-		"""Get FRC-related information from The Blue Alliance."""
-		
+	@group(invoke_without_command=True)
+	async def tba(self, ctx, team_num: int):
+		"""
+		Get FRC-related information from The Blue Alliance.
+		If no subcommand is specified, the `team` subcommand is inferred, and the argument is taken as a team number.
+		"""
+		await self.team.callback(self, ctx, team_num)
+	
+	tba.example_usage = """
+	`{prefix}tba 5052` - show information on team 5052, the RoboLobos
+	"""
+	
 	@tba.command()
 	@bot_has_permissions(embed_links=True)
 	async def team(self, ctx, team_num: int):
