@@ -12,11 +12,17 @@ class CtxSession(Session):
 	def __enter__(self):
 		return self
 	
+	async def __aenter__(self):
+		return self
+	
 	def __exit__(self, err_type, err, tb):
 		if err_type is None:
 			self.commit()
 		else:
 			self.rollback()
 		return False
+	
+	async def __aexit__(self, err_type, err, tb):
+		return self.__exit__(err_type, err, tb)
 
 Session = sessionmaker(bind=engine, class_=CtxSession)

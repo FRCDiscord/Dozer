@@ -19,7 +19,7 @@ class Command(commands.Command, CommandMixin):
 
 class Group(commands.Group, CommandMixin):
 	def command(self, **kwargs):
-		kwargs.setdefault('cls', Group)
+		kwargs.setdefault('cls', Command)
 		return super(Group, self).command(**kwargs)
 	
 	def group(self, **kwargs):
