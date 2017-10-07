@@ -224,6 +224,8 @@ class Roles(Cog):
 	@has_permissions(manage_roles=True)
 	async def give(self, ctx, member : discord.Member, *, role : discord.Role):
 		"""Gives a member a role. Not restricted to giveable roles."""
+		if role > ctx.author.top_role:
+			raise BadArgument('Cannot give roles higher than your top role!')
 		await member.add_roles(role)
 		await ctx.send('Successfully gave {} "{}"!'.format(member, role))
 	
@@ -236,6 +238,8 @@ class Roles(Cog):
 	@has_permissions(manage_roles=True)
 	async def take(self, ctx, member : discord.Member, *, role : discord.Role):
 		"""Takes a role from a member. Not restricted to giveable roles."""
+		if role > ctx.author.top_role:
+			raise BadArgument('Cannot take roles higher than your top role!')
 		await member.remove_roles(role)
 		await ctx.send('Successfully removed "{}" from {}!'.format(role, member))
 	
