@@ -14,6 +14,7 @@ class General(Cog):
 		response = await ctx.send('Pong! We\'re in %s.' % location)
 		delay = response.created_at - ctx.message.created_at
 		await response.edit(content=response.content + '\nTook %d ms to respond.' % (delay.seconds * 1000 + delay.microseconds // 1000))
+
 	
 	ping.example_usage = """
 	`{prefix}ping` - Calculate and display the bot's response time
@@ -119,6 +120,13 @@ class General(Cog):
 			embed.set_footer(text=footer.format(**format_args))
 			await ctx.send(embed=embed)
 
+
+	@has_permissions(change_nickname=True)
+	@command()
+	async def nick(self, ctx, *, nicktochangeto):
+		"""Allows a member to change their nickname."""
+		await discord.Member.edit(ctx.author, nick=nicktochangeto)
+		await ctx.send("Nick successfully changed to " + nicktochangeto)
 def setup(bot):
 	bot.remove_command('help')
 	bot.add_cog(General(bot))
