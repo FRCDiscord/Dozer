@@ -57,7 +57,8 @@ class Dozer(commands.Bot):
 	def global_checks(self, ctx):
 		if ctx.author.bot:
 			raise InvalidContext('Bots cannot run commands!')
-		if self._global_cooldown.is_rate_limited():
+		retry_after = self._global_cooldown.update_rate_limit()
+		if retry_after:
 			raise InvalidContext('Global rate-limit exceeded!')
 		return True
 	

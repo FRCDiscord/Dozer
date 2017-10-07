@@ -1,5 +1,5 @@
 import discord, inspect
-from discord.ext.commands import BadArgument, cooldown, BucketType, Group, bot_has_permissions
+from discord.ext.commands import BadArgument, bot_has_permissions, cooldown, BucketType, Group, has_permissions
 from ._utils import *
 
 class General(Cog):
