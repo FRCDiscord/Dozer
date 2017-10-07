@@ -152,11 +152,10 @@ class Moderation(Cog):
                 await channel.send(embed=e)
 
 class Guildmodlog(db.DatabaseObject):
-    __tablename__ = 'modlogconfig'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    modlog_channel = db.Column(db.Integer)
-
+	__tablename__ = 'modlogconfig'
+	id = db.Column(db.Integer, primary_key=True)
+	name = db.Column(db.String)
+	modlog_channel = db.Column(db.Integer)
 
 class Guildmemberlog(db.DatabaseObject):
     __tablename__ = 'memberlogconfig'
@@ -173,4 +172,4 @@ class Guildmessagelog(db.DatabaseObject):
 
 
 def setup(bot):
-    bot.add_cog(Moderation(bot))
+	bot.add_cog(Moderation(bot))

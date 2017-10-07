@@ -1,7 +1,7 @@
 import json, os.path, sys
 from . import db
 
-config = {'prefix': '&', 'developers': []}
+config = {'prefix': '&', 'developers': [], 'tba': {'team': '', 'application': '', 'version': ''}}
 config_file = 'config.json'
 
 if os.path.isfile(config_file):
