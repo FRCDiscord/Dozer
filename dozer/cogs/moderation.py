@@ -93,6 +93,23 @@ class Moderation(Cog):
                 session.add(config)
             await ctx.send(ctx.message.author.mention + ', memberlog settings configured!')
 
+    @command()
+    @has_permissions(administrator=True)
+    async def messagelogconfig(self, ctx, channel_mentions: discord.TextChannel):
+        """Set the modlog channel for a server by passing the channel id"""
+        print(channel_mentions)
+        with db.Session() as session:
+            config = session.query(Guildmessagelog).filter_by(id=str(ctx.guild.id)).one_or_none()
+            if config is not None:
+                print("config is not none")
+                config.name = ctx.guild.name
+                config.messagelog_channel = str(channel_mentions.id)
+            else:
+                print("Config is none")
+                config = Guildmessagelog(id=ctx.guild.id, messagelog_channel=channel_mentions.id, name=ctx.guild.name)
+                session.add(config)
+            await ctx.send(ctx.message.author.mention + ', messagelog settings configured!')
+
     async def on_member_join(self, member):
         memberjoinedmessage = "{} has joined the server! Enjoy your stay!".format(member.display_name)
         with db.Session() as session:
@@ -110,22 +127,29 @@ class Moderation(Cog):
                 await channel.send(memberleftmessage)
 
     async def on_message_delete(self, message):
-        author = message.author
-        messagelog = "{} has deleted the following message: {}".format(author, message.content)
+        e = discord.Embed(type='rich')
+        e.title = 'Message Deletion'
+        e.color = 0xFF0000
+        e.add_field(name='Author', value=message.author)
+        e.add_field(name="Deleted message", value=message.content)
         with db.Session() as session:
-            messagelogchannel = session.query(Guildmodlog).filter_by(id=message.guild.id).one_or_none()
+            messagelogchannel = session.query(Guildmessagelog).filter_by(id=message.guild.id).one_or_none()
             if messagelogchannel is not None:
-                channel = message.guild.get_channel(messagelogchannel.modlog_channel)
-                await channel.send(messagelog)
+                channel = message.guild.get_channel(messagelogchannel.messagelog_channel)
+                await channel.send(embed=e)
 
     async def on_message_edit(self, before, after):
-        author = before.author
-        messagelog = "{} has edited a message from this: ``{}`` to this: ``{}``".format(author, before.content, after.content)
+        e = discord.Embed(type='rich')
+        e.title = 'Message Edited'
+        e.color = 0xFF0000
+        e.add_field(name='Author', value=before.author)
+        e.add_field(name="Original message", value=before.content)
+        e.add_field(name="New message", value=after.content)
         with db.Session() as session:
-            messagelogchannel = session.query(Guildmodlog).filter_by(id=before.guild.id).one_or_none()
+            messagelogchannel = session.query(Guildmessagelog).filter_by(id=before.guild.id).one_or_none()
             if messagelogchannel is not None:
-                channel = before.guild.get_channel(messagelogchannel.modlog_channel)
-                await channel.send(messagelog)
+                channel = before.guild.get_channel(messagelogchannel.messagelog_channel)
+                await channel.send(embed=e)
 
 class Guildmodlog(db.DatabaseObject):
     __tablename__ = 'modlogconfig'
@@ -139,6 +163,13 @@ class Guildmemberlog(db.DatabaseObject):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
     memberlog_channel = db.Column(db.Integer)
+
+
+class Guildmessagelog(db.DatabaseObject):
+    __tablename__ = 'messagelogconfig'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+    messagelog_channel = db.Column(db.Integer)
 
 
 def setup(bot):
