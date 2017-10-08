@@ -131,7 +131,11 @@ class Moderation(Cog):
         e.title = 'Message Deletion'
         e.color = 0xFF0000
         e.add_field(name='Author', value=message.author)
-        e.add_field(name="Deleted message", value=message.content)
+        if 1024 > len(message.content) > 0:
+            e.add_field(name="Deleted message", value=message.content)
+        elif len(message.content) != 0:
+            e.add_field(name="Deleted message", value=message.content[0:1023])
+            e.add_field(name="Deleted message continued", value=message.content[1024:2000])
         with db.Session() as session:
             messagelogchannel = session.query(Guildmessagelog).filter_by(id=message.guild.id).one_or_none()
             if messagelogchannel is not None:
@@ -143,8 +147,16 @@ class Moderation(Cog):
         e.title = 'Message Edited'
         e.color = 0xFF0000
         e.add_field(name='Author', value=before.author)
-        e.add_field(name="Original message", value=before.content)
-        e.add_field(name="New message", value=after.content)
+        if 1024 > len(before.content) > 0:
+            e.add_field(name="Old message", value=before.content)
+        elif len(before.content) != 0:
+            e.add_field(name="Old message", value=before.content[0:1023])
+            e.add_field(name="Old message continued", value=before.content[1024:2000])
+        if len(after.content) < 1024:
+            e.add_field(name="New message", value=after.content)
+        elif len(after.content) != 0:
+            e.add_field(name="New message", value=after.content[0:1023])
+            e.add_field(name="New message continued", value=after.content[1024:2000])
         with db.Session() as session:
             messagelogchannel = session.query(Guildmessagelog).filter_by(id=before.guild.id).one_or_none()
             if messagelogchannel is not None:
