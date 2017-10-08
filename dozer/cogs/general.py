@@ -1,7 +1,5 @@
 import discord, inspect
-from discord.ext.commands import BadArgument, Group, bot_has_permissions
-from discord.ext.commands import has_permissions
-
+from discord.ext.commands import BadArgument, bot_has_permissions, cooldown, BucketType, Group, has_permissions
 from ._utils import *
 
 class General(Cog):
@@ -22,6 +20,7 @@ class General(Cog):
 	`{prefix}ping` - Calculate and display the bot's response time
 	"""
 	
+	@cooldown(1, 10, BucketType.channel)
 	@command(name='help', aliases=['about'])
 	@bot_has_permissions(add_reactions=True)
 	async def base_help(self, ctx, *target):
@@ -66,7 +65,7 @@ class General(Cog):
 	
 	async def _help_command(self, ctx, command):
 		"""Gets the help message for one command."""
-		info = discord.Embed(title='Command: {}{}'.format(ctx.prefix, command.signature), description=command.help, color=discord.Color.blue())
+		info = discord.Embed(title='Command: {}{}'.format(ctx.prefix, command.signature), description=command.help or (None if command.example_usage else 'No information provided.'), color=discord.Color.blue())
 		usage = command.example_usage
 		if usage is not None:
 			info.add_field(name='Usage', value=usage.format(prefix=ctx.prefix, name=ctx.invoked_with), inline=False)
@@ -89,7 +88,13 @@ class General(Cog):
 				format_args['page_num'] = page_num + 1
 				page = discord.Embed(title=title.format(**format_args), description=description.format(**format_args), color=discord.Color.blue())
 				for command in page_commands:
-					page.add_field(name=ctx.prefix + command.signature, value=command.help.splitlines()[0], inline=False)
+					if command.short_doc:
+						embed_value = command.short_doc
+					elif command.example_usage: # Usage provided - show the user the command to see it
+						embed_value = 'Use `{0.prefix}{0.invoked_with} {1.qualified_name}` for more information.'.format(ctx, command)
+					else:
+						embed_value = 'No information provided.'
+					page.add_field(name=ctx.prefix + command.signature, value=embed_value, inline=False)
 				page.set_footer(text=footer.format(**format_args))
 				pages.append(page)
 			
@@ -122,7 +127,6 @@ class General(Cog):
 		"""Allows a member to change their nickname."""
 		await discord.Member.edit(ctx.author, nick=nicktochangeto)
 		await ctx.send("Nick successfully changed to " + nicktochangeto)
-
 def setup(bot):
 	bot.remove_command('help')
 	bot.add_cog(General(bot))
