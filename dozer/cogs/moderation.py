@@ -4,8 +4,7 @@ from ._utils import *
 import discord
 
 
-# Member logging: In this revision: Added member log configuration settings, on_member_join added, added on_member_remove. Todo: fix member format and test. (will have to do at home because I don't have the TestAccountPad at school)
-# Todo (others): Message edit and deletion logging, mutes (including timed/self mutes)
+# Todo: timed/self mutes
 class Moderation(Cog):
     @command()
     @has_permissions(ban_members=True)
@@ -163,11 +162,43 @@ class Moderation(Cog):
                 channel = before.guild.get_channel(messagelogchannel.messagelog_channel)
                 await channel.send(embed=e)
 
+    @command()
+    @has_permissions(kick_members=True)
+    @bot_has_permissions(manage_roles=True)
+    async def mute(self, ctx, user_mentions, *, reason):
+        await ctx.guild.set_permissions(user_mentions, overwrite=overwrite, send_messages=False, react=False)
+        modlogmessage = "{} has been muted by {} because {}".format(user_mentions, ctx.author.display_name, reason)
+        await ctx.send(modlogmessage)
+        with db.Session() as session:
+            modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+            if modlogchannel is not None:
+                channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+                await channel.send(modlogmessage)
+            else:
+                await ctx.send("Please configure modlog channel to enable modlog functionality")
+
+    @command()
+    @has_permissions(kick_members=True)
+    @bot_has_permissions(manage_roles=True)
+    async def unmute(self, ctx, user_mentions, *, reason):
+        await ctx.guild.set_permissions(user_mentions, overwrite=None)
+        modlogmessage = "{} has been muted by {} because {}".format(user_mentions, ctx.author.display_name, reason)
+        await ctx.send(modlogmessage)
+        with db.Session() as session:
+            modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+            if modlogchannel is not None:
+                channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+                await channel.send(modlogmessage)
+            else:
+                await ctx.send("Please configure modlog channel to enable modlog functionality")
+
+
 class Guildmodlog(db.DatabaseObject):
-	__tablename__ = 'modlogconfig'
-	id = db.Column(db.Integer, primary_key=True)
-	name = db.Column(db.String)
-	modlog_channel = db.Column(db.Integer)
+    __tablename__ = 'modlogconfig'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+    modlog_channel = db.Column(db.Integer)
+
 
 class Guildmemberlog(db.DatabaseObject):
     __tablename__ = 'memberlogconfig'
@@ -184,4 +215,4 @@ class Guildmessagelog(db.DatabaseObject):
 
 
 def setup(bot):
-	bot.add_cog(Moderation(bot))
+    bot.add_cog(Moderation(bot))
