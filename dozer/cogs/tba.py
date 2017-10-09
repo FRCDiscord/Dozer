@@ -5,51 +5,55 @@ from discord.ext.commands import BadArgument, Group, bot_has_permissions, has_pe
 
 blurple = discord.Color.blurple()
 
-class tba(Cog):
+class TBA(Cog):
 	def __init__(self, bot):
 		super().__init__(bot)
-		self.parser = tbapi.TBAParser(bot.config['tba']['team'], bot.config['tba']['application'], bot.config['tba']['version'])
+		tba_config = bot.config['tba']
+		self.parser = tbapi.TBAParser(tba_config['team'], tba_config['application'], tba_config['version'])
 	
-	@group(invoke_without_command=False)
-	async def tba(self, ctx):
-		"""Pulls data on FRC teams from The Blue Alliance."""
-		
+	@group(invoke_without_command=True)
+	async def tba(self, ctx, team_num: int):
+		"""
+		Get FRC-related information from The Blue Alliance.
+		If no subcommand is specified, the `team` subcommand is inferred, and the argument is taken as a team number.
+		"""
+		await self.team.callback(self, ctx, team_num)
+	
 	tba.example_usage = """
-	`{prefix}tba team <team-number>` - Pulls information about an FRC team.
-	`{prefix}tba raw <team-number>` - Pulls raw data for an FRC Team.
+	`{prefix}tba 5052` - show information on team 5052, the RoboLobos
 	"""
+	
 	@tba.command()
 	@bot_has_permissions(embed_links=True)
-	async def team(self, ctx, teamnum):
-		teamdata = self.parser.get_team('frc' + teamnum)
-		guild = ctx.guild
+	async def team(self, ctx, team_num: int):
+		"""Get information on an FRC team by number."""
+		team_data = self.parser.get_team('frc{}'.format(team_num))
 		e = discord.Embed(color=blurple)
-		e.set_author(name='FIRST® Robotics Competition Team ' + teamnum, url='https://www.thebluealliance.com/team/' + teamnum, icon_url='http://i.imgur.com/V8nrobr.png')
-		e.add_field(name='Name', value=teamdata.nickname)
-		e.add_field(name='Rookie Year', value=teamdata.rookie_year)
-		e.add_field(name='Location', value=teamdata.location)
-		e.add_field(name='Website', value=teamdata.website)
-		e.add_field(name='Motto', value=teamdata.motto)
-		e.set_footer(text='Triggered by ' + ctx.author.display_name + ' | Command developed by Harold Griswold on Team 3572 and Michael Cao on Team 4150')
+		e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num), url='https://www.thebluealliance.com/team/{}'.format(team_num), icon_url='http://i.imgur.com/V8nrobr.png')
+		e.add_field(name='Name', value=team_data.nickname)
+		e.add_field(name='Rookie Year', value=team_data.rookie_year)
+		e.add_field(name='Location', value=team_data.location)
+		e.add_field(name='Website', value=team_data.website)
+		e.add_field(name='Motto', value=team_data.motto)
+		e.set_footer(text='Triggered by ' + ctx.author.display_name)
 		await ctx.send(embed=e)
-	@tba.command(name='raw')
-	async def traw(self, ctx, teamnum):
-		teamdata = self.parser.get_team('frc' + teamnum)
-		guild = ctx.guild
-		e = discord.Embed(color=blurple)
-		e.set_author(name='FIRST® Robotics Competition Team ' + teamnum, url='https://www.thebluealliance.com/team/' + teamnum, icon_url='http://i.imgur.com/V8nrobr.png')
-		e.add_field(name='Raw Data', value=teamdata.raw)
-		e.set_footer(text='Triggered by ' + ctx.author.display_name + ' | Command developed by Harold Griswold on Team 3572 and Michael Cao on Team 4150')
-		await ctx.send(embed=e)
-	@tba.command(name='sponsors')
-	async def sponsors(self, ctx, teamnum):
-		teamdata = self.parser.get_team('frc' + teamnum)
-		guild = ctx.guild
-		e = discord.Embed(color=blurple)
-		e.set_author(name='FIRST® Robotics Competition Team ' + teamnum, url='https://www.thebluealliance.com/team/' + teamnum, icon_url='http://i.imgur.com/V8nrobr.png')
-		e.add_field(name='Sponsors', value=teamdata.name)
-		e.set_footer(text='Triggered by ' + ctx.author.display_name + ' | Command developed by Harold Griswold on Team 3572 and Michael Cao on Team 4150')
-		await ctx.send(embed=e)
+	
+	team.example_usage = """
+	`{prefix}tba team 4131` - show information on team 4131, the Iron Patriots
+	"""
+	
+	@tba.command()
+	async def raw(self, ctx, team_num: int):
+		"""
+		Get raw TBA API output for a team.
+		This command is really only useful for development.
+		"""
+		team_data = self.parser.get_team('frc{}'.format(team_num))
+		await ctx.send(team_data.raw)
+	
+	raw.example_usage = """
+	`{prefix}tba raw 4150` - show raw information on team 4150, FRobotics
+	"""
 		 
 def setup(bot):
-	bot.add_cog(tba(bot))
+	bot.add_cog(TBA(bot))
