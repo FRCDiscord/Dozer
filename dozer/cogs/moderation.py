@@ -165,9 +165,13 @@ class Moderation(Cog):
     @command()
     @has_permissions(kick_members=True)
     @bot_has_permissions(manage_roles=True)
-    async def mute(self, ctx, user_mentions, *, reason):
-        await ctx.guild.set_permissions(user_mentions, overwrite=overwrite, send_messages=False, react=False)
-        modlogmessage = "{} has been muted by {} because {}".format(user_mentions, ctx.author.display_name, reason)
+    async def mute(self, ctx, member_mentions: discord.Member, *, reason):
+        for i in ctx.guild.channels:
+            overwrite = discord.PermissionOverwrite()
+            overwrite.send_messages = False
+            overwrite.add_reactions = False
+            await i.set_permissions(target=member_mentions, overwrite=overwrite)
+        modlogmessage = "{} has been muted by {} because {}".format(member_mentions, ctx.author.display_name, reason)
         await ctx.send(modlogmessage)
         with db.Session() as session:
             modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
@@ -180,9 +184,10 @@ class Moderation(Cog):
     @command()
     @has_permissions(kick_members=True)
     @bot_has_permissions(manage_roles=True)
-    async def unmute(self, ctx, user_mentions, *, reason):
-        await ctx.guild.set_permissions(user_mentions, overwrite=None)
-        modlogmessage = "{} has been muted by {} because {}".format(user_mentions, ctx.author.display_name, reason)
+    async def unmute(self, ctx, member_mentions: discord.Member):
+        for i in ctx.guild.channels:
+            await i.set_permissions(target=member_mentions, overwrite=None)
+        modlogmessage = "{} has been unmuted by {}".format(member_mentions, ctx.author.display_name)
         await ctx.send(modlogmessage)
         with db.Session() as session:
             modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
