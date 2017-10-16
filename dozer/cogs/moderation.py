@@ -105,10 +105,20 @@ class Moderation(Cog):
 			await ctx.channel.set_permissions(allow_target, overwrite=new_overwrite)
 			to_restore.append((allow_target, overwrite))
 		
+		e = discord.Embed(title='Timeout - {}s'.format(duration), description='This channel has been timed out.', color=discord.Color.blue())
+		e.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar_url_as(format='png', size=32))
+		msg = await ctx.send(embed=e)
+		
 		await asyncio.sleep(duration)
 		
 		for target, overwrite in to_restore:
-			await ctx.channel.set_permissions(target, overwrite=overwrite)
+			if all(permission is None for _, permission in overwrite):
+				await ctx.channel.set_permissions(target, overwrite=None)
+			else:
+				await ctx.channel.set_permissions(target, overwrite=overwrite)
+		
+		e.description = 'The timeout has ended.'
+		await msg.edit(embed=e)
 	
 	timeout.example_usage = """
 	`{prefix}timeout 60` - prevents sending messages in this channel for 1 minute (60s)
