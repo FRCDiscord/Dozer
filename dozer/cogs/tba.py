@@ -55,12 +55,7 @@ class TBA(Cog):
 		This command is really only useful for development.
 		"""
 		team_data = self.parser.get_team('frc{}'.format(team_num))
-		guild = ctx.guild
-		e = discord.Embed(color=blurple)
-		e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num), url='https://www.thebluealliance.com/team/{}'.format(team_num), icon_url='http://i.imgur.com/V8nrobr.png')
-		e.add_field(name='Raw Data', value=team_data.raw)
-		e.set_footer(text='Triggered by ' + ctx.author.display_name)
-		await ctx.send(embed=e)
+		await ctx.send(team_data.raw)
 	
 	raw.example_usage = """
 	`{prefix}tba raw 4150` - show raw information on team 4150, FRobotics
@@ -102,7 +97,7 @@ class TBA(Cog):
 		await ctx.send("Timezone: " + timezone["timeZoneName"] + " UTC{}".format(utc_offset) + "\nCurrent Time: {0}:{1}:{2} {3} ({4}:{1}:{2})".format(current_hour,current_minute,current_second, dayTime, current_hour_original))
 		 
 	timezone.example_usage = """
-	`{prefix}timezone 3572` - show raw information on team 3572, Wavelength
+	`{prefix}timezone 3572` - show the local time of team 3572, Wavelength
 	"""
 def setup(bot):
 	bot.add_cog(TBA(bot))
