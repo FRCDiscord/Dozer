@@ -7,10 +7,10 @@ from fuzzywuzzy import fuzz
 class Feedback(Cog):
     @group(invoke_without_command=True)
     async def feedback(self, ctx, *, input):
-        """Send feedback to a specific guild. Only can be used from dm conversation. Make sure that the guild name and feedback is comma seperated"""
+        """Send feedback to a specific guild. Only can be used from dm conversation. Format: <server> % <feedback>"""
         if type(ctx.channel) is discord.DMChannel:
-            server_name = input[0:input.index(', ')]
-            content = input[input.index(', ')+2:]
+            server_name = input[0:input.index(' % ')]
+            content = input[input.index(' % ')+2:]
             with db.Session() as session:
                 settings_list = session.query(GuildFeedback).all()
             if settings_list is not None:

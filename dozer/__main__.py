@@ -1,7 +1,7 @@
 import json, os.path, sys
 from . import db
 
-config = {'prefix': '&', 'developers': []}
+config = {'prefix': '&', 'developers': [], 'tba': {'team': '', 'application': '', 'version': ''}, 'gmaps_key': "PUT GOOGLE MAPS API KEY HERE", 'discord_token': "Put Discord API Token here."}
 config_file = 'config.json'
 
 if os.path.isfile(config_file):
