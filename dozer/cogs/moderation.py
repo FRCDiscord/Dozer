@@ -84,13 +84,13 @@ class Moderation(Cog):
 				settings = ModerationSettings(id=ctx.guild.id, name=ctx.guild.name)
 				session.add(settings)
 			
-			members_role = discord.utils.get(ctx.guild.roles, id=settings.members_role) # None-safe - nonexistent or non-configured role return None
+			member_role = discord.utils.get(ctx.guild.roles, id=settings.member_role) # None-safe - nonexistent or non-configured role return None
 		
-		if members_role is not None:
-			targets = {members_role}
+		if member_role is not None:
+			targets = {member_role}
 		else:
-			# TODO determine what role to mute
-			targets = set()
+			await ctx.send('{0.author.mention}, the members role has not been configured. This may not work as expected. Use `{0.prefix}help memberconfig` to see how to set this up.'.format(ctx))
+			targets = {target for target, overwrite in ctx.channel.overwrites if overwrite.send_messages or overwrite.add_reactions and (target if isinstance(target, discord.Role) else target.top_role) < ctx.me.top_role}
 		
 		to_restore = [tup for tup in ctx.channel.overwrites if tup[0] in targets]
 		for target, overwrite in to_restore:
@@ -123,13 +123,33 @@ class Moderation(Cog):
 	timeout.example_usage = """
 	`{prefix}timeout 60` - prevents sending messages in this channel for 1 minute (60s)
 	"""
+	
+	@command()
+	@has_permissions(administrator=True)
+	async def memberconfig(self, ctx, member_role: discord.Role):
+		"""
+		Set the member role for the guild.
+		The member role is the role used for the timeout command. It should be a role that all members of the server have.
+		"""
+		with db.Session() as session:
+			settings = session.query(ModerationSettings).filter_by(id=ctx.guild.id).one_or_none()
+			if settings is None:
+				settings = ModerationSettings(id=ctx.guild.id, name=ctx.guild.name, member_role=member_role.id)
+				session.add(settings)
+			else:
+				settings.member_role = member_role.id
+		await ctx.send('Member role set as `{}`.'.format(member_role.name))
+	
+	memberconfig.example_usage = """
+	`{prefix}memberconfig Members` - set a role called "Members" as the member role
+	"""
 
 class ModerationSettings(db.DatabaseObject):
 	__tablename__ = 'modlogconfig'
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String)
 	modlog_channel = db.Column(db.Integer, nullable=True)
-	members_role = db.Column(db.Integer, nullable=True)
+	member_role = db.Column(db.Integer, nullable=True)
 
 def setup(bot):
 	bot.add_cog(Moderation(bot))
