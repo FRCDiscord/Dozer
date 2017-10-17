@@ -99,7 +99,7 @@ class TBA(Cog):
 		if current_second < 10:
 			current_second = "0{}".format(current_second)
 		
-		await ctx.send("Timezone: {}".format(timezone["timeZoneName"])" UTC{}".format(utc_offset) + "\nCurrent Time: {0}:{1}:{2} {3} ({4}:{1}:{2})".format(current_hour,current_minute,current_second, dayTime, current_hour_original)) 
+		await ctx.send("Timezone: {0} UTC{1} \nCurrent Time: {2}:{3}:{4} {5} ({6}:{1}:{2})".format(timezone["timeZoneName"], utc_offset, current_hour,current_minute,current_second, dayTime, current_hour_original)) 
 	
 	timezone.example_usage = """
 	`{prefix}timezone 3572` - show the local time of team 3572, Wavelength
