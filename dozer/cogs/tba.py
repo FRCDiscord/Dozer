@@ -34,7 +34,15 @@ class TBA(Cog):
 	async def team(self, ctx, team_num: int):
 		"""Get information on an FRC team by number."""
 		team_data = self.parser.get_team('frc{}'.format(team_num))
-		await ctx.send(team_data.raw)
+		e = discord.Embed(color=blurple)
+		e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num), url='https://www.thebluealliance.com/team/{}'.format(team_num), icon_url='http://i.imgur.com/V8nrobr.png')
+		e.add_field(name='Name', value=team_data.nickname)
+		e.add_field(name='Rookie Year', value=team_data.rookie_year)
+		e.add_field(name='Location', value=team_data.location)
+		e.add_field(name='Website', value=team_data.website)
+		e.add_field(name='Motto', value=team_data.motto)
+		e.set_footer(text='Triggered by ' + ctx.author.display_name)
+		await ctx.send(embed=e)
 	
 	team.example_usage = """
 	`{prefix}tba team 4131` - show information on team 4131, the Iron Patriots
@@ -47,12 +55,7 @@ class TBA(Cog):
 		This command is really only useful for development.
 		"""
 		team_data = self.parser.get_team('frc{}'.format(team_num))
-		guild = ctx.guild
-		e = discord.Embed(color=blurple)
-		e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num), url='https://www.thebluealliance.com/team/{}'.format(team_num), icon_url='http://i.imgur.com/V8nrobr.png')
-		e.add_field(name='Raw Data', value=team_data.raw)
-		e.set_footer(text='Triggered by ' + ctx.author.display_name)
-		await ctx.send(embed=e)
+		await ctx.send(team_data.raw)
 	
 	raw.example_usage = """
 	`{prefix}tba raw 4150` - show raw information on team 4150, FRobotics
