@@ -1,7 +1,17 @@
 import asyncio, discord
-from discord.ext.commands import has_permissions, bot_has_permissions
+from discord.ext.commands import BadArgument, has_permissions, bot_has_permissions, RoleConverter
 from .. import db
 from ._utils import *
+
+class SafeRoleConverter(RoleConverter):
+	async def convert(self, ctx, arg):
+		try:
+			return await super().convert(ctx, arg)
+		except BadArgument:
+			if arg.casefold() in ('everyone', '@everyone', '@.everyone', '@ everyone', '@\N{ZERO WIDTH SPACE}everyone'):
+				return ctx.guild.default_role
+			else:
+				raise
 
 class Moderation(Cog):
 	@command()
@@ -126,7 +136,7 @@ class Moderation(Cog):
 	
 	@command()
 	@has_permissions(administrator=True)
-	async def memberconfig(self, ctx, member_role: discord.Role):
+	async def memberconfig(self, ctx, *, member_role: SafeRoleConverter):
 		"""
 		Set the member role for the guild.
 		The member role is the role used for the timeout command. It should be a role that all members of the server have.
@@ -142,6 +152,10 @@ class Moderation(Cog):
 	
 	memberconfig.example_usage = """
 	`{prefix}memberconfig Members` - set a role called "Members" as the member role
+	`{prefix}memberconfig @everyone` - set the default role as the member role
+	`{prefix}memberconfig everyone` - set the default role as the member role (ping-safe)
+	`{prefix}memberconfig @ everyone` - set the default role as the member role (ping-safe)
+	`{prefix}memberconfig @.everyone` - set the default role as the member role (ping-safe)
 	"""
 
 class ModerationSettings(db.DatabaseObject):
