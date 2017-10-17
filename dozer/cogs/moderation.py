@@ -92,7 +92,7 @@ class Moderation(Cog):
 			await ctx.send('{0.author.mention}, the members role has not been configured. This may not work as expected. Use `{0.prefix}help memberconfig` to see how to set this up.'.format(ctx))
 			targets = {target for target, overwrite in ctx.channel.overwrites if overwrite.send_messages or overwrite.add_reactions and (target if isinstance(target, discord.Role) else target.top_role) < ctx.me.top_role}
 		
-		to_restore = [tup for tup in ctx.channel.overwrites if tup[0] in targets]
+		to_restore = [(target, ctx.channel.overwrites_for(target)) for target in targets]
 		for target, overwrite in to_restore:
 			new_overwrite = discord.PermissionOverwrite.from_pair(*overwrite.pair())
 			new_overwrite.update(send_messages=False, add_reactions=False)
