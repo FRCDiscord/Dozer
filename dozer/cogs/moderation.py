@@ -1,6 +1,7 @@
 from discord.ext.commands import has_permissions, bot_has_permissions
 from .. import db
 from ._utils import *
+from asyncio import sleep
 import discord
 
 
@@ -73,6 +74,21 @@ class Moderation(Cog):
 				config = Guildmodlog(id=ctx.guild.id, modlog_channel=channel_mentions.id, name=ctx.guild.name)
 				session.add(config)
 			await ctx.send(ctx.message.author.mention + ', modlog settings configured!')
+
+	@command()
+	@has_permissions(manage_messages=True)
+	@bot_has_permissions(manage_messages=True, read_message_history=True)
+	async def prune(self, ctx, num_to_delete: int):
+		"""Bulk delete a set number of messages from the current channel. This is limited to 100 messages at a time."""
+		# async list comps are a thing, but only in 3.6+
+		msgs = []
+		async for msg in ctx.history(limit=num_to_delete):
+			msgs.append(msg)
+		await ctx.message.channel.delete_messages(msgs)
+		success_msg = await ctx.send("Deleted {n} messages under request of {user}".format(n=num_to_delete, user=ctx.message.author.mention))
+		# pause for a short bit
+		await sleep(5)
+		await success_msg.delete()
 
 class Guildmodlog(db.DatabaseObject):
 	__tablename__ = 'modlogconfig'
