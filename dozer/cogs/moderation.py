@@ -1,7 +1,6 @@
 from discord.ext.commands import has_permissions, bot_has_permissions
 from .. import db
 from ._utils import *
-from asyncio import sleep
 import discord
 
 
@@ -81,14 +80,10 @@ class Moderation(Cog):
 	async def prune(self, ctx, num_to_delete: int):
 		"""Bulk delete a set number of messages from the current channel. This is limited to 100 messages at a time."""
 		# async list comps are a thing, but only in 3.6+
-		msgs = []
-		async for msg in ctx.history(limit=num_to_delete):
-			msgs.append(msg)
-		await ctx.message.channel.delete_messages(msgs)
-		success_msg = await ctx.send("Deleted {n} messages under request of {user}".format(n=num_to_delete, user=ctx.message.author.mention))
-		# pause for a short bit
-		await sleep(5)
-		await success_msg.delete()
+		await ctx.message.channel.delete_messages([ msg async for msg in ctx.history(limit=num_to_delete) ])
+		await ctx.send("Deleted {n} messages under request of {user}".format(n=min(num_to_delete, 100), user=ctx.message.author.mention), delete_after=5)
+		if num_to_delete > 100:
+			await ctx.send("Warning: Only deleted 100 messages due to a Discord limitation on bulk deletes.", delete_after=5)
 
 class Guildmodlog(db.DatabaseObject):
 	__tablename__ = 'modlogconfig'
