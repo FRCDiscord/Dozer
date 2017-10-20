@@ -78,12 +78,9 @@ class Moderation(Cog):
 	@has_permissions(manage_messages=True)
 	@bot_has_permissions(manage_messages=True, read_message_history=True)
 	async def prune(self, ctx, num_to_delete: int):
-		"""Bulk delete a set number of messages from the current channel. This is limited to 100 messages at a time."""
-		# async list comps are a thing, but only in 3.6+
-		await ctx.message.channel.delete_messages([ msg async for msg in ctx.history(limit=num_to_delete) ])
-		await ctx.send("Deleted {n} messages under request of {user}".format(n=min(num_to_delete, 100), user=ctx.message.author.mention), delete_after=5)
-		if num_to_delete > 100:
-			await ctx.send("Warning: Only deleted 100 messages due to a Discord limitation on bulk deletes.", delete_after=5)
+		"""Bulk delete a set number of messages from the current channel."""
+		await ctx.message.channel.purge(limit=num_to_delete + 1)
+		await ctx.send("Deleted {n} messages under request of {user}".format(n=num_to_delete, user=ctx.message.author.mention), delete_after=5)
 
 class Guildmodlog(db.DatabaseObject):
 	__tablename__ = 'modlogconfig'
