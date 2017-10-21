@@ -92,23 +92,26 @@ class Moderation(Cog):
 				await message.author.add_roles(discord.utils.get(message.guild.roles, id=role_id))
 
 	@command()
-	#@has_permissions(administrator=True)
-	async def nmconfig(self, ctx, channel_mentions: discord.TextChannel, role_id: discord.Role, *, message):
-		"""Set the config for the new members channel"""
+	@has_permissions(administrator=True)
+	async def nmconfig(self, ctx, channel_mention: discord.TextChannel, role: discord.Role, *, message):
+		"""Sets the config for the new members channel"""
 		with db.Session() as session:
 			config = session.query(GuildNewMemmber).filter_by(guild_id=ctx.guild.id).one_or_none()
 			if config is not None:
-				config.channel_id = channel_mentions.id
-				config.role_id = role_id.id
+				config.channel_id = channel_mention.id
+				config.role_id = role.id
 				config.message = message.casefold()
-				role_name = role_id.name
+				role_name = role.name
 				await ctx.send("New Member Channel configured as: {channel}. Role configured as: {role}. Message: {message}".format(channel=ctx.channel.name, role=role_name, message=message))
 			else:
-				config = GuildNewMemmber(guild_id=ctx.guild.id, channel_id=channel_mentions.id, role_id=role_id.id, message=message.casefold())
+				config = GuildNewMemmber(guild_id=ctx.guild.id, channel_id=channel_mention.id, role_id=role.id, message=message.casefold())
 				session.add(config)
-				role_name = role_id.name
+				role_name = role.name
 				await ctx.send("New Member Channel configured as: {channel}. Role configured as: {role}. Message: {message}".format(channel=ctx.channel.name, role=role_name, message=message))
 
+	nmconfig.example_usage = """
+	`{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel so if someone types "I have read the rules and regulations" it assigns them the Member role. 
+	"""
 class Guildmodlog(db.DatabaseObject):
 	__tablename__ = 'modlogconfig'
 	id = db.Column(db.Integer, primary_key=True)
