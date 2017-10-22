@@ -81,7 +81,7 @@ class Moderation(Cog):
 		if not message.guild.me.guild_permissions.manage_roles: return
 
 		with db.Session() as session:
-			config = session.query(GuildNewMemmber).filter_by(guild_id=message.guild.id).one_or_none()
+			config = session.query(GuildNewMember).filter_by(guild_id=message.guild.id).one_or_none()
 			if config is not None:
 				string = config.message
 				content = message.content.casefold()
@@ -96,7 +96,7 @@ class Moderation(Cog):
 	async def nmconfig(self, ctx, channel_mention: discord.TextChannel, role: discord.Role, *, message):
 		"""Sets the config for the new members channel"""
 		with db.Session() as session:
-			config = session.query(GuildNewMemmber).filter_by(guild_id=ctx.guild.id).one_or_none()
+			config = session.query(GuildNewMember).filter_by(guild_id=ctx.guild.id).one_or_none()
 			if config is not None:
 				config.channel_id = channel_mention.id
 				config.role_id = role.id
@@ -104,7 +104,7 @@ class Moderation(Cog):
 				role_name = role.name
 				await ctx.send("New Member Channel configured as: {channel}. Role configured as: {role}. Message: {message}".format(channel=ctx.channel.name, role=role_name, message=message))
 			else:
-				config = GuildNewMemmber(guild_id=ctx.guild.id, channel_id=channel_mention.id, role_id=role.id, message=message.casefold())
+				config = GuildNewMember(guild_id=ctx.guild.id, channel_id=channel_mention.id, role_id=role.id, message=message.casefold())
 				session.add(config)
 				role_name = role.name
 				await ctx.send("New Member Channel configured as: {channel}. Role configured as: {role}. Message: {message}".format(channel=ctx.channel.name, role=role_name, message=message))
@@ -118,7 +118,7 @@ class Guildmodlog(db.DatabaseObject):
 	name = db.Column(db.String)
 	modlog_channel = db.Column(db.Integer)
 
-class GuildNewMemmber(db.DatabaseObject):
+class GuildNewMember(db.DatabaseObject):
 	__tablename__ = 'new_members'
 	guild_id = db.Column(db.Integer, primary_key=True)
 	channel_id = db.Column(db.Integer)
