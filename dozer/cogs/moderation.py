@@ -157,6 +157,18 @@ class Moderation(Cog):
 	`{prefix}memberconfig @ everyone` - set the default role as the member role (ping-safe)
 	`{prefix}memberconfig @.everyone` - set the default role as the member role (ping-safe)
 	"""
+	
+	@command(aliases=["purge"])
+	@has_permissions(manage_messages=True)
+	@bot_has_permissions(manage_messages=True, read_message_history=True)
+	async def prune(self, ctx, num_to_delete: int):
+		"""Bulk delete a set number of messages from the current channel."""
+		await ctx.message.channel.purge(limit=num_to_delete + 1)
+		await ctx.send("Deleted {n} messages under request of {user}".format(n=num_to_delete, user=ctx.message.author.mention), delete_after=5)
+	
+	prune.example_usage = """
+	`{prefix}prune 10` - Delete the last 10 messages in the current channel.
+	"""
 
 class ModerationSettings(db.DatabaseObject):
 	__tablename__ = 'modlogconfig'
