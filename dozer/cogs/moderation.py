@@ -99,13 +99,12 @@ class Moderation(Cog):
 				config.channel_id = channel_mention.id
 				config.role_id = role.id
 				config.message = message.casefold()
-				role_name = role.name
-				await ctx.send("New Member Channel configured as: {channel}. Role configured as: {role}. Message: {message}".format(channel=ctx.channel.name, role=role_name, message=message))
 			else:
 				config = GuildNewMember(guild_id=ctx.guild.id, channel_id=channel_mention.id, role_id=role.id, message=message.casefold())
 				session.add(config)
-				role_name = role.name
-				await ctx.send("New Member Channel configured as: {channel}. Role configured as: {role}. Message: {message}".format(channel=ctx.channel.name, role=role_name, message=message))
+
+		role_name = role.name
+		await ctx.send("New Member Channel configured as: {channel}. Role configured as: {role}. Message: {message}".format(channel=ctx.channel.name, role=role_name, message=message))
 
 	nmconfig.example_usage = """
 	`{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel so if someone types "I have read the rules and regulations" it assigns them the Member role. 
