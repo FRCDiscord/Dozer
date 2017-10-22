@@ -8,6 +8,12 @@ class InvalidContext(commands.CheckFailure):
 	The message will be ignored.
 	"""
 
+class DozerContext(commands.Context):
+	async def send(self, content=None, **kwargs):
+		if content is not None:
+			content = utils.clean(self, content, mass=True, member=False, role=False, channel=False)
+		return await super().send(content, **kwargs)
+
 class Dozer(commands.Bot):
 	_global_cooldown = commands.Cooldown(1, 1, commands.BucketType.user) # One command per second per user
 	def __init__(self, config):
@@ -18,6 +24,10 @@ class Dozer(commands.Bot):
 	async def on_ready(self):
 		print('Signed in as {0!s} ({0.id})'.format(self.user))
 		await self.change_presence(game=discord.Game(name='%shelp | %d guilds' % (self.config['prefix'], len(self.guilds))))
+	
+	async def get_context(self, message):
+		ctx = await super().get_context(message, cls=DozerContext)
+		return ctx
 	
 	async def on_command_error(self, ctx, err):
 		if isinstance(err, commands.NoPrivateMessage):
