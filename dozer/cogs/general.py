@@ -17,7 +17,7 @@ class General(Cog):
 
 	
 	ping.example_usage = """
-	`{prefix}ping` - Calculate and display the bot's response time
+	`{prefix}ping` - Calculate and display the bot's response time in milliseconds
 	"""
 	
 	@cooldown(1, 10, BucketType.channel)
@@ -120,13 +120,18 @@ class General(Cog):
 			embed.set_footer(text=footer.format(**format_args))
 			await ctx.send(embed=embed)
 
-
-	@has_permissions(change_nickname=True)
 	@command()
+	@has_permissions(change_nickname=True)
 	async def nick(self, ctx, *, nicktochangeto):
 		"""Allows a member to change their nickname."""
 		await discord.Member.edit(ctx.author, nick=nicktochangeto)
 		await ctx.send("Nick successfully changed to " + nicktochangeto)
+	
+	nick.example_usage = """
+	`{prefix}nick Mr. Cool Dude III | Team 1234` - Sets the users nick to "Mr. Cool Dude III | Team 1234"
+	"""
+
+	
 def setup(bot):
 	bot.remove_command('help')
 	bot.add_cog(General(bot))
