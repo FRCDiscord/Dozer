@@ -94,10 +94,10 @@ class TBA(Cog):
 		if current_second < 10:
 			current_second = "0{}".format(current_second)
 		
-		await ctx.send("Timezone: {0} UTC{1} \nCurrent Time: {2}:{3}:{4} {5} ({6}:{3}:{4})".format(timezone["timeZoneName"], utc_offset, current_hour, current_minute, current_second, dayTime, current_hour_original)) 
+		await ctx.send("Timezone: {timezone} UTC{utc_offset} \nCurrent Time: {hours}:{minutes}:{seconds} {am_or_pm} ({local_hour}:{minutes}:{seconds})".format(timezone=timezone["timeZoneName"], utc_offset=utc_offset, hours=current_hour, minutes=current_minute, seconds=current_second, am_or_pm=dayTime, local_hour=current_hour_original)) 
 	
 	timezone.example_usage = """
-	`{prefix}timezone 3572` - show the local time of team 3572, Wavelength
+	`{prefix}timezone 1991` - shows the local time of team 1991, The Dragons
 	"""
 def setup(bot):
 	bot.add_cog(TBA(bot))
