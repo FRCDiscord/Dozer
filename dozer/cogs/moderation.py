@@ -5,8 +5,6 @@ import discord
 
 
 class Moderation(Cog):
-	def __init__(self, bot):
-		super().__init__(bot)
 	@command()
 	@has_permissions(ban_members=True)
 	@bot_has_permissions(ban_members=True)
