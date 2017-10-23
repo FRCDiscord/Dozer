@@ -1,0 +1,18 @@
+# runtime files
+__pycache__
+config.json
+dozer.db
+
+# IDEA
+.idea/Dozer.iml
+.idea/misc.xml
+.idea/modules.xml
+.idea/workspace.xml
+.idea/vcs.xml
+
+# for vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-v][a-z]
+[._]sw[a-p]
+*~
