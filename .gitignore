@@ -6,3 +6,4 @@ dozer.db
 .idea/modules.xml
 .idea/workspace.xml
 .idea/vcs.xml
+config.json.old

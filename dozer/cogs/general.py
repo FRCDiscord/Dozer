@@ -2,6 +2,8 @@ import discord, inspect
 from discord.ext.commands import BadArgument, bot_has_permissions, cooldown, BucketType, Group, has_permissions
 from ._utils import *
 
+blurple = discord.Color.blurple()
+
 class General(Cog):
 	"""General commands common to all Discord bots."""
 	@command()
@@ -18,6 +20,18 @@ class General(Cog):
 	
 	ping.example_usage = """
 	`{prefix}ping` - Calculate and display the bot's response time
+	"""
+	
+	@command()
+	async def invite(self, ctx):
+		"""Invite this bot to your server"""
+		bot_invite_permission = ctx.bot.config['discord_bot_invite_permission']
+		e = discord.Embed(color=blurple)
+		e.set_author(name='Click here to invite {}'.format(ctx.bot.user.name),url= 'https://discordapp.com/oauth2/authorize?client_id={}&scope=bot&permissions={}'.format(ctx.bot.user.id, bot_invite_permission))
+		await ctx.send(embed=e)
+	
+	invite.example_usage = """
+	`{prefix}invite` - Sends a message with the invite link.
 	"""
 	
 	@cooldown(1, 10, BucketType.channel)
