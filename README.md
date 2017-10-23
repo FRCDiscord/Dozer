@@ -3,16 +3,18 @@
 # Dozer
 Omnipotent guild management bot for FIRST Discord servers
 
-**Table of Contents**
-- [Dozer](#)
-	- [Setup](#)
-		- [Installing Python 3.6](#)
-			- [Manually](#)
-			- [Using pyenv](#)
-		- [Getting your Discord Bot Token](#)
-		- [Getting a Google Maps API Key](#)
-		- [Setting up the bot](#)
-		- [Adding the bot to your server](#)
+Table of Contents
+=================
+
+   * [Dozer](#dozer)
+      * [Setup](#setup)
+         * [Installing Python 3.6](#installing-python-36)
+            * [Manually](#manually)
+            * [Using pyenv](#using-pyenv)
+         * [Getting your Discord Bot Token](#getting-your-discord-bot-token)
+         * [Getting a Google Maps API Key](#getting-a-google-maps-api-key)
+         * [Setting up the bot](#setting-up-the-bot)
+         * [Adding the bot to your server](#adding-the-bot-to-your-server)
 
 ## Setup
 
