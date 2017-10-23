@@ -1,9 +1,17 @@
+
+
 # Dozer
 Omnipotent guild management bot for FIRST Discord servers
 
-[TOC]
-
-
+**Table of Contents**
+- [Setup](#)
+	- [Installing Python 3.6](#)
+		- [manually](#)
+		- [using pyenv](#)
+	- [Getting your Discord Bot Token](#)
+	- [Getting a Google Maps API Key](#)
+	- [Setting up the bot](#)
+	- [Adding the bot to your server](#)
 
 ## Setup
 
@@ -11,7 +19,7 @@ Omnipotent guild management bot for FIRST Discord servers
 
 run `python -V` to find what version of python you are running. If you are running version 3.6 or newer, feel free to skip this section
 
- #### manually
+ #### Manually
 
 [Unix](https://docs.python.org/3/using/unix.html?highlight=install)
 
@@ -19,7 +27,7 @@ run `python -V` to find what version of python you are running. If you are runni
 
 run `python -V` to ensure that version 3.6 or newer is installed. 
 
-#### using pyenv
+#### Using pyenv
 
 Many distributions do not have python 3.6 in their repositories yet. If this is the case for you, then [pyenv](https://github.com/pyenv/pyenv) is a great option for managing different python versions.
 
