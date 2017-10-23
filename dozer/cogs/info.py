@@ -41,8 +41,8 @@ class Info(Cog):
 		await ctx.send(embed=e)
 	
 	member.example_usage = """
-	`{prefix}member` - get information about yourself
-	`{prefix}member cooldude#1234` - get information about cooldude
+	`{prefix}member` - Gets information about yourself
+	`{prefix}member cooldude#1234` - Gets information about Cooldude
 	"""
 	
 	@guild_only()
@@ -66,7 +66,7 @@ class Info(Cog):
 		await ctx.send(embed=e)
 	
 	guild.example_usage = """
-	`{prefix}guild` - get information about this guild
+	`{prefix}guild` - Gets information about this guild
 	"""
 
 def setup(bot):
