@@ -3,7 +3,9 @@ Omnipotent guild management bot for FIRST Discord servers
 
 ## Prerequisites
 Python 3.6 or newer
+
 [Discord bot user](https://discordapp.com/developers/applications/me)
+
 [Google Maps API Key](https://developers.google.com/maps/)
 
 
