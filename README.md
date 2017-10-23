@@ -4,14 +4,15 @@
 Omnipotent guild management bot for FIRST Discord servers
 
 **Table of Contents**
-- [Setup](#)
-	- [Installing Python 3.6](#)
-		- [manually](#)
-		- [using pyenv](#)
-	- [Getting your Discord Bot Token](#)
-	- [Getting a Google Maps API Key](#)
-	- [Setting up the bot](#)
-	- [Adding the bot to your server](#)
+- [Dozer](#)
+	- [Setup](#)
+		- [Installing Python 3.6](#)
+			- [Manually](#)
+			- [Using pyenv](#)
+		- [Getting your Discord Bot Token](#)
+		- [Getting a Google Maps API Key](#)
+		- [Setting up the bot](#)
+		- [Adding the bot to your server](#)
 
 ## Setup
 
