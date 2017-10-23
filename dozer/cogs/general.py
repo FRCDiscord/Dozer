@@ -125,8 +125,10 @@ class General(Cog):
 	@command()
 	async def nick(self, ctx, *, nicktochangeto):
 		"""Allows a member to change their nickname."""
-		await discord.Member.edit(ctx.author, nick=nicktochangeto)
-		await ctx.send("Nick successfully changed to " + nicktochangeto)
+		await discord.Member.edit(ctx.author, nick=nicktochangeto[:32])
+		await ctx.send("Nick successfully changed to " + nicktochangeto[:32])
+		if len(nicktochangeto) > 32:
+			await ctx.send("Warning: truncated nickname to 32 characters")
 def setup(bot):
 	bot.remove_command('help')
 	bot.add_cog(General(bot))
