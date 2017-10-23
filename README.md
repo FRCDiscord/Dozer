@@ -54,3 +54,15 @@ Instructions for installing are located [here](https://github.com/pyenv/pyenv-in
 5. Add information about your team and your bot to `tba` in `config.json`
 6. Add your ID, and anyone else's ID who should be able to use the developer commands, to the list `developers` in `config.json`
 7. Run the bot again, you should see `Signed in as username#discrim (id)` after a few seconds.
+
+### adding the bot to your server
+
+1. To add the bot to your server, paste the following link into your browser.  Your client ID can be found on the applications page in the [Discord Developer Portal](https://discordapp.com/developers/applications/me)
+
+   `https://discordapp.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot`
+
+2. Select the server that you would like to add the bot to.
+
+3. Try it out! `[prefix]help` to see what Dozer can do.
+
+   ​
