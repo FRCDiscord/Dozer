@@ -27,8 +27,13 @@ Instructions for installing are located [here](https://github.com/pyenv/pyenv-in
 
 ### Getting your Discord Bot Token
 
-1. Go to the [Discord Developer Portal](https://discordapp.com/developers/applications/me) and create a new application. ![creating a new discord app](static/newapp.png)
-2. Create a bot user inside of your application. ![creating a bot user](static/createbot.png)
+1. Go to the [Discord Developer Portal](https://discordapp.com/developers/applications/me) and create a new application.
+
+    ![creating a new discord app](static/newapp.png)
+
+2. Create a bot user inside of your application. 
+
+   ![creating a bot user](static/createbot.png)
 3. Copy the bot user token - We'll need that later!
    Do not share your token with anyone.
 
@@ -36,6 +41,7 @@ Instructions for installing are located [here](https://github.com/pyenv/pyenv-in
 
 1. Go to the [Google Map APIs Docs](https://developers.google.com/maps/documentation/javascript/get-api-key) and request an API key
 2. Create a new project. 
+
    ![creating a new project](static/gmaps.png)
 3. Copy the API key - We'll need this too!
 
