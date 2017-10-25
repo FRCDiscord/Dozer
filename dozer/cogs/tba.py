@@ -1,7 +1,12 @@
 import tbapi
 import discord
+import googlemaps
+import datetime
 from ._utils import *
+from discord.ext import commands
 from discord.ext.commands import BadArgument, Group, bot_has_permissions, has_permissions
+from geopy.geocoders import Nominatim
+from datetime import timedelta
 
 blurple = discord.Color.blurple()
 
@@ -9,6 +14,7 @@ class TBA(Cog):
 	def __init__(self, bot):
 		super().__init__(bot)
 		tba_config = bot.config['tba']
+		self.gmaps_key = bot.config['gmaps_key']
 		self.parser = tbapi.TBAParser(tba_config['team'], tba_config['application'], tba_config['version'])
 	
 	@group(invoke_without_command=True)
@@ -41,7 +47,7 @@ class TBA(Cog):
 	team.example_usage = """
 	`{prefix}tba team 4131` - show information on team 4131, the Iron Patriots
 	"""
-	
+
 	@tba.command()
 	async def raw(self, ctx, team_num: int):
 		"""
@@ -54,6 +60,41 @@ class TBA(Cog):
 	raw.example_usage = """
 	`{prefix}tba raw 4150` - show raw information on team 4150, FRobotics
 	"""
+	@commands.command()
+	async def timezone(self, ctx, team_num: int):
+		"""
+		Get the timezone of a team based on the team number.
+		"""
+		location = self.parser.get_team('frc{}'.format(team_num)).location
+		gmaps = googlemaps.Client(key=self.gmaps_key)
+		geolocator = Nominatim()
+		geolocation = geolocator.geocode(location)
+		timezone = gmaps.timezone(location="{}, {}".format(geolocation.latitude, geolocation.longitude), language="json")
+		utc_offset = int(timezone["rawOffset"])/3600
+		if timezone["dstOffset"] == 3600:
+			utc_offset += 1
+		utc_timedelta = timedelta(hours = utc_offset)
+		currentUTCTime = datetime.datetime.utcnow()
+		currentTime = currentUTCTime+utc_timedelta
+		current_hour = currentTime.hour
+		current_hour_original = current_hour
+		dayTime = "AM"
+		if current_hour > 12:
+			current_hour -= 12
+			dayTime = "PM"
+		elif current_hour == 12:
+			dayTime = "PM"
+		elif current_hour == 0:
+			current_hour = 12
+			dayTime = "AM"
+		current_minute = currentTime.minute
+		if current_minute < 10:
+			current_minute = "0{}".format(current_minute)
+		current_second = currentTime.second
+		if current_second < 10:
+			current_second = "0{}".format(current_second)
+		
+		await ctx.send("Timezone: " + timezone["timeZoneName"] + " UTC{}".format(utc_offset) + "\nCurrent Time: {0}:{1}:{2} {3} ({4}:{1}:{2})".format(current_hour,current_minute,current_second, dayTime, current_hour_original))
 		 
 def setup(bot):
 	bot.add_cog(TBA(bot))
