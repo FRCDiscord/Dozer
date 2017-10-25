@@ -187,7 +187,7 @@ class Moderation(Cog):
 					channel = before.guild.get_channel(messagelogchannel.messagelog_channel)
 					await channel.send(embed=e)
 
-
+   
 	@command(aliases=["purge"])
 	@has_permissions(manage_messages=True)
 	@bot_has_permissions(manage_messages=True, read_message_history=True)
@@ -198,8 +198,8 @@ class Moderation(Cog):
 	prune.example_usage = """
 	`{prefix}prune 10` - Delete the last 10 messages in the current channel.
 	"""
-
-
+  
+  
 class Guildmodlog(db.DatabaseObject):
 	__tablename__ = 'modlogconfig'
 	id = db.Column(db.Integer, primary_key=True)
