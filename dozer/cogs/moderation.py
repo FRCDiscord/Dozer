@@ -4,8 +4,7 @@ from ._utils import *
 import discord
 
 
-# Member logging: In this revision: Added member log configuration settings, on_member_join added, added on_member_remove. Todo: fix member format and test. (will have to do at home because I don't have the TestAccountPad at school)
-# Todo (others): Message edit and deletion logging, mutes (including timed/self mutes)
+# Todo: timed/self mutes
 class Moderation(Cog):
     @command()
     @has_permissions(ban_members=True)
@@ -136,6 +135,15 @@ class Moderation(Cog):
         elif len(message.content) != 0:
             e.add_field(name="Deleted message", value=message.content[0:1023])
             e.add_field(name="Deleted message continued", value=message.content[1024:2000])
+        elif len(message.content) == 0:
+            print("Test")
+            for i in message.embeds:
+                e.add_field(name="Title", value=i.title)
+                e.add_field(name="Description", value=i.description)
+                e.add_field(name="Timestamp", value=i.timestamp)
+                for x in i.fields:
+                    e.add_field(name=x.name, value=x.value)
+                e.add_field(name="Footer", value=i.footer)
         with db.Session() as session:
             messagelogchannel = session.query(Guildmessagelog).filter_by(id=message.guild.id).one_or_none()
             if messagelogchannel is not None:
@@ -143,31 +151,50 @@ class Moderation(Cog):
                 await channel.send(embed=e)
 
     async def on_message_edit(self, before, after):
-        e = discord.Embed(type='rich')
-        e.title = 'Message Edited'
-        e.color = 0xFF0000
-        e.add_field(name='Author', value=before.author)
-        if 1024 > len(before.content) > 0:
-            e.add_field(name="Old message", value=before.content)
-        elif len(before.content) != 0:
-            e.add_field(name="Old message", value=before.content[0:1023])
-            e.add_field(name="Old message continued", value=before.content[1024:2000])
-        if len(after.content) < 1024:
-            e.add_field(name="New message", value=after.content)
-        elif len(after.content) != 0:
-            e.add_field(name="New message", value=after.content[0:1023])
-            e.add_field(name="New message continued", value=after.content[1024:2000])
-        with db.Session() as session:
-            messagelogchannel = session.query(Guildmessagelog).filter_by(id=before.guild.id).one_or_none()
-            if messagelogchannel is not None:
-                channel = before.guild.get_channel(messagelogchannel.messagelog_channel)
-                await channel.send(embed=e)
+        if after.edited_at is not None or before.edited_at is not None:
+            # There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
+            e = discord.Embed(type='rich')
+            e.title = 'Message Edited'
+            e.color = 0xFF0000
+            e.add_field(name='Author', value=before.author)
+            if 1024 > len(before.content) > 0:
+                e.add_field(name="Old message", value=before.content)
+            elif len(before.content) != 0:
+                e.add_field(name="Old message", value=before.content[0:1023])
+                e.add_field(name="Old message continued", value=before.content[1024:2000])
+            elif len(before.content) == 0 and before.edited_at is not None:
+                for i in before.embeds:
+                    e.add_field(name="Title", value=i.title)
+                    e.add_field(name="Description", value=i.description)
+                    e.add_field(name="Timestamp", value=i.timestamp)
+                    for x in i.fields:
+                        e.add_field(name=x.name, value=x.value)
+                    e.add_field(name="Footer", value=i.footer)
+            if 0 < len(after.content) < 1024:
+                e.add_field(name="New message", value=after.content)
+            elif len(after.content) != 0:
+                e.add_field(name="New message", value=after.content[0:1023])
+                e.add_field(name="New message continued", value=after.content[1024:2000])
+            elif len(after.content) == 0 and after.edited_at is not None:
+                e.add_field(name="Title", value=i.title)
+                e.add_field(name="Description", value=i.description)
+                e.add_field(name="Timestamp", value=i.timestamp)
+                for i in after.embeds:
+                    for x in i.fields:
+                        e.add_field(name=x.name, value=x.value)
+            with db.Session() as session:
+                messagelogchannel = session.query(Guildmessagelog).filter_by(id=before.guild.id).one_or_none()
+                if messagelogchannel is not None:
+                    channel = before.guild.get_channel(messagelogchannel.messagelog_channel)
+                    await channel.send(embed=e)
+
 
 class Guildmodlog(db.DatabaseObject):
-	__tablename__ = 'modlogconfig'
-	id = db.Column(db.Integer, primary_key=True)
-	name = db.Column(db.String)
-	modlog_channel = db.Column(db.Integer)
+    __tablename__ = 'modlogconfig'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+    modlog_channel = db.Column(db.Integer)
+
 
 class Guildmemberlog(db.DatabaseObject):
     __tablename__ = 'memberlogconfig'
@@ -184,4 +211,4 @@ class Guildmessagelog(db.DatabaseObject):
 
 
 def setup(bot):
-	bot.add_cog(Moderation(bot))
+    bot.add_cog(Moderation(bot))
