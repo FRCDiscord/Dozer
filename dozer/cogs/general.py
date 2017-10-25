@@ -60,6 +60,7 @@ class General(Cog):
 		Use `{0}{1} {1}` for more information.
 		""".format(ctx.prefix, ctx.invoked_with)), inline=False)
 		info.add_field(name='Support', value="Join our development server at https://discord.gg/bB8tcQ8 for support, to help with development, or if you have any questions or comments!")
+		info.add_field(name="Open Source", value="Dozer is open source! Feel free to view and contribute to our Python code [on Github](https://github.com/FRCDiscord/Dozer)")
 		info.set_footer(text='Dozer Help | all commands | Info page')
 		await self._show_help(ctx, info, 'Dozer: Commands', '', 'all commands', ctx.bot.commands)
 	
@@ -125,8 +126,10 @@ class General(Cog):
 	@command()
 	async def nick(self, ctx, *, nicktochangeto):
 		"""Allows a member to change their nickname."""
-		await discord.Member.edit(ctx.author, nick=nicktochangeto)
-		await ctx.send("Nick successfully changed to " + nicktochangeto)
+		await discord.Member.edit(ctx.author, nick=nicktochangeto[:32])
+		await ctx.send("Nick successfully changed to " + nicktochangeto[:32])
+		if len(nicktochangeto) > 32:
+			await ctx.send("Warning: truncated nickname to 32 characters")
 def setup(bot):
 	bot.remove_command('help')
 	bot.add_cog(General(bot))
