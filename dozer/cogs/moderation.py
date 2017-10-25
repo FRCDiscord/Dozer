@@ -136,7 +136,6 @@ class Moderation(Cog):
             e.add_field(name="Deleted message", value=message.content[0:1023])
             e.add_field(name="Deleted message continued", value=message.content[1024:2000])
         elif len(message.content) == 0:
-            print("Test")
             for i in message.embeds:
                 e.add_field(name="Title", value=i.title)
                 e.add_field(name="Description", value=i.description)
