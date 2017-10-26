@@ -60,7 +60,7 @@ class TBA(Cog):
 	raw.example_usage = """
 	`{prefix}tba raw 4150` - show raw information on team 4150, FRobotics
 	"""
-	@commands.command()
+	@command()
 	async def timezone(self, ctx, team_num: int):
 		"""
 		Get the timezone of a team based on the team number.
@@ -94,7 +94,10 @@ class TBA(Cog):
 		if current_second < 10:
 			current_second = "0{}".format(current_second)
 		
-		await ctx.send("Timezone: " + timezone["timeZoneName"] + " UTC{}".format(utc_offset) + "\nCurrent Time: {0}:{1}:{2} {3} ({4}:{1}:{2})".format(current_hour,current_minute,current_second, dayTime, current_hour_original))
-		 
+		await ctx.send("Timezone: {0} UTC{1} \nCurrent Time: {2}:{3}:{4} {5} ({6}:{3}:{4})".format(timezone["timeZoneName"], utc_offset, current_hour, current_minute, current_second, dayTime, current_hour_original)) 
+	
+	timezone.example_usage = """
+	`{prefix}timezone 3572` - show the local time of team 3572, Wavelength
+	"""
 def setup(bot):
 	bot.add_cog(TBA(bot))
