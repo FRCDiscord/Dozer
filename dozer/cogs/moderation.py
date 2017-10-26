@@ -3,7 +3,6 @@ from .. import db
 from ._utils import *
 import discord
 
-
 # Todo: timed/self mutes, audit logging reasoning passing
 class Moderation(Cog):
 	@command()
@@ -23,7 +22,7 @@ class Moderation(Cog):
 				await channel.send(modlogmessage)
 			else:
 				await ctx.send("Please configure modlog channel to enable modlog functionality")
-
+	
 	@command()
 	@has_permissions(ban_members=True)
 	@bot_has_permissions(ban_members=True)
@@ -40,7 +39,7 @@ class Moderation(Cog):
 				await channel.send(modlogmessage)
 			else:
 				await ctx.send("Please configure modlog channel to enable modlog functionality")
-
+	
 	@command()
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(kick_members=True)
@@ -57,7 +56,7 @@ class Moderation(Cog):
 				await channel.send(modlogmessage)
 			else:
 				await ctx.send("Please configure modlog channel to enable modlog functionality")
-
+	
 	@command()
 	@has_permissions(administrator=True)
 	async def modlogconfig(self, ctx, channel_mentions: discord.TextChannel):
@@ -74,7 +73,7 @@ class Moderation(Cog):
 				config = Guildmodlog(id=ctx.guild.id, modlog_channel=channel_mentions.id, name=ctx.guild.name)
 				session.add(config)
 			await ctx.send(ctx.message.author.mention + ', modlog settings configured!')
-
+	
 	@command()
 	@has_permissions(administrator=True)
 	async def memberlogconfig(self, ctx, channel_mentions: discord.TextChannel):
@@ -91,7 +90,7 @@ class Moderation(Cog):
 				config = Guildmemberlog(id=ctx.guild.id, memberlog_channel=channel_mentions.id, name=ctx.guild.name)
 				session.add(config)
 			await ctx.send(ctx.message.author.mention + ', memberlog settings configured!')
-
+	
 	@command()
 	@has_permissions(administrator=True)
 	async def messagelogconfig(self, ctx, channel_mentions: discord.TextChannel):
@@ -108,7 +107,7 @@ class Moderation(Cog):
 				config = Guildmessagelog(id=ctx.guild.id, messagelog_channel=channel_mentions.id, name=ctx.guild.name)
 				session.add(config)
 			await ctx.send(ctx.message.author.mention + ', messagelog settings configured!')
-
+	
 	async def on_member_join(self, member):
 		memberjoinedmessage = "{} has joined the server! Enjoy your stay!".format(member.display_name)
 		with db.Session() as session:
@@ -116,7 +115,7 @@ class Moderation(Cog):
 			if memberlogchannel is not None:
 				channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
 				await channel.send(memberjoinedmessage)
-
+	
 	async def on_member_remove(self, member):
 		memberleftmessage = "{} has left the server!".format(member.display_name)
 		with db.Session() as session:
@@ -124,7 +123,7 @@ class Moderation(Cog):
 			if memberlogchannel is not None:
 				channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
 				await channel.send(memberleftmessage)
-
+	
 	async def on_message_delete(self, message):
 		e = discord.Embed(type='rich')
 		e.title = 'Message Deletion'
@@ -148,7 +147,7 @@ class Moderation(Cog):
 			if messagelogchannel is not None:
 				channel = message.guild.get_channel(messagelogchannel.messagelog_channel)
 				await channel.send(embed=e)
-
+	
 	async def on_message_edit(self, before, after):
 		if after.edited_at is not None or before.edited_at is not None:
 			# There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
@@ -186,8 +185,7 @@ class Moderation(Cog):
 				if messagelogchannel is not None:
 					channel = before.guild.get_channel(messagelogchannel.messagelog_channel)
 					await channel.send(embed=e)
-
-   
+	
 	@command(aliases=["purge"])
 	@has_permissions(manage_messages=True)
 	@bot_has_permissions(manage_messages=True, read_message_history=True)
@@ -195,17 +193,16 @@ class Moderation(Cog):
 		"""Bulk delete a set number of messages from the current channel."""
 		await ctx.message.channel.purge(limit=num_to_delete + 1)
 		await ctx.send("Deleted {n} messages under request of {user}".format(n=num_to_delete, user=ctx.message.author.mention), delete_after=5)
+	
 	prune.example_usage = """
 	`{prefix}prune 10` - Delete the last 10 messages in the current channel.
 	"""
-  
-  
+
 class Guildmodlog(db.DatabaseObject):
 	__tablename__ = 'modlogconfig'
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String)
 	modlog_channel = db.Column(db.Integer)
-
 
 class Guildmemberlog(db.DatabaseObject):
 	__tablename__ = 'memberlogconfig'
@@ -213,13 +210,11 @@ class Guildmemberlog(db.DatabaseObject):
 	name = db.Column(db.String)
 	memberlog_channel = db.Column(db.Integer)
 
-
 class Guildmessagelog(db.DatabaseObject):
 	__tablename__ = 'messagelogconfig'
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String)
 	messagelog_channel = db.Column(db.Integer)
-
 
 def setup(bot):
 	bot.add_cog(Moderation(bot))
