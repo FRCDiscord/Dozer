@@ -3,7 +3,8 @@ from .. import db
 from ._utils import *
 import discord
 
-# Todo: timed/self mutes, audit logging reasoning passing
+
+# Todo: timed/self mutes
 class Moderation(Cog):
 	@command()
 	@has_permissions(ban_members=True)
@@ -22,7 +23,7 @@ class Moderation(Cog):
 				await channel.send(modlogmessage)
 			else:
 				await ctx.send("Please configure modlog channel to enable modlog functionality")
-	
+
 	@command()
 	@has_permissions(ban_members=True)
 	@bot_has_permissions(ban_members=True)
@@ -39,7 +40,7 @@ class Moderation(Cog):
 				await channel.send(modlogmessage)
 			else:
 				await ctx.send("Please configure modlog channel to enable modlog functionality")
-	
+
 	@command()
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(kick_members=True)
@@ -56,7 +57,7 @@ class Moderation(Cog):
 				await channel.send(modlogmessage)
 			else:
 				await ctx.send("Please configure modlog channel to enable modlog functionality")
-	
+
 	@command()
 	@has_permissions(administrator=True)
 	async def modlogconfig(self, ctx, channel_mentions: discord.TextChannel):
@@ -73,7 +74,7 @@ class Moderation(Cog):
 				config = Guildmodlog(id=ctx.guild.id, modlog_channel=channel_mentions.id, name=ctx.guild.name)
 				session.add(config)
 			await ctx.send(ctx.message.author.mention + ', modlog settings configured!')
-	
+
 	@command()
 	@has_permissions(administrator=True)
 	async def memberlogconfig(self, ctx, channel_mentions: discord.TextChannel):
@@ -90,7 +91,7 @@ class Moderation(Cog):
 				config = Guildmemberlog(id=ctx.guild.id, memberlog_channel=channel_mentions.id, name=ctx.guild.name)
 				session.add(config)
 			await ctx.send(ctx.message.author.mention + ', memberlog settings configured!')
-	
+
 	@command()
 	@has_permissions(administrator=True)
 	async def messagelogconfig(self, ctx, channel_mentions: discord.TextChannel):
@@ -107,7 +108,7 @@ class Moderation(Cog):
 				config = Guildmessagelog(id=ctx.guild.id, messagelog_channel=channel_mentions.id, name=ctx.guild.name)
 				session.add(config)
 			await ctx.send(ctx.message.author.mention + ', messagelog settings configured!')
-	
+
 	async def on_member_join(self, member):
 		memberjoinedmessage = "{} has joined the server! Enjoy your stay!".format(member.display_name)
 		with db.Session() as session:
@@ -115,7 +116,7 @@ class Moderation(Cog):
 			if memberlogchannel is not None:
 				channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
 				await channel.send(memberjoinedmessage)
-	
+
 	async def on_member_remove(self, member):
 		memberleftmessage = "{} has left the server!".format(member.display_name)
 		with db.Session() as session:
@@ -123,7 +124,7 @@ class Moderation(Cog):
 			if memberlogchannel is not None:
 				channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
 				await channel.send(memberleftmessage)
-	
+
 	async def on_message_delete(self, message):
 		e = discord.Embed(type='rich')
 		e.title = 'Message Deletion'
@@ -147,7 +148,7 @@ class Moderation(Cog):
 			if messagelogchannel is not None:
 				channel = message.guild.get_channel(messagelogchannel.messagelog_channel)
 				await channel.send(embed=e)
-	
+
 	async def on_message_edit(self, before, after):
 		if after.edited_at is not None or before.edited_at is not None:
 			# There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
@@ -185,7 +186,7 @@ class Moderation(Cog):
 				if messagelogchannel is not None:
 					channel = before.guild.get_channel(messagelogchannel.messagelog_channel)
 					await channel.send(embed=e)
-	
+
 	@command(aliases=["purge"])
 	@has_permissions(manage_messages=True)
 	@bot_has_permissions(manage_messages=True, read_message_history=True)
@@ -193,45 +194,85 @@ class Moderation(Cog):
 		"""Bulk delete a set number of messages from the current channel."""
 		await ctx.message.channel.purge(limit=num_to_delete + 1)
 		await ctx.send("Deleted {n} messages under request of {user}".format(n=num_to_delete, user=ctx.message.author.mention), delete_after=5)
-	
+
 	prune.example_usage = """
 	`{prefix}prune 10` - Delete the last 10 messages in the current channel.
 	"""
 
-    @command()
-    @has_permissions(kick_members=True)
-    @bot_has_permissions(manage_roles=True)
-    async def mute(self, ctx, member_mentions: discord.Member, *, reason):
-        for i in ctx.guild.channels:
-            overwrite = discord.PermissionOverwrite()
-            overwrite.send_messages = False
-            overwrite.add_reactions = False
-            await i.set_permissions(target=member_mentions, overwrite=overwrite)
-        modlogmessage = "{} has been muted by {} because {}".format(member_mentions, ctx.author.display_name, reason)
-        await ctx.send(modlogmessage)
-        with db.Session() as session:
-            modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
-            if modlogchannel is not None:
-                channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
-                await channel.send(modlogmessage)
-            else:
-                await ctx.send("Please configure modlog channel to enable modlog functionality")
+	@command()
+	@has_permissions(kick_members=True)
+	@bot_has_permissions(manage_roles=True)
+	async def mute(self, ctx, member_mentions: discord.Member, *, reason):
+		for i in ctx.guild.channels:
+			overwrite = discord.PermissionOverwrite()
+			overwrite.send_messages = False
+			overwrite.add_reactions = False
+			await i.set_permissions(target=member_mentions, overwrite=overwrite)
+		modlogmessage = "{} has been muted by {} because {}".format(member_mentions, ctx.author.display_name, reason)
+		await ctx.send(modlogmessage)
+		with db.Session() as session:
+			modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+			if modlogchannel is not None:
+				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+				await channel.send(modlogmessage)
+			else:
+				await ctx.send("Please configure modlog channel to enable modlog functionality")
+			user = session.query(Guildmute).filter_by(id=member_mentions.id).one_or_none()
+			if user is not None:
+				Guildmute.id = str(member_mentions.id)
+				Guildmute.guild = str(ctx.guild.id)
+				Guildmute.isMuted = "True"
+			else:
+				user = Guildmute(id=member_mentions.id, server=ctx.guild.id, isMuted="True")
+				session.add(user)
 
-    @command()
-    @has_permissions(kick_members=True)
-    @bot_has_permissions(manage_roles=True)
-    async def unmute(self, ctx, member_mentions: discord.Member):
-        for i in ctx.guild.channels:
-            await i.set_permissions(target=member_mentions, overwrite=None)
-        modlogmessage = "{} has been unmuted by {}".format(member_mentions, ctx.author.display_name)
-        await ctx.send(modlogmessage)
-        with db.Session() as session:
-            modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
-            if modlogchannel is not None:
-                channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
-                await channel.send(modlogmessage)
-            else:
-                await ctx.send("Please configure modlog channel to enable modlog functionality")
+
+	@command()
+	@has_permissions(kick_members=True)
+	@bot_has_permissions(manage_roles=True)
+	async def unmute(self, ctx, member_mentions: discord.Member):
+		for i in ctx.guild.channels:
+			await i.set_permissions(target=member_mentions, overwrite=None)
+		modlogmessage = "{} has been unmuted by {}".format(member_mentions, ctx.author.display_name)
+		await ctx.send(modlogmessage)
+		with db.Session() as session:
+			modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+			if modlogchannel is not None:
+				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+				await channel.send(modlogmessage)
+			else:
+				await ctx.send("Please configure modlog channel to enable modlog functionality")
+			user = session.query(Guildmute).filter_by(id=member_mentions.id).one_or_none()
+			if user is not None:
+				print("User is not none")
+				Guildmute.id = str(member_mentions.id)
+				Guildmute.guild = str(ctx.guild.id)
+				Guildmute.isMuted = "False"
+				session.add(user)
+			else:
+				print("User is None")
+				user = Guildmute(server=ctx.guild.id, id=member_mentions.id, isMuted="False")
+				session.add(user)
+
+	async def on_member_join(self, member):
+		memberjoinedmessage = "{} has joined the server! Enjoy your stay!".format(member.display_name)
+		with db.Session() as session:
+			memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
+			if memberlogchannel is not None:
+				channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
+				await channel.send(memberjoinedmessage)
+			user = session.query(Guildmute).filter_by(id=member.id).one_or_none()
+			if user is not None:
+				ismuted = user.isMuted
+				if ismuted == "True":
+					await self.mute(member)
+
+
+class Guildmute(db.DatabaseObject):
+	__tablename__ = 'Mutes'
+	id = db.Column(db.String, primary_key=True)
+	server = db.Column(db.String)
+	isMuted = db.Column(db.String)
 
 
 class Guildmodlog(db.DatabaseObject):
