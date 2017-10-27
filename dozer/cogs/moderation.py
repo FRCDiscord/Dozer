@@ -26,7 +26,7 @@ class Moderation(Cog):
 		await ctx.guild.ban(usertoban, reason=reason)
 		await ctx.send(modlogmessage)
 		with db.Session() as session:
-			modlogchannel = session.query(ModerationSettings).filter_by(id=ctx.guild.id).one_or_none()
+			modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
 			if modlogchannel is not None:
 				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
 				await channel.send(modlogmessage)
@@ -43,7 +43,7 @@ class Moderation(Cog):
 		modlogmessage = "{} has been unbanned by {} because {}".format(usertoban, ctx.author.mention, reason)
 		await ctx.send(modlogmessage)
 		with db.Session() as session:
-			modlogchannel = session.query(ModerationSettings).filter_by(id=ctx.guild.id).one_or_none()
+			modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
 			if modlogchannel is not None:
 				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
 				await channel.send(modlogmessage)
@@ -60,7 +60,7 @@ class Moderation(Cog):
 		modlogmessage = "{} has been kicked by {} because {}".format(usertokick, ctx.author.mention, reason)
 		await ctx.send(modlogmessage)
 		with db.Session() as session:
-			modlogchannel = session.query(ModerationSettings).filter_by(id=ctx.guild.id).one_or_none()
+			modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
 			if modlogchannel is not None:
 				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
 				await channel.send(modlogmessage)
@@ -73,14 +73,14 @@ class Moderation(Cog):
 		"""Set the modlog channel for a server by passing the channel id"""
 		print(channel_mentions)
 		with db.Session() as session:
-			config = session.query(ModerationSettings).filter_by(id=str(ctx.guild.id)).one_or_none()
+			config = session.query(Guildmodlog).filter_by(id=str(ctx.guild.id)).one_or_none()
 			if config is not None:
 				print("config is not none")
 				config.name = ctx.guild.name
 				config.modlog_channel = str(channel_mentions.id)
 			else:
 				print("Config is none")
-				config = ModerationSettings(id=ctx.guild.id, modlog_channel=channel_mentions.id, name=ctx.guild.name)
+				config = Guildmodlog(id=ctx.guild.id, modlog_channel=channel_mentions.id, name=ctx.guild.name)
 				session.add(config)
 			await ctx.send(ctx.message.author.mention + ', modlog settings configured!')
 	
@@ -90,9 +90,9 @@ class Moderation(Cog):
 	async def timeout(self, ctx, duration: float):
 		"""Set a timeout (no sending messages or adding reactions) on the current channel."""
 		with db.Session() as session:
-			settings = session.query(ModerationSettings).filter_by(id=ctx.guild.id).one_or_none()
+			settings = session.query(MemberRole).filter_by(id=ctx.guild.id).one_or_none()
 			if settings is None:
-				settings = ModerationSettings(id=ctx.guild.id, name=ctx.guild.name)
+				settings = MemberRole(id=ctx.guild.id)
 				session.add(settings)
 			
 			member_role = discord.utils.get(ctx.guild.roles, id=settings.member_role) # None-safe - nonexistent or non-configured role return None
@@ -101,7 +101,7 @@ class Moderation(Cog):
 			targets = {member_role}
 		else:
 			await ctx.send('{0.author.mention}, the members role has not been configured. This may not work as expected. Use `{0.prefix}help memberconfig` to see how to set this up.'.format(ctx))
-			targets = {target for target, overwrite in ctx.channel.overwrites if overwrite.send_messages or overwrite.add_reactions and (target if isinstance(target, discord.Role) else target.top_role) < ctx.me.top_role}
+			targets = set(sorted(ctx.guild.roles)[:ctx.author.top_role.position])
 		
 		to_restore = [(target, ctx.channel.overwrites_for(target)) for target in targets]
 		for target, overwrite in to_restore:
@@ -143,9 +143,9 @@ class Moderation(Cog):
 		The member role is the role used for the timeout command. It should be a role that all members of the server have.
 		"""
 		with db.Session() as session:
-			settings = session.query(ModerationSettings).filter_by(id=ctx.guild.id).one_or_none()
+			settings = session.query(MemberRole).filter_by(id=ctx.guild.id).one_or_none()
 			if settings is None:
-				settings = ModerationSettings(id=ctx.guild.id, name=ctx.guild.name, member_role=member_role.id)
+				settings = MemberRole(id=ctx.guild.id, name=ctx.guild.name, member_role=member_role.id)
 				session.add(settings)
 			else:
 				settings.member_role = member_role.id
@@ -283,11 +283,15 @@ class Moderation(Cog):
 	`{prefix}prune 10` - Delete the last 10 messages in the current channel.
 	"""
 
-class ModerationSettings(db.DatabaseObject):
+class Guildmodlog(db.DatabaseObject):
 	__tablename__ = 'modlogconfig'
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String)
 	modlog_channel = db.Column(db.Integer, nullable=True)
+
+class MemberRole(db.DatabaseObject):
+	__tablename__ = 'member_roles'
+	id = db.Column(db.Integer, primary_key=True)
 	member_role = db.Column(db.Integer, nullable=True)
 
 class Guildmemberlog(db.DatabaseObject):
