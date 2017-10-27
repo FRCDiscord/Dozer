@@ -142,10 +142,13 @@ class Moderation(Cog):
 		Set the member role for the guild.
 		The member role is the role used for the timeout command. It should be a role that all members of the server have.
 		"""
+		if member_role >= ctx.author.top_role:
+			raise BadArgument('member role cannot be higher than your top role!')
+		
 		with db.Session() as session:
 			settings = session.query(MemberRole).filter_by(id=ctx.guild.id).one_or_none()
 			if settings is None:
-				settings = MemberRole(id=ctx.guild.id, name=ctx.guild.name, member_role=member_role.id)
+				settings = MemberRole(id=ctx.guild.id, member_role=member_role.id)
 				session.add(settings)
 			else:
 				settings.member_role = member_role.id
