@@ -163,6 +163,7 @@ class Moderation(Cog):
 	`{prefix}memberconfig @/everyone` - set the default role as the member role (ping-safe)
 	"""
 	
+	@command()
 	@has_permissions(administrator=True)
 	async def memberlogconfig(self, ctx, channel_mentions: discord.TextChannel):
 		"""Set the modlog channel for a server by passing the channel id"""
