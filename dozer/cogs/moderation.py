@@ -116,6 +116,13 @@ class Moderation(Cog):
 			if memberlogchannel is not None:
 				channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
 				await channel.send(memberjoinedmessage)
+			user = session.query(Guildmute).filter_by(id=member.id).one_or_none()
+			if user is not None:
+				for i in member.guild.channels:
+					overwrite = discord.PermissionOverwrite()
+					overwrite.send_messages = False
+					overwrite.add_reactions = False
+					await i.set_permissions(target=member, overwrite=overwrite)
 
 	async def on_member_remove(self, member):
 		memberleftmessage = "{} has left the server!".format(member.display_name)
@@ -202,7 +209,7 @@ class Moderation(Cog):
 	@command()
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
-	async def mute(self, ctx, member_mentions: discord.Member, *, reason):
+	async def mute(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
 		for i in ctx.guild.channels:
 			overwrite = discord.PermissionOverwrite()
 			overwrite.send_messages = False
@@ -221,9 +228,8 @@ class Moderation(Cog):
 			if user is not None:
 				Guildmute.id = str(member_mentions.id)
 				Guildmute.guild = str(ctx.guild.id)
-				Guildmute.isMuted = "True"
 			else:
-				user = Guildmute(id=member_mentions.id, server=ctx.guild.id, isMuted="True")
+				user = Guildmute(id=member_mentions.id, server=ctx.guild.id)
 				session.add(user)
 
 
@@ -244,35 +250,15 @@ class Moderation(Cog):
 				await ctx.send("Please configure modlog channel to enable modlog functionality")
 			user = session.query(Guildmute).filter_by(id=member_mentions.id).one_or_none()
 			if user is not None:
-				print("User is not none")
-				Guildmute.id = str(member_mentions.id)
-				Guildmute.guild = str(ctx.guild.id)
-				Guildmute.isMuted = "False"
-				session.add(user)
+				session.delete(user)
 			else:
-				print("User is None")
-				user = Guildmute(server=ctx.guild.id, id=member_mentions.id, isMuted="False")
-				session.add(user)
-
-	async def on_member_join(self, member):
-		memberjoinedmessage = "{} has joined the server! Enjoy your stay!".format(member.display_name)
-		with db.Session() as session:
-			memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
-			if memberlogchannel is not None:
-				channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
-				await channel.send(memberjoinedmessage)
-			user = session.query(Guildmute).filter_by(id=member.id).one_or_none()
-			if user is not None:
-				ismuted = user.isMuted
-				if ismuted == "True":
-					await self.mute(member)
+				await ctx.send("User is not muted!")
 
 
 class Guildmute(db.DatabaseObject):
 	__tablename__ = 'Mutes'
 	id = db.Column(db.String, primary_key=True)
 	server = db.Column(db.String)
-	isMuted = db.Column(db.String)
 
 
 class Guildmodlog(db.DatabaseObject):
@@ -281,11 +267,13 @@ class Guildmodlog(db.DatabaseObject):
 	name = db.Column(db.String)
 	modlog_channel = db.Column(db.Integer)
 
+
 class Guildmemberlog(db.DatabaseObject):
 	__tablename__ = 'memberlogconfig'
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String)
 	memberlog_channel = db.Column(db.Integer)
+
 
 class Guildmessagelog(db.DatabaseObject):
 	__tablename__ = 'messagelogconfig'
