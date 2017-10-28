@@ -123,6 +123,12 @@ class Moderation(Cog):
 					overwrite.send_messages = False
 					overwrite.add_reactions = False
 					await i.set_permissions(target=member, overwrite=overwrite)
+			user = session.query(Deafen).filter_by(id=member.id).one_or_none()
+			if user is not None:
+				for i in member.guild.channels:
+					overwrite = discord.PermissionOverwrite()
+					overwrite.read_messages = False
+					await i.set_permissions(target=member, overwrite=overwrite)
 
 	async def on_member_remove(self, member):
 		memberleftmessage = "{} has left the server!".format(member.display_name)
@@ -254,9 +260,61 @@ class Moderation(Cog):
 			else:
 				await ctx.send("User is not muted!")
 
+	@command()
+	@has_permissions(kick_members=True)
+	@bot_has_permissions(manage_roles=True)
+	async def deafen(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
+		for i in ctx.guild.channels:
+			overwrite = discord.PermissionOverwrite()
+			overwrite.read_messages = False
+			await i.set_permissions(target=member_mentions, overwrite=overwrite)
+		modlogmessage = "{} has been deafened by {} because {}".format(member_mentions, ctx.author.display_name, reason)
+		await ctx.send(modlogmessage)
+		with db.Session() as session:
+			modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+			if modlogchannel is not None:
+				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+				await channel.send(modlogmessage)
+			else:
+				await ctx.send("Please configure modlog channel to enable modlog functionality")
+			user = session.query(Deafen).filter_by(id=member_mentions.id).one_or_none()
+			if user is not None:
+				Deafen.id = str(member_mentions.id)
+				Deafen.guild = str(ctx.guild.id)
+			else:
+				user = Deafen(id=member_mentions.id, server=ctx.guild.id)
+				session.add(user)
+
+	@command()
+	@has_permissions(kick_members=True)
+	@bot_has_permissions(manage_roles=True)
+	async def undeafen(self, ctx, member_mentions: discord.Member):
+		for i in ctx.guild.channels:
+			await i.set_permissions(target=member_mentions, overwrite=None)
+		modlogmessage = "{} has been undeafened by {}".format(member_mentions, ctx.author.display_name)
+		await ctx.send(modlogmessage)
+		with db.Session() as session:
+			modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+			if modlogchannel is not None:
+				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+				await channel.send(modlogmessage)
+			else:
+				await ctx.send("Please configure modlog channel to enable modlog functionality")
+			user = session.query(Deafen).filter_by(id=member_mentions.id).one_or_none()
+			if user is not None:
+				session.delete(user)
+			else:
+				await ctx.send("User is not deafened!")
+
 
 class Guildmute(db.DatabaseObject):
 	__tablename__ = 'Mutes'
+	id = db.Column(db.String, primary_key=True)
+	server = db.Column(db.String)
+
+
+class Deafen(db.DatabaseObject):
+	__tablename__ = 'Deafens'
 	id = db.Column(db.String, primary_key=True)
 	server = db.Column(db.String)
 
