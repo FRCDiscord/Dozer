@@ -41,7 +41,7 @@ class Fun(Cog):
 			)))
 			await sleep(1.5)
 			turn = opp_idx
-		messages.append(await ctx.send("{loser} lost! GG {winner}!".format(loser=players[turn].mention, winner=players[(turn + 1) % 2].mention)))
+		await ctx.send("{loser} lost! GG {winner}!".format(loser=players[turn].mention, winner=players[(turn + 1) % 2].mention))
 		await sleep(5)
 		# bulk delete if we have the manage messages permission
 		if ctx.channel.permissions_for(ctx.me).manage_messages:
