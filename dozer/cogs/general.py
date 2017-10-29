@@ -162,6 +162,9 @@ class General(Cog):
 		"""
 		Sets the new member channel for this guild.
 		"""
+		if welcome_channel.guild != ctx.guild:
+			await ctx.send("That channel is not in this guild.")
+			return
 		with db.Session() as Session:
 			settings = Session.query(WelcomeChannel).filter_by(id=ctx.guild.id).one_or_none()
 			if settings is None:
