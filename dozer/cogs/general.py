@@ -1,6 +1,7 @@
 import discord, inspect
 from discord.ext.commands import BadArgument, bot_has_permissions, cooldown, BucketType, Group, has_permissions
 from ._utils import *
+from .. import db
 
 class General(Cog):
 	"""General commands common to all Discord bots."""
@@ -130,6 +131,36 @@ class General(Cog):
 		await ctx.send("Nick successfully changed to " + nicktochangeto[:32])
 		if len(nicktochangeto) > 32:
 			await ctx.send("Warning: truncated nickname to 32 characters")
+
+	@has_permissions(create_instant_invite=True)
+	@bot_has_permissions(create_instant_invite=True)
+	@command()
+	async def invites(self, ctx, num, hours=24):
+		"""
+		Generates a set number of single use invites.
+		"""
+
+	@command()
+	@has_permissions(adiminstrator=True):
+	async def welcomeconfig(self, ctx, *, welcome_channel: discord.TextChannel):
+		"""
+		Sets the new member channel for this guild.
+		"""
+		with db.Session() as Session:
+			settings = Session.query(WelcomeChannel).filter_by(id=ctx.guild.id).one_or_none()
+			if settings is None:
+				settings = WelcomeChannel(id=ctx.guild.id, channel_id=welcome_channel.id)
+				Session.add(settings)
+			else:
+				settings.member_role = welcome_channel.id
+		await ctx.send("Welcome channel set to {}".format(welcome_channel.mention))
+
+
 def setup(bot):
 	bot.remove_command('help')
 	bot.add_cog(General(bot))
+
+class WelcomeChannel(db.DatabaseObject):
+	__tablename__ = 'welcome_channel'
+	id = db.Column(db.Integer, primary_key=True)
+	channel_id = db.Column(db.Integer, nullable=True)
