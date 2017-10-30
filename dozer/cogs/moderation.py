@@ -117,14 +117,14 @@ class Moderation(Cog):
 				channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
 				await channel.send(memberjoinedmessage)
 			user = session.query(Guildmute).filter_by(id=member.id).one_or_none()
-			if user is not None:
+			if user is not None and user.guild == member.guild.id:
 				for i in member.guild.channels:
 					overwrite = discord.PermissionOverwrite()
 					overwrite.send_messages = False
 					overwrite.add_reactions = False
 					await i.set_permissions(target=member, overwrite=overwrite)
 			user = session.query(Deafen).filter_by(id=member.id).one_or_none()
-			if user is not None:
+			if user is not None and user.guild == member.guild.id:
 				for i in member.guild.channels:
 					overwrite = discord.PermissionOverwrite()
 					overwrite.read_messages = False
@@ -310,13 +310,13 @@ class Moderation(Cog):
 class Guildmute(db.DatabaseObject):
 	__tablename__ = 'Mutes'
 	id = db.Column(db.String, primary_key=True)
-	server = db.Column(db.String)
+	guild = db.Column(db.String)
 
 
 class Deafen(db.DatabaseObject):
 	__tablename__ = 'Deafens'
 	id = db.Column(db.String, primary_key=True)
-	server = db.Column(db.String)
+	guild = db.Column(db.String)
 
 
 class Guildmodlog(db.DatabaseObject):
