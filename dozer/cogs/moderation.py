@@ -118,16 +118,16 @@ class Moderation(Cog):
 				await channel.send(memberjoinedmessage)
 			user = session.query(Guildmute).filter_by(id=member.id).one_or_none()
 			if user is not None and user.guild == member.guild.id:
+				overwrite = discord.PermissionOverwrite()
+				overwrite.send_messages = False
+				overwrite.add_reactions = False
 				for i in member.guild.channels:
-					overwrite = discord.PermissionOverwrite()
-					overwrite.send_messages = False
-					overwrite.add_reactions = False
 					await i.set_permissions(target=member, overwrite=overwrite)
 			user = session.query(Deafen).filter_by(id=member.id).one_or_none()
 			if user is not None and user.guild == member.guild.id:
+				overwrite = discord.PermissionOverwrite()
+				overwrite.read_messages = False
 				for i in member.guild.channels:
-					overwrite = discord.PermissionOverwrite()
-					overwrite.read_messages = False
 					await i.set_permissions(target=member, overwrite=overwrite)
 
 	async def on_member_remove(self, member):
