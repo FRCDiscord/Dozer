@@ -199,7 +199,34 @@ class Roles(Cog):
 	delete.example_usage = """
 	`{prefix}giveme delete Java` - deletes the role called "Java" if it's giveable (automatically removes it from all members)
 	"""
-	
+
+	@giveme.command()
+	@bot_has_permissions(manage_roles=True)
+	@has_permissions(manage_guild=True)
+	async def removefromlist(self, ctx, *, name):
+		"""Deletes and removes a giveable role."""
+		if ',' in name:
+			raise BadArgument('this command only works with single roles!')
+		norm_name = self.normalize(name)
+		valid_ids = set(role.id for role in ctx.guild.roles)
+		with db.Session() as session:
+			try:
+				role = session.query(GiveableRole).filter(GiveableRole.guild_id == ctx.guild.id,
+														  GiveableRole.norm_name == norm_name,
+														  GiveableRole.id.in_(valid_ids)).one()
+			except MultipleResultsFound:
+				raise BadArgument('multiple giveable roles with that name exist!')
+			except NoResultFound:
+				raise BadArgument('that role does not exist or is not giveable!')
+			else:
+				session.delete(role)
+		role = discord.utils.get(ctx.guild.roles, id=role.id)  # Not null because we already checked for id in valid_ids
+		await ctx.send('Role "{0}" deleted!'.format(role))
+
+	delete.example_usage = """
+	`{prefix}giveme delete Java` - deletes the role called "Java" if it's giveable (automatically removes it from all members)
+	"""
+
 	@cooldown(1, 10, BucketType.channel)
 	@giveme.command(name='list')
 	@bot_has_permissions(manage_roles=True)
