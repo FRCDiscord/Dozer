@@ -128,8 +128,9 @@ class Moderation(Cog):
 		e = discord.Embed(type='rich')
 		e.title = 'Message Deletion'
 		e.color = 0xFF0000
-		e.add_field(name='Author', value=message.author.mention)
-		e.add_field(name='Channel', value=message.channel.mention)
+		e.add_field(name='Author', value=before.author)
+		e.add_field(name='Author pingable', value=before.author.mention)
+		e.add_field(name='Channel', value=before.channel)
 		if 1024 > len(message.content) > 0:
 			e.add_field(name="Deleted message", value=message.content)
 		elif len(message.content) != 0:
@@ -155,8 +156,9 @@ class Moderation(Cog):
 			e = discord.Embed(type='rich')
 			e.title = 'Message Edited'
 			e.color = 0xFF0000
-			e.add_field(name='Author', value=before.author.mention)
-			e.add_field(name='Channel', value=before.channel.mention)
+			e.add_field(name='Author', value=before.author)
+			e.add_field(name='Author pingable', value=before.author.mention)
+			e.add_field(name='Channel', value=before.channel)
 			if 1024 > len(before.content) > 0:
 				e.add_field(name="Old message", value=before.content)
 			elif len(before.content) != 0:
