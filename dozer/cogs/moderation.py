@@ -99,6 +99,44 @@ class Moderation(Cog):
 				session.add(config)
 			await ctx.send(ctx.message.author.mention + ', modlog settings configured!')
 
+
+	async def on_message(self, message):
+		if message.author.bot: return
+		if not message.guild.me.guild_permissions.manage_roles: return
+
+		with db.Session() as session:
+			config = session.query(GuildNewMember).filter_by(guild_id=message.guild.id).one_or_none()
+			if config is not None:
+				string = config.message
+				content = message.content.casefold()
+				if string not in content: return
+				channel = config.channel_id
+				role_id = config.role_id
+				if message.channel.id != channel: return
+				await message.author.add_roles(discord.utils.get(message.guild.roles, id=role_id))
+
+	@command()
+	@has_permissions(administrator=True)
+	async def nmconfig(self, ctx, channel_mention: discord.TextChannel, role: discord.Role, *, message):
+		"""Sets the config for the new members channel"""
+		with db.Session() as session:
+			config = session.query(GuildNewMember).filter_by(guild_id=ctx.guild.id).one_or_none()
+			if config is not None:
+				config.channel_id = channel_mention.id
+				config.role_id = role.id
+				config.message = message.casefold()
+			else:
+				config = GuildNewMember(guild_id=ctx.guild.id, channel_id=channel_mention.id, role_id=role.id, message=message.casefold())
+				session.add(config)
+
+		role_name = role.name
+		await ctx.send("New Member Channel configured as: {channel}. Role configured as: {role}. Message: {message}".format(channel=ctx.channel.name, role=role_name, message=message))
+
+	nmconfig.example_usage = """
+	`{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel so if someone types "I have read the rules and regulations" it assigns them the Member role. 
+	"""
+	
+
 	@command()
 	@has_permissions(manage_roles=True)
 	@bot_has_permissions(manage_roles=True)
@@ -238,7 +276,9 @@ class Moderation(Cog):
 		e = discord.Embed(type='rich')
 		e.title = 'Message Deletion'
 		e.color = 0xFF0000
-		e.add_field(name='Author', value=message.author)
+		e.add_field(name='Author', value=before.author)
+		e.add_field(name='Author pingable', value=before.author.mention)
+		e.add_field(name='Channel', value=before.channel)
 		if 1024 > len(message.content) > 0:
 			e.add_field(name="Deleted message", value=message.content)
 		elif len(message.content) != 0:
@@ -265,6 +305,8 @@ class Moderation(Cog):
 			e.title = 'Message Edited'
 			e.color = 0xFF0000
 			e.add_field(name='Author', value=before.author)
+			e.add_field(name='Author pingable', value=before.author.mention)
+			e.add_field(name='Channel', value=before.channel)
 			if 1024 > len(before.content) > 0:
 				e.add_field(name="Old message", value=before.content)
 			elif len(before.content) != 0:
@@ -419,7 +461,12 @@ class MemberRole(db.DatabaseObject):
 	id = db.Column(db.Integer, primary_key=True)
 	member_role = db.Column(db.Integer, nullable=True)
 
-
+class GuildNewMember(db.DatabaseObject):
+	__tablename__ = 'new_members'
+	guild_id = db.Column(db.Integer, primary_key=True)
+	channel_id = db.Column(db.Integer)
+	role_id = db.Column(db.Integer)
+	message = db.Column(db.String)
 class Guildmemberlog(db.DatabaseObject):
 	__tablename__ = 'memberlogconfig'
 	id = db.Column(db.Integer, primary_key=True)
