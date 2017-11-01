@@ -25,6 +25,8 @@ class Moderation(Cog):
 		if deafen:
 			overwrite.read_messages = False
 		for i in user.guild.channels:
+			for x in i.PermissionsOverride:
+				overwrite = x
 			await i.set_permissions(target=user, overwrite=overwrite)
 
 	@command()
