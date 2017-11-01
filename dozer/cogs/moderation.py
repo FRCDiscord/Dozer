@@ -18,17 +18,14 @@ class SafeRoleConverter(RoleConverter):
 # Todo: timed/self mutes
 class Moderation(Cog):
 	async def permoverride(self, user, deafen, mute):
+		overwrite = discord.PermissionOverwrite()
 		if mute:
-			overwrite = discord.PermissionOverwrite()
 			overwrite.send_messages = False
 			overwrite.add_reactions = False
-			for i in user.guild.channels:
-				await i.set_permissions(target=user, overwrite=overwrite)
 		if deafen:
-			overwrite = discord.PermissionOverwrite()
 			overwrite.read_messages = False
-			for i in user.guild.channels:
-				await i.set_permissions(target=user, overwrite=overwrite)
+		for i in user.guild.channels:
+			await i.set_permissions(target=user, overwrite=overwrite)
 
 	@command()
 	@has_permissions(ban_members=True)
