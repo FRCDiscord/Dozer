@@ -14,16 +14,14 @@ class Voice(Cog):
 				with db.Session() as session:
 					config = session.query(Voicebinds).filter_by(channel_id=after.channel.id).one_or_none()
 					if config is not None:
-						role_id = config.role_id
-						await member.add_roles(discord.utils.get(member.guild.roles, id=role_id))
+						await member.add_roles(discord.utils.get(member.guild.roles, id=config.role_id))
 
 			elif before.channel is not None and after.channel is None:
 				# leave event, take role
 				with db.Session() as session:
 					config = session.query(Voicebinds).filter_by(channel_id=before.channel.id).one_or_none()
 					if config is not None:
-						role_id = config.role_id
-						await member.remove_roles(discord.utils.get(member.guild.roles, id=role_id))
+						await member.remove_roles(discord.utils.get(member.guild.roles, id=config.role_id))
 
 	@command()
 	@bot_has_permissions(manage_roles=True)
