@@ -38,8 +38,7 @@ class Voice(Cog):
 				config = Voicebinds(channel_id=voice_channel.id, role_id=role.id)
 				session.add(config)
 				
-		# Debate: bold, or quotes?
-		await ctx.send("\"{role}\" will now be given to users in \"{voice_channel}\"!".format(role=role, voice_channel = voice_channel))
+		await ctx.send("`{role}` will now be given to users in `{voice_channel}`!".format(role=role, voice_channel = voice_channel))
 
 	voicebind.example_usage = """
 	`{prefix}voicebind "General #1" voice-general-1` - sets up Dozer to give users  `voice-general-1` when they join voice channel "General #1", which will be removed when they leave.
