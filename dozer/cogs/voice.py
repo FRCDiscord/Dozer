@@ -5,18 +5,18 @@ import discord
 
 class Voice(Cog):
 	async def on_voice_state_update(self, member, before, after):
-		# skip this if we have no perms
-		if member.guild.me.guild_permissions.manage_roles:
+		# skip this if we have no perms, or if it's something like a mute/deafen
+		if member.guild.me.guild_permissions.manage_roles and before.channel != after.channel:
 			# determine if it's a join/leave event as well.
 			# before and after are voice states
-			if before.channel is None and after.channel is not None:
+			if after.channel is not None:
 				# join event, give role
 				with db.Session() as session:
 					config = session.query(Voicebinds).filter_by(channel_id=after.channel.id).one_or_none()
 					if config is not None:
 						await member.add_roles(discord.utils.get(member.guild.roles, id=config.role_id))
 
-			elif before.channel is not None and after.channel is None:
+			if before.channel is not None:
 				# leave event, take role
 				with db.Session() as session:
 					config = session.query(Voicebinds).filter_by(channel_id=before.channel.id).one_or_none()
