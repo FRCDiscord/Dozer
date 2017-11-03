@@ -21,6 +21,18 @@ class General(Cog):
 	`{prefix}ping` - Calculate and display the bot's response time
 	"""
 	
+	@command()
+	async def invite(self, ctx):
+		"""Invite this bot to your server"""
+		bot_invite_permission = discord.Permissions(permissions=ctx.bot.config['discord_bot_invite_permission'])
+		e = discord.Embed(color=discord.Color.blurple())
+		e.set_author(name='Click here to invite {}'.format(ctx.bot.user.name),url=discord.utils.oauth_url(ctx.bot.user.id, bot_invite_permission))
+		await ctx.send(embed=e)
+	
+	invite.example_usage = """
+	`{prefix}invite` - Sends a message with the invite link.
+	"""
+	
 	@cooldown(1, 10, BucketType.channel)
 	@command(name='help', aliases=['about'])
 	@bot_has_permissions(add_reactions=True)

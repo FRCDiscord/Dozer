@@ -16,3 +16,4 @@ dozer.db
 [._]s[a-v][a-z]
 [._]sw[a-p]
 *~
+config.json.old
