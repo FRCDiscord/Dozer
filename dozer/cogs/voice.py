@@ -66,7 +66,7 @@ class Voice(Cog):
 	@command()
 	@bot_has_permissions(manage_roles=True)
 	async def voicebindlist(self, ctx):
-		""""""
+		"""Lists all the voice channel to role bindings for the current server"""
 		embed = discord.Embed(title="List of voice bindings for \"{}\"".format(ctx.guild), color=discord.Color.blue())
 		with db.Session() as session:
 			for config in session.query(Voicebinds).filter_by(guild_id=ctx.guild.id).all():
@@ -74,7 +74,9 @@ class Voice(Cog):
 				role = discord.utils.get(ctx.guild.roles, id=config.role_id)
 				embed.add_field(name=channel, value="`{}`".format(role))
 		await ctx.send(embed=embed)
-
+	voicebindlist.example_usage = """
+	`{prefix}voicebindlist` - Lists all the voice channel to role bindings for the current server bound with the voicebind command.
+	"""
 
 class Voicebinds(db.DatabaseObject):
 	__tablename__ = 'voicebinds'
