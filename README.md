@@ -40,6 +40,10 @@ Instructions for installing are located [here](https://github.com/pyenv/pyenv-in
 2. `pyenv global 3.6.3` sets 3.6.3 as the primary version for the current user
 3. run `python -V` to ensure that version 3.6 or newer is installed. 
 
+
+
+Through the rest of this README, we will assume that you have found the correct `python` executable for your setup and are using it accordingly.
+
 ### Getting your Discord Bot Token
 
 1. Go to the [Discord Developer Portal](https://discordapp.com/developers/applications/me) and create a new application.
@@ -62,8 +66,8 @@ Instructions for installing are located [here](https://github.com/pyenv/pyenv-in
 
 ### Setting up the bot
 
-1. Install dependencies with `python3 -m pip install -Ur requirements.txt`
-2. Run the bot once with `python3 -m dozer`. This will crash, but generate a default config file.
+1. Install dependencies with `python -m pip install -Ur requirements.txt`
+2. Run the bot once with `python -m dozer`. This will crash, but generate a default config file.
    1. Dozer uses [json](http://www.json.org/) for it's config file
 3. Add the Discord bot account's token to `discord_token` in `config.json`
 4. Add your Google Maps API key to `gmaps_key` in `config.json`
