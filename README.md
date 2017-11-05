@@ -73,7 +73,7 @@ Through the rest of this README, we will assume that you have found the correct 
 4. Add your Google Maps API key to `gmaps_key` in `config.json`
 5. Add information about your team and your bot to `tba` in `config.json`
 6. Add your ID, and anyone else's ID who should be able to use the developer commands, to the list `developers` in `config.json`
-   1. Be careful giving this out. Developers can control everything your bot does and potentially get your [bot user token!](#Getting-your-discord-bot-token)
+   1. Be careful giving this out. Developers can control everything your bot does and potentially get your [bot user token!](#getting-your-discord-bot-token)
 7. The default command prefix is &. If this is already in use on your server or you would like another prefix, you can change the `prefix` value in `config.json`.
 8. Run the bot again, you should see `Signed in as username#discrim (id)` after a few seconds.
 
