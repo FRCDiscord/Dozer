@@ -64,13 +64,17 @@ Instructions for installing are located [here](https://github.com/pyenv/pyenv-in
 
 1. Install dependencies with `python3 -m pip install -Ur requirements.txt`
 2. Run the bot once with `python3 -m dozer`. This will crash, but generate a default config file.
+   1. Dozer uses [json](http://www.json.org/) for it's config file
 3. Add the Discord bot account's token to `discord_token` in `config.json`
 4. Add your Google Maps API key to `gmaps_key` in `config.json`
 5. Add information about your team and your bot to `tba` in `config.json`
 6. Add your ID, and anyone else's ID who should be able to use the developer commands, to the list `developers` in `config.json`
-7. Run the bot again, you should see `Signed in as username#discrim (id)` after a few seconds.
+7. The default command prefix is &. If this is already in use on your server or you would like another prefix, you can change the `prefix` value in `config.json`.
+8. Run the bot again, you should see `Signed in as username#discrim (id)` after a few seconds.
 
 ### Adding the bot to your server
+
+Note: This process will eventually be replaced by an `invite` command.
 
 1. To add the bot to your server, paste the following link into your browser.  Your client ID can be found on the applications page in the [Discord Developer Portal](https://discordapp.com/developers/applications/me)
 
