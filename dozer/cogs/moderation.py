@@ -18,15 +18,13 @@ class SafeRoleConverter(RoleConverter):
 # Todo: timed/self mutes
 class Moderation(Cog):
 	async def permoverride(self, user, deafen, mute):
-		overwrite = discord.PermissionOverwrite()
-		if mute:
-			overwrite.send_messages = False
-			overwrite.add_reactions = False
-		if deafen:
-			overwrite.read_messages = False
 		for i in user.guild.channels:
-			for x in i.PermissionsOverride:
-				overwrite = x
+			overwrite = i.overwrites_for(user)
+			if mute:
+				overwrite.send_messages = False
+				overwrite.add_reactions = False
+			if deafen:
+				overwrite.read_messages = False
 			await i.set_permissions(target=user, overwrite=overwrite)
 
 	@command()
@@ -97,7 +95,6 @@ class Moderation(Cog):
 				config = Guildmodlog(id=ctx.guild.id, modlog_channel=channel_mentions.id, name=ctx.guild.name)
 				session.add(config)
 			await ctx.send(ctx.message.author.mention + ', modlog settings configured!')
-
 
 	async def on_message(self, message):
 		if message.author.bot: return
@@ -250,7 +247,7 @@ class Moderation(Cog):
 			await ctx.send(ctx.message.author.mention + ', messagelog settings configured!')
 
 	async def on_member_join(self, member):
-		memberjoinedmessage = "{} has joined the server! Enjoy your stay!".format(member.display_name)
+		memberjoinedmessage = "{} has joined the server! Enjoy your stay! This server now has {}".format(member.display_name, len(member.guild.members))
 		with db.Session() as session:
 			memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
 			if memberlogchannel is not None:
@@ -264,7 +261,7 @@ class Moderation(Cog):
 				await self.permoverride(user, True, False)
 
 	async def on_member_remove(self, member):
-		memberleftmessage = "{} has left the server!".format(member.display_name)
+		memberleftmessage = "{} has left the server! This server now has {} members".format(member.display_name, len(member.guild.members))
 		with db.Session() as session:
 			memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
 			if memberlogchannel is not None:
@@ -275,9 +272,9 @@ class Moderation(Cog):
 		e = discord.Embed(type='rich')
 		e.title = 'Message Deletion'
 		e.color = 0xFF0000
-		e.add_field(name='Author', value=before.author)
-		e.add_field(name='Author pingable', value=before.author.mention)
-		e.add_field(name='Channel', value=before.channel)
+		e.add_field(name='Author', value=message.author)
+		e.add_field(name='Author pingable', value=message.author.mention)
+		e.add_field(name='Channel', value=message.channel)
 		if 1024 > len(message.content) > 0:
 			e.add_field(name="Deleted message", value=message.content)
 		elif len(message.content) != 0:
@@ -353,7 +350,7 @@ class Moderation(Cog):
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def mute(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
-		self.permoverride(member_mentions, False, True)
+		await self.permoverride(member_mentions, False, True)
 		modlogmessage = "{} has been muted by {} because {}".format(member_mentions, ctx.author.display_name, reason)
 		await ctx.send(modlogmessage)
 		with db.Session() as session:
@@ -368,7 +365,7 @@ class Moderation(Cog):
 				Guildmute.id = str(member_mentions.id)
 				Guildmute.guild = str(ctx.guild.id)
 			else:
-				user = Guildmute(id=member_mentions.id, server=ctx.guild.id)
+				user = Guildmute(id=member_mentions.id, guild=ctx.guild.id)
 				session.add(user)
 
 
@@ -397,7 +394,7 @@ class Moderation(Cog):
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def deafen(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
-		self.permoverride(member_mentions, True, False)
+		await self.permoverride(member_mentions, True, False)
 		modlogmessage = "{} has been deafened by {} because {}".format(member_mentions, ctx.author.display_name, reason)
 		await ctx.send(modlogmessage)
 		with db.Session() as session:
@@ -412,7 +409,7 @@ class Moderation(Cog):
 				Deafen.id = str(member_mentions.id)
 				Deafen.guild = str(ctx.guild.id)
 			else:
-				user = Deafen(id=member_mentions.id, server=ctx.guild.id)
+				user = Deafen(id=member_mentions.id, guild=ctx.guild.id)
 				session.add(user)
 
 	@command()
