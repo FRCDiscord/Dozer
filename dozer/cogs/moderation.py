@@ -17,7 +17,7 @@ class SafeRoleConverter(RoleConverter):
 
 # Todo: timed/self mutes
 class Moderation(Cog):
-	async def permoverride(self, user, deafen, mute):
+	async def permoverride(self, user, deafen=None, mute=None, unmute=None, undeafen=None):
 		for i in user.guild.channels:
 			overwrite = i.overwrites_for(user)
 			if mute:
@@ -25,6 +25,11 @@ class Moderation(Cog):
 				overwrite.add_reactions = False
 			if deafen:
 				overwrite.read_messages = False
+			if unmute:
+				overwrite.send_messages = None
+				overwrite.add_reactions = None
+			if undeafen:
+				overwrite.read_messages = None
 			await i.set_permissions(target=user, overwrite=overwrite)
 
 	@command()
@@ -350,7 +355,7 @@ class Moderation(Cog):
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def mute(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
-		await self.permoverride(member_mentions, False, True)
+		await self.permoverride(member_mentions, mute=True)
 		modlogmessage = "{} has been muted by {} because {}".format(member_mentions, ctx.author.display_name, reason)
 		await ctx.send(modlogmessage)
 		with db.Session() as session:
@@ -373,8 +378,7 @@ class Moderation(Cog):
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def unmute(self, ctx, member_mentions: discord.Member):
-		for i in ctx.guild.channels:
-			await i.set_permissions(target=member_mentions, overwrite=None)
+		await self.permoverride(member_mentions, unmute=True)
 		modlogmessage = "{} has been unmuted by {}".format(member_mentions, ctx.author.display_name)
 		await ctx.send(modlogmessage)
 		with db.Session() as session:
@@ -394,7 +398,7 @@ class Moderation(Cog):
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def deafen(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
-		await self.permoverride(member_mentions, True, False)
+		await self.permoverride(member_mentions, deafen=True)
 		modlogmessage = "{} has been deafened by {} because {}".format(member_mentions, ctx.author.display_name, reason)
 		await ctx.send(modlogmessage)
 		with db.Session() as session:
@@ -416,8 +420,7 @@ class Moderation(Cog):
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def undeafen(self, ctx, member_mentions: discord.Member):
-		for i in ctx.guild.channels:
-			await i.set_permissions(target=member_mentions, overwrite=None)
+		await self.permoverride(member_mentions, undeafen=True)
 		modlogmessage = "{} has been undeafened by {}".format(member_mentions, ctx.author.display_name)
 		await ctx.send(modlogmessage)
 		with db.Session() as session:
