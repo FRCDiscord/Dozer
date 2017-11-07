@@ -260,10 +260,10 @@ class Moderation(Cog):
 				await channel.send(memberjoinedmessage)
 			user = session.query(Guildmute).filter_by(id=member.id).one_or_none()
 			if user is not None and user.guild == member.guild.id:
-				await self.permoverride(user, False, True)
+				await self.permoverride(user, mute=True)
 			user = session.query(Deafen).filter_by(id=member.id).one_or_none()
 			if user is not None and user.guild == member.guild.id:
-				await self.permoverride(user, True, False)
+				await self.permoverride(user, deafen=True)
 
 	async def on_member_remove(self, member):
 		memberleftmessage = "{} has left the server! This server now has {} members".format(member.display_name, len(member.guild.members))
