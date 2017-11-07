@@ -31,6 +31,10 @@ class Moderation(Cog):
 			if undeafen:
 				overwrite.read_messages = None
 			await i.set_permissions(target=user, overwrite=overwrite)
+			for c in user.guild.channels:
+				for t, o in c.overwrites:
+					if all(v is None for n, v in o):
+						await c.set_permissions(t, overwrite=None)
 
 	@command()
 	@has_permissions(ban_members=True)
