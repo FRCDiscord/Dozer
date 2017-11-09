@@ -40,7 +40,6 @@ class TBA(Cog):
 		e.add_field(name='Rookie Year', value=team_data.rookie_year)
 		e.add_field(name='Location', value=team_data.location)
 		e.add_field(name='Website', value=team_data.website)
-		e.add_field(name='Motto', value=team_data.motto)
 		e.set_footer(text='Triggered by ' + ctx.author.display_name)
 		await ctx.send(embed=e)
 	
