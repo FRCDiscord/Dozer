@@ -17,24 +17,14 @@ class SafeRoleConverter(RoleConverter):
 
 # Todo: timed/self mutes
 class Moderation(Cog):
-	async def permoverride(self, user, deafen=None, mute=None, unmute=None, undeafen=None):
+	async def permoverride(self, user, **overwrites):
 		for i in user.guild.channels:
 			overwrite = i.overwrites_for(user)
-			if mute:
-				overwrite.send_messages = False
-				overwrite.add_reactions = False
-			if deafen:
-				overwrite.read_messages = False
-			if unmute:
-				overwrite.send_messages = None
-				overwrite.add_reactions = None
-			if undeafen:
-				overwrite.read_messages = None
-			await i.set_permissions(target=user, overwrite=overwrite)
-			for c in user.guild.channels:
-				for t, o in c.overwrites:
-					if all(v is None for n, v in o):
-						await c.set_permissions(t, overwrite=None)
+			for x in overwrites:
+				print(x)
+				overwrite.update(x)
+			print(overwrite)
+			await overwrite.update()
 
 	@command()
 	@has_permissions(ban_members=True)
@@ -264,10 +254,10 @@ class Moderation(Cog):
 				await channel.send(memberjoinedmessage)
 			user = session.query(Guildmute).filter_by(id=member.id).one_or_none()
 			if user is not None and user.guild == member.guild.id:
-				await self.permoverride(user, mute=True)
+				await self.permoverride(user, add_reactions=False, send_messages=False)
 			user = session.query(Deafen).filter_by(id=member.id).one_or_none()
 			if user is not None and user.guild == member.guild.id:
-				await self.permoverride(user, deafen=True)
+				await self.permoverride(user, read_messages=False)
 
 	async def on_member_remove(self, member):
 		memberleftmessage = "{} has left the server! This server now has {} members".format(member.display_name, len(member.guild.members))
@@ -359,7 +349,7 @@ class Moderation(Cog):
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def mute(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
-		await self.permoverride(member_mentions, mute=True)
+		await self.permoverride(member_mentions, send_messages=False, add_reactions=False)
 		modlogmessage = "{} has been muted by {} because {}".format(member_mentions, ctx.author.display_name, reason)
 		await ctx.send(modlogmessage)
 		with db.Session() as session:
@@ -382,7 +372,7 @@ class Moderation(Cog):
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def unmute(self, ctx, member_mentions: discord.Member):
-		await self.permoverride(member_mentions, unmute=True)
+		await self.permoverride(member_mentions, send_messages=None, add_reactions=None)
 		modlogmessage = "{} has been unmuted by {}".format(member_mentions, ctx.author.display_name)
 		await ctx.send(modlogmessage)
 		with db.Session() as session:
@@ -402,7 +392,7 @@ class Moderation(Cog):
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def deafen(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
-		await self.permoverride(member_mentions, deafen=True)
+		await self.permoverride(member_mentions, read_messages=False)
 		modlogmessage = "{} has been deafened by {} because {}".format(member_mentions, ctx.author.display_name, reason)
 		await ctx.send(modlogmessage)
 		with db.Session() as session:
@@ -424,7 +414,7 @@ class Moderation(Cog):
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def undeafen(self, ctx, member_mentions: discord.Member):
-		await self.permoverride(member_mentions, undeafen=True)
+		await self.permoverride(member_mentions, read_messages=None)
 		modlogmessage = "{} has been undeafened by {}".format(member_mentions, ctx.author.display_name)
 		await ctx.send(modlogmessage)
 		with db.Session() as session:
