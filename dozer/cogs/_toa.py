@@ -19,11 +19,15 @@ class TOAParser(object):
 			with async_timeout.timeout(5):
 				async with session.get(urljoin(self.base, endpoint), headers=self.headers) as response:
 					res = TOAResponse()
-					res._update((await response.json())[0])
+					data = await response.json()
+					if data:
+						res._update(data[0])
+					else:
+						res.error = True
 					return res
 
 class TOAResponse(object):
 	def __init__(self):
-		self.error = None
+		self.error = False
 	def _update(self, v):
 		self.__dict__.update(v)
