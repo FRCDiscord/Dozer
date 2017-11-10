@@ -6,7 +6,7 @@ class TOAParser(object):
 	"""
 	A class to make async requests to The Orange Alliance.
 	"""
-	def __init__(self, api_key, base_url="https://beta.theorangealliance.org/api/", app_name="Dozer"):
+	def __init__(self, api_key, base_url="https://theorangealliance.org/apiv2/", app_name="Dozer"):
 		self.base = base_url
 		self.headers = {
 			"X-Application-Origin": app_name,
