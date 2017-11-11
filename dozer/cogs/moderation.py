@@ -22,7 +22,9 @@ class Moderation(Cog):
 			overwrite = i.overwrites_for(user)
 			overwrite.update(**overwrites)
 			await i.set_permissions(target=user, overwrite=overwrite)
-			if overwrite.is_empty:
+			print("Overwrite set")
+			if overwrite.send_messages is None and overwrite.read_messages is None:
+				print("Overwrite is empty")
 				await i.set_permissions(target=user, overwrite=None)
 
 	@command()
