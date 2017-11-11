@@ -20,11 +20,8 @@ class Moderation(Cog):
 	async def permoverride(self, user, **overwrites):
 		for i in user.guild.channels:
 			overwrite = i.overwrites_for(user)
-			for x in overwrites:
-				print(x)
-				overwrite.update(x)
-			print(overwrite)
-			await overwrite.update()
+			overwrite.update(**overwrites)
+			await i.set_permissions(target=user, overwrite=overwrite)
 
 	@command()
 	@has_permissions(ban_members=True)
