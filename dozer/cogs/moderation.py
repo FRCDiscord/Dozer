@@ -22,6 +22,8 @@ class Moderation(Cog):
 			overwrite = i.overwrites_for(user)
 			overwrite.update(**overwrites)
 			await i.set_permissions(target=user, overwrite=overwrite)
+			if overwrite.is_empty:
+				await i.set_permissions(target=user, overwrite=None)
 
 	@command()
 	@has_permissions(ban_members=True)
