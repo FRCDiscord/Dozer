@@ -384,8 +384,6 @@ class Moderation(Cog):
 			user = session.query(Guildmute).filter_by(id=member_mentions.id).one_or_none()
 			if user is not None:
 				session.delete(user)
-			else:
-				await ctx.send("User is not muted!")
 
 	@command()
 	@has_permissions(kick_members=True)
@@ -432,13 +430,13 @@ class Moderation(Cog):
 
 class Guildmute(db.DatabaseObject):
 	__tablename__ = 'Mutes'
-	id = db.Column(db.String, primary_key=True)
+	id = db.Column(db.Integer, primary_key=True)
 	guild = db.Column(db.String)
 
 
 class Deafen(db.DatabaseObject):
 	__tablename__ = 'Deafens'
-	id = db.Column(db.String, primary_key=True)
+	id = db.Column(db.Integer, primary_key=True)
 	guild = db.Column(db.String)
 
 
@@ -448,10 +446,12 @@ class Guildmodlog(db.DatabaseObject):
 	name = db.Column(db.String)
 	modlog_channel = db.Column(db.Integer, nullable=True)
 
+
 class MemberRole(db.DatabaseObject):
 	__tablename__ = 'member_roles'
 	id = db.Column(db.Integer, primary_key=True)
 	member_role = db.Column(db.Integer, nullable=True)
+
 
 class GuildNewMember(db.DatabaseObject):
 	__tablename__ = 'new_members'
@@ -459,6 +459,8 @@ class GuildNewMember(db.DatabaseObject):
 	channel_id = db.Column(db.Integer)
 	role_id = db.Column(db.Integer)
 	message = db.Column(db.String)
+
+
 class Guildmemberlog(db.DatabaseObject):
 	__tablename__ = 'memberlogconfig'
 	id = db.Column(db.Integer, primary_key=True)
