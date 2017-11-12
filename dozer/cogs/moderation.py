@@ -129,7 +129,7 @@ class Moderation(Cog):
 	nmconfig.example_usage = """
 	`{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel so if someone types "I have read the rules and regulations" it assigns them the Member role. 
 	"""
-	
+
 
 	@command()
 	@has_permissions(manage_roles=True)
@@ -141,47 +141,47 @@ class Moderation(Cog):
 			if settings is None:
 				settings = MemberRole(id=ctx.guild.id)
 				session.add(settings)
-			
+
 			member_role = discord.utils.get(ctx.guild.roles, id=settings.member_role) # None-safe - nonexistent or non-configured role return None
-		
+
 		if member_role is not None:
 			targets = {member_role}
 		else:
 			await ctx.send('{0.author.mention}, the members role has not been configured. This may not work as expected. Use `{0.prefix}help memberconfig` to see how to set this up.'.format(ctx))
 			targets = set(sorted(ctx.guild.roles)[:ctx.author.top_role.position])
-		
+
 		to_restore = [(target, ctx.channel.overwrites_for(target)) for target in targets]
 		for target, overwrite in to_restore:
 			new_overwrite = discord.PermissionOverwrite.from_pair(*overwrite.pair())
 			new_overwrite.update(send_messages=False, add_reactions=False)
 			await ctx.channel.set_permissions(target, overwrite=new_overwrite)
-		
+
 		for allow_target in (ctx.me, ctx.author):
 			overwrite = ctx.channel.overwrites_for(allow_target)
 			new_overwrite = discord.PermissionOverwrite.from_pair(*overwrite.pair())
 			new_overwrite.update(send_messages=True)
 			await ctx.channel.set_permissions(allow_target, overwrite=new_overwrite)
 			to_restore.append((allow_target, overwrite))
-		
+
 		e = discord.Embed(title='Timeout - {}s'.format(duration), description='This channel has been timed out.', color=discord.Color.blue())
 		e.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar_url_as(format='png', size=32))
 		msg = await ctx.send(embed=e)
-		
+
 		await asyncio.sleep(duration)
-		
+
 		for target, overwrite in to_restore:
 			if all(permission is None for _, permission in overwrite):
 				await ctx.channel.set_permissions(target, overwrite=None)
 			else:
 				await ctx.channel.set_permissions(target, overwrite=overwrite)
-		
+
 		e.description = 'The timeout has ended.'
 		await msg.edit(embed=e)
-	
+
 	timeout.example_usage = """
 	`{prefix}timeout 60` - prevents sending messages in this channel for 1 minute (60s)
 	"""
-	
+
 	@command()
 	@has_permissions(administrator=True)
 	async def memberconfig(self, ctx, *, member_role: SafeRoleConverter):
@@ -191,7 +191,7 @@ class Moderation(Cog):
 		"""
 		if member_role >= ctx.author.top_role:
 			raise BadArgument('member role cannot be higher than your top role!')
-		
+
 		with db.Session() as session:
 			settings = session.query(MemberRole).filter_by(id=ctx.guild.id).one_or_none()
 			if settings is None:
@@ -200,7 +200,7 @@ class Moderation(Cog):
 			else:
 				settings.member_role = member_role.id
 		await ctx.send('Member role set as `{}`.'.format(member_role.name))
-	
+
 	memberconfig.example_usage = """
 	`{prefix}memberconfig Members` - set a role called "Members" as the member role
 	`{prefix}memberconfig @everyone` - set the default role as the member role
@@ -209,7 +209,7 @@ class Moderation(Cog):
 	`{prefix}memberconfig @.everyone` - set the default role as the member role (ping-safe)
 	`{prefix}memberconfig @/everyone` - set the default role as the member role (ping-safe)
 	"""
-	
+
 	@command()
 	@has_permissions(administrator=True)
 	async def memberlogconfig(self, ctx, channel_mentions: discord.TextChannel):
@@ -381,7 +381,7 @@ class Moderation(Cog):
 				await channel.send(modlogmessage)
 			else:
 				await ctx.send("Please configure modlog channel to enable modlog functionality")
-			user = session.query(Guildmute).filter_by(id=member_mentions.id).filter_by(guild=ctx.guild.id).one_or_none()
+			user = session.query(Guildmute).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
 			if user is not None:
 				session.delete(user)
 
@@ -421,23 +421,21 @@ class Moderation(Cog):
 				await channel.send(modlogmessage)
 			else:
 				await ctx.send("Please configure modlog channel to enable modlog functionality")
-			user = session.query(Deafen).filter_by(id=member_mentions.id).one_or_none()
+			user = session.query(Deafen).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
 			if user is not None:
 				session.delete(user)
-			else:
-				await ctx.send("User is not deafened!")
 
 
 class Guildmute(db.DatabaseObject):
 	__tablename__ = 'Mutes'
 	id = db.Column(db.Integer, primary_key=True)
-	guild = db.Column(db.String, primary_key=True)
+	guild = db.Column(db.Integer, primary_key=True)
 
 
 class Deafen(db.DatabaseObject):
 	__tablename__ = 'Deafens'
 	id = db.Column(db.Integer, primary_key=True)
-	guild = db.Column(db.String, primary_key=True)
+	guild = db.Column(db.Integer, primary_key=True)
 
 
 class Guildmodlog(db.DatabaseObject):
