@@ -22,9 +22,7 @@ class Moderation(Cog):
 			overwrite = i.overwrites_for(user)
 			overwrite.update(**overwrites)
 			await i.set_permissions(target=user, overwrite=overwrite)
-			print("Overwrite set")
 			if overwrite.send_messages is None and overwrite.read_messages is None:
-				print("Overwrite is empty")
 				await i.set_permissions(target=user, overwrite=None)
 
 	@command()
@@ -383,7 +381,7 @@ class Moderation(Cog):
 				await channel.send(modlogmessage)
 			else:
 				await ctx.send("Please configure modlog channel to enable modlog functionality")
-			user = session.query(Guildmute).filter_by(id=member_mentions.id).one_or_none()
+			user = session.query(Guildmute).filter_by(id=member_mentions.id).filter_by(guild=ctx.guild.id).one_or_none()
 			if user is not None:
 				session.delete(user)
 
@@ -433,13 +431,13 @@ class Moderation(Cog):
 class Guildmute(db.DatabaseObject):
 	__tablename__ = 'Mutes'
 	id = db.Column(db.Integer, primary_key=True)
-	guild = db.Column(db.String)
+	guild = db.Column(db.String, primary_key=True)
 
 
 class Deafen(db.DatabaseObject):
 	__tablename__ = 'Deafens'
 	id = db.Column(db.Integer, primary_key=True)
-	guild = db.Column(db.String)
+	guild = db.Column(db.String, primary_key=True)
 
 
 class Guildmodlog(db.DatabaseObject):
