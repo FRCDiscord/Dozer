@@ -10,7 +10,7 @@ embed_color = discord.Color(0xff9800)
 class TOA(Cog):
 	def __init__(self, bot):
 		super().__init__(bot)
-		self.parser = TOAParser(bot.config['toa_key'])
+		self.parser = TOAParser(bot.config['toa_key'], bot.http._session)
 	
 	@group(invoke_without_command=True)
 	async def toa(self, ctx, team_num: int):
