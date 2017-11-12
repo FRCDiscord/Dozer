@@ -245,7 +245,7 @@ class Moderation(Cog):
 			await ctx.send(ctx.message.author.mention + ', messagelog settings configured!')
 
 	async def on_member_join(self, member):
-		memberjoinedmessage = "{} has joined the server! Enjoy your stay! This server now has {}".format(member.display_name, len(member.guild.members))
+		memberjoinedmessage = "{} has joined the server! Enjoy your stay! This server now has {}".format(member.display_name, len(member.guild.member_count))
 		with db.Session() as session:
 			memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
 			if memberlogchannel is not None:
