@@ -431,7 +431,7 @@ class Moderation(Cog):
 
 
 class Guildmute(db.DatabaseObject):
-	__tablename__ = 'dutes'
+	__tablename__ = 'mutes'
 	id = db.Column(db.Integer, primary_key=True)
 	guild = db.Column(db.Integer, primary_key=True)
 
