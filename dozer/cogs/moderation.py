@@ -350,21 +350,21 @@ class Moderation(Cog):
 	async def mute(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
 		await self.permoverride(member_mentions, send_messages=False, add_reactions=False)
 		modlogmessage = "{} has been muted by {} because {}".format(member_mentions, ctx.author.display_name, reason)
-		await ctx.send(modlogmessage)
 		with db.Session() as session:
-			modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
-			if modlogchannel is not None:
-				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
-				await channel.send(modlogmessage)
-			else:
-				await ctx.send("Please configure modlog channel to enable modlog functionality")
 			user = session.query(Guildmute).filter_by(id=member_mentions.id).one_or_none()
 			if user is not None:
-				Guildmute.id = str(member_mentions.id)
-				Guildmute.guild = str(ctx.guild.id)
+				await ctx.send("User is already muted!")
 			else:
 				user = Guildmute(id=member_mentions.id, guild=ctx.guild.id)
 				session.add(user)
+				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+				await ctx.send(modlogmessage)
+				if modlogchannel is not None:
+					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+					await channel.send(modlogmessage)
+				else:
+					await ctx.send("Please configure modlog channel to enable modlog functionality")
+
 
 
 	@command()
@@ -373,17 +373,20 @@ class Moderation(Cog):
 	async def unmute(self, ctx, member_mentions: discord.Member):
 		await self.permoverride(member_mentions, send_messages=None, add_reactions=None)
 		modlogmessage = "{} has been unmuted by {}".format(member_mentions, ctx.author.display_name)
-		await ctx.send(modlogmessage)
 		with db.Session() as session:
-			modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
-			if modlogchannel is not None:
-				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
-				await channel.send(modlogmessage)
-			else:
-				await ctx.send("Please configure modlog channel to enable modlog functionality")
 			user = session.query(Guildmute).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
 			if user is not None:
 				session.delete(user)
+				await ctx.send(modlogmessage)
+				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+				if modlogchannel is not None:
+					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+					await channel.send(modlogmessage)
+				else:
+					await ctx.send("Please configure modlog channel to enable modlog functionality")
+			else:
+				await ctx.send("User is not muted!")
+
 
 	@command()
 	@has_permissions(kick_members=True)
@@ -391,21 +394,20 @@ class Moderation(Cog):
 	async def deafen(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
 		await self.permoverride(member_mentions, read_messages=False)
 		modlogmessage = "{} has been deafened by {} because {}".format(member_mentions, ctx.author.display_name, reason)
-		await ctx.send(modlogmessage)
 		with db.Session() as session:
-			modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
-			if modlogchannel is not None:
-				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
-				await channel.send(modlogmessage)
-			else:
-				await ctx.send("Please configure modlog channel to enable modlog functionality")
 			user = session.query(Deafen).filter_by(id=member_mentions.id).one_or_none()
 			if user is not None:
-				Deafen.id = str(member_mentions.id)
-				Deafen.guild = str(ctx.guild.id)
+				await ctx.send("User is already deafened!")
 			else:
 				user = Deafen(id=member_mentions.id, guild=ctx.guild.id)
 				session.add(user)
+				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+				await ctx.send(modlogmessage)
+				if modlogchannel is not None:
+					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+					await channel.send(modlogmessage)
+				else:
+					await ctx.send("Please configure modlog channel to enable modlog functionality")
 
 	@command()
 	@has_permissions(kick_members=True)
@@ -413,17 +415,19 @@ class Moderation(Cog):
 	async def undeafen(self, ctx, member_mentions: discord.Member):
 		await self.permoverride(member_mentions, read_messages=None)
 		modlogmessage = "{} has been undeafened by {}".format(member_mentions, ctx.author.display_name)
-		await ctx.send(modlogmessage)
 		with db.Session() as session:
-			modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
-			if modlogchannel is not None:
-				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
-				await channel.send(modlogmessage)
-			else:
-				await ctx.send("Please configure modlog channel to enable modlog functionality")
 			user = session.query(Deafen).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
 			if user is not None:
 				session.delete(user)
+				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+				await ctx.send(modlogmessage)
+				if modlogchannel is not None:
+					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+					await channel.send(modlogmessage)
+				else:
+					await ctx.send("Please configure modlog channel to enable modlog functionality")
+			else:
+				await ctx.send("User is not deafened!")
 
 
 class Guildmute(db.DatabaseObject):
