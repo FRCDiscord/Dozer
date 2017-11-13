@@ -245,7 +245,7 @@ class Moderation(Cog):
 			await ctx.send(ctx.message.author.mention + ', messagelog settings configured!')
 
 	async def on_member_join(self, member):
-		memberjoinedmessage = "{} has joined the server! Enjoy your stay! This server now has {}".format(member.display_name, member.guild.member_count)
+		memberjoinedmessage = "{} has joined the server! Enjoy your stay! This server now has {} members".format(member.display_name, member.guild.member_count)
 		with db.Session() as session:
 			memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
 			if memberlogchannel is not None:
@@ -253,10 +253,10 @@ class Moderation(Cog):
 				await channel.send(memberjoinedmessage)
 			user = session.query(Guildmute).filter_by(id=member.id).one_or_none()
 			if user is not None and user.guild == member.guild.id:
-				await self.permoverride(user, add_reactions=False, send_messages=False)
+				await self.permoverride(member, add_reactions=False, send_messages=False)
 			user = session.query(Deafen).filter_by(id=member.id).one_or_none()
 			if user is not None and user.guild == member.guild.id:
-				await self.permoverride(user, read_messages=False)
+				await self.permoverride(member, read_messages=False)
 
 	async def on_member_remove(self, member):
 		memberleftmessage = "{} has left the server! This server now has {} members".format(member.display_name, member.guild.member_count)
