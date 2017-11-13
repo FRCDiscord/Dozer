@@ -3,6 +3,7 @@ from discord.ext.commands import BadArgument, has_permissions, bot_has_permissio
 from .. import db
 from ._utils import *
 
+
 class SafeRoleConverter(RoleConverter):
 	async def convert(self, ctx, arg):
 		try:
@@ -13,8 +14,17 @@ class SafeRoleConverter(RoleConverter):
 			else:
 				raise
 
-# Todo: timed/self mutes, audit logging reasoning passing
+
+# Todo: timed/self mutes
 class Moderation(Cog):
+	async def permoverride(self, user, **overwrites):
+		for i in user.guild.channels:
+			overwrite = i.overwrites_for(user)
+			overwrite.update(**overwrites)
+			await i.set_permissions(target=user, overwrite=overwrite)
+			if overwrite.is_empty():
+				await i.set_permissions(target=user, overwrite=None)
+
 	@command()
 	@has_permissions(ban_members=True)
 	@bot_has_permissions(ban_members=True)
@@ -32,7 +42,7 @@ class Moderation(Cog):
 				await channel.send(modlogmessage)
 			else:
 				await ctx.send("Please configure modlog channel to enable modlog functionality")
-	
+
 	@command()
 	@has_permissions(ban_members=True)
 	@bot_has_permissions(ban_members=True)
@@ -49,7 +59,7 @@ class Moderation(Cog):
 				await channel.send(modlogmessage)
 			else:
 				await ctx.send("Please configure modlog channel to enable modlog functionality")
-	
+
 	@command()
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(kick_members=True)
@@ -66,7 +76,7 @@ class Moderation(Cog):
 				await channel.send(modlogmessage)
 			else:
 				await ctx.send("Please configure modlog channel to enable modlog functionality")
-	
+
 	@command()
 	@has_permissions(administrator=True)
 	async def modlogconfig(self, ctx, channel_mentions: discord.TextChannel):
@@ -119,7 +129,8 @@ class Moderation(Cog):
 	nmconfig.example_usage = """
 	`{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel so if someone types "I have read the rules and regulations" it assigns them the Member role. 
 	"""
-	
+
+
 	@command()
 	@has_permissions(manage_roles=True)
 	@bot_has_permissions(manage_roles=True)
@@ -130,47 +141,47 @@ class Moderation(Cog):
 			if settings is None:
 				settings = MemberRole(id=ctx.guild.id)
 				session.add(settings)
-			
+
 			member_role = discord.utils.get(ctx.guild.roles, id=settings.member_role) # None-safe - nonexistent or non-configured role return None
-		
+
 		if member_role is not None:
 			targets = {member_role}
 		else:
 			await ctx.send('{0.author.mention}, the members role has not been configured. This may not work as expected. Use `{0.prefix}help memberconfig` to see how to set this up.'.format(ctx))
 			targets = set(sorted(ctx.guild.roles)[:ctx.author.top_role.position])
-		
+
 		to_restore = [(target, ctx.channel.overwrites_for(target)) for target in targets]
 		for target, overwrite in to_restore:
 			new_overwrite = discord.PermissionOverwrite.from_pair(*overwrite.pair())
 			new_overwrite.update(send_messages=False, add_reactions=False)
 			await ctx.channel.set_permissions(target, overwrite=new_overwrite)
-		
+
 		for allow_target in (ctx.me, ctx.author):
 			overwrite = ctx.channel.overwrites_for(allow_target)
 			new_overwrite = discord.PermissionOverwrite.from_pair(*overwrite.pair())
 			new_overwrite.update(send_messages=True)
 			await ctx.channel.set_permissions(allow_target, overwrite=new_overwrite)
 			to_restore.append((allow_target, overwrite))
-		
+
 		e = discord.Embed(title='Timeout - {}s'.format(duration), description='This channel has been timed out.', color=discord.Color.blue())
 		e.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar_url_as(format='png', size=32))
 		msg = await ctx.send(embed=e)
-		
+
 		await asyncio.sleep(duration)
-		
+
 		for target, overwrite in to_restore:
 			if all(permission is None for _, permission in overwrite):
 				await ctx.channel.set_permissions(target, overwrite=None)
 			else:
 				await ctx.channel.set_permissions(target, overwrite=overwrite)
-		
+
 		e.description = 'The timeout has ended.'
 		await msg.edit(embed=e)
-	
+
 	timeout.example_usage = """
 	`{prefix}timeout 60` - prevents sending messages in this channel for 1 minute (60s)
 	"""
-	
+
 	@command()
 	@has_permissions(administrator=True)
 	async def memberconfig(self, ctx, *, member_role: SafeRoleConverter):
@@ -180,7 +191,7 @@ class Moderation(Cog):
 		"""
 		if member_role >= ctx.author.top_role:
 			raise BadArgument('member role cannot be higher than your top role!')
-		
+
 		with db.Session() as session:
 			settings = session.query(MemberRole).filter_by(id=ctx.guild.id).one_or_none()
 			if settings is None:
@@ -189,7 +200,7 @@ class Moderation(Cog):
 			else:
 				settings.member_role = member_role.id
 		await ctx.send('Member role set as `{}`.'.format(member_role.name))
-	
+
 	memberconfig.example_usage = """
 	`{prefix}memberconfig Members` - set a role called "Members" as the member role
 	`{prefix}memberconfig @everyone` - set the default role as the member role
@@ -198,7 +209,7 @@ class Moderation(Cog):
 	`{prefix}memberconfig @.everyone` - set the default role as the member role (ping-safe)
 	`{prefix}memberconfig @/everyone` - set the default role as the member role (ping-safe)
 	"""
-	
+
 	@command()
 	@has_permissions(administrator=True)
 	async def memberlogconfig(self, ctx, channel_mentions: discord.TextChannel):
@@ -215,7 +226,7 @@ class Moderation(Cog):
 				config = Guildmemberlog(id=ctx.guild.id, memberlog_channel=channel_mentions.id, name=ctx.guild.name)
 				session.add(config)
 			await ctx.send(ctx.message.author.mention + ', memberlog settings configured!')
-	
+
 	@command()
 	@has_permissions(administrator=True)
 	async def messagelogconfig(self, ctx, channel_mentions: discord.TextChannel):
@@ -232,30 +243,36 @@ class Moderation(Cog):
 				config = Guildmessagelog(id=ctx.guild.id, messagelog_channel=channel_mentions.id, name=ctx.guild.name)
 				session.add(config)
 			await ctx.send(ctx.message.author.mention + ', messagelog settings configured!')
-	
+
 	async def on_member_join(self, member):
-		memberjoinedmessage = "{} has joined the server! Enjoy your stay!".format(member.display_name)
+		memberjoinedmessage = "{} has joined the server! Enjoy your stay! This server now has {} members".format(member.display_name, member.guild.member_count)
 		with db.Session() as session:
 			memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
 			if memberlogchannel is not None:
 				channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
 				await channel.send(memberjoinedmessage)
-	
+			user = session.query(Guildmute).filter_by(id=member.id).one_or_none()
+			if user is not None and user.guild == member.guild.id:
+				await self.permoverride(member, add_reactions=False, send_messages=False)
+			user = session.query(Deafen).filter_by(id=member.id).one_or_none()
+			if user is not None and user.guild == member.guild.id:
+				await self.permoverride(member, read_messages=False)
+
 	async def on_member_remove(self, member):
-		memberleftmessage = "{} has left the server!".format(member.display_name)
+		memberleftmessage = "{} has left the server! This server now has {} members".format(member.display_name, member.guild.member_count)
 		with db.Session() as session:
 			memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
 			if memberlogchannel is not None:
 				channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
 				await channel.send(memberleftmessage)
-	
+
 	async def on_message_delete(self, message):
 		e = discord.Embed(type='rich')
 		e.title = 'Message Deletion'
 		e.color = 0xFF0000
-		e.add_field(name='Author', value=before.author)
-		e.add_field(name='Author pingable', value=before.author.mention)
-		e.add_field(name='Channel', value=before.channel)
+		e.add_field(name='Author', value=message.author)
+		e.add_field(name='Author pingable', value=message.author.mention)
+		e.add_field(name='Channel', value=message.channel)
 		if 1024 > len(message.content) > 0:
 			e.add_field(name="Deleted message", value=message.content)
 		elif len(message.content) != 0:
@@ -274,7 +291,7 @@ class Moderation(Cog):
 			if messagelogchannel is not None:
 				channel = message.guild.get_channel(messagelogchannel.messagelog_channel)
 				await channel.send(embed=e)
-	
+
 	async def on_message_edit(self, before, after):
 		if after.edited_at is not None or before.edited_at is not None:
 			# There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
@@ -314,7 +331,7 @@ class Moderation(Cog):
 				if messagelogchannel is not None:
 					channel = before.guild.get_channel(messagelogchannel.messagelog_channel)
 					await channel.send(embed=e)
-	
+
 	@command(aliases=["purge"])
 	@has_permissions(manage_messages=True)
 	@bot_has_permissions(manage_messages=True, read_message_history=True)
@@ -322,10 +339,108 @@ class Moderation(Cog):
 		"""Bulk delete a set number of messages from the current channel."""
 		await ctx.message.channel.purge(limit=num_to_delete + 1)
 		await ctx.send("Deleted {n} messages under request of {user}".format(n=num_to_delete, user=ctx.message.author.mention), delete_after=5)
-	
+
 	prune.example_usage = """
 	`{prefix}prune 10` - Delete the last 10 messages in the current channel.
 	"""
+
+	@command()
+	@has_permissions(kick_members=True)
+	@bot_has_permissions(manage_roles=True)
+	async def mute(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
+		await self.permoverride(member_mentions, send_messages=False, add_reactions=False)
+		modlogmessage = "{} has been muted by {} because {}".format(member_mentions, ctx.author.display_name, reason)
+		with db.Session() as session:
+			user = session.query(Guildmute).filter_by(id=member_mentions.id).one_or_none()
+			if user is not None:
+				await ctx.send("User is already muted!")
+			else:
+				user = Guildmute(id=member_mentions.id, guild=ctx.guild.id)
+				session.add(user)
+				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+				await ctx.send(modlogmessage)
+				if modlogchannel is not None:
+					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+					await channel.send(modlogmessage)
+				else:
+					await ctx.send("Please configure modlog channel to enable modlog functionality")
+
+
+
+	@command()
+	@has_permissions(kick_members=True)
+	@bot_has_permissions(manage_roles=True)
+	async def unmute(self, ctx, member_mentions: discord.Member):
+		await self.permoverride(member_mentions, send_messages=None, add_reactions=None)
+		modlogmessage = "{} has been unmuted by {}".format(member_mentions, ctx.author.display_name)
+		with db.Session() as session:
+			user = session.query(Guildmute).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
+			if user is not None:
+				session.delete(user)
+				await ctx.send(modlogmessage)
+				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+				if modlogchannel is not None:
+					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+					await channel.send(modlogmessage)
+				else:
+					await ctx.send("Please configure modlog channel to enable modlog functionality")
+			else:
+				await ctx.send("User is not muted!")
+
+
+	@command()
+	@has_permissions(kick_members=True)
+	@bot_has_permissions(manage_roles=True)
+	async def deafen(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
+		await self.permoverride(member_mentions, read_messages=False)
+		modlogmessage = "{} has been deafened by {} because {}".format(member_mentions, ctx.author.display_name, reason)
+		with db.Session() as session:
+			user = session.query(Deafen).filter_by(id=member_mentions.id).one_or_none()
+			if user is not None:
+				await ctx.send("User is already deafened!")
+			else:
+				user = Deafen(id=member_mentions.id, guild=ctx.guild.id)
+				session.add(user)
+				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+				await ctx.send(modlogmessage)
+				if modlogchannel is not None:
+					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+					await channel.send(modlogmessage)
+				else:
+					await ctx.send("Please configure modlog channel to enable modlog functionality")
+
+	@command()
+	@has_permissions(kick_members=True)
+	@bot_has_permissions(manage_roles=True)
+	async def undeafen(self, ctx, member_mentions: discord.Member):
+		await self.permoverride(member_mentions, read_messages=None)
+		modlogmessage = "{} has been undeafened by {}".format(member_mentions, ctx.author.display_name)
+		with db.Session() as session:
+			user = session.query(Deafen).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
+			if user is not None:
+				session.delete(user)
+				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+				await ctx.send(modlogmessage)
+				if modlogchannel is not None:
+					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+					await channel.send(modlogmessage)
+				else:
+					await ctx.send("Please configure modlog channel to enable modlog functionality")
+			else:
+				await ctx.send("User is not deafened!")
+
+
+class Guildmute(db.DatabaseObject):
+	__tablename__ = 'mutes'
+	id = db.Column(db.Integer, primary_key=True)
+	guild = db.Column(db.Integer, primary_key=True)
+
+
+class Deafen(db.DatabaseObject):
+	__tablename__ = 'deafens'
+	id = db.Column(db.Integer, primary_key=True)
+	guild = db.Column(db.Integer, primary_key=True)
+
 
 class Guildmodlog(db.DatabaseObject):
 	__tablename__ = 'modlogconfig'
@@ -333,10 +448,12 @@ class Guildmodlog(db.DatabaseObject):
 	name = db.Column(db.String)
 	modlog_channel = db.Column(db.Integer, nullable=True)
 
+
 class MemberRole(db.DatabaseObject):
 	__tablename__ = 'member_roles'
 	id = db.Column(db.Integer, primary_key=True)
 	member_role = db.Column(db.Integer, nullable=True)
+
 
 class GuildNewMember(db.DatabaseObject):
 	__tablename__ = 'new_members'
@@ -344,11 +461,14 @@ class GuildNewMember(db.DatabaseObject):
 	channel_id = db.Column(db.Integer)
 	role_id = db.Column(db.Integer)
 	message = db.Column(db.String)
+
+
 class Guildmemberlog(db.DatabaseObject):
 	__tablename__ = 'memberlogconfig'
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String)
 	memberlog_channel = db.Column(db.Integer)
+
 
 class Guildmessagelog(db.DatabaseObject):
 	__tablename__ = 'messagelogconfig'

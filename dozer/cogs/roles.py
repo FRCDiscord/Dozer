@@ -199,7 +199,7 @@ class Roles(Cog):
 	delete.example_usage = """
 	`{prefix}giveme delete Java` - deletes the role called "Java" if it's giveable (automatically removes it from all members)
 	"""
-	
+
 	@cooldown(1, 10, BucketType.channel)
 	@giveme.command(name='list')
 	@bot_has_permissions(manage_roles=True)
@@ -227,7 +227,7 @@ class Roles(Cog):
 		if role > ctx.author.top_role:
 			raise BadArgument('Cannot give roles higher than your top role!')
 		await member.add_roles(role)
-		await ctx.send('Successfully gave {} "{}"!'.format(member, role))
+		await ctx.send('Successfully gave {} {}!'.format(member, role))
 	
 	give.example_usage = """
 	`{prefix}give cooldude#1234 Java` - gives cooldude any role, giveable or not, named Java
