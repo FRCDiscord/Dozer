@@ -431,13 +431,13 @@ class Moderation(Cog):
 
 
 class Guildmute(db.DatabaseObject):
-	__tablename__ = 'Mutes'
+	__tablename__ = 'dutes'
 	id = db.Column(db.Integer, primary_key=True)
 	guild = db.Column(db.Integer, primary_key=True)
 
 
 class Deafen(db.DatabaseObject):
-	__tablename__ = 'Deafens'
+	__tablename__ = 'deafens'
 	id = db.Column(db.Integer, primary_key=True)
 	guild = db.Column(db.Integer, primary_key=True)
 
