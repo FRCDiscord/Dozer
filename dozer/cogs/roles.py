@@ -227,7 +227,7 @@ class Roles(Cog):
 		if role > ctx.author.top_role:
 			raise BadArgument('Cannot give roles higher than your top role!')
 		await member.add_roles(role)
-		await ctx.send('Successfully gave {} {}'.format(member, role))
+		await ctx.send('Successfully gave {} {}!'.format(member, role))
 	
 	give.example_usage = """
 	`{prefix}give cooldude#1234 Java` - gives cooldude any role, giveable or not, named Java
