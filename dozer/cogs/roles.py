@@ -218,7 +218,34 @@ class Roles(Cog):
 	@staticmethod
 	def normalize(name):
 		return name.strip().casefold()
-	
+
+	@giveme.command()
+	@bot_has_permissions(manage_roles=True)
+	@has_permissions(manage_guild=True)
+	async def removefromlist(self, ctx, *, name):
+		"""Deletes and removes a giveable role."""
+		#Honestly this is the giveme delete command but modified to only delete from the DB
+		if ',' in name:
+			raise BadArgument('this command only works with single roles!')
+		norm_name = self.normalize(name)
+		valid_ids = set(role.id for role in ctx.guild.roles)
+		with db.Session() as session:
+			try:
+				role = session.query(GiveableRole).filter(GiveableRole.guild_id == ctx.guild.id,
+														  GiveableRole.norm_name == norm_name,
+														  GiveableRole.id.in_(valid_ids)).one()
+			except MultipleResultsFound:
+				raise BadArgument('multiple giveable roles with that name exist!')
+			except NoResultFound:
+				raise BadArgument('that role does not exist or is not giveable!')
+			else:
+				session.delete(role)
+		await ctx.send('Role "{0}" deleted from list!'.format(name))
+
+	delete.example_usage = """
+	`{prefix}giveme delete Java` - deletes the role called "Java" if it's giveable (does not remove it from all members)
+	"""
+
 	@command()
 	@bot_has_permissions(manage_roles=True)
 	@has_permissions(manage_roles=True)
