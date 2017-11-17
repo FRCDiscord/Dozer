@@ -231,9 +231,7 @@ class Roles(Cog):
 		valid_ids = set(role.id for role in ctx.guild.roles)
 		with db.Session() as session:
 			try:
-				role = session.query(GiveableRole).filter(GiveableRole.guild_id == ctx.guild.id,
-														  GiveableRole.norm_name == norm_name,
-														  GiveableRole.id.in_(valid_ids)).one()
+				role = session.query(GiveableRole).filter(GiveableRole.guild_id == ctx.guild.id, GiveableRole.norm_name == norm_name, GiveableRole.id.in_(valid_ids)).one()
 			except MultipleResultsFound:
 				raise BadArgument('multiple giveable roles with that name exist!')
 			except NoResultFound:
@@ -243,7 +241,7 @@ class Roles(Cog):
 		await ctx.send('Role "{0}" deleted from list!'.format(name))
 
 	delete.example_usage = """
-	`{prefix}giveme delete Java` - deletes the role called "Java" if it's giveable (does not remove it from all members)
+	`{prefix}giveme removefromlist Java` - removes the role "Java" from the list of giveable roles but does not remove it from the server or members who have it 
 	"""
 
 	@command()
