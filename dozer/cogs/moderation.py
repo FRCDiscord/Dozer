@@ -399,7 +399,7 @@ class Moderation(Cog):
 			if user is not None:
 				await ctx.send("User is already deafened!")
 			else:
-				user = Deafen(id=member_mentions.id, guild=ctx.guild.id)
+				user = Deafen(id=member_mentions.id, guild=ctx.guild.id, self_inflicted=0)
 				session.add(user)
 				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
 				await ctx.send(modlogmessage)
@@ -408,6 +408,47 @@ class Moderation(Cog):
 					await channel.send(modlogmessage)
 				else:
 					await ctx.send("Please configure modlog channel to enable modlog functionality")
+
+	@command()
+	@bot_has_permissions(manage_roles=True)
+	async def selfdeafen(self, ctx, *, reason="No reason provided"):
+		await self.permoverride(ctx.author, read_messages=False)
+		overwrite = ctx.channel.overwrites_for(ctx.author)
+		overwrite.update(read_messages=None)
+		await ctx.channel.set_permissions(target=ctx.author, overwrite=overwrite)
+		modlogmessage = "{} has deafened themselves because {}".format(ctx.author, reason)
+		with db.Session() as session:
+			user = session.query(Deafen).filter_by(id=ctx.author.id).one_or_none()
+			if user is not None:
+				await ctx.send("You are already deafened!")
+			else:
+				user = Deafen(id=ctx.author.id, guild=ctx.guild.id, self_inflicted=1)
+				session.add(user)
+				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+				await ctx.send(modlogmessage)
+				if modlogchannel is not None:
+					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+					await channel.send(modlogmessage)
+
+	@command()
+	@bot_has_permissions(manage_roles=True)
+	async def selfundeafen(self, ctx):
+		modlogmessage = "{} has undeafened themselves.".format(ctx.author)
+		with db.Session() as session:
+			user = session.query(Deafen).filter_by(id=ctx.author.id).one_or_none()
+			if user is not None and user.self_inflicted == 1:
+				await self.permoverride(ctx.author, read_messages=None)
+				session.delete(user)
+				await ctx.send("You are now undeafened!")
+				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+				await ctx.send(modlogmessage)
+				if modlogchannel is not None:
+					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+					await channel.send(modlogmessage)
+			elif user is not None and user.self_inflicted != 1:
+				await ctx.send("You cannot undeafen yourself if you were deafened by someone else!")
+			else:
+				await ctx.send("You aren't deafened!")
 
 	@command()
 	@has_permissions(kick_members=True)
@@ -440,6 +481,7 @@ class Deafen(db.DatabaseObject):
 	__tablename__ = 'deafens'
 	id = db.Column(db.Integer, primary_key=True)
 	guild = db.Column(db.Integer, primary_key=True)
+	self_inflicted = db.Column(db.Integer)
 
 
 class Guildmodlog(db.DatabaseObject):
