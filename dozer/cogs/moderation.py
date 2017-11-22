@@ -25,6 +25,15 @@ class Moderation(Cog):
 			if overwrite.is_empty():
 				await i.set_permissions(target=user, overwrite=None)
 
+	async def punishmenttimer(self, timing, action):
+		if action == "deafen":
+			punishment = asyncio.AbstractEventLoop.create_task(self.undeafen)
+		if action == "mute":
+			punishment = asyncio.AbstractEventLoop.create_task(self.unmute)
+		time = timing  #Turn this into minutes
+		asyncio.AbstractEventLoop.call_later(time * 60, punishment)
+
+
 	@command()
 	@has_permissions(ban_members=True)
 	@bot_has_permissions(ban_members=True)
@@ -399,7 +408,7 @@ class Moderation(Cog):
 			if user is not None:
 				await ctx.send("User is already deafened!")
 			else:
-				user = Deafen(id=member_mentions.id, guild=ctx.guild.id, self_inflicted=0)
+				user = Deafen(id=member_mentions.id, guild=ctx.guild.id, self_inflicted=False)
 				session.add(user)
 				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
 				await ctx.send(modlogmessage)
@@ -411,18 +420,19 @@ class Moderation(Cog):
 
 	@command()
 	@bot_has_permissions(manage_roles=True)
-	async def selfdeafen(self, ctx, *, reason="No reason provided"):
+	async def selfdeafen(self, ctx, timing, *, reason="No reason provided"):
 		await self.permoverride(ctx.author, read_messages=False)
 		overwrite = ctx.channel.overwrites_for(ctx.author)
 		overwrite.update(read_messages=None)
 		await ctx.channel.set_permissions(target=ctx.author, overwrite=overwrite)
+		await self.punishmenttimer(timing, "deafen")
 		modlogmessage = "{} has deafened themselves because {}".format(ctx.author, reason)
 		with db.Session() as session:
 			user = session.query(Deafen).filter_by(id=ctx.author.id).one_or_none()
 			if user is not None:
 				await ctx.send("You are already deafened!")
 			else:
-				user = Deafen(id=ctx.author.id, guild=ctx.guild.id, self_inflicted=1)
+				user = Deafen(id=ctx.author.id, guild=ctx.guild.id, self_inflicted=True)
 				session.add(user)
 				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
 				await ctx.send(modlogmessage)
@@ -436,7 +446,7 @@ class Moderation(Cog):
 		modlogmessage = "{} has undeafened themselves.".format(ctx.author)
 		with db.Session() as session:
 			user = session.query(Deafen).filter_by(id=ctx.author.id).one_or_none()
-			if user is not None and user.self_inflicted == 1:
+			if user is not None and user.self_inflicted == True:
 				await self.permoverride(ctx.author, read_messages=None)
 				session.delete(user)
 				await ctx.send("You are now undeafened!")
@@ -445,7 +455,7 @@ class Moderation(Cog):
 				if modlogchannel is not None:
 					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
 					await channel.send(modlogmessage)
-			elif user is not None and user.self_inflicted != 1:
+			elif user is not None and user.self_inflicted != False:
 				await ctx.send("You cannot undeafen yourself if you were deafened by someone else!")
 			else:
 				await ctx.send("You aren't deafened!")
@@ -481,7 +491,7 @@ class Deafen(db.DatabaseObject):
 	__tablename__ = 'deafens'
 	id = db.Column(db.Integer, primary_key=True)
 	guild = db.Column(db.Integer, primary_key=True)
-	self_inflicted = db.Column(db.Integer)
+	self_inflicted = db.Column(db.Boolean)
 
 
 class Guildmodlog(db.DatabaseObject):
@@ -517,6 +527,7 @@ class Guildmessagelog(db.DatabaseObject):
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String)
 	messagelog_channel = db.Column(db.Integer)
+
 
 def setup(bot):
 	bot.add_cog(Moderation(bot))
