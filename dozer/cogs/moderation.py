@@ -1,4 +1,4 @@
-import asyncio, discord
+import asyncio, discord, re
 from discord.ext.commands import BadArgument, has_permissions, bot_has_permissions, RoleConverter
 from .. import db
 from ._utils import *
@@ -25,14 +25,16 @@ class Moderation(Cog):
 			if overwrite.is_empty():
 				await i.set_permissions(target=user, overwrite=None)
 
-	async def punishmenttimer(self, timing, action):
+	async def punishmenttimer(self, ctx, timing, action):
 		if action == "deafen":
-			punishment = asyncio.AbstractEventLoop.create_task(self.undeafen)
+			punishment = await self.selfundeafening(ctx)
 		if action == "mute":
-			punishment = asyncio.AbstractEventLoop.create_task(self.unmute)
-		time = timing  #Turn this into minutes
-		asyncio.AbstractEventLoop.call_later(time * 60, punishment)
-
+			punishment = self.unmute
+		hours = re.search("%h", timing)
+		print(hours)
+		#time = timing  Turn this into minutes using Regex
+		time = 1
+		self.bot.loop.call_later(delay=time * 60, callback=punishment)
 
 	@command()
 	@has_permissions(ban_members=True)
@@ -374,8 +376,6 @@ class Moderation(Cog):
 				else:
 					await ctx.send("Please configure modlog channel to enable modlog functionality")
 
-
-
 	@command()
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
@@ -425,7 +425,7 @@ class Moderation(Cog):
 		overwrite = ctx.channel.overwrites_for(ctx.author)
 		overwrite.update(read_messages=None)
 		await ctx.channel.set_permissions(target=ctx.author, overwrite=overwrite)
-		await self.punishmenttimer(timing, "deafen")
+		await self.punishmenttimer(ctx, timing, "deafen")
 		modlogmessage = "{} has deafened themselves because {}".format(ctx.author, reason)
 		with db.Session() as session:
 			user = session.query(Deafen).filter_by(id=ctx.author.id).one_or_none()
@@ -443,6 +443,9 @@ class Moderation(Cog):
 	@command()
 	@bot_has_permissions(manage_roles=True)
 	async def selfundeafen(self, ctx):
+		await self.selfundeafening(self=self, ctx=ctx)
+
+	async def selfundeafening(self, ctx):
 		modlogmessage = "{} has undeafened themselves.".format(ctx.author)
 		with db.Session() as session:
 			user = session.query(Deafen).filter_by(id=ctx.author.id).one_or_none()
