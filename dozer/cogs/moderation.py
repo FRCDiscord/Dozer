@@ -25,13 +25,14 @@ class Moderation(Cog):
 			if overwrite.is_empty():
 				await i.set_permissions(target=user, overwrite=None)
 
-	async def punishmenttimer(self, timing, action):
+	async def punishmenttimer(self, ctx, timing, action, target):
+		#Cool time regex stuff goes here
+		time = 10  #This is a debug value for testing purposes
+		await asyncio.sleep(time)
 		if action == "deafen":
-			punishment = self.bot.loop.create_task(self, coro=self.undeafen)
+			self.bot.loop.create_task(coro=self.undeafen.callback(self=self, ctx=ctx, member_mentions=target))
 		if action == "mute":
-			punishment = self.bot.loop.create_task(self, coro=self.unmute)
-		time = timing  #Turn this into minutes
-		self.bot.loop.call_later(time * 60, punishment)
+			self.bot.loop.create_task(coro=self.unmute.callback(self=self, ctx=ctx, member_mentions=target))
 
 	@command()
 	@has_permissions(ban_members=True)
@@ -424,7 +425,6 @@ class Moderation(Cog):
 		overwrite = ctx.channel.overwrites_for(ctx.author)
 		overwrite.update(read_messages=None)
 		await ctx.channel.set_permissions(target=ctx.author, overwrite=overwrite)
-		await self.punishmenttimer(timing, "deafen")
 		modlogmessage = "{} has deafened themselves because {}".format(ctx.author, reason)
 		with db.Session() as session:
 			user = session.query(Deafen).filter_by(id=ctx.author.id).one_or_none()
@@ -438,6 +438,7 @@ class Moderation(Cog):
 				if modlogchannel is not None:
 					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
 					await channel.send(modlogmessage)
+		await self.punishmenttimer(ctx, timing, "deafen", ctx.author)
 
 	@command()
 	@bot_has_permissions(manage_roles=True)
