@@ -1,4 +1,4 @@
-import asyncio, discord
+import asyncio, discord, re
 from discord.ext.commands import BadArgument, has_permissions, bot_has_permissions, RoleConverter
 from .. import db
 from ._utils import *
@@ -27,7 +27,20 @@ class Moderation(Cog):
 
 	async def punishmenttimer(self, ctx, timing, action, target):
 		#Cool time regex stuff goes here
-		time = 10  #This is a debug value for testing purposes
+		regexstring = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?")
+		regexiter = re.match(regexstring, timing)
+		hours = regexiter.group('hours')
+		if hours is None:
+			hours = 0
+		if hours is not None:
+			hours = int(hours)
+		minutes = regexiter.group('minutes')
+		if minutes is None:
+			minutes = 0
+		if minutes is not None:
+			minutes = int(minutes)
+		time = (hours * 3600) + (minutes * 60)
+		#time = 10  #This is a debug value for testing purposes
 		await asyncio.sleep(time)
 		if action == "deafen":
 			self.bot.loop.create_task(coro=self.undeafen.callback(self=self, ctx=ctx, member_mentions=target))
