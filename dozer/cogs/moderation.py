@@ -26,21 +26,18 @@ class Moderation(Cog):
 				await i.set_permissions(target=user, overwrite=None)
 
 	async def punishmenttimer(self, ctx, timing, action, target):
-		#Cool time regex stuff goes here
 		regexstring = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?")
 		regexiter = re.match(regexstring, timing)
-		hours = regexiter.group('hours')
-		if hours is None:
+		matches = regexiter.groupdict()
+		try:
+			hours = int(matches.get('hours'))
+		except:
 			hours = 0
-		if hours is not None:
-			hours = int(hours)
-		minutes = regexiter.group('minutes')
-		if minutes is None:
+		try:
+			minutes = int(matches.get('minutes'))
+		except:
 			minutes = 0
-		if minutes is not None:
-			minutes = int(minutes)
 		time = (hours * 3600) + (minutes * 60)
-		#time = 10  #This is a debug value for testing purposes
 		await asyncio.sleep(time)
 		if action == "deafen":
 			self.bot.loop.create_task(coro=self.undeafen.callback(self=self, ctx=ctx, member_mentions=target))
