@@ -47,7 +47,7 @@ class Dozer(commands.Bot):
 		elif isinstance(err, (commands.CommandNotFound, InvalidContext)):
 			pass # Silent ignore
 		else:
-			await ctx.send('FOOOOOOOOOOOOOOG HORRRRRRRRRRRRRRN```\n%s\n```' % ''.join(traceback.format_exception_only(type(err), err)).strip())
+			await ctx.send('```\n%s\n```' % ''.join(traceback.format_exception_only(type(err), err)).strip())
 			if isinstance(ctx.channel, discord.TextChannel):
 				print('Error in command <{0}> ({1.name!r}({1.id}) {2}({2.id}) {3}({3.id}) {4!r})'.format(ctx.command, ctx.guild, ctx.channel, ctx.author, ctx.message.content))
 			else:
