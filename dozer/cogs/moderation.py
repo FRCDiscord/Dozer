@@ -39,10 +39,15 @@ class Moderation(Cog):
 			minutes = 0
 		time = (hours * 3600) + (minutes * 60)
 		await asyncio.sleep(time)
-		if action == "deafen":
-			self.bot.loop.create_task(coro=self.undeafen.callback(self=self, ctx=ctx, member_mentions=target))
-		if action == "mute":
-			self.bot.loop.create_task(coro=self.unmute.callback(self=self, ctx=ctx, member_mentions=target))
+		with db.Session() as session:
+			if action == "deafen":
+				user = session.query(Deafen).filter_by(id=target.id).one_or_none()
+				if user is not None:
+					self.bot.loop.create_task(coro=self.undeafen.callback(self=self, ctx=ctx, member_mentions=target))
+			if action == "mute":
+				user = session.query(Guildmute).filter_by(id=target.id).one_or_none()
+				if user is not None:
+					self.bot.loop.create_task(coro=self.unmute.callback(self=self, ctx=ctx, member_mentions=target))
 
 	@command()
 	@has_permissions(ban_members=True)
