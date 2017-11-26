@@ -190,7 +190,7 @@ class General(Cog):
 	
 	@command()
 	async def speedtest(self, ctx):
-		"""Tests the bots speed to the internet"""
+		"""Tests the bots speed to the internet."""
 		waitingforresultembed = discord.Embed(color=blurple)
 		waitingforresultembed.add_field(name='Please wait', value='Running speedtest, This may take a couple mintues.')
 		waitforresultembed = await ctx.send(embed=waitingforresultembed)
@@ -201,7 +201,7 @@ class General(Cog):
 		await ctx.send(embed=speedtestembed)
 		
 	speedtest.example_usage = """
-	h&speedtest - Runs the speedtest-cli program to test the bot's internet speed.
+	`{prefix}speedtest - Runs the speedtest-cli program to test the bot's internet speed.`
 	"""
 
 
