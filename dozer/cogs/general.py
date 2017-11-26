@@ -201,7 +201,7 @@ class General(Cog):
 		await ctx.send(embed=speedtestembed)
 		
 	speedtest.example_usage = """
-	`{prefix}speedtest - Runs the speedtest-cli program to test the bot's internet speed.`
+	`{prefix}speedtest` - Runs the speedtest-cli program to test the bot's internet speed.
 	"""
 
 
