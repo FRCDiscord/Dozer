@@ -451,6 +451,9 @@ class Moderation(Cog):
 					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
 					await channel.send(modlogmessage)
 		self.bot.loop.create_task(self.punishmenttimer(ctx, timing, "deafen", ctx.author))
+	selfdeafen.example_usage = """
+	``[prefix]selfdeafen time (1h5m, both optional) reason``: deafens you if you need to get work done
+	"""
 
 	@command()
 	@has_permissions(kick_members=True)
