@@ -186,23 +186,6 @@ class General(Cog):
 	welcomeconfig.example_usage="""
 	`{prefix}welcomeconfig #new-members` - Sets the invite channel to #new-members.
 	"""
-	
-	
-	@command()
-	async def speedtest(self, ctx):
-		"""Tests the bots speed to the internet."""
-		waitingforresultembed = discord.Embed(color=blurple)
-		waitingforresultembed.add_field(name='Please wait', value='Running speedtest, This may take a couple mintues.')
-		waitforresultembed = await ctx.send(embed=waitingforresultembed)
-		result = subprocess.run(['speedtest-cli', '--simple'], stdout=subprocess.PIPE).stdout.decode('utf-8')
-		await waitforresultembed.delete()
-		speedtestembed = discord.Embed(color=discord.Color.blurple())
-		speedtestembed.add_field(name='Speed test complete', value=result)
-		await ctx.send(embed=speedtestembed)
-		
-	speedtest.example_usage = """
-	`{prefix}speedtest` - Runs the speedtest-cli program to test the bot's internet speed.
-	"""
 
 
 
