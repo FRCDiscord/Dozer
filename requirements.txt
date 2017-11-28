@@ -4,4 +4,3 @@ tbapi
 googlemaps
 datetime
 geopy
-speedtest-cli
