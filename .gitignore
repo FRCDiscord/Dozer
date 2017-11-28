@@ -17,4 +17,3 @@ dozer.db
 [._]sw[a-p]
 *~
 config.json.old
-dozer/cogs/nonpushedcode.py
