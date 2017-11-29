@@ -344,10 +344,10 @@ class Moderation(Cog):
 				e.add_field(name="New message", value=after.content[0:1023])
 				e.add_field(name="New message continued", value=after.content[1024:2000])
 			elif len(after.content) == 0 and after.edited_at is not None:
-				e.add_field(name="Title", value=i.title)
-				e.add_field(name="Description", value=i.description)
-				e.add_field(name="Timestamp", value=i.timestamp)
 				for i in after.embeds:
+					e.add_field(name="Title", value=i.title)
+					e.add_field(name="Description", value=i.description)
+					e.add_field(name="Timestamp", value=i.timestamp)
 					for x in i.fields:
 						e.add_field(name=x.name, value=x.value)
 			with db.Session() as session:
