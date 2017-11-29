@@ -15,7 +15,7 @@ class General(Cog):
 			location = 'the **%s** server' % ctx.guild.name
 		response = await ctx.send('Pong! We\'re in %s.' % location)
 		delay = response.created_at - ctx.message.created_at
-		await response.edit(content=response.content + '\nTook %d ms to respond. ' % (delay.seconds * 1000 + delay.microseconds // 1000) + 'Websocket latency is {} ms.'.format(round(ctx.bot.latency * 1000)))
+		await response.edit(content=response.content + '\nTook %d ms to respond. ' % (delay.seconds * 1000 + delay.microseconds // 1000))
 
 	
 	ping.example_usage = """
