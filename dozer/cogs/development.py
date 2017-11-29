@@ -3,6 +3,10 @@ from discord.ext.commands import NotOwner
 from ._utils import *
 
 class Development(Cog):
+	"""
+	Commands useful for developing the bot.
+	These commands are restricted to bot developers.
+	"""
 	eval_globals = {}
 	for module in ('asyncio', 'collections', 'discord', 'inspect', 'itertools'):
 		eval_globals[module] = __import__(module)
@@ -22,9 +26,16 @@ class Development(Cog):
 		self.bot.load_extension(extension)
 		await msg.edit(content='Reloaded extension %s' % extension)
 	
+	reload.example_usage = """
+	`{prefix}reload development` - reloads the development cog
+	"""
+	
 	@command(name='eval')
 	async def evaluate(self, ctx, *, code):
-		"""Evaluates Python. Await is valid and `{ctx}` is the command context."""
+		"""
+		Evaluates Python.
+		Await is valid and `{ctx}` is the command context.
+		"""
 		if code.startswith('```'): code = code.strip('```').partition('\n')[2].strip() # Remove multiline code blocks
 		else: code = code.strip('`').strip() # Remove single-line code blocks, if necessary
 		
@@ -37,12 +48,17 @@ class Development(Cog):
 			
 			e.title = 'Python Evaluation - Success'
 			e.color = 0x00FF00
-			e.add_field(name='Output', value='```\n%s (%s)\n```' % (repr(ret), type(ret)), inline=False)
+			e.add_field(name='Output', value='```\n%s (%s)\n```' % (repr(ret), type(ret).__name__), inline=False)
 		except Exception as err:
 			e.title = 'Python Evaluation - Error'
 			e.color = 0xFF0000
 			e.add_field(name='Error', value='```\n%s\n```' % repr(err))
 		await ctx.send(embed=e)
+	
+	evaluate.example_usage = """
+	`{prefix}eval 0.1 + 0.2` - calculates 0.1 + 0.2
+	`{prefix}eval await ctx.send('Hello world!')` - send "Hello World!" to this channel
+	"""
 	
 	@command(name='su', pass_context=True)
 	async def pseudo(self, ctx, user : discord.Member, *, command):
@@ -52,6 +68,10 @@ class Development(Cog):
 		msg.content = command
 		context = await self.bot.get_context(msg)
 		return await self.bot.invoke(context)
+	
+	pseudo.example_usage = """
+	`{prefix}su cooldude#1234 {prefix}ping` - simulate cooldude sending `{prefix}ping`
+	"""
 
 def load_function(code, globals_, locals_):
 	function_header = 'async def evaluated_function(ctx):'

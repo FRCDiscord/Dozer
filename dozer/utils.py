@@ -7,13 +7,17 @@ member_mention = re.compile(r'<@\!?(\d+)>')
 role_mention = re.compile(r'<@&(\d+)>')
 channel_mention = re.compile(r'<#(\d+)>')
 
-def clean(ctx, text=None, *, clean_channels=True):
+def clean(ctx, text=None, *, mass=True, member=True, role=True, channel=True):
 	if text is None:
 		text = ctx.message.content
-	cleaned_text = mass_mention.sub(lambda match: '@\N{ZERO WIDTH SPACE}' + match.group(1), text)
-	cleaned_text = member_mention.sub(lambda match: clean_member_name(ctx, int(match.group(1))), cleaned_text)
-	cleaned_text = role_mention.sub(lambda match: clean_role_name(ctx, int(match.group(1))), cleaned_text)
-	cleaned_text = channel_mention.sub(lambda match: clean_channel_name(ctx, int(match.group(1))), cleaned_text)
+	if mass:
+		cleaned_text = mass_mention.sub(lambda match: '@\N{ZERO WIDTH SPACE}' + match.group(1), text)
+	if member:
+		cleaned_text = member_mention.sub(lambda match: clean_member_name(ctx, int(match.group(1))), cleaned_text)
+	if role:
+		cleaned_text = role_mention.sub(lambda match: clean_role_name(ctx, int(match.group(1))), cleaned_text)
+	if channel:
+		cleaned_text = channel_mention.sub(lambda match: clean_channel_name(ctx, int(match.group(1))), cleaned_text)
 	return cleaned_text
 
 def is_clean(ctx, text=None):
