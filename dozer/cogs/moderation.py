@@ -25,7 +25,7 @@ class Moderation(Cog):
 			if overwrite.is_empty():
 				await i.set_permissions(target=user, overwrite=None)
 
-	async def punishmenttimer(self, ctx, timing, action, target, lookup):
+	async def punishmenttimer(self, ctx, timing, target, lookup):
 		regexstring = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?")
 		regexiter = re.match(regexstring, timing)
 		matches = regexiter.groupdict()
@@ -42,10 +42,10 @@ class Moderation(Cog):
 		with db.Session() as session:
 			user = session.query(lookup).filter_by(id=target.id).one_or_none()
 			if user is not None:
-				if action == 'deafen':
-					await self.undeafen(ctx=ctx, member_mentions=target)
-				if action == 'mute':
-					await self.unmute(ctx=ctx, member_mentions=target)
+				if lookup == Deafen:
+					self.bot.loop.create_task(coro=self.undeafen.callback(self=self, ctx=ctx, member_mentions=target))
+				if lookup == Guildmute:
+					self.bot.loop.create_task(coro=self.unmute.callback(self=self, ctx=ctx, member_mentions=target))
 
 	@command()
 	@has_permissions(ban_members=True)
@@ -448,7 +448,7 @@ class Moderation(Cog):
 				if modlogchannel is not None:
 					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
 					await channel.send(modlogmessage)
-		self.bot.loop.create_task(self.punishmenttimer(ctx, timing, "deafen", ctx.author, lookup=Deafen))
+		self.bot.loop.create_task(self.punishmenttimer(ctx, timing, ctx.author, lookup=Deafen))
 	selfdeafen.example_usage = """
 	``[prefix]selfdeafen time (1h5m, both optional) reason``: deafens you if you need to get work done
 	"""
