@@ -1,3 +1,4 @@
+import subprocess
 import discord, inspect
 from discord.ext.commands import BadArgument, bot_has_permissions, cooldown, BucketType, Group, has_permissions
 from ._utils import *
@@ -14,12 +15,13 @@ class General(Cog):
 			location = 'the **%s** server' % ctx.guild.name
 		response = await ctx.send('Pong! We\'re in %s.' % location)
 		delay = response.created_at - ctx.message.created_at
-		await response.edit(content=response.content + '\nTook %d ms to respond.' % (delay.seconds * 1000 + delay.microseconds // 1000))
+		await response.edit(content=response.content + '\nTook %d ms to respond. ' % (delay.seconds * 1000 + delay.microseconds // 1000) + 'Websocket latency is {} ms.'.format(round(ctx.bot.latency * 1000)))
 
 	
 	ping.example_usage = """
 	`{prefix}ping` - Calculate and display the bot's response time
 	"""
+	
 	
 	@cooldown(1, 10, BucketType.channel)
 	@command(name='help', aliases=['about'])
@@ -182,6 +184,7 @@ class General(Cog):
 	welcomeconfig.example_usage="""
 	`{prefix}welcomeconfig #new-members` - Sets the invite channel to #new-members.
 	"""
+
 
 
 def setup(bot):

@@ -72,7 +72,7 @@ class Development(Cog):
 	pseudo.example_usage = """
 	`{prefix}su cooldude#1234 {prefix}ping` - simulate cooldude sending `{prefix}ping`
 	"""
-
+	
 def load_function(code, globals_, locals_):
 	function_header = 'async def evaluated_function(ctx):'
 	
