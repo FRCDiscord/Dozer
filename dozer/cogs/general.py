@@ -21,6 +21,7 @@ class General(Cog):
 	`{prefix}ping` - Calculate and display the bot's response time
 	"""
 	
+	
 	@cooldown(1, 10, BucketType.channel)
 	@command(name='help', aliases=['about'])
 	@bot_has_permissions(add_reactions=True, embed_links=True, read_message_history=True) # Message history is for internals of paginate()
@@ -182,6 +183,7 @@ class General(Cog):
 	welcomeconfig.example_usage="""
 	`{prefix}welcomeconfig #new-members` - Sets the invite channel to #new-members.
 	"""
+
 
 
 def setup(bot):

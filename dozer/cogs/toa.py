@@ -39,7 +39,6 @@ class TOA(Cog):
 		e.add_field(name='Rookie Year', value=team_data.rookie_year)
 		e.add_field(name='Location', value=', '.join((team_data.city, team_data.state_prov, team_data.country)))
 		e.add_field(name='Website', value=team_data.website or "n/a")
-		e.add_field(name='FTCRoot Page', value='http://www.ftcroot.com/teams/{}'.format(team_num))
 		e.set_footer(text='Triggered by ' + ctx.author.display_name)
 		await ctx.send(embed=e)
 
