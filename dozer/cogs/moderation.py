@@ -434,6 +434,7 @@ class Moderation(Cog):
 	@command()
 	@bot_has_permissions(manage_roles=True)
 	async def selfdeafen(self, ctx, timing, *, reason="No reason provided"):
+		await ctx.send("Deafening {}...".format(ctx.author))
 		await self.permoverride(ctx.author, read_messages=False)
 		modlogmessage = "{} has deafened themselves because {}".format(ctx.author, reason)
 		with db.Session() as session:
