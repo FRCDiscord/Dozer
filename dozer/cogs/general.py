@@ -1,4 +1,3 @@
-import subprocess
 import discord, inspect
 from discord.ext.commands import BadArgument, bot_has_permissions, cooldown, BucketType, Group, has_permissions
 from ._utils import *
