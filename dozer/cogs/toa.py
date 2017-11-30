@@ -1,5 +1,7 @@
 import discord
 import datetime
+import pickle
+import lzma
 from ._utils import *
 from ._toa import *
 from discord.ext import commands
@@ -11,6 +13,9 @@ class TOA(Cog):
 	def __init__(self, bot):
 		super().__init__(bot)
 		self.parser = TOAParser(bot.config['toa']['key'], bot.http._session, app_name=bot.config['toa']['app_name'])
+		with lzma.open("ftc_teams.pickle.xz") as f:
+			self._teams = pickle.load(f)
+
 	
 	@group(invoke_without_command=True)
 	async def toa(self, ctx, team_num: int):
@@ -29,17 +34,36 @@ class TOA(Cog):
 	async def team(self, ctx, team_num: int):
 		"""Get information on an FTC team by number."""
 		team_data = await self.parser.req("team/" + str(team_num))
-		if team_data.error:
-			await ctx.send("This team does not have any data on it yet, or it does not exist!")
-			return
+		# TOA's rookie year listing is :b:roke, so we have to fix it ourselves
+		# This is a _nasty_ hack
+		data = self._teams.get(team_num, {
+			'rookie_year': 2017,
+			'seasons': [{
+				'website': 'n/a',
+			}]
+		})
+		last_season = data['seasons'][0]
+		team_data.rookie_year = data['rookie_year']
 
+		if team_data.error:
+			if team_num not in self._teams:
+				# rip
+				await ctx.send("This team does not have any data on it yet, or it does not exist!")
+				return
+			team_data._update(last_season)
+			team_data.team_name_short = last_season['name']
+
+		# many team entries lack a valid url
+		website = (team_data.website or last_season['website']).strip()
+		if website and not (website.startswith("http://") or website.startswith("https://")):
+			website = "http://" + website
 		e = discord.Embed(color=embed_color)
 		e.set_author(name='FIRST® Tech Challenge Team {}'.format(team_num), url='https://www.theorangealliance.org/teams/{}'.format(team_num), icon_url='https://cdn.discordapp.com/icons/342152047753166859/de4d258c0cab5bee0b04d406172ec585.jpg')
 		e.add_field(name='Name', value=team_data.team_name_short)
 		e.add_field(name='Rookie Year', value=team_data.rookie_year)
 		e.add_field(name='Location', value=', '.join((team_data.city, team_data.state_prov, team_data.country)))
-		e.add_field(name='Website', value=team_data.website or "n/a")
-		e.add_field(name='FTCRoot Page', value='http://www.ftcroot.com/teams/{}'.format(team_num))
+		e.add_field(name='Website', value=website or 'n/a')
+		e.add_field(name='Team Info Page', value='https://www.theorangealliance.org/teams/{}'.format(team_num))
 		e.set_footer(text='Triggered by ' + ctx.author.display_name)
 		await ctx.send(embed=e)
 

@@ -1,4 +1,4 @@
-import asyncio, discord
+import asyncio, discord, re
 from discord.ext.commands import BadArgument, has_permissions, bot_has_permissions, RoleConverter
 from .. import db
 from ._utils import *
@@ -24,6 +24,28 @@ class Moderation(Cog):
 			await i.set_permissions(target=user, overwrite=overwrite)
 			if overwrite.is_empty():
 				await i.set_permissions(target=user, overwrite=None)
+
+	async def punishmenttimer(self, ctx, timing, target, lookup):
+		regexstring = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?")
+		regexiter = re.match(regexstring, timing)
+		matches = regexiter.groupdict()
+		try:
+			hours = int(matches.get('hours'))
+		except:
+			hours = 0
+		try:
+			minutes = int(matches.get('minutes'))
+		except:
+			minutes = 0
+		time = (hours * 3600) + (minutes * 60)
+		await asyncio.sleep(time)
+		with db.Session() as session:
+			user = session.query(lookup).filter_by(id=target.id).one_or_none()
+			if user is not None:
+				if lookup == Deafen:
+					self.bot.loop.create_task(coro=self.undeafen.callback(self=self, ctx=ctx, member_mentions=target))
+				if lookup == Guildmute:
+					self.bot.loop.create_task(coro=self.unmute.callback(self=self, ctx=ctx, member_mentions=target))
 
 	@command()
 	@has_permissions(ban_members=True)
@@ -399,7 +421,7 @@ class Moderation(Cog):
 			if user is not None:
 				await ctx.send("User is already deafened!")
 			else:
-				user = Deafen(id=member_mentions.id, guild=ctx.guild.id)
+				user = Deafen(id=member_mentions.id, guild=ctx.guild.id, self_inflicted=False)
 				session.add(user)
 				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
 				await ctx.send(modlogmessage)
@@ -408,6 +430,29 @@ class Moderation(Cog):
 					await channel.send(modlogmessage)
 				else:
 					await ctx.send("Please configure modlog channel to enable modlog functionality")
+
+	@command()
+	@bot_has_permissions(manage_roles=True)
+	async def selfdeafen(self, ctx, timing, *, reason="No reason provided"):
+		await ctx.send("Deafening {}...".format(ctx.author))
+		await self.permoverride(ctx.author, read_messages=False)
+		modlogmessage = "{} has deafened themselves because {}".format(ctx.author, reason)
+		with db.Session() as session:
+			user = session.query(Deafen).filter_by(id=ctx.author.id).one_or_none()
+			if user is not None:
+				await ctx.send("You are already deafened!")
+			else:
+				user = Deafen(id=ctx.author.id, guild=ctx.guild.id, self_inflicted=True)
+				session.add(user)
+				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+				await ctx.send(modlogmessage)
+				if modlogchannel is not None:
+					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+					await channel.send(modlogmessage)
+		self.bot.loop.create_task(self.punishmenttimer(ctx, timing, ctx.author, lookup=Deafen))
+	selfdeafen.example_usage = """
+	``[prefix]selfdeafen time (1h5m, both optional) reason``: deafens you if you need to get work done
+	"""
 
 	@command()
 	@has_permissions(kick_members=True)
@@ -440,6 +485,7 @@ class Deafen(db.DatabaseObject):
 	__tablename__ = 'deafens'
 	id = db.Column(db.Integer, primary_key=True)
 	guild = db.Column(db.Integer, primary_key=True)
+	self_inflicted = db.Column(db.Boolean)
 
 
 class Guildmodlog(db.DatabaseObject):
@@ -475,6 +521,7 @@ class Guildmessagelog(db.DatabaseObject):
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String)
 	messagelog_channel = db.Column(db.Integer)
+
 
 def setup(bot):
 	bot.add_cog(Moderation(bot))
