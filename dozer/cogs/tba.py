@@ -44,7 +44,7 @@ class TBA(Cog):
 			e.set_footer(text='Triggered by ' + ctx.author.display_name)
 			await ctx.send(embed=e)
 		except:
-			await ctx.send('Team {} is too nonexistant'.format(team_num))
+			await ctx.send('Team {} is too nonexistent'.format(team_num))
 	
 	
 	team.example_usage = """
@@ -61,7 +61,7 @@ class TBA(Cog):
 			team_data = self.parser.get_team('frc{}'.format(team_num))
 			await ctx.send(team_data.raw)
 		except:
-			await ctx.send('Team {} is too nonexistant'.format(team_num))
+			await ctx.send('Team {} is too nonexistent'.format(team_num))
 				
 	raw.example_usage = """
 	`{prefix}tba raw 4150` - show raw information on team 4150, FRobotics
@@ -103,7 +103,7 @@ class TBA(Cog):
 		
 			await ctx.send("Timezone: {0} UTC{1} \nCurrent Time: {2}:{3}:{4} {5} ({6}:{3}:{4})".format(timezone["timeZoneName"], utc_offset, current_hour, current_minute, current_second, dayTime, current_hour_original)) 
 		except:
-			await ctx.send('Team {} is too nonexistant'.format(team_num))
+			await ctx.send('Team {} is too nonexistent'.format(team_num))
 					
 	timezone.example_usage = """
 	`{prefix}timezone 3572` - show the local time of team 3572, Wavelength
