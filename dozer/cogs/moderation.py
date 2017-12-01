@@ -2,6 +2,7 @@ import asyncio, discord, re
 from discord.ext.commands import BadArgument, has_permissions, bot_has_permissions, RoleConverter
 from .. import db
 from ._utils import *
+from ..utils import clean
 
 
 class SafeRoleConverter(RoleConverter):
@@ -437,6 +438,7 @@ class Moderation(Cog):
 		await ctx.send("Deafening {}...".format(ctx.author))
 		await self.permoverride(ctx.author, read_messages=False)
 		modlogmessage = "{} has deafened themselves because {}".format(ctx.author, reason)
+		modlogmessage = clean(ctx=ctx, text=modlogmessage)
 		with db.Session() as session:
 			user = session.query(Deafen).filter_by(id=ctx.author.id).one_or_none()
 			if user is not None:
