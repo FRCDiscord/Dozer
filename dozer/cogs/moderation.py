@@ -1,4 +1,4 @@
-import asyncio, discord, re
+import asyncio, discord, functools, re
 from discord.ext.commands import BadArgument, has_permissions, bot_has_permissions, RoleConverter
 from .. import db
 from ._utils import *
@@ -14,6 +14,16 @@ class SafeRoleConverter(RoleConverter):
 				return ctx.guild.default_role
 			else:
 				raise
+
+
+def moderation_command(log_type):
+	def decorator(callback):
+		@functools.wraps(callback)
+		async def new_callback(self, ctx, user: discord.Member, *args, reason='No reason provided'):
+			await callback(self, ctx, user, *args, reason=reason)
+			# TODO log to web
+		return new_callback
+	return decorator
 
 
 # Todo: timed/self mutes
@@ -51,6 +61,7 @@ class Moderation(Cog):
 	@command()
 	@has_permissions(ban_members=True)
 	@bot_has_permissions(ban_members=True)
+	@moderation_command('ban')
 	async def ban(self, ctx, user_mentions: discord.User, *, reason="No reason provided"):
 		"Bans the user mentioned."
 		usertoban = user_mentions
@@ -69,6 +80,7 @@ class Moderation(Cog):
 	@command()
 	@has_permissions(ban_members=True)
 	@bot_has_permissions(ban_members=True)
+	@moderation_command('unban')
 	async def unban(self, ctx, user_mentions: discord.User, *, reason="No reason provided"):
 		"Unbans the user ID mentioned."
 		usertoban = user_mentions
@@ -86,6 +98,7 @@ class Moderation(Cog):
 	@command()
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(kick_members=True)
+	@moderation_command('kick')
 	async def kick(self, ctx, user_mentions: discord.User, *, reason="No reason provided"):
 		"Kicks the user mentioned."
 		usertokick = user_mentions
@@ -370,6 +383,7 @@ class Moderation(Cog):
 	@command()
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
+	@moderation_command('mute')
 	async def mute(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
 		await self.permoverride(member_mentions, send_messages=False, add_reactions=False)
 		modlogmessage = "{} has been muted by {} because {}".format(member_mentions, ctx.author.display_name, reason)
@@ -393,6 +407,7 @@ class Moderation(Cog):
 	@command()
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
+	@moderation_command('unmute')
 	async def unmute(self, ctx, member_mentions: discord.Member):
 		await self.permoverride(member_mentions, send_messages=None, add_reactions=None)
 		modlogmessage = "{} has been unmuted by {}".format(member_mentions, ctx.author.display_name)
@@ -414,6 +429,7 @@ class Moderation(Cog):
 	@command()
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
+	@moderation_command('deafen')
 	async def deafen(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
 		await self.permoverride(member_mentions, read_messages=False)
 		modlogmessage = "{} has been deafened by {} because {}".format(member_mentions, ctx.author.display_name, reason)
@@ -459,6 +475,7 @@ class Moderation(Cog):
 	@command()
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
+	@moderation_command('undeafen')
 	async def undeafen(self, ctx, member_mentions: discord.Member):
 		await self.permoverride(member_mentions, read_messages=None)
 		modlogmessage = "{} has been undeafened by {}".format(member_mentions, ctx.author.display_name)
