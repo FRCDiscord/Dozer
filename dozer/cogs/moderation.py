@@ -362,18 +362,18 @@ class Moderation(Cog):
 				user = Guildmute(id=member_mentions.id, guild=ctx.guild.id)
 				session.add(user)
 				await self.permoverride(member_mentions, send_messages=False, add_reactions=False)
-				await self.modlogger(ctx, "mute", member_mentions, reason)
+				await self.modlogger(ctx, "muted", member_mentions, reason)
 
 	@command()
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
-	async def unmute(self, ctx, member_mentions: discord.Member):
+	async def unmute(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
 		with db.Session() as session:
 			user = session.query(Guildmute).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
 			if user is not None:
 				session.delete(user)
 				await self.permoverride(member_mentions, send_messages=None, add_reactions=None)
-				await self.modlogger(ctx, "unmute", member_mentions, None)
+				await self.modlogger(ctx, "unmuted", member_mentions, reason)
 			else:
 				await ctx.send("User is not muted!")
 
@@ -412,13 +412,15 @@ class Moderation(Cog):
 	@command()
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
-	async def undeafen(self, ctx, member_mentions: discord.Member):
+	async def undeafen(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
 		with db.Session() as session:
 			user = session.query(Deafen).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
 			if user is not None:
 				await self.permoverride(user=member_mentions, read_messages=None)
 				session.delete(user)
-				await self.modlogger(ctx, "undeafen", member_mentions, None)
+				if user.self_inflicted:
+					reason = "self deafen timer expired"
+				await self.modlogger(ctx, "undeafened", member_mentions, reason)
 			else:
 				await ctx.send("User is not deafened!")
 
