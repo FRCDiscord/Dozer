@@ -21,19 +21,13 @@ class Moderation(Cog):
 		modlogmessage = "{} has {} {} because {}".format(ctx.author, action, target, reason)
 		modlogmessage = clean(ctx=ctx, text=modlogmessage)
 		with db.Session() as session:
-			user = session.query(Guildmute).filter_by(id=target.id).one_or_none()
-			if user is not None:
-				await ctx.send("User is already muted!")
+			modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
+			await ctx.send(modlogmessage)
+			if modlogchannel is not None:
+				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
+				await channel.send(modlogmessage)
 			else:
-				user = Guildmute(id=target.id, guild=ctx.guild.id)
-				session.add(user)
-				modlogchannel = session.query(Guildmodlog).filter_by(id=ctx.guild.id).one_or_none()
-				await ctx.send(modlogmessage)
-				if modlogchannel is not None:
-					channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
-					await channel.send(modlogmessage)
-				else:
-					await ctx.send("Please configure modlog channel to enable modlog functionality")
+				await ctx.send("Please configure modlog channel to enable modlog functionality")
 
 	async def permoverride(self, user, **overwrites):
 		for i in user.guild.channels:
@@ -408,8 +402,8 @@ class Moderation(Cog):
 			else:
 				user = Deafen(id=ctx.author.id, guild=ctx.guild.id, self_inflicted=True)
 				session.add(user)
-				await self.permoverride(ctx.author, read_messages=False)
-				await self.modlogger(ctx, "deafened", target="themselves", reason=reason)
+				await self.permoverride(user=ctx.author, read_messages=False)
+				await self.modlogger(ctx, "deafened", target=ctx.author, reason=reason)
 		self.bot.loop.create_task(self.punishmenttimer(ctx, timing, ctx.author, lookup=Deafen))
 	selfdeafen.example_usage = """
 	``[prefix]selfdeafen time (1h5m, both optional) reason``: deafens you if you need to get work done
@@ -422,7 +416,7 @@ class Moderation(Cog):
 		with db.Session() as session:
 			user = session.query(Deafen).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
 			if user is not None:
-				await self.permoverride(target=member_mentions, read_messages=None)
+				await self.permoverride(user=member_mentions, read_messages=None)
 				session.delete(user)
 				await self.modlogger(ctx, "undeafen", member_mentions, None)
 			else:
