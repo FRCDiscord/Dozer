@@ -73,7 +73,7 @@ class Moderation(Cog):
 	async def unban(self, ctx, user_mentions: discord.User, *, reason="No reason provided"):
 		"Unbans the user ID mentioned."
 		await ctx.guild.unban(user_mentions, reason=reason)
-		await self.modlogger(ctx, "unbanned", user_mentions, reason)
+		await self.modlogger(ctx=ctx, action="unbanned", target=user_mentions, reason=reason)
 
 	@command()
 	@has_permissions(kick_members=True)
@@ -81,7 +81,7 @@ class Moderation(Cog):
 	async def kick(self, ctx, user_mentions: discord.User, *, reason="No reason provided"):
 		"Kicks the user mentioned."
 		await ctx.guild.kick(user_mentions, reason=reason)
-		await self.modlogger(ctx, "kicked", user_mentions, reason)
+		await self.modlogger(ctx=ctx, action="kicked", target=user_mentions, reason=reason)
 
 	@command()
 	@has_permissions(administrator=True)
@@ -362,7 +362,7 @@ class Moderation(Cog):
 				user = Guildmute(id=member_mentions.id, guild=ctx.guild.id)
 				session.add(user)
 				await self.permoverride(member_mentions, send_messages=False, add_reactions=False)
-				await self.modlogger(ctx, "muted", member_mentions, reason)
+				await self.modlogger(ctx=ctx, action="muted", target=member_mentions, reason=reason)
 
 	@command()
 	@has_permissions(kick_members=True)
@@ -373,7 +373,7 @@ class Moderation(Cog):
 			if user is not None:
 				session.delete(user)
 				await self.permoverride(member_mentions, send_messages=None, add_reactions=None)
-				await self.modlogger(ctx, "unmuted", member_mentions, reason)
+				await self.modlogger(ctx=ctx, action="unmuted", target=member_mentions, reason=reason)
 			else:
 				await ctx.send("User is not muted!")
 
@@ -389,7 +389,7 @@ class Moderation(Cog):
 				user = Deafen(id=member_mentions.id, guild=ctx.guild.id, self_inflicted=False)
 				session.add(user)
 				await self.permoverride(member_mentions, read_messages=False)
-				await self.modlogger(ctx, "deafened", member_mentions, reason)
+				await self.modlogger(ctx=ctx, action="deafened", target=member_mentions, reason=reason)
 
 	@command()
 	@bot_has_permissions(manage_roles=True)
@@ -403,7 +403,7 @@ class Moderation(Cog):
 				user = Deafen(id=ctx.author.id, guild=ctx.guild.id, self_inflicted=True)
 				session.add(user)
 				await self.permoverride(user=ctx.author, read_messages=False)
-				await self.modlogger(ctx, "deafened", target=ctx.author, reason=reason)
+				await self.modlogger(ctx=ctx, action="deafened", target=ctx.author, reason=reason)
 		self.bot.loop.create_task(self.punishmenttimer(ctx, timing, ctx.author, lookup=Deafen))
 	selfdeafen.example_usage = """
 	``[prefix]selfdeafen time (1h5m, both optional) reason``: deafens you if you need to get work done
@@ -420,7 +420,7 @@ class Moderation(Cog):
 				session.delete(user)
 				if user.self_inflicted:
 					reason = "self deafen timer expired"
-				await self.modlogger(ctx, "undeafened", member_mentions, reason)
+				await self.modlogger(ctx=ctx, action="undeafened", target=member_mentions, reason=reason)
 			else:
 				await ctx.send("User is not deafened!")
 
