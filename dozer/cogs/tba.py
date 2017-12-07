@@ -43,10 +43,15 @@ class TBA(Cog):
 			e.add_field(name='Website', value=team_data.website)
 			e.set_footer(text='Triggered by ' + ctx.author.display_name)
 			await ctx.send(embed=e)
+		except KeyError:
+			e = discord.Embed(color=blurple)
+			e.add_field(name='ERROR', value='Team {} does not exist or does not have data on it'.format(team_num))
+			await ctx.send(embed=e)
 		except:
-			await ctx.send('Team {} does not exist or does not have data on it'.format(team_num))
-	
-	
+			e = discord.Embed(color=blurple)
+			e.add_field(name='ERROR', value='A fatal error has occured.')
+			await ctx.send(embed=e)
+
 	team.example_usage = """
 	`{prefix}tba team 4131` - show information on team 4131, the Iron Patriots
 	"""
@@ -60,9 +65,15 @@ class TBA(Cog):
 		try:
 			team_data = self.parser.get_team('frc{}'.format(team_num))
 			await ctx.send(team_data.raw)
+		except KeyError:
+			e = discord.Embed(color=blurple)
+			e.add_field(name='ERROR', value='Team {} does not exist or does not have data on it'.format(team_num))
+			await ctx.send(embed=e)
 		except:
-			await ctx.send('Team {} does not exist or does not have data on it'.format(team_num))
-				
+			e = discord.Embed(color=blurple)
+			e.add_field(name='ERROR', value='A fatal error has occured.')
+			await ctx.send(embed=e)
+			
 	raw.example_usage = """
 	`{prefix}tba raw 4150` - show raw information on team 4150, FRobotics
 	"""
@@ -102,9 +113,15 @@ class TBA(Cog):
 				current_second = "0{}".format(current_second)
 		
 			await ctx.send("Timezone: {0} UTC{1} \nCurrent Time: {2}:{3}:{4} {5} ({6}:{3}:{4})".format(timezone["timeZoneName"], utc_offset, current_hour, current_minute, current_second, dayTime, current_hour_original)) 
+		except KeyError:
+			e = discord.Embed(color=blurple)
+			e.add_field(name='ERROR', value='Team {} does not exist or does not have data on it'.format(team_num))
+			await ctx.send(embed=e)
 		except:
-			await ctx.send('Team {} does not exist or does not have data on it'.format(team_num))
-					
+			e = discord.Embed(color=blurple)
+			e.add_field(name='ERROR', value='A fatal error has occured.')
+			await ctx.send(embed=e)
+			
 	timezone.example_usage = """
 	`{prefix}timezone 3572` - show the local time of team 3572, Wavelength
 	"""
