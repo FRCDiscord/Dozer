@@ -136,7 +136,6 @@ class Moderation(Cog):
 	`{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel so if someone types "I have read the rules and regulations" it assigns them the Member role. 
 	"""
 
-
 	@command()
 	@has_permissions(manage_roles=True)
 	@bot_has_permissions(manage_roles=True)
@@ -367,6 +366,21 @@ class Moderation(Cog):
 	@command()
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
+	async def timedmute(self, ctx, member_mentions: discord.Member, timing, *, reason="No reason provided"):
+		with db.Session() as session:
+			user = session.query(Guildmute).filter_by(id=member_mentions.id).one_or_none()
+			if user is not None:
+				await ctx.send("User is already muted!")
+			else:
+				user = Guildmute(id=member_mentions.id, guild=ctx.guild.id)
+				session.add(user)
+				await self.permoverride(member_mentions, send_messages=False, add_reactions=False)
+				await self.modlogger(ctx, "muted", member_mentions, reason)
+				self.bot.loop.create_task(self.punishmenttimer(ctx, timing, member_mentions, lookup=Guildmute))
+
+	@command()
+	@has_permissions(kick_members=True)
+	@bot_has_permissions(manage_roles=True)
 	async def unmute(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
 		with db.Session() as session:
 			user = session.query(Guildmute).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
@@ -390,6 +404,21 @@ class Moderation(Cog):
 				session.add(user)
 				await self.permoverride(member_mentions, read_messages=False)
 				await self.modlogger(ctx=ctx, action="deafened", target=member_mentions, reason=reason)
+
+	@command()
+	@has_permissions(kick_members=True)
+	@bot_has_permissions(manage_roles=True)
+	async def timeddeafen(self, ctx, member_mentions: discord.Member, timing, *, reason="No reason provided"):
+		with db.Session() as session:
+			user = session.query(Deafen).filter_by(id=member_mentions.id).one_or_none()
+			if user is not None:
+				await ctx.send("User is already deafened!")
+			else:
+				user = Deafen(id=member_mentions.id, guild=ctx.guild.id, self_inflicted=False)
+				session.add(user)
+				await self.permoverride(member_mentions, read_messages=False)
+				await self.modlogger(ctx, "deafened", member_mentions, reason)
+				self.bot.loop.create_task(self.punishmenttimer(ctx, timing, member_mentions, lookup=Deafen))
 
 	@command()
 	@bot_has_permissions(manage_roles=True)
