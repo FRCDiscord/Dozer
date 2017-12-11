@@ -33,7 +33,10 @@ class TBA(Cog):
 	@bot_has_permissions(embed_links=True)
 	async def team(self, ctx, team_num: int):
 		"""Get information on an FRC team by number."""
-		team_data = self.parser.get_team('frc{}'.format(team_num))
+		try:
+			team_data = self.parser.get_team('frc{}'.format(team_num))
+		except KeyError:
+			raise BadArgument('Team {} does not exist.'.format(team_num))
 		e = discord.Embed(color=blurple)
 		e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num), url='https://www.thebluealliance.com/team/{}'.format(team_num), icon_url='http://i.imgur.com/V8nrobr.png')
 		e.add_field(name='Name', value=team_data.nickname)
@@ -42,7 +45,7 @@ class TBA(Cog):
 		e.add_field(name='Website', value=team_data.website)
 		e.set_footer(text='Triggered by ' + ctx.author.display_name)
 		await ctx.send(embed=e)
-	
+
 	team.example_usage = """
 	`{prefix}tba team 4131` - show information on team 4131, the Iron Patriots
 	"""
@@ -53,9 +56,12 @@ class TBA(Cog):
 		Get raw TBA API output for a team.
 		This command is really only useful for development.
 		"""
-		team_data = self.parser.get_team('frc{}'.format(team_num))
+		try:
+			team_data = self.parser.get_team('frc{}'.format(team_num))
+		except KeyError:
+			raise BadArgument('Team {} does not exist.'.format(team_num))
 		await ctx.send(team_data.raw)
-	
+			
 	raw.example_usage = """
 	`{prefix}tba raw 4150` - show raw information on team 4150, FRobotics
 	"""
@@ -64,7 +70,10 @@ class TBA(Cog):
 		"""
 		Get the timezone of a team based on the team number.
 		"""
-		location = self.parser.get_team('frc{}'.format(team_num)).location
+		try:
+			location = self.parser.get_team('frc{}'.format(team_num)).location
+		except KeyError:
+			raise BadArgument('Team {} does not exist.'.format(team_num))
 		gmaps = googlemaps.Client(key=self.gmaps_key)
 		geolocator = Nominatim()
 		geolocation = geolocator.geocode(location)
@@ -92,9 +101,8 @@ class TBA(Cog):
 		current_second = currentTime.second
 		if current_second < 10:
 			current_second = "0{}".format(current_second)
-		
 		await ctx.send("Timezone: {0} UTC{1} \nCurrent Time: {2}:{3}:{4} {5} ({6}:{3}:{4})".format(timezone["timeZoneName"], utc_offset, current_hour, current_minute, current_second, dayTime, current_hour_original)) 
-	
+					
 	timezone.example_usage = """
 	`{prefix}timezone 3572` - show the local time of team 3572, Wavelength
 	"""
