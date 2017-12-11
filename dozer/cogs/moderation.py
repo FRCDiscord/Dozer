@@ -50,14 +50,15 @@ class Moderation(Cog):
 		except:
 			minutes = 0
 		time = (hours * 3600) + (minutes * 60)
-		await asyncio.sleep(time)
-		with db.Session() as session:
-			user = session.query(lookup).filter_by(id=target.id).one_or_none()
-			if user is not None:
-				if lookup == Deafen:
-					self.bot.loop.create_task(coro=self.undeafen.callback(self=self, ctx=ctx, member_mentions=target))
-				if lookup == Guildmute:
-					self.bot.loop.create_task(coro=self.unmute.callback(self=self, ctx=ctx, member_mentions=target))
+		if time is not 0:
+			await asyncio.sleep(time)
+			with db.Session() as session:
+				user = session.query(lookup).filter_by(id=target.id).one_or_none()
+				if user is not None:
+					if lookup == Deafen:
+						self.bot.loop.create_task(coro=self.undeafen.callback(self=self, ctx=ctx, member_mentions=target))
+					if lookup == Guildmute:
+						self.bot.loop.create_task(coro=self.unmute.callback(self=self, ctx=ctx, member_mentions=target))
 
 	@command()
 	@has_permissions(ban_members=True)
@@ -362,21 +363,7 @@ class Moderation(Cog):
 				session.add(user)
 				await self.permoverride(member_mentions, send_messages=False, add_reactions=False)
 				await self.modlogger(ctx=ctx, action="muted", target=member_mentions, reason=reason)
-
-	@command()
-	@has_permissions(kick_members=True)
-	@bot_has_permissions(manage_roles=True)
-	async def timedmute(self, ctx, member_mentions: discord.Member, timing, *, reason="No reason provided"):
-		with db.Session() as session:
-			user = session.query(Guildmute).filter_by(id=member_mentions.id).one_or_none()
-			if user is not None:
-				await ctx.send("User is already muted!")
-			else:
-				user = Guildmute(id=member_mentions.id, guild=ctx.guild.id)
-				session.add(user)
-				await self.permoverride(member_mentions, send_messages=False, add_reactions=False)
-				await self.modlogger(ctx=ctx, action="muted", target=member_mentions, reason=reason)
-				self.bot.loop.create_task(self.punishmenttimer(ctx, timing, member_mentions, lookup=Guildmute))
+				self.bot.loop.create_task(self.punishmenttimer(ctx, reason, ctx.author, lookup=Guildmute))
 
 	@command()
 	@has_permissions(kick_members=True)
@@ -404,21 +391,7 @@ class Moderation(Cog):
 				session.add(user)
 				await self.permoverride(member_mentions, read_messages=False)
 				await self.modlogger(ctx=ctx, action="deafened", target=member_mentions, reason=reason)
-
-	@command()
-	@has_permissions(kick_members=True)
-	@bot_has_permissions(manage_roles=True)
-	async def timeddeafen(self, ctx, member_mentions: discord.Member, timing, *, reason="No reason provided"):
-		with db.Session() as session:
-			user = session.query(Deafen).filter_by(id=member_mentions.id).one_or_none()
-			if user is not None:
-				await ctx.send("User is already deafened!")
-			else:
-				user = Deafen(id=member_mentions.id, guild=ctx.guild.id, self_inflicted=False)
-				session.add(user)
-				await self.permoverride(member_mentions, read_messages=False)
-				await self.modlogger(ctx=ctx, action="deafened", target=member_mentions, reason=reason)
-				self.bot.loop.create_task(self.punishmenttimer(ctx, timing, member_mentions, lookup=Deafen))
+				self.bot.loop.create_task(self.punishmenttimer(ctx, reason, ctx.author, lookup=Deafen))
 
 	@command()
 	@bot_has_permissions(manage_roles=True)
