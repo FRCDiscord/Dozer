@@ -1,15 +1,27 @@
 import discord, unicodedata
-from discord.ext.commands import guild_only
+from discord.ext.commands import cooldown, BucketType, guild_only
 from ._utils import *
 
 blurple = discord.Color.blurple()
 datetime_format = '%Y-%m-%d %I:%M %p'
 
 class Info(Cog):
+	"""Commands for getting information about people and things on Discord."""
 	@guild_only()
+	@cooldown(1, 10, BucketType.channel)
 	@command(aliases=['user', 'userinfo', 'memberinfo'])
-	async def member(self, ctx, member : discord.Member = None):
-		"""Retrieve information about a member of the guild."""
+	async def member(self, ctx, member: discord.Member=None):
+		"""
+		Retrieve information about a member of the guild.
+		If no arguments are passed, information about the author is used.
+		**This command works without mentions.** Remove the '@' before your mention so you don't ping the person unnecessarily.
+		You can pick a member by:
+		- Username (`cooldude`)
+		- Username and discriminator (`cooldude#1234`)
+		- ID (`326749693969301506`)
+		- Nickname - must be exact and is case-sensitive (`"Mr. Cool Dude III | Team 1234"`)
+		- Mention (not recommended) (`@Mr Cool Dude III | Team 1234`)
+		"""
 		async with ctx.typing():
 			member = member or ctx.author
 			icon_url = member.avatar_url_as(static_format='png')
@@ -28,7 +40,13 @@ class Info(Cog):
 			e.add_field(name='Icon URL', value=icon_url, inline=False)
 		await ctx.send(embed=e)
 	
+	member.example_usage = """
+	`{prefix}member` - get information about yourself
+	`{prefix}member cooldude#1234` - get information about cooldude
+	"""
+	
 	@guild_only()
+	@cooldown(1, 10, BucketType.channel)
 	@command(aliases=['server', 'guildinfo', 'serverinfo'])
 	async def guild(self, ctx):
 		"""Retrieve information about this guild."""
@@ -47,14 +65,9 @@ class Info(Cog):
 		e.add_field(name='Icon URL', value=guild.icon_url or 'This guild has no icon.')
 		await ctx.send(embed=e)
 	
-	@command()
-	async def about(self, ctx):
-		"""Shows information about the bot"""
-		e = discord.Embed(color=discord.Color.blue())
-		e.set_thumbnail(url=self.bot.user.avatar_url)
-		e.add_field(name='About', value="Dozer: A collaborative bot for FIRST Discord servers, developed by the FRC Discord Server Development Team")
-		e.add_field(name='Support', value="Join our development server at https://discord.gg/bB8tcQ8 for support, to help with development, or if you have any questions or comments!")
-		await ctx.send(embed=e)
+	guild.example_usage = """
+	`{prefix}guild` - get information about this guild
+	"""
 
 def setup(bot):
 	bot.add_cog(Info(bot))
