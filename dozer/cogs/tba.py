@@ -28,7 +28,6 @@ class TBA(Cog):
 	tba.example_usage = """
 	`{prefix}tba 5052` - show information on team 5052, the RoboLobos
 	"""
-	
 	@tba.command()
 	@bot_has_permissions(embed_links=True)
 	async def team(self, ctx, team_num: int):
@@ -43,11 +42,30 @@ class TBA(Cog):
 		e.add_field(name='Rookie Year', value=team_data.rookie_year)
 		e.add_field(name='Location', value=team_data.location)
 		e.add_field(name='Website', value=team_data.website)
+		e.add_field(name='TBA Link', value='https://www.thebluealliance.com/team/{}'.format(team_num))
 		e.set_footer(text='Triggered by ' + ctx.author.display_name)
 		await ctx.send(embed=e)
 
 	team.example_usage = """
 	`{prefix}tba team 4131` - show information on team 4131, the Iron Patriots
+	"""
+	
+	@tba.command()
+	@bot_has_permissions(embed_links=True)
+	async def sponsors(self, ctx, team_num: int):
+		"""Get sponsors of a FRC team by its number."""
+		try:
+			team_data = self.parser.get_team('frc{}'.format(team_num))
+		except KeyError:
+			raise BadArgument('Team {} does not exist.'.format(team_num))
+		e = discord.Embed(color=blurple)
+		e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num), url='https://www.thebluealliance.com/team/{}'.format(team_num), icon_url='http://i.imgur.com/V8nrobr.png')
+		e.add_field(name='Sponsors', value=team_data.name)
+		e.set_footer(text='Triggered by ' + ctx.author.display_name)
+		await ctx.send(embed=e)
+
+	sponsors.example_usage = """
+	`{prefix}tba sponsors 3572` - show sponsors of team 3572, Wavelength
 	"""
 
 	@tba.command()
@@ -60,11 +78,16 @@ class TBA(Cog):
 			team_data = self.parser.get_team('frc{}'.format(team_num))
 		except KeyError:
 			raise BadArgument('Team {} does not exist.'.format(team_num))
-		await ctx.send(team_data.raw)
+		e = discord.Embed(color=blurple)
+		e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num), url='https://www.thebluealliance.com/team/{}'.format(team_num), icon_url='http://i.imgur.com/V8nrobr.png')
+		e.add_field(name='Raw Data', value=team_data.raw)
+		e.set_footer(text='Triggered by ' + ctx.author.display_name)
+		await ctx.send(embed=e)
 			
 	raw.example_usage = """
 	`{prefix}tba raw 4150` - show raw information on team 4150, FRobotics
 	"""
+	
 	@command()
 	async def timezone(self, ctx, team_num: int):
 		"""
