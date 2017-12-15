@@ -37,7 +37,7 @@ class Moderation(Cog):
 			if overwrite.is_empty():
 				await i.set_permissions(target=user, overwrite=None)
 
-	async def punishmenttimer(self, ctx, timing, target, lookup):
+	async def punishmenttimer(self, ctx, timing, target, lookup, reason):
 		regexstring = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?")
 		regexiter = re.match(regexstring, timing)
 		matches = regexiter.groupdict()
@@ -50,14 +50,26 @@ class Moderation(Cog):
 		except:
 			minutes = 0
 		time = (hours * 3600) + (minutes * 60)
-		await asyncio.sleep(time)
-		with db.Session() as session:
-			user = session.query(lookup).filter_by(id=target.id).one_or_none()
-			if user is not None:
-				if lookup == Deafen:
-					self.bot.loop.create_task(coro=self.undeafen.callback(self=self, ctx=ctx, member_mentions=target))
-				if lookup == Guildmute:
-					self.bot.loop.create_task(coro=self.unmute.callback(self=self, ctx=ctx, member_mentions=target))
+		if time is 0:
+			if lookup == Deafen:
+				await self.modlogger(ctx=ctx, action="deafened", target=target, reason=reason)
+			if lookup == Guildmute:
+				await self.modlogger(ctx=ctx, action="muted", target=target, reason=reason)
+		if time is not 0:
+			reasoning = re.sub(pattern=regexstring, string=reason, repl="").lstrip("  ")
+			print(reasoning)
+			if lookup == Deafen:
+				await self.modlogger(ctx=ctx, action="deafened", target=target, reason=reasoning)
+			if lookup == Guildmute:
+				await self.modlogger(ctx=ctx, action="muted", target=target, reason=reasoning)
+			await asyncio.sleep(time)
+			with db.Session() as session:
+				user = session.query(lookup).filter_by(id=target.id).one_or_none()
+				if user is not None:
+					if lookup == Deafen:
+						self.bot.loop.create_task(coro=self.undeafen.callback(self=self, ctx=ctx, member_mentions=target))
+					if lookup == Guildmute:
+						self.bot.loop.create_task(coro=self.unmute.callback(self=self, ctx=ctx, member_mentions=target))
 
 	@command()
 	@has_permissions(ban_members=True)
@@ -135,7 +147,6 @@ class Moderation(Cog):
 	nmconfig.example_usage = """
 	`{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel so if someone types "I have read the rules and regulations" it assigns them the Member role. 
 	"""
-
 
 	@command()
 	@has_permissions(manage_roles=True)
@@ -362,7 +373,7 @@ class Moderation(Cog):
 				user = Guildmute(id=member_mentions.id, guild=ctx.guild.id)
 				session.add(user)
 				await self.permoverride(member_mentions, send_messages=False, add_reactions=False)
-				await self.modlogger(ctx=ctx, action="muted", target=member_mentions, reason=reason)
+				self.bot.loop.create_task(self.punishmenttimer(ctx, reason, ctx.author, lookup=Guildmute, reason=reason))
 
 	@command()
 	@has_permissions(kick_members=True)
@@ -389,7 +400,7 @@ class Moderation(Cog):
 				user = Deafen(id=member_mentions.id, guild=ctx.guild.id, self_inflicted=False)
 				session.add(user)
 				await self.permoverride(member_mentions, read_messages=False)
-				await self.modlogger(ctx=ctx, action="deafened", target=member_mentions, reason=reason)
+				self.bot.loop.create_task(self.punishmenttimer(ctx, reason, ctx.author, lookup=Deafen, reason=reason))
 
 	@command()
 	@bot_has_permissions(manage_roles=True)
