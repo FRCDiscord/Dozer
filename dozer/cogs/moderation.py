@@ -365,7 +365,7 @@ class Moderation(Cog):
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def mute(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
-		with db.Session() as session:
+		async with ctx.typing(), db.Session() as session:
 			user = session.query(Guildmute).filter_by(id=member_mentions.id).one_or_none()
 			if user is not None:
 				await ctx.send("User is already muted!")
@@ -379,7 +379,7 @@ class Moderation(Cog):
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def unmute(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
-		with db.Session() as session:
+		async with ctx.typing(), db.Session() as session:
 			user = session.query(Guildmute).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
 			if user is not None:
 				session.delete(user)
@@ -392,7 +392,7 @@ class Moderation(Cog):
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def deafen(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
-		with db.Session() as session:
+		async with ctx.typing(), db.Session() as session:
 			user = session.query(Deafen).filter_by(id=member_mentions.id).one_or_none()
 			if user is not None:
 				await ctx.send("User is already deafened!")
@@ -405,8 +405,7 @@ class Moderation(Cog):
 	@command()
 	@bot_has_permissions(manage_roles=True)
 	async def selfdeafen(self, ctx, timing, *, reason="No reason provided"):
-		await ctx.send("Deafening {}...".format(ctx.author))
-		with db.Session() as session:
+		async with ctx.typing(), db.Session() as session:
 			user = session.query(Deafen).filter_by(id=ctx.author.id).one_or_none()
 			if user is not None:
 				await ctx.send("You are already deafened!")
@@ -424,7 +423,7 @@ class Moderation(Cog):
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def undeafen(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
-		with db.Session() as session:
+		async with ctx.typing(), db.Session() as session:
 			user = session.query(Deafen).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
 			if user is not None:
 				await self.permoverride(user=member_mentions, read_messages=None)
