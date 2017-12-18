@@ -30,12 +30,12 @@ class Moderation(Cog):
 				await ctx.send("Please configure modlog channel to enable modlog functionality")
 
 	async def permoverride(self, user, **overwrites):
-		for i in user.guild.channels:
-			overwrite = i.overwrites_for(user)
+		coros = []
+		for channel in user.guild.channels:
+			overwrite = channel.overwrites_for(user)
 			overwrite.update(**overwrites)
-			await i.set_permissions(target=user, overwrite=overwrite)
-			if overwrite.is_empty():
-				await i.set_permissions(target=user, overwrite=None)
+			coros.append(channel.set_permissions(target=user, overwrite=None if overwrite.is_empty() else overwrite))
+		await asyncio.gather(*coros)
 
 	async def punishmenttimer(self, ctx, timing, target, lookup, reason):
 		regexstring = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?")
