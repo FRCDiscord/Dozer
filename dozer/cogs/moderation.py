@@ -373,7 +373,7 @@ class Moderation(Cog):
 				user = Guildmute(id=member_mentions.id, guild=ctx.guild.id)
 				session.add(user)
 				await self.permoverride(member_mentions, send_messages=False, add_reactions=False)
-				self.bot.loop.create_task(self.punishmenttimer(ctx, reason, ctx.author, lookup=Guildmute, reason=reason))
+				self.bot.loop.create_task(self.punishmenttimer(ctx, reason, member_mentions, lookup=Guildmute, reason=reason))
 
 	@command()
 	@has_permissions(kick_members=True)
@@ -400,7 +400,7 @@ class Moderation(Cog):
 				user = Deafen(id=member_mentions.id, guild=ctx.guild.id, self_inflicted=False)
 				session.add(user)
 				await self.permoverride(member_mentions, read_messages=False)
-				self.bot.loop.create_task(self.punishmenttimer(ctx, reason, ctx.author, lookup=Deafen, reason=reason))
+				self.bot.loop.create_task(self.punishmenttimer(ctx, reason, member_mentions, lookup=Deafen, reason=reason))
 
 	@command()
 	@bot_has_permissions(manage_roles=True)
@@ -414,8 +414,7 @@ class Moderation(Cog):
 				user = Deafen(id=ctx.author.id, guild=ctx.guild.id, self_inflicted=True)
 				session.add(user)
 				await self.permoverride(user=ctx.author, read_messages=False)
-				await self.modlogger(ctx=ctx, action="deafened", target=ctx.author, reason=reason)
-		self.bot.loop.create_task(self.punishmenttimer(ctx, timing, ctx.author, lookup=Deafen))
+				self.bot.loop.create_task(self.punishmenttimer(ctx, timing, ctx.author, lookup=Deafen, reason=reason))
 	selfdeafen.example_usage = """
 	``[prefix]selfdeafen time (1h5m, both optional) reason``: deafens you if you need to get work done
 	"""
