@@ -51,24 +51,6 @@ class TBA(Cog):
 	"""
 	
 	@tba.command()
-	@bot_has_permissions(embed_links=True)
-	async def sponsors(self, ctx, team_num: int):
-		"""Get sponsors of a FRC team by its number."""
-		try:
-			team_data = self.parser.get_team('frc{}'.format(team_num))
-		except KeyError:
-			raise BadArgument('Team {} does not exist.'.format(team_num))
-		e = discord.Embed(color=blurple)
-		e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num), url='https://www.thebluealliance.com/team/{}'.format(team_num), icon_url='http://i.imgur.com/V8nrobr.png')
-		e.add_field(name='Sponsors', value=team_data.name)
-		e.set_footer(text='Triggered by ' + ctx.author.display_name)
-		await ctx.send(embed=e)
-
-	sponsors.example_usage = """
-	`{prefix}tba sponsors 3572` - show sponsors of team 3572, Wavelength
-	"""
-
-	@tba.command()
 	async def raw(self, ctx, team_num: int):
 		"""
 		Get raw TBA API output for a team.
