@@ -16,7 +16,7 @@ class TBA(Cog):
 		tba_config = bot.config['tba']
 		self.gmaps_key = bot.config['gmaps_key']
 		self.parser = tbapi.TBAParser(tba_config['team'], tba_config['application'], tba_config['version'])
-	
+
 	@group(invoke_without_command=True)
 	async def tba(self, ctx, team_num: int):
 		"""
@@ -28,6 +28,7 @@ class TBA(Cog):
 	tba.example_usage = """
 	`{prefix}tba 5052` - show information on team 5052, the RoboLobos
 	"""
+
 	@tba.command()
 	@bot_has_permissions(embed_links=True)
 	async def team(self, ctx, team_num: int):
@@ -49,7 +50,7 @@ class TBA(Cog):
 	team.example_usage = """
 	`{prefix}tba team 4131` - show information on team 4131, the Iron Patriots
 	"""
-	
+
 	@tba.command()
 	async def raw(self, ctx, team_num: int):
 		"""
@@ -65,11 +66,11 @@ class TBA(Cog):
 		e.add_field(name='Raw Data', value=team_data.raw)
 		e.set_footer(text='Triggered by ' + ctx.author.display_name)
 		await ctx.send(embed=e)
-			
+
 	raw.example_usage = """
 	`{prefix}tba raw 4150` - show raw information on team 4150, FRobotics
 	"""
-	
+
 	@command()
 	async def timezone(self, ctx, team_num: int):
 		"""
@@ -107,7 +108,7 @@ class TBA(Cog):
 		if current_second < 10:
 			current_second = "0{}".format(current_second)
 		await ctx.send("Timezone: {0} UTC{1} \nCurrent Time: {2}:{3}:{4} {5} ({6}:{3}:{4})".format(timezone["timeZoneName"], utc_offset, current_hour, current_minute, current_second, dayTime, current_hour_original)) 
-					
+
 	timezone.example_usage = """
 	`{prefix}timezone 3572` - show the local time of team 3572, Wavelength
 	"""
