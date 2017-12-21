@@ -30,12 +30,12 @@ class Moderation(Cog):
 				await ctx.send("Please configure modlog channel to enable modlog functionality")
 
 	async def permoverride(self, user, **overwrites):
-		for i in user.guild.channels:
-			overwrite = i.overwrites_for(user)
+		coros = []
+		for channel in user.guild.channels:
+			overwrite = channel.overwrites_for(user)
 			overwrite.update(**overwrites)
-			await i.set_permissions(target=user, overwrite=overwrite)
-			if overwrite.is_empty():
-				await i.set_permissions(target=user, overwrite=None)
+			coros.append(channel.set_permissions(target=user, overwrite=None if overwrite.is_empty() else overwrite))
+		await asyncio.gather(*coros)
 
 	async def punishmenttimer(self, ctx, timing, target, lookup, reason):
 		regexstring = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?")
@@ -365,7 +365,7 @@ class Moderation(Cog):
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def mute(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
-		with db.Session() as session:
+		async with ctx.typing(), db.Session() as session:
 			user = session.query(Guildmute).filter_by(id=member_mentions.id).one_or_none()
 			if user is not None:
 				await ctx.send("User is already muted!")
@@ -373,13 +373,13 @@ class Moderation(Cog):
 				user = Guildmute(id=member_mentions.id, guild=ctx.guild.id)
 				session.add(user)
 				await self.permoverride(member_mentions, send_messages=False, add_reactions=False)
-				self.bot.loop.create_task(self.punishmenttimer(ctx, reason, ctx.author, lookup=Guildmute, reason=reason))
+				self.bot.loop.create_task(self.punishmenttimer(ctx, reason, member_mentions, lookup=Guildmute, reason=reason))
 
 	@command()
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def unmute(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
-		with db.Session() as session:
+		async with ctx.typing(), db.Session() as session:
 			user = session.query(Guildmute).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
 			if user is not None:
 				session.delete(user)
@@ -392,7 +392,7 @@ class Moderation(Cog):
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def deafen(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
-		with db.Session() as session:
+		async with ctx.typing(), db.Session() as session:
 			user = session.query(Deafen).filter_by(id=member_mentions.id).one_or_none()
 			if user is not None:
 				await ctx.send("User is already deafened!")
@@ -400,13 +400,12 @@ class Moderation(Cog):
 				user = Deafen(id=member_mentions.id, guild=ctx.guild.id, self_inflicted=False)
 				session.add(user)
 				await self.permoverride(member_mentions, read_messages=False)
-				self.bot.loop.create_task(self.punishmenttimer(ctx, reason, ctx.author, lookup=Deafen, reason=reason))
+				self.bot.loop.create_task(self.punishmenttimer(ctx, reason, member_mentions, lookup=Deafen, reason=reason))
 
 	@command()
 	@bot_has_permissions(manage_roles=True)
 	async def selfdeafen(self, ctx, timing, *, reason="No reason provided"):
-		await ctx.send("Deafening {}...".format(ctx.author))
-		with db.Session() as session:
+		async with ctx.typing(), db.Session() as session:
 			user = session.query(Deafen).filter_by(id=ctx.author.id).one_or_none()
 			if user is not None:
 				await ctx.send("You are already deafened!")
@@ -414,8 +413,7 @@ class Moderation(Cog):
 				user = Deafen(id=ctx.author.id, guild=ctx.guild.id, self_inflicted=True)
 				session.add(user)
 				await self.permoverride(user=ctx.author, read_messages=False)
-				await self.modlogger(ctx=ctx, action="deafened", target=ctx.author, reason=reason)
-		self.bot.loop.create_task(self.punishmenttimer(ctx, timing, ctx.author, lookup=Deafen))
+				self.bot.loop.create_task(self.punishmenttimer(ctx, timing, ctx.author, lookup=Deafen, reason=reason))
 	selfdeafen.example_usage = """
 	``[prefix]selfdeafen time (1h5m, both optional) reason``: deafens you if you need to get work done
 	"""
@@ -424,7 +422,7 @@ class Moderation(Cog):
 	@has_permissions(kick_members=True)
 	@bot_has_permissions(manage_roles=True)
 	async def undeafen(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
-		with db.Session() as session:
+		async with ctx.typing(), db.Session() as session:
 			user = session.query(Deafen).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
 			if user is not None:
 				await self.permoverride(user=member_mentions, read_messages=None)
