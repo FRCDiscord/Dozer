@@ -2,14 +2,14 @@
 from .. import db
 from ._utils import *
 import discord
-from discord.ext.commands import MemberConverter
 
 # noinspection PyUnboundLocalVariable
 
 
 class Teams(Cog):
 	@command()
-	async def setteam(self, ctx, team_number, team_type):
+	async def setteam(self, ctx, team_type, team_number):
+		team_type = team_type.casefold()
 		with db.Session() as session:
 			user = session.query(TeamNumbers).filter_by(user_id=ctx.author.id).one_or_none()
 			if user is not None:
@@ -27,7 +27,23 @@ class Teams(Cog):
 		await ctx.send("Team number set!")
 
 	@command()
-	async def onteam(self, ctx, team_number, team_type):
+	async def teamsfor(self, ctx, user: discord.Member=None):
+		if user is None:
+			user = ctx.author
+		with db.Session() as session:
+			users = session.query(TeamNumbers).filter_by(user_id=user.id).one_or_none()
+			if users is None:
+				await ctx.send("Couldn't find any teams for that user!")
+			if users is not None:
+				e = discord.Embed(type='rich')
+				e.title = 'Teams for {}'.format(user.display_name)
+				e.add_field(name="FRC Team", value=users.frc_team)
+				e.add_field(name="FTC Team", value=users.ftc_team)
+				await ctx.send(embed=e)
+
+	@command()
+	async def onteam(self, ctx, team_type, team_number):
+		team_type = team_type.casefold()
 		with db.Session() as session:
 			badteamtype = False
 			if team_type == 'frc':
