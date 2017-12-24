@@ -213,7 +213,8 @@ class NameGame(Cog):
 
 			if not added: return
 			await ctx.send(embed=game.create_embed(
-				description="Players have been added to the game. See below for an updated player list.", 
+				title="Players have been added to the game.",
+				description="See below for an updated player list.", 
 				color=discord.Color.blurple()
 			))
 	addplayer.example_usage = """
