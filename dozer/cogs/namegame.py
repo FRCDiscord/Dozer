@@ -107,12 +107,27 @@ class NameGame(Cog):
 	
 	@group(invoke_without_command=True)
 	async def ng(self, ctx):
-		await self.help.callback(self, ctx)
+		"""Show info about and participate in a robotics team namegame.
+		Run the help command on each of the subcommands for more detailed help.
+		List of subcommands:
+			ng info
+			ng startround
+			ng addplayer
+			ng pick
+			ng drop
+			ng skip
+			ng gameinfo
+		"""
+		await self.info.callback(self, ctx)
 	
+	ng.example_usage = """
+	`{prefix}ng` - show a description on how the robotics team namegame works. 
+	"""
 	
 	@ng.command()
 	@bot_has_permissions(embed_links=True)
-	async def help(self, ctx):
+	async def info(self, ctx):
+		"""Show a description of the robotics team name game and how to play."""
 		game_embed = discord.Embed()
 		game_embed.color = discord.Color.magenta()
 		game_embed.title="How to play"
@@ -122,11 +137,26 @@ class NameGame(Cog):
 		game_embed.add_field(name="No Cheatsy Doodles",value="No looking up teams on TBA, TOA, VexDB, or other methods, that's just unfair.")
 		game_embed.add_field(name="Times up!", value="You have 60 seconds to make a pick, or you get skipped and get a strike.")
 		game_embed.add_field(name="Shaking Things Up",value="Any team number that ends in a 0 mean that the next player has a wildcard, and can pick any legal team.")
-		game_embed.add_field(name="Pesky Commands", value=f"To start a game, type `{ctx.prefix}ng startround` and mention the players you want to play with. You can add people with `{ctx.prefix}ng addplayer`. When it's your turn, type `{ctx.prefix}ng pick <team> <teamname>` to execute your pick. You can always do `{ctx.prefix}ng gameinfo` to get the current game status. If you ever need to quit, running `{ctx.prefix}ng drop` removes you from the game.")
+		game_embed.add_field(name="Pesky Commands", value=f"To start a game, type `{ctx.prefix}ng startround` and mention the players you want to play with. \
+				You can add people with `{ctx.prefix}ng addplayer`. \
+				When it's your turn, type `{ctx.prefix}ng pick <team> <teamname>` to execute your pick. \
+				If you need to skip, typing `{ctx.prefix}ng skip` gives you a strike and skips your turn. \
+				You can always do `{ctx.prefix}ng gameinfo` to get the current game status. \
+				If you ever need to quit, running `{ctx.prefix}ng drop` removes you from the game. \
+				For more detailed command help, run `{ctx.prefix}help ng.")
+		game_embed.add_field(name="Different Game Modes", value="You can play the name game with FTC teams too! To start a game playing with FTC teams, run `{ctx.prefix}ng startround ftc`")
 		await ctx.send(embed=game_embed)
+
+	info.example_usage = """
+	`{prefix}ng help` - show a description on how the robotics team namegame works
+	"""
 
 	@ng.command()
 	async def startround(self, ctx, mode : str = None):
+		"""
+		Starts a namegame session.
+		One can select the robotics program by specifying one of "FRC" or "FTC".
+		"""
 		modes = ["frc", "ftc"]
 		if mode is None:
 			mode = modes[0]
@@ -154,15 +184,21 @@ class NameGame(Cog):
 		#await ctx.send(f"{game.current_turn().mention}, start us off!")
 		self.games[ctx.channel.id] = game	
 		game.event_loop = self.bot.loop.create_task(self.game_timer_loop(ctx, game))
+	startround.example_usage = """
+	`{prefix}ng startround frc` - start an FRC namegame session.
+	"""
 
 	@ng.command()
 	async def addplayer(self, ctx):
+		"""Add players to the current game.
+		Only works if the user is currently playing."""
 		if ctx.channel.id not in self.games:
 			await ctx.send(f"There's not a game going on! Start one with `{ctx.prefix}ng startround`")
 			return
 		game = self.games[ctx.channel.id]
 
 		with await game.state_lock:
+			added = False
 			for player in ctx.message.mentions:
 				if player.bot:
 					await ctx.send(f"You can't invite bot users like {player.mention}!")
@@ -173,9 +209,20 @@ class NameGame(Cog):
 				elif player in game.players:
 					await ctx.send(f"{player.mention} is already in the game!")
 				game.players[player] = 0
+				added = True
+
+			if not added: return
+			await ctx.send(embed=game.create_embed(
+				description="Players have been added to the game. See below for an updated player list.", 
+				color=discord.Color.blurple()
+			))
+	addplayer.example_usage = """
+	`{prefix}ng addplayer @user1, @user2` - add user1 and user2 to the game.
+	"""
 
 	@ng.command()
 	async def pick(self, ctx, team : int, *, name):
+		"""Attempt to pick a team in a game."""
 		if ctx.channel.id not in self.games:
 			await ctx.send(f"There's not a game going on! Start one with `{ctx.prefix}ng startround`")
 			return
@@ -195,16 +242,16 @@ class NameGame(Cog):
 				return
 
 			if game.number % 10 != 0 and str(game.number)[0] != str(team)[0]:
-				await self.skip(ctx, game, ctx.author, "Your team doesn't start with the correct digit! Strike given, moving onto the next player!")
+				await self.skip_player(ctx, game, ctx.author, "Your team doesn't start with the correct digit! Strike given, moving onto the next player!")
 				return
 			if team in game.picked:
-				await self.skip(ctx, game, ctx.author, "That team has already been picked! You have been skipped and given a strike.")
+				await self.skip_player(ctx, game, ctx.author, "That team has already been picked! You have been skipped and given a strike.")
 				return
 
 			ratio = game.check_name(ctx, team, name)
 			if ratio == -1:
 				#nonexistant team
-				await self.skip(ctx, game, ctx.author, f"Team {team} doesn't exist! Strike given, moving onto the next player!")
+				await self.skip_player(ctx, game, ctx.author, f"Team {team} doesn't exist! Strike given, moving onto the next player!")
 				return
 			if ratio > 60:
 				game.picked.append(team)
@@ -241,8 +288,12 @@ class NameGame(Cog):
 				await game.vote_msg.add_reaction('✅')
 				await game.vote_msg.add_reaction('❌')
 
+	pick.example_usage = """
+	`{prefix}ng pick 254 poofy cheeses` - attempt to guess team 254 with a specified name of "poofy cheeses".
+	"""
 	@ng.command()
 	async def drop(self, ctx):
+		"""Drops a player from the current game by eliminating them. Once dropped, they can no longer rejoin."""
 		if ctx.channel.id not in self.games:
 			await ctx.send(f"There's not a game going on! Start one with `{ctx.prefix}ng startround`")
 			return
@@ -253,18 +304,41 @@ class NameGame(Cog):
 				return
 			game.players[ctx.author] = 2
 			if ctx.author == game.current_turn():
-				await self.skip(ctx, game, ctx.author)
+				await self.skip_player(ctx, game, ctx.author)
 			else:
 				await self.strike(ctx, game, ctx.author)
 			if game.running:
 				await self.display_info(ctx, game)
+	drop.example_usage = """
+	`{prefix}ng drop` - remove the initiator of the command from the current game
+	"""
+	@ng.command()
+	async def skip(self, ctx):
+		"""Skips the current player if the player wishes to forfeit their turn."""
+		if ctx.channel.id not in self.games:
+			await ctx.send(f"There's not a game going on! Start one with `{ctx.prefix}ng startround`")
+			return
+		game = self.games[ctx.channel.id]
+		with await game.state_lock:
+			if ctx.author != game.current_turn():
+				await ctx.send("It's not your turn! Only the current player can skip their turn!")
+			else:
+				await self.skip_player(ctx, game, ctx.author)
+	skip.example_usage = """
+	`{prefix}ng skip` - skip the current player's turn
+	"""
+
 	@ng.command()
 	async def gameinfo(self, ctx):
+		"""Display info about the currently running game."""
 		if ctx.channel.id not in self.games:
 			await ctx.send(f"There's not a game going on! Start one with `{ctx.prefix}ng startround`")
 			return
 		game = self.games[ctx.channel.id]
 		await self.display_info(ctx, game)
+	gameinfo.example_usage = """
+	`{prefix}ng gameinfo` - display info about the currently running game.
+	"""
 
 	async def strike(self, ctx, game, player):
 		if game.strike(player):
@@ -293,7 +367,7 @@ class NameGame(Cog):
 		info_embed.add_field(name="Game Type", value=game.mode.upper())
 		info_embed.add_field(
 				name="Strikes",
-				value=", ".join([f"{player.display_name}: {strikes}" for player, strikes in game.players.items()])
+				value="\n".join([f"{player.display_name}: {strikes}" for player, strikes in game.players.items()])
 		)
 		info_embed.add_field(name="Current Player", value=game.current_turn())
 		info_embed.add_field(name="Current Number", value=game.number or "Wildcard")
@@ -301,7 +375,7 @@ class NameGame(Cog):
 		info_embed.add_field(name="Teams Picked", value=game.get_picked())
 		await ctx.send(embed=info_embed)
 
-	async def skip(self, ctx, game, player, msg=None):
+	async def skip_player(self, ctx, game, player, msg=None):
 		if msg is not None:
 			await ctx.send(msg)
 		game.next_turn()
@@ -353,7 +427,7 @@ class NameGame(Cog):
 					if edited:
 						await game.turn_msg.edit(embed=game.turn_embed)
 					if game.time == 0:
-						await self.skip(ctx, game, game.current_turn())
+						await self.skip_player(ctx, game, game.current_turn())
 					
 				if game.vote_msg and game.vote_embed and not game.vote_correct and game.vote_time > 0:
 					game.vote_time -= 1
@@ -377,7 +451,7 @@ class NameGame(Cog):
 						continue
 					if deny >= .5 * len(game.players):
 						await ctx.send(f"Team {game.last_team} was guessed wrong! Strike given to the responsible player and player is skipped.")
-						await self.skip(ctx, game, game.current_turn())
+						await self.skip_player(ctx, game, game.current_turn())
 						game.vote_time = -1
 						continue
 
@@ -386,7 +460,7 @@ class NameGame(Cog):
 						await game.vote_msg.edit(embed=vote_embed)
 					if game.vote_time == 0:
 						await ctx.send("The vote did not reach 50% in favor or in failure, so the responsible player is given a strike and skipped.")
-						await self.skip(ctx, game, game.current_turn())
+						await self.skip_player(ctx, game, game.current_turn())
 
 def setup(bot):
 	bot.add_cog(NameGame(bot))
