@@ -353,7 +353,7 @@ class NameGame(Cog):
 			win_embed.color = discord.Color.gold()
 			win_embed.title = "We have a winner!"
 			win_embed.add_field(name="Winning Player", value=winner)
-			win_embed.add_field(name="Wins Total", value="not implemented\nyet lmao")
+			#win_embed.add_field(name="Wins Total", value="not implemented\nyet rip")
 			win_embed.add_field(name="Teams Picked", value=game.get_picked())
 			await ctx.send(embed=win_embed)
 
