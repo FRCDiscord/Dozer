@@ -4,6 +4,7 @@ from ._utils import *
 import discord
 
 # noinspection PyUnboundLocalVariable
+# Todo: Get string joining working, apply to &onteam, and add removeteam command
 
 
 class Teams(Cog):
@@ -11,19 +12,14 @@ class Teams(Cog):
 	async def setteam(self, ctx, team_type, team_number):
 		team_type = team_type.casefold()
 		with db.Session() as session:
-			user = session.query(TeamNumbers).filter_by(user_id=ctx.author.id).one_or_none()
-			if user is not None:
-				user.user_id = ctx.author.id
-				if team_type == "frc":
-					user.frc_team = team_number
-				elif team_type == "ftc":
-					user.ftc_team = team_number
-			if user is None:
-				if team_type == "frc":
-					dbtransaction = TeamNumbers(user_id=ctx.author.id, frc_team=int(team_number))
-				elif team_type == "ftc":
-					dbtransaction = TeamNumbers(user_id=ctx.author.id, frc_team=int(team_number))
-				session.add(dbtransaction)
+			if team_type == "frc":
+				dbtransaction = TeamNumbers(user_id=ctx.author.id, frc_team=int(team_number))
+			elif team_type == "ftc":
+				dbtransaction = TeamNumbers(user_id=ctx.author.id, ftc_team=int(team_number))
+			else:
+				dbtransaction = None
+				await ctx.send("Invalid team type!")
+			session.add(dbtransaction)
 		await ctx.send("Team number set!")
 
 	@command()
@@ -31,14 +27,18 @@ class Teams(Cog):
 		if user is None:
 			user = ctx.author
 		with db.Session() as session:
-			users = session.query(TeamNumbers).filter_by(user_id=user.id).one_or_none()
-			if users is None:
+			teams = session.query(TeamNumbers).filter_by(user_id=user.id).all()
+			if len(teams) is 0:
 				await ctx.send("Couldn't find any teams for that user!")
-			if users is not None:
+			else:
 				e = discord.Embed(type='rich')
 				e.title = 'Teams for {}'.format(user.display_name)
-				e.add_field(name="FRC Team", value=users.frc_team)
-				e.add_field(name="FTC Team", value=users.ftc_team)
+				e.description = "Teams:"
+				for i in teams:
+					if i.frc_team is not None:
+						e.description = e.description.join("FRC Team {} \n".format(i.frc_team))
+					if i.ftc_team is not None:
+						e.description = e.description.join("FTC Team {} \n".format(i.ftc_team))
 				await ctx.send(embed=e)
 
 	@command()
@@ -68,9 +68,10 @@ class Teams(Cog):
 
 class TeamNumbers(db.DatabaseObject):
 	__tablename__ = 'team_numbers'
-	user_id = db.Column(db.Integer, primary_key=True)
+	user_id = db.Column(db.Integer)
 	frc_team = db.Column(db.Integer)
 	ftc_team = db.Column(db.Integer)
+	primary_key = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
 
 def setup(bot):
