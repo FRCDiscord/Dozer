@@ -4,14 +4,47 @@ import pickle
 import lzma
 import asyncio
 import tbapi
+import traceback
 from ._utils import *
 from discord.ext import commands
 from discord.ext.commands import BadArgument, Group, bot_has_permissions, has_permissions
 from datetime import timedelta
 from collections import OrderedDict
 from fuzzywuzzy import fuzz
+from functools import wraps
+
+def keep_alive(func):
+	# keeps the wrapped async function alive
+	@wraps(func)
+	async def wrapper(*args, **kwargs):
+		while True:
+			try:
+				return await func(*args, **kwargs)
+			except Exception:
+				# panic to the console, and to chat
+				error = traceback.format_exc()
+				print(error)
+				# this is an unbelievably bad way of printing an error to chat but given its limited use it's ok...? maybe?
+				for arg in args:
+					if isinstance(arg, discord.ext.commands.Context):
+						await arg.send(f"```Error in game loop:\n{error[:2000]}```")
+	return wrapper
+
+def game_is_running(func):
+	@wraps(func)
+	async def wrapper(*args, **kwargs):
+		self = args[0]
+		ctx = args[1]
+		if ctx.channel.id not in self.games:
+			await ctx.send(f"There's not a game going on! Start one with `{ctx.prefix}ng startround`")
+			return
+		return await func(*args, **kwargs)
+	return wrapper
+
 
 TURN_DURATION = 60
+class NameGameError(discord.ext.commands.CheckFailure):
+	pass
 class NameGameSession():
 	def __init__(self, mode):
 		self.running = True
@@ -189,6 +222,7 @@ class NameGame(Cog):
 	"""
 
 	@ng.command()
+	@game_is_running
 	async def addplayer(self, ctx):
 		"""Add players to the current game.
 		Only works if the user is currently playing."""
@@ -222,11 +256,9 @@ class NameGame(Cog):
 	"""
 
 	@ng.command()
+	@game_is_running
 	async def pick(self, ctx, team : int, *, name):
 		"""Attempt to pick a team in a game."""
-		if ctx.channel.id not in self.games:
-			await ctx.send(f"There's not a game going on! Start one with `{ctx.prefix}ng startround`")
-			return
 		game = self.games[ctx.channel.id]
 
 		with await game.state_lock:
@@ -269,6 +301,7 @@ class NameGame(Cog):
 				await game.turn_msg.add_reaction('❌')
 
 				# EXTREMELY INCOMPLETE LOL
+				# (not anymore)
 			else:
 				game.time = -1
 				game.vote_time = 60
@@ -293,11 +326,9 @@ class NameGame(Cog):
 	`{prefix}ng pick 254 poofy cheeses` - attempt to guess team 254 with a specified name of "poofy cheeses".
 	"""
 	@ng.command()
+	@game_is_running
 	async def drop(self, ctx):
 		"""Drops a player from the current game by eliminating them. Once dropped, they can no longer rejoin."""
-		if ctx.channel.id not in self.games:
-			await ctx.send(f"There's not a game going on! Start one with `{ctx.prefix}ng startround`")
-			return
 		game = self.games[ctx.channel.id]
 		with await game.state_lock:
 			if ctx.author not in game.players:
@@ -314,11 +345,9 @@ class NameGame(Cog):
 	`{prefix}ng drop` - remove the initiator of the command from the current game
 	"""
 	@ng.command()
+	@game_is_running
 	async def skip(self, ctx):
 		"""Skips the current player if the player wishes to forfeit their turn."""
-		if ctx.channel.id not in self.games:
-			await ctx.send(f"There's not a game going on! Start one with `{ctx.prefix}ng startround`")
-			return
 		game = self.games[ctx.channel.id]
 		with await game.state_lock:
 			if ctx.author != game.current_turn():
@@ -330,16 +359,16 @@ class NameGame(Cog):
 	"""
 
 	@ng.command()
+	@game_is_running
 	async def gameinfo(self, ctx):
 		"""Display info about the currently running game."""
-		if ctx.channel.id not in self.games:
-			await ctx.send(f"There's not a game going on! Start one with `{ctx.prefix}ng startround`")
-			return
 		game = self.games[ctx.channel.id]
 		await self.display_info(ctx, game)
+
 	gameinfo.example_usage = """
 	`{prefix}ng gameinfo` - display info about the currently running game.
 	"""
+	
 
 	async def strike(self, ctx, game, player):
 		if game.strike(player):
@@ -391,16 +420,7 @@ class NameGame(Cog):
 		game.turn_embed = game.create_embed(**kwargs)
 		game.turn_msg = await ctx.send(embed=game.turn_embed)
 	
-	# possible replacement for the current rxn constructs?
-	async def count_reactions(self, game, emoji, reactions):
-		ret = 0
-		for reaction in reactions:
-			if reaction.emoji == emoji:
-				async for user in reaction.users():
-					if user in game.players:
-						ret += 1
-		return ret
-
+	@keep_alive	
 	async def game_timer_loop(self, ctx, game):
 		while game.running:
 			await asyncio.sleep(1)
