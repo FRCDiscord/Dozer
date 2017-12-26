@@ -13,6 +13,7 @@ from collections import OrderedDict
 from fuzzywuzzy import fuzz
 from functools import wraps
 
+MODES = ["frc", "ftc"]
 def keep_alive(func):
 	# keeps the wrapped async function alive
 	@wraps(func)
@@ -20,14 +21,18 @@ def keep_alive(func):
 		while True:
 			try:
 				return await func(*args, **kwargs)
-			except Exception:
+			except Exception as e:
+				# CancelledErrors are normal part of operation, ignore them
+				if isinstance(e, asyncio.CancelledError):
+					return
 				# panic to the console, and to chat
 				error = traceback.format_exc()
 				print(error)
 				# this is an unbelievably bad way of printing an error to chat but given its limited use it's ok...? maybe?
 				for arg in args:
-					if isinstance(arg, discord.ext.commands.Context):
+					if isinstance(arg, (discord.ext.commands.Context, FakeContext)):
 						await arg.send(f"```Error in game loop:\n{error[:1974]}```")
+						break
 	return wrapper
 
 def game_is_running(func):
@@ -45,12 +50,8 @@ class FakeContext():
 	def __init__(self, channel):
 		self.channel = channel
 	async def send(self, *args, **kwargs):
-		await self.channel.send(*args, **kwargs)
+		return await self.channel.send(*args, **kwargs)
 
-
-TURN_DURATION = 60
-class NameGameError(discord.ext.commands.CheckFailure):
-	pass
 class NameGameSession():
 	def __init__(self, mode):
 		self.running = True
@@ -58,16 +59,16 @@ class NameGameSession():
 		self.removed_players = []
 		self.picked = []
 		self.mode = mode
-		self.time = TURN_DURATION
+		self.time = 60
 		self.vote_time = -1
 		self.number = 0
 		self._idx = 0
 		self.last_name = ""
 		self.last_team = 0
-		self.event_loop = None
 		self.state_lock = None
 		self.turn_msg = None
 		self.turn_embed = None
+		self.turn_task = None
 
 		self.pass_tally = 0
 		self.fail_tally = 0
@@ -76,6 +77,7 @@ class NameGameSession():
 		self.vote_player = None
 		self.vote_msg = None
 		self.vote_embed = None
+		self.vote_task = None
 
 	def create_embed(self, title="", description="", color=discord.Color.blurple(), extra_fields=[], start=False):
 		v = "Starting " if start else "Current "
@@ -120,7 +122,7 @@ class NameGameSession():
 	def next_turn(self):
 		self.pass_tally = 0
 		self.fail_tally = 0
-		self.time = TURN_DURATION
+		self.time = 60
 		self._idx = (self._idx + 1) % len(self.players)
 
 	def strike(self, player):
@@ -202,14 +204,13 @@ class NameGame(Cog):
 		Starts a namegame session.
 		One can select the robotics program by specifying one of "FRC" or "FTC".
 		"""
-		modes = ["frc", "ftc"]
 		if mode is None:
-			mode = modes[0]
+			mode = MODES[0]
 		if ctx.channel.id in self.games:
 			await ctx.send("A game is currently going on! Wait till the players finish up to start again.")
 			return
-		if mode.lower() not in modes:
-			await ctx.send(f"Game mode {mode} not supported! Please pick a mode that is one of: `{', '.join(modes)}`")
+		if mode.lower() not in MODES:
+			await ctx.send(f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(MODES)}`")
 			return
 		game = NameGameSession(mode.lower())
 		game.state_lock = asyncio.Lock(loop=self.bot.loop)
@@ -228,7 +229,8 @@ class NameGame(Cog):
 		)
 		#await ctx.send(f"{game.current_turn().mention}, start us off!")
 		self.games[ctx.channel.id] = game	
-		game.event_loop = self.bot.loop.create_task(self.game_timer_loop(ctx, game))
+		#game.event_loop = self.bot.loop.create_task(self.game_timer_loop(ctx, game))
+		#game.turn_task = self.bot.loop.create_task(self.game_turn_countdown(ctx, game))
 	startround.example_usage = """
 	`{prefix}ng startround frc` - start an FRC namegame session.
 	"""
@@ -335,6 +337,8 @@ class NameGame(Cog):
 				game.vote_msg = await ctx.send(embed=vote_embed)
 				await game.vote_msg.add_reaction('✅')
 				await game.vote_msg.add_reaction('❌')
+				game.vote_task = self.bot.loop.create_task(self.game_vote_countdown(ctx, game))
+
 
 	pick.example_usage = """
 	`{prefix}ng pick 254 poofy cheeses` - attempt to guess team 254 with a specified name of "poofy cheeses".
@@ -433,6 +437,10 @@ class NameGame(Cog):
 	async def send_turn_embed(self, ctx, game, **kwargs):
 		game.turn_embed = game.create_embed(**kwargs)
 		game.turn_msg = await ctx.send(embed=game.turn_embed)
+		if game.turn_task is not None:
+			game.turn_task.cancel()
+		game.turn_task = self.bot.loop.create_task(self.game_turn_countdown(ctx, game))
+
 
 	async def on_reaction_add(self, reaction, user):
 		if reaction.message.channel.id not in self.games:
@@ -460,7 +468,7 @@ class NameGame(Cog):
 						color=discord.Color.green(),
 					)
 					game.vote_time = -1
-				if game.fail_tally >= .5 * len(game.players):
+				elif game.fail_tally >= .5 * len(game.players):
 					await ctx.send(f"Team {game.last_team} was guessed wrong! Strike given to the responsible player and player is skipped.")
 					await self.skip_player(ctx, game, game.current_turn())
 					game.vote_time = -1
@@ -493,83 +501,40 @@ class NameGame(Cog):
 	async def game_turn_countdown(self, ctx, game):
 		await asyncio.sleep(1)
 		with await game.state_lock:
-			if not game.running or game.time <= 0:
+			if not game.running or game.time < 0:
 				return
+			print(f"game.time == {game.time}")
 			game.time -= 1
+			game.turn_embed.set_field_at(3, name="Time Left", value=game.time)
+
+			if game.vote_time > 0 and game.vote_correct:
+				game.vote_time -= 1
+				game.turn_embed.set_field_at(4, name="Voting Time", value=game.vote_time)
+				
 			if game.time % 5 == 0:
-				game.turn_embed.set_field_at(3, name="Time Left", value=game.time)
 				await game.turn_msg.edit(embed=game.turn_embed)
+
+			if game.time == 0:
+				await self.skip_player(ctx, game, game.current_turn())
 			game.turn_task = self.bot.loop.create_task(self.game_turn_countdown(ctx, game))
 
 		
 	@keep_alive	
-	async def game_timer_loop(self, ctx, game):
-		while game.running:
-			await asyncio.sleep(1)
-			with await game.state_lock:
-				if game.turn_msg and game.turn_embed and game.time > 0:
-					game.time -= 1
-					edited = False
-					if game.time % 5 == 0:
-						game.turn_embed.set_field_at(3, name="Time Left", value=game.time)
-						edited = True
-					if game.vote_time > 0 and game.vote_correct:
-						game.vote_time -= 1
-						print(f"game.vote_time == {game.vote_time}\n\tgame.pass_tally == {game.pass_tally}\n\tgame.fail_tally == {game.fail_tally}")
+	async def game_vote_countdown(self, ctx, game):
+		await asyncio.sleep(1)
+		with await game.state_lock:
+			if not (game.running and not game.vote_correct and game.vote_embed and game.vote_time > 0):
+				return
+			print(f"game.vote_time == {game.vote_time}")
+			game.vote_time -= 1
+			game.vote_embed.set_field_at(5, name="Voting Time", value=game.vote_time)
+			if game.vote_time % 5 == 0:
+				await game.vote_msg.edit(embed=game.vote_embed)
+			if game.vote_time == 0:
+				await ctx.send("The vote did not reach 50% in favor or in failure, so the responsible player is given a strike and skipped.")
+				await self.skip_player(ctx, game, game.current_turn())
 
-						"""
-						game.turn_msg = await ctx.get_message(game.turn_msg.id)
-						deny = 0
-						for reaction in game.turn_msg.reactions:
-							if reaction.emoji == '❌':
-								deny = reaction.count - 1
-						if game.fail_tally > .5 * len(game.players):
-							await ctx.send(f"The decision was overruled! Player {game.vote_player.mention} is given a strike!")
-							await self.strike(ctx, game, game.vote_player)
-						"""
-						if game.vote_time % 5 == 0:
-							game.turn_embed.set_field_at(4, name="Voting Time", value=game.vote_time)
-							edited = True
-					if edited:
-						await game.turn_msg.edit(embed=game.turn_embed)
-					if game.time == 0:
-						await self.skip_player(ctx, game, game.current_turn())
-					
-				if game.vote_msg and game.vote_embed and not game.vote_correct and game.vote_time > 0:
-					game.vote_time -= 1
-					print(f"game.vote_time == {game.vote_time}\n\tgame.pass_tally == {game.pass_tally}\n\tgame.fail_tally == {game.fail_tally}")
-					"""
-					game.vote_msg = await ctx.get_message(game.vote_msg.id)
-					accept = 0
-					deny = 0
-					for reaction in game.vote_msg.reactions:
-						if reaction.emoji == '✅':
-							accept = reaction.count - 1
-						if reaction.emoji == '❌':
-							deny = reaction.count - 1
-					if game.pass_tally >= .5 * len(game.players):
-						game.picked.append(game.last_team)
-						game.next_turn()
-						await self.send_turn_embed(ctx, game,
-							title="Team correct!",
-							description=f"Team {game.last_team} ({game.last_name}) was correct! Moving onto the next player as follows.",
-							color=discord.Color.green(),
-						)
-						game.vote_time = -1
-						continue
-					if game.fail_tally >= .5 * len(game.players):
-						await ctx.send(f"Team {game.last_team} was guessed wrong! Strike given to the responsible player and player is skipped.")
-						await self.skip_player(ctx, game, game.current_turn())
-						game.vote_time = -1
-						continue
-					"""
-
-					game.vote_embed.set_field_at(5, name="Voting Time", value=game.vote_time)
-					if game.vote_time % 5 == 0:
-						await game.vote_msg.edit(embed=game.vote_embed)
-					if game.vote_time == 0:
-						await ctx.send("The vote did not reach 50% in favor or in failure, so the responsible player is given a strike and skipped.")
-						await self.skip_player(ctx, game, game.current_turn())
+			game.vote_task = self.bot.loop.create_task(self.game_vote_countdown(ctx, game))
 
 def setup(bot):
 	bot.add_cog(NameGame(bot))
