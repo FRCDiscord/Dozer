@@ -4,7 +4,6 @@ from ._utils import *
 import discord
 
 # noinspection PyUnboundLocalVariable
-# Todo: Add removeteam command
 
 
 class Teams(Cog):
@@ -21,6 +20,23 @@ class Teams(Cog):
 				await ctx.send("Invalid team type!")
 			session.add(dbtransaction)
 		await ctx.send("Team number set!")
+
+	@command()
+	async def removeteam(self, ctx, team_type, team_number):
+		team_type = team_type.casefold()
+		with db.Session() as session:
+			counter = 0
+			if team_type == 'frc':
+				results = session.query(TeamNumbers).filter_by(user_id=ctx.author.id, frc_team=team_number).all()
+			elif team_type == 'ftc':
+				results = session.query(TeamNumbers).filter_by(user_id=ctx.author.id, ftc_team=team_number).all()
+			else:
+				results = {}
+				await ctx.send("Please specify a valid team type!")
+			for i in results:
+				session.delete(i)
+				counter += 1
+			await ctx.send("Removed {} associations with team {}".format(counter, team_number))
 
 	@command()
 	async def teamsfor(self, ctx, user: discord.Member=None):
