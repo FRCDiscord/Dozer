@@ -4,7 +4,7 @@ from ._utils import *
 import discord
 
 # noinspection PyUnboundLocalVariable
-# Todo: Get string joining working, apply to &onteam, and add removeteam command
+# Todo: Add removeteam command
 
 
 class Teams(Cog):
@@ -33,12 +33,12 @@ class Teams(Cog):
 			else:
 				e = discord.Embed(type='rich')
 				e.title = 'Teams for {}'.format(user.display_name)
-				e.description = "Teams:"
+				e.description = "Teams: \n"
 				for i in teams:
 					if i.frc_team is not None:
-						e.description = e.description.join("FRC Team {} \n".format(i.frc_team))
+						e.description = "{} FRC Team {} \n".format(e.description, i.frc_team)
 					if i.ftc_team is not None:
-						e.description = e.description.join("FTC Team {} \n".format(i.ftc_team))
+						e.description = "{} FTC Team {} \n".format(e.description, i.ftc_team)
 				await ctx.send(embed=e)
 
 	@command()
@@ -60,9 +60,10 @@ class Teams(Cog):
 			else:
 				e = discord.Embed(type='rich')
 				e.title = 'Users on team {}'.format(team_number)
+				e.description = "Users: \n"
 				for i in users:
 					user = ctx.guild.get_member(i.user_id)
-					e.add_field(name=user.display_name, value=user.mention, inline=False)
+					e.description = "{}{} {} \n".format(e.description, user.display_name, user.mention)
 				await ctx.send(embed=e)
 
 
