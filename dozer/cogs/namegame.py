@@ -478,7 +478,7 @@ class NameGame(Cog):
 
 					game.vote_embed.set_field_at(5, name="Voting Time", value=game.vote_time)
 					if game.vote_time % 5 == 0:
-						await game.vote_msg.edit(embed=vote_embed)
+						await game.vote_msg.edit(embed=game.vote_embed)
 					if game.vote_time == 0:
 						await ctx.send("The vote did not reach 50% in favor or in failure, so the responsible player is given a strike and skipped.")
 						await self.skip_player(ctx, game, game.current_turn())
