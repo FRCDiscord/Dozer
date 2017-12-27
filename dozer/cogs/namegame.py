@@ -6,6 +6,7 @@ import asyncio
 import tbapi
 import traceback
 from ._utils import *
+from .. import db
 from discord.ext import commands
 from discord.ext.commands import BadArgument, Group, bot_has_permissions, has_permissions
 from datetime import timedelta
@@ -13,7 +14,7 @@ from collections import OrderedDict
 from fuzzywuzzy import fuzz
 from functools import wraps
 
-MODES = ["frc", "ftc"]
+SUPPORTED_MODES = ["frc", "ftc"]
 def keep_alive(func):
 	# keeps the wrapped async function alive
 	@wraps(func)
@@ -43,6 +44,7 @@ def game_is_running(func):
 		if ctx.channel.id not in self.games:
 			await ctx.send(f"There's not a game going on! Start one with `{ctx.prefix}ng startround`")
 			return
+
 		return await func(*args, **kwargs)
 	return wrapper
 
@@ -197,6 +199,58 @@ class NameGame(Cog):
 	info.example_usage = """
 	`{prefix}ng help` - show a description on how the robotics team namegame works
 	"""
+	
+	@ng.group(invoke_without_command=True)
+	async def config(self, ctx):
+		await ctx.send(f"""`{ctx.prefix}ng config` reference:
+				`{ctx.prefix}ng config defaultmode [mode]` - set tbe default game mode used when startround is used with no arguments
+				`{ctx.prefix}ng config setchannel [channel_mention]` - set the channel that games are allowed to be run in
+				`{ctx.prefix}ng config clearsetchannel` - clear the set channel for games""")
+	@config.command()	
+	@has_permissions(manage_guild=True)
+	async def defaultmode(self, ctx, mode : str = None):
+		with db.Session() as session:
+			config = session.query(NameGameDefaultMode).filter_by(guild_id=ctx.guild.id).one_or_none()
+			if mode is None:
+				mode = SUPPORTED_MODES[0] if config is None else config.mode
+				await ctx.send(f"The current default game mode for this server is `{mode}`")
+			else:
+				if mode not in SUPPORTED_MODES:
+					await ctx.send(f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
+					return
+				if config is None:
+					config = NameGameDefaultMode(guild_id=ctx.guild.id, mode=mode)
+					session.add(config)
+				else:
+					config.mode = mode
+				await ctx.send(f"Default game mode updated to `{mode}`")
+	@config.command()
+	@has_permissions(manage_guild=True)
+	async def setchannel(self, ctx, channel : discord.TextChannel = None):
+		with db.Session() as session:
+			config = session.query(NameGameChannel).filter_by(guild_id=ctx.guild.id).one_or_none()
+			if channel is None:
+				if config is None or config.channel_id is None:
+					await ctx.send(f"There is no currently set namegame channel.\nTo set a channel, run `{ctx.prefix}ng config setchannel [channel_mention]`")
+				else:
+					await ctx.send(f"The currently set namegame channel is {ctx.guild.get_channel(config.channel_id).mention}.\nTo clear this, run `{ctx.prefix}ng config clearsetchannel`")
+			else:
+				if config is None:
+					config = NameGameChannel(guild_id=ctx.guild.id, channel_id=channel.id)
+					session.add(config)
+				else:
+					config.channel_id = channel.id
+				await ctx.send(f"Namegame channel set to {channel.mention}!")
+	@config.command()
+	@has_permissions(manage_guild=True)
+	async def clearsetchannel(self, ctx):
+		with db.Session() as session:
+			config = session.query(NameGameChannel).filter_by(guild_id=ctx.guild.id).one_or_none()
+			if config is not None:
+				config.channel_id = None
+			await ctx.send("Namegame channel cleared!")
+
+	#TODO: configurable time limits, ping on event, etc
 
 	@ng.command()
 	async def startround(self, ctx, mode : str = None):
@@ -205,12 +259,21 @@ class NameGame(Cog):
 		One can select the robotics program by specifying one of "FRC" or "FTC".
 		"""
 		if mode is None:
-			mode = MODES[0]
+			with db.Session() as session:
+				config = session.query(NameGameDefaultMode).filter_by(guild_id=ctx.guild.id).one_or_none()
+			mode = SUPPORTED_MODES[0] if config is None else config.mode
+
+		with db.Session() as session:
+			config = session.query(NameGameChannel).filter_by(guild_id=ctx.guild.id).one_or_none()
+			if config is not None and config.channel_id is not None and config.channel_id != ctx.channel.id:
+				await ctx.send("Games cannot be started in this channel!")
+				return
+
 		if ctx.channel.id in self.games:
 			await ctx.send("A game is currently going on! Wait till the players finish up to start again.")
 			return
-		if mode.lower() not in MODES:
-			await ctx.send(f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(MODES)}`")
+		if mode.lower() not in SUPPORTED_MODES:
+			await ctx.send(f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
 			return
 		game = NameGameSession(mode.lower())
 		game.state_lock = asyncio.Lock(loop=self.bot.loop)
@@ -230,7 +293,7 @@ class NameGame(Cog):
 		#await ctx.send(f"{game.current_turn().mention}, start us off!")
 		self.games[ctx.channel.id] = game	
 		#game.event_loop = self.bot.loop.create_task(self.game_timer_loop(ctx, game))
-		#game.turn_task = self.bot.loop.create_task(self.game_turn_countdown(ctx, game))
+		game.turn_task = self.bot.loop.create_task(self.game_turn_countdown(ctx, game))
 	startround.example_usage = """
 	`{prefix}ng startround frc` - start an FRC namegame session.
 	"""
@@ -288,7 +351,7 @@ class NameGame(Cog):
 				await ctx.send("Vote on the current team before picking the next!")
 				return
 
-			if game.number % 10 != 0 and str(game.number)[0] != str(team)[0]:
+			if game.number != 0 and str(game.number) != str(team)[0]:
 				await self.skip_player(ctx, game, ctx.author, "Your team doesn't start with the correct digit! Strike given, moving onto the next player!")
 				return
 			if team in game.picked:
@@ -302,6 +365,7 @@ class NameGame(Cog):
 				return
 			if ratio > 60:
 				game.picked.append(team)
+				game.number = game.last_team % 10
 				game.next_turn()
 				game.vote_correct = True
 				game.vote_time = 20
@@ -397,11 +461,18 @@ class NameGame(Cog):
 		if game.check_win():
 			# winning condition
 			winner = list(game.players.keys())[0]
+			with db.Session() as session:
+				record = session.query(NameGameLeaderboard).filter_by(user_id=winner.id, game_mode=game.mode).one_or_none()
+				if record is None:
+					record = NameGameLeaderboard(user_id=winner.id, wins=1, game_mode=game.mode)
+					session.add(record)
+				else:
+					record.wins += 1
 			win_embed = discord.Embed()
 			win_embed.color = discord.Color.gold()
 			win_embed.title = "We have a winner!"
 			win_embed.add_field(name="Winning Player", value=winner)
-			#win_embed.add_field(name="Wins Total", value="not implemented\nyet rip")
+			win_embed.add_field(name="Wins Total", value=record.wins)
 			win_embed.add_field(name="Teams Picked", value=game.get_picked())
 			await ctx.send(embed=win_embed)
 
@@ -437,9 +508,6 @@ class NameGame(Cog):
 	async def send_turn_embed(self, ctx, game, **kwargs):
 		game.turn_embed = game.create_embed(**kwargs)
 		game.turn_msg = await ctx.send(embed=game.turn_embed)
-		if game.turn_task is not None:
-			game.turn_task.cancel()
-		game.turn_task = self.bot.loop.create_task(self.game_turn_countdown(ctx, game))
 
 
 	async def on_reaction_add(self, reaction, user):
@@ -461,6 +529,7 @@ class NameGame(Cog):
 			else:
 				if game.pass_tally >= .5 * len(game.players):
 					game.picked.append(game.last_team)
+					game.number = game.last_team % 10
 					game.next_turn()
 					await self.send_turn_embed(ctx, game,
 						title="Team correct!",
@@ -501,7 +570,7 @@ class NameGame(Cog):
 	async def game_turn_countdown(self, ctx, game):
 		await asyncio.sleep(1)
 		with await game.state_lock:
-			if not game.running or game.time < 0:
+			if not game.running:# or game.time <= 0:
 				return
 			print(f"game.time == {game.time}")
 			game.time -= 1
@@ -516,6 +585,7 @@ class NameGame(Cog):
 
 			if game.time == 0:
 				await self.skip_player(ctx, game, game.current_turn())
+				return
 			game.turn_task = self.bot.loop.create_task(self.game_turn_countdown(ctx, game))
 
 		
@@ -525,7 +595,7 @@ class NameGame(Cog):
 		with await game.state_lock:
 			if not (game.running and not game.vote_correct and game.vote_embed and game.vote_time > 0):
 				return
-			print(f"game.vote_time == {game.vote_time}")
+			#print(f"game.vote_time == {game.vote_time}")
 			game.vote_time -= 1
 			game.vote_embed.set_field_at(5, name="Voting Time", value=game.vote_time)
 			if game.vote_time % 5 == 0:
@@ -535,6 +605,20 @@ class NameGame(Cog):
 				await self.skip_player(ctx, game, game.current_turn())
 
 			game.vote_task = self.bot.loop.create_task(self.game_vote_countdown(ctx, game))
+class NameGameDefaultMode(db.DatabaseObject):
+	__tablename__ = "namegame_defaultmode"
+	guild_id = db.Column(db.Integer, primary_key=True)
+	mode = db.Column(db.String)
+class NameGameChannel(db.DatabaseObject):
+	__tablename__ = "namegame_channel"
+	guild_id = db.Column(db.Integer, primary_key=True)
+	channel_id = db.Column(db.Integer, nullable=True)
+
+class NameGameLeaderboard(db.DatabaseObject):
+	__tablename__ = "namegame_leaderboard"
+	user_id = db.Column(db.Integer, primary_key=True)
+	wins = db.Column(db.Integer)
+	game_mode = db.Column(db.String)
 
 def setup(bot):
 	bot.add_cog(NameGame(bot))
