@@ -3,8 +3,6 @@ from .. import db
 from ._utils import *
 import discord
 
-# noinspection PyUnboundLocalVariable
-
 
 class Teams(Cog):
 	@command()
@@ -20,6 +18,9 @@ class Teams(Cog):
 				await ctx.send("Invalid team type!")
 			session.add(dbtransaction)
 		await ctx.send("Team number set!")
+	setteam.example_usage = """
+	`{prefix}setteam type team_number` - Creates an association in the database with a specified team
+	"""
 
 	@command()
 	async def removeteam(self, ctx, team_type, team_number):
@@ -37,6 +38,9 @@ class Teams(Cog):
 				session.delete(i)
 				counter += 1
 			await ctx.send("Removed {} associations with team {}".format(counter, team_number))
+	removeteam.example_usage = """
+	`{prefix}removeteam type team_number` - Removes your associations with a specified team 
+	"""
 
 	@command()
 	async def teamsfor(self, ctx, user: discord.Member=None):
@@ -56,6 +60,9 @@ class Teams(Cog):
 					if i.ftc_team is not None:
 						e.description = "{} FTC Team {} \n".format(e.description, i.ftc_team)
 				await ctx.send(embed=e)
+	teamsfor.example_usage = """
+	`{prefix}teamsfor member` - Returns all team associations with the mentioned user. Assumes caller if blank.
+	"""
 
 	@command()
 	async def onteam(self, ctx, team_type, team_number):
@@ -81,6 +88,9 @@ class Teams(Cog):
 					user = ctx.guild.get_member(i.user_id)
 					e.description = "{}{} {} \n".format(e.description, user.display_name, user.mention)
 				await ctx.send(embed=e)
+	onteam.example_usage = """
+	`{prefix}onteam type team_number` - Returns a list of users associated with a given team type and number
+	"""
 
 
 class TeamNumbers(db.DatabaseObject):
