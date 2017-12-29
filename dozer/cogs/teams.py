@@ -2,6 +2,7 @@
 from .. import db
 from ._utils import *
 import discord
+from discord.ext.commands import BadArgument
 
 
 class Teams(Cog):
@@ -35,9 +36,9 @@ class Teams(Cog):
 		if user is None:
 			user = ctx.author
 		with db.Session() as session:
-			teams = session.query(TeamNumbers).filter_by(user_id=user.id).all()
+			teams = session.query(TeamNumbers).filter_by(user_id=user.id).order_by("team_type desc", "team_number asc").all()
 			if len(teams) is 0:
-				await ctx.send("Couldn't find any teams for that user!")
+				raise BadArgument("Couldn't find any associations with that team!")
 			else:
 				e = discord.Embed(type='rich')
 				e.title = 'Teams for {}'.format(user.display_name)
