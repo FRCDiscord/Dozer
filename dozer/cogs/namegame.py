@@ -200,7 +200,7 @@ class NameGame(Cog):
 	@has_permissions(manage_guild=True)
 	async def defaultmode(self, ctx, mode : str = None):
 		with db.Session() as session:
-			config = session.query(NameGameDefaultMode).filter_by(guild_id=ctx.guild.id).one_or_none()
+			config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
 			if mode is None:
 				mode = SUPPORTED_MODES[0] if config is None else config.mode
 				await ctx.send(f"The current default game mode for this server is `{mode}`")
@@ -209,7 +209,7 @@ class NameGame(Cog):
 					await ctx.send(f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
 					return
 				if config is None:
-					config = NameGameDefaultMode(guild_id=ctx.guild.id, mode=mode)
+					config = NameGameConfig(guild_id=ctx.guild.id, channel_id=None, mode=mode)
 					session.add(config)
 				else:
 					config.mode = mode
@@ -218,7 +218,7 @@ class NameGame(Cog):
 	@has_permissions(manage_guild=True)
 	async def setchannel(self, ctx, channel : discord.TextChannel = None):
 		with db.Session() as session:
-			config = session.query(NameGameChannel).filter_by(guild_id=ctx.guild.id).one_or_none()
+			config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
 			if channel is None:
 				if config is None or config.channel_id is None:
 					await ctx.send(f"There is no currently set namegame channel.\nTo set a channel, run `{ctx.prefix}ng config setchannel [channel_mention]`")
@@ -226,7 +226,7 @@ class NameGame(Cog):
 					await ctx.send(f"The currently set namegame channel is {ctx.guild.get_channel(config.channel_id).mention}.\nTo clear this, run `{ctx.prefix}ng config clearsetchannel`")
 			else:
 				if config is None:
-					config = NameGameChannel(guild_id=ctx.guild.id, channel_id=channel.id)
+					config = NameGameConfig(guild_id=ctx.guild.id, channel_id=channel.id, mode=SUPPORTED_MODES[0])
 					session.add(config)
 				else:
 					config.channel_id = channel.id
@@ -235,7 +235,7 @@ class NameGame(Cog):
 	@has_permissions(manage_guild=True)
 	async def clearsetchannel(self, ctx):
 		with db.Session() as session:
-			config = session.query(NameGameChannel).filter_by(guild_id=ctx.guild.id).one_or_none()
+			config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
 			if config is not None:
 				config.channel_id = None
 			await ctx.send("Namegame channel cleared!")
@@ -250,11 +250,11 @@ class NameGame(Cog):
 		"""
 		if mode is None:
 			with db.Session() as session:
-				config = session.query(NameGameDefaultMode).filter_by(guild_id=ctx.guild.id).one_or_none()
+				config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
 			mode = SUPPORTED_MODES[0] if config is None else config.mode
 
 		with db.Session() as session:
-			config = session.query(NameGameChannel).filter_by(guild_id=ctx.guild.id).one_or_none()
+			config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
 			if config is not None and config.channel_id is not None and config.channel_id != ctx.channel.id:
 				await ctx.send("Games cannot be started in this channel!")
 				return
@@ -595,6 +595,7 @@ class NameGame(Cog):
 				await self.skip_player(ctx, game, game.current_turn())
 
 			game.vote_task = self.bot.loop.create_task(self.game_vote_countdown(ctx, game))
+"""
 class NameGameDefaultMode(db.DatabaseObject):
 	__tablename__ = "namegame_defaultmode"
 	guild_id = db.Column(db.Integer, primary_key=True)
@@ -603,6 +604,12 @@ class NameGameChannel(db.DatabaseObject):
 	__tablename__ = "namegame_channel"
 	guild_id = db.Column(db.Integer, primary_key=True)
 	channel_id = db.Column(db.Integer, nullable=True)
+"""
+class NameGameConfig(db.DatabaseObject):
+	__tablename__ = "namegame_config"
+	guild_id = db.Column(db.Integer, primary_key=True)
+	channel_id = db.Column(db.Integer, nullable=True)
+	mode = db.Column(db.String)
 
 class NameGameLeaderboard(db.DatabaseObject):
 	__tablename__ = "namegame_leaderboard"
