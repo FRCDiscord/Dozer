@@ -3,40 +3,26 @@ from .. import db
 from ._utils import *
 import discord
 
-# noinspection PyUnboundLocalVariable
-
 
 class Teams(Cog):
 	@command()
 	async def setteam(self, ctx, team_type, team_number):
 		team_type = team_type.casefold()
 		with db.Session() as session:
-			if team_type == "frc":
-				dbtransaction = TeamNumbers(user_id=ctx.author.id, frc_team=int(team_number))
-			elif team_type == "ftc":
-				dbtransaction = TeamNumbers(user_id=ctx.author.id, ftc_team=int(team_number))
-			else:
-				dbtransaction = None
-				await ctx.send("Invalid team type!")
+			dbtransaction = TeamNumbers(user_id=ctx.author.id, team_number=int(team_number), team_type=team_type)
 			session.add(dbtransaction)
-		await ctx.send("Team number set!")
+			await ctx.send("Team number set!")
 
 	@command()
 	async def removeteam(self, ctx, team_type, team_number):
 		team_type = team_type.casefold()
 		with db.Session() as session:
-			counter = 0
-			if team_type == 'frc':
-				results = session.query(TeamNumbers).filter_by(user_id=ctx.author.id, frc_team=team_number).all()
-			elif team_type == 'ftc':
-				results = session.query(TeamNumbers).filter_by(user_id=ctx.author.id, ftc_team=team_number).all()
-			else:
-				results = {}
-				await ctx.send("Please specify a valid team type!")
-			for i in results:
-				session.delete(i)
-				counter += 1
-			await ctx.send("Removed {} associations with team {}".format(counter, team_number))
+			results = session.query(TeamNumbers).filter_by(user_id=ctx.author.id, team_type=team_type, team_number=team_number).one_or_none()
+			if results is not None:
+				session.delete(results)
+				await ctx.send("Removed association with {} team {}".format(team_type, team_number))
+			if results is None:
+				await ctx.send("Couldn't find any associations with that team!")
 
 	@command()
 	async def teamsfor(self, ctx, user: discord.Member=None):
@@ -51,28 +37,16 @@ class Teams(Cog):
 				e.title = 'Teams for {}'.format(user.display_name)
 				e.description = "Teams: \n"
 				for i in teams:
-					if i.frc_team is not None:
-						e.description = "{} FRC Team {} \n".format(e.description, i.frc_team)
-					if i.ftc_team is not None:
-						e.description = "{} FTC Team {} \n".format(e.description, i.ftc_team)
+					e.description = "{} {} Team {} \n".format(e.description, i.team_type.upper(), i.team_number)
 				await ctx.send(embed=e)
 
 	@command()
 	async def onteam(self, ctx, team_type, team_number):
 		team_type = team_type.casefold()
 		with db.Session() as session:
-			badteamtype = False
-			if team_type == 'frc':
-				users = session.query(TeamNumbers).filter_by(frc_team=team_number).all()
-			elif team_type == 'ftc':
-				users = session.query(TeamNumbers).filter_by(ftc_team=team_number).all()
-			else:
-				await ctx.send("Please specify a valid team type!")
-				users = []
-				badteamtype = True
-			if len(users) <= 0:
-				if not badteamtype:
-					await ctx.send("Nobody on that team found!")
+			users = session.query(TeamNumbers).filter_by(team_number=team_number, team_type=team_type).all()
+			if len(users) == 0:
+				await ctx.send("Nobody on that team found!")
 			else:
 				e = discord.Embed(type='rich')
 				e.title = 'Users on team {}'.format(team_number)
@@ -85,10 +59,9 @@ class Teams(Cog):
 
 class TeamNumbers(db.DatabaseObject):
 	__tablename__ = 'team_numbers'
-	user_id = db.Column(db.Integer)
-	frc_team = db.Column(db.Integer)
-	ftc_team = db.Column(db.Integer)
-	primary_key = db.Column(db.Integer, primary_key=True, autoincrement=True)
+	user_id = db.Column(db.Integer, primary_key=True)
+	team_number = db.Column(db.Integer, primary_key=True)
+	team_type = db.Column(db.String, primary_key=True)
 
 
 def setup(bot):
