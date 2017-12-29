@@ -119,7 +119,7 @@ class NameGameSession():
 
 	def strike(self, player):
 		self.players[player] += 1
-		if self.players[player] >= 3:
+		if self.players[player] >= 3 or len(self.players) == 1:
 			self.removed_players.append(player)
 			self.players.pop(player)
 			return True
@@ -282,7 +282,6 @@ class NameGame(Cog):
 		)
 		#await ctx.send(f"{game.current_turn().mention}, start us off!")
 		self.games[ctx.channel.id] = game	
-		#game.event_loop = self.bot.loop.create_task(self.game_timer_loop(ctx, game))
 		game.turn_task = self.bot.loop.create_task(self.game_turn_countdown(ctx, game))
 	startround.example_usage = """
 	`{prefix}ng startround frc` - start an FRC namegame session.
@@ -532,8 +531,6 @@ class NameGame(Cog):
 					await self.skip_player(ctx, game, game.current_turn())
 					game.vote_time = -1
 
-
-
 	async def on_reaction_remove(self, reaction, user):
 		if reaction.message.channel.id not in self.games:
 			return
@@ -560,11 +557,11 @@ class NameGame(Cog):
 	async def game_turn_countdown(self, ctx, game):
 		await asyncio.sleep(1)
 		with await game.state_lock:
-			if not game.running:# or game.time <= 0:
+			if not game.running:
 				return
-			print(f"game.time == {game.time}")
-			game.time -= 1
-			game.turn_embed.set_field_at(3, name="Time Left", value=game.time)
+			if game.time > 0:
+				game.time -= 1
+				game.turn_embed.set_field_at(3, name="Time Left", value=game.time)
 
 			if game.vote_time > 0 and game.vote_correct:
 				game.vote_time -= 1
@@ -585,7 +582,6 @@ class NameGame(Cog):
 		with await game.state_lock:
 			if not (game.running and not game.vote_correct and game.vote_embed and game.vote_time > 0):
 				return
-			#print(f"game.vote_time == {game.vote_time}")
 			game.vote_time -= 1
 			game.vote_embed.set_field_at(5, name="Voting Time", value=game.vote_time)
 			if game.vote_time % 5 == 0:
@@ -595,16 +591,6 @@ class NameGame(Cog):
 				await self.skip_player(ctx, game, game.current_turn())
 
 			game.vote_task = self.bot.loop.create_task(self.game_vote_countdown(ctx, game))
-"""
-class NameGameDefaultMode(db.DatabaseObject):
-	__tablename__ = "namegame_defaultmode"
-	guild_id = db.Column(db.Integer, primary_key=True)
-	mode = db.Column(db.String)
-class NameGameChannel(db.DatabaseObject):
-	__tablename__ = "namegame_channel"
-	guild_id = db.Column(db.Integer, primary_key=True)
-	channel_id = db.Column(db.Integer, nullable=True)
-"""
 class NameGameConfig(db.DatabaseObject):
 	__tablename__ = "namegame_config"
 	guild_id = db.Column(db.Integer, primary_key=True)
