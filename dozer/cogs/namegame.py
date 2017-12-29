@@ -16,12 +16,12 @@ from functools import wraps
 
 SUPPORTED_MODES = ["frc", "ftc"]
 def keep_alive(func):
-	# keeps the wrapped async function alive
+	# keeps the wrapped async function alive; functions must have self and ctx as args
 	@wraps(func)
-	async def wrapper(*args, **kwargs):
+	async def wrapper(self, ctx, *args, **kwargs):
 		while True:
 			try:
-				return await func(*args, **kwargs)
+				return await func(self, ctx, *args, **kwargs)
 			except Exception as e:
 				# CancelledErrors are normal part of operation, ignore them
 				if isinstance(e, asyncio.CancelledError):
@@ -29,11 +29,7 @@ def keep_alive(func):
 				# panic to the console, and to chat
 				error = traceback.format_exc()
 				print(error)
-				# this is an unbelievably bad way of printing an error to chat but given its limited use it's ok...? maybe?
-				for arg in args:
-					if isinstance(arg, discord.ext.commands.Context):
-						await arg.send(f"```Error in game loop:\n{error[:1974]}```")
-						break
+				await ctx.send(f"```Error in game loop:\n{error[:1974]}```")
 	return wrapper
 
 def game_is_running(func):
