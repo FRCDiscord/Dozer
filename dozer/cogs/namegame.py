@@ -31,7 +31,7 @@ def keep_alive(func):
 				print(error)
 				# this is an unbelievably bad way of printing an error to chat but given its limited use it's ok...? maybe?
 				for arg in args:
-					if isinstance(arg, (discord.ext.commands.Context, FakeContext)):
+					if isinstance(arg, discord.ext.commands.Context):
 						await arg.send(f"```Error in game loop:\n{error[:1974]}```")
 						break
 	return wrapper
@@ -47,12 +47,6 @@ def game_is_running(func):
 
 		return await func(*args, **kwargs)
 	return wrapper
-
-class FakeContext():
-	def __init__(self, channel):
-		self.channel = channel
-	async def send(self, *args, **kwargs):
-		return await self.channel.send(*args, **kwargs)
 
 class NameGameSession():
 	def __init__(self, mode):
@@ -520,7 +514,7 @@ class NameGame(Cog):
 			self._on_reaction(game, reaction, user, 1)
 			
 			# also handle voting logic
-			ctx = FakeContext(reaction.message.channel)
+			ctx = await self.bot.get_context(reaction.message)
 			if game.vote_correct:
 				if game.fail_tally > .5 * len(game.players):
 					await ctx.send(f"The decision was overruled! Player {game.vote_player.mention} is given a strike!")
