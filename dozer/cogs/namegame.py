@@ -33,14 +33,12 @@ def keep_alive(func):
 
 def game_is_running(func):
 	@wraps(func)
-	async def wrapper(*args, **kwargs):
-		self = args[0]
-		ctx = args[1]
+	async def wrapper(self, ctx, *args, **kwargs):
 		if ctx.channel.id not in self.games:
 			await ctx.send(f"There's not a game going on! Start one with `{ctx.prefix}ng startround`")
 			return
 
-		return await func(*args, **kwargs)
+		return await func(self, ctx, *args, **kwargs)
 	return wrapper
 
 class NameGameSession():
@@ -439,6 +437,25 @@ class NameGame(Cog):
 	`{prefix}ng gameinfo` - display info about the currently running game.
 	"""
 	
+	@ng.command()
+	async def leaderboard(self, ctx, mode : str = None):
+		"""Display top numbers of wins for the specified game mode"""
+		if mode is None:
+			with db.Session() as session:
+				config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
+			mode = SUPPORTED_MODES[0] if config is None else config.mode
+		if mode not in SUPPORTED_MODES:
+			await ctx.send(f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
+			return
+		with db.Session() as session:
+			leaderboard = sorted(session.query(NameGameLeaderboard).filter_by(game_mode=mode).all(), key=lambda i: i.wins, reverse=True)[:10]
+			embed = discord.Embed(color=discord.Color.gold(), title=f"{mode.upper()} Name Game Leaderboard")
+			for idx, entry in enumerate(leaderboard, 1):
+				embed.add_field(name=f"#{idx}: {ctx.bot.get_user(entry.user_id).display_name}", value=entry.wins)
+			await ctx.send(embed=embed)
+	leaderboard.example_usage = """
+	`{prefix}ng leaderboard ftc` - display the namegame winning leaderboards for FTC.
+	"""
 
 	async def strike(self, ctx, game, player):
 		if game.strike(player):
