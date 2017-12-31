@@ -8,6 +8,7 @@ from discord.ext.commands import BadArgument
 class Teams(Cog):
 	@command()
 	async def setteam(self, ctx, team_type, team_number):
+		"""Sets an association with your team in the database."""
 		team_type = team_type.casefold()
 		with db.Session() as session:
 			dbtransaction = TeamNumbers(user_id=ctx.author.id, team_number=int(team_number), team_type=team_type)
@@ -19,6 +20,7 @@ class Teams(Cog):
 
 	@command()
 	async def removeteam(self, ctx, team_type, team_number):
+		"""Removes an association with a team in the database."""
 		team_type = team_type.casefold()
 		with db.Session() as session:
 			results = session.query(TeamNumbers).filter_by(user_id=ctx.author.id, team_type=team_type, team_number=team_number).one_or_none()
@@ -33,6 +35,7 @@ class Teams(Cog):
 
 	@command()
 	async def teamsfor(self, ctx, user: discord.Member=None):
+		"""Allows you to see the teams for the mentioned user. If no user is mentioned, your teams are displayed."""
 		if user is None:
 			user = ctx.author
 		with db.Session() as session:
@@ -52,6 +55,7 @@ class Teams(Cog):
 
 	@command()
 	async def onteam(self, ctx, team_type, team_number):
+		"""Allows you to see who has associated themselves with a particular team."""
 		team_type = team_type.casefold()
 		with db.Session() as session:
 			users = session.query(TeamNumbers).filter_by(team_number=team_number, team_type=team_type).all()
