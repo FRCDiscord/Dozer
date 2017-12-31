@@ -1,7 +1,7 @@
 import discord
 import datetime
 import pickle
-import lzma
+import gzip
 import asyncio
 import tbapi
 import traceback
@@ -132,7 +132,7 @@ class NameGameSession():
 class NameGame(Cog):
 	def __init__(self, bot):
 		super().__init__(bot)
-		with lzma.open("ftc_teams.pickle.xz") as f:
+		with gzip.open("ftc_teams.pickle.gz") as f:
 			raw_teams = pickle.load(f)
 			self.ftc_teams = {team: data['seasons'][0]['name'] for (team, data) in raw_teams.items()}
 		self.games = {}
