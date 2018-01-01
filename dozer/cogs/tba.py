@@ -15,7 +15,7 @@ class TBA(Cog):
 		super().__init__(bot)
 		tba_config = bot.config['tba']
 		self.gmaps_key = bot.config['gmaps_key']
-		self.parser = tbapi.TBAParser(tba_config['team'], tba_config['application'], tba_config['version'])
+		self.parser = tbapi.TBAParser(tba_config['key'], cache=False)
 	
 	@group(invoke_without_command=True)
 	async def tba(self, ctx, team_num: int):
@@ -35,14 +35,14 @@ class TBA(Cog):
 	async def team(self, ctx, team_num: int):
 		"""Get information on an FRC team by number."""
 		try:
-			team_data = self.parser.get_team('frc{}'.format(team_num))
+			team_data = self.parser.get_team(team_num)
 		except KeyError:
 			raise BadArgument('Team {} does not exist.'.format(team_num))
 		e = discord.Embed(color=blurple)
 		e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num), url='https://www.thebluealliance.com/team/{}'.format(team_num), icon_url='http://i.imgur.com/V8nrobr.png')
 		e.add_field(name='Name', value=team_data.nickname)
 		e.add_field(name='Rookie Year', value=team_data.rookie_year)
-		e.add_field(name='Location', value=team_data.location)
+		e.add_field(name='Location', value='{0.city}, {0.state_prov} {0.postal_code}, {0.country}'.format(team_data))
 		e.add_field(name='Website', value=team_data.website)
 		e.add_field(name='TBA Link', value='https://www.thebluealliance.com/team/{}'.format(team_num))
 		e.set_footer(text='Triggered by ' + ctx.author.display_name)
@@ -59,12 +59,12 @@ class TBA(Cog):
 		This command is really only useful for development.
 		"""
 		try:
-			team_data = self.parser.get_team('frc{}'.format(team_num))
+			team_data = self.parser.get_team(team_num)
 		except KeyError:
 			raise BadArgument('Team {} does not exist.'.format(team_num))
 		e = discord.Embed(color=blurple)
 		e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num), url='https://www.thebluealliance.com/team/{}'.format(team_num), icon_url='http://i.imgur.com/V8nrobr.png')
-		e.add_field(name='Raw Data', value=team_data.raw)
+		e.add_field(name='Raw Data', value=team_data.flatten())
 		e.set_footer(text='Triggered by ' + ctx.author.display_name)
 		await ctx.send(embed=e)
 
@@ -79,9 +79,10 @@ class TBA(Cog):
 		"""
 		await ctx.send('```WARNING! All TBA commands are going to stop working starting 1/1/2018 due to TBA closing Read API v2, Which Dozer relies on to get TBA information.```')
 		try:
-			location = self.parser.get_team('frc{}'.format(team_num)).location
+			team_data = self.parser.get_team(team_num)
 		except KeyError:
 			raise BadArgument('Team {} does not exist.'.format(team_num))
+		location = '{0.city}, {0.state_prov} {0.postal_code}, {0.country}'.format(team_data)
 		gmaps = googlemaps.Client(key=self.gmaps_key)
 		geolocator = Nominatim()
 		geolocation = geolocator.geocode(location)
