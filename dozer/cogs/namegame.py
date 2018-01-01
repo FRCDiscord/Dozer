@@ -92,7 +92,7 @@ class NameGameSession():
 		if self.mode == "frc":
 			# check for existence
 			try:
-				team_data = tba_parser.get_team(f"frc{team}")
+				team_data = tba_parser.get_team(team)
 			except KeyError:
 				return -1
 			actual_name = team_data.nickname
@@ -138,7 +138,7 @@ class NameGame(Cog):
 		self.games = {}
 
 		tba_config = bot.config['tba']
-		self.tba_parser = tbapi.TBAParser(tba_config['team'], tba_config['application'], tba_config['version'])
+		self.tba_parser = tbapi.TBAParser(tba_config['key'], cache=False)
 
 	
 	@group(invoke_without_command=True)
