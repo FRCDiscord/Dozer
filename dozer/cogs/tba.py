@@ -23,7 +23,6 @@ class TBA(Cog):
 		Get FRC-related information from The Blue Alliance.
 		If no subcommand is specified, the `team` subcommand is inferred, and the argument is taken as a team number.
 		"""
-		await ctx.send('```WARNING! All TBA commands are going to stop working starting 1/1/2018 due to TBA closing Read API v2, Which Dozer relies on to get TBA information.```')
 		await self.team.callback(self, ctx, team_num)
 	
 	tba.example_usage = """
@@ -77,7 +76,6 @@ class TBA(Cog):
 		"""
 		Get the timezone of a team based on the team number.
 		"""
-		await ctx.send('```WARNING! All TBA commands are going to stop working starting 1/1/2018 due to TBA closing Read API v2, Which Dozer relies on to get TBA information.```')
 		try:
 			team_data = self.parser.get_team(team_num)
 		except KeyError:
