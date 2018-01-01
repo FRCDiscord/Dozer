@@ -67,7 +67,8 @@ class Teams(Cog):
 				e.description = "Users: \n"
 				for i in users:
 					user = ctx.guild.get_member(i.user_id)
-					e.description = "{}{} {} \n".format(e.description, user.display_name, user.mention)
+					if user is not None:
+						e.description = "{}{} {} \n".format(e.description, user.display_name, user.mention)
 				await ctx.send(embed=e)
 	onteam.example_usage = """
 	`{prefix}onteam type team_number` - Returns a list of users associated with a given team type and number
