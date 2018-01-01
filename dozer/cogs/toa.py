@@ -1,7 +1,7 @@
 import discord
 import datetime
 import pickle
-import lzma
+import gzip
 from ._utils import *
 from ._toa import *
 from discord.ext import commands
@@ -13,7 +13,7 @@ class TOA(Cog):
 	def __init__(self, bot):
 		super().__init__(bot)
 		self.parser = TOAParser(bot.config['toa']['key'], bot.http._session, app_name=bot.config['toa']['app_name'])
-		with lzma.open("ftc_teams.pickle.xz") as f:
+		with gzip.open("ftc_teams.pickle.gz") as f:
 			self._teams = pickle.load(f)
 
 	
