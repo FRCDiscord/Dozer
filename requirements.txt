@@ -1,6 +1,6 @@
 https://github.com/Rapptz/discord.py/archive/rewrite.zip#egg=discord.py
 sqlalchemy
-tbapi
+tbapi==1.3.1b2
 googlemaps
 datetime
 geopy

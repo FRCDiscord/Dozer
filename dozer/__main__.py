@@ -4,9 +4,7 @@ from . import db
 config = {
 	'prefix': '&', 'developers': [], 
 	'tba': {
-		'team': '',
-		'application': '', 
-		'version': ''
+		'key': ''
 	}, 
 	'toa': {
 		'key': 'Put TOA API key here', 
