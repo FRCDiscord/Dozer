@@ -1,7 +1,10 @@
 import discord, inspect
+import datetime
 from discord.ext.commands import BadArgument, bot_has_permissions, cooldown, BucketType, Group, has_permissions
 from ._utils import *
 from .. import db
+
+blurple = discord.Color.blurple()
 
 class General(Cog):
 	"""General commands common to all Discord bots."""
@@ -19,6 +22,21 @@ class General(Cog):
 	
 	ping.example_usage = """
 	`{prefix}ping` - Calculate and display the bot's response time
+	"""
+	
+	@command()
+	@bot_has_permissions(embed_links=True)
+	async def timeuntilkickoff(self, ctx):
+		"""Displays Time until the 2018 Game Reveal"""
+		delta = datetime.datetime(2018, 1, 6, 12, 0, 0) - datetime.datetime.now()
+		e = discord.Embed(color=blurple)
+		e.add_field(name='Time until 2018 Kickoff', value=delta)
+		e.set_footer(text='Triggered by ' + ctx.author.display_name)
+		await ctx.send(embed=e)
+		
+		
+	timeuntilkickoff.example_usage = """
+	`{prefix}timeuntilkickoff` - Show the countdown to the 2018 Game Reveal
 	"""
 	
 	@cooldown(1, 10, BucketType.channel)
