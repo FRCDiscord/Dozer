@@ -3,8 +3,6 @@ from discord.ext.commands import BadArgument, bot_has_permissions, cooldown, Buc
 from ._utils import *
 from .. import db
 
-blurple = discord.Color.blurple()
-
 class General(Cog):
 	"""General commands common to all Discord bots."""
 	@command()
