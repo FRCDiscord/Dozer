@@ -41,7 +41,7 @@ class Teams(Cog):
 		with db.Session() as session:
 			teams = session.query(TeamNumbers).filter_by(user_id=user.id).order_by("team_type desc", "team_number asc").all()
 			if len(teams) is 0:
-				raise BadArgument("Couldn't find any associations with that team!")
+				raise BadArgument("Couldn't find any team associations for that user!")
 			else:
 				e = discord.Embed(type='rich')
 				e.title = 'Teams for {}'.format(user.display_name)
