@@ -64,6 +64,21 @@ Through the rest of this README, we will assume that you have found the correct 
    ![creating a new project](static/gmaps.png)
 3. Copy the API key - We'll need this too!
 
+### Getting a The Blue Alliance API Key
+
+1. Go to https://www.thebluealliance.com
+2. Click More, Then Accounts
+3. Scroll down to Read API Keys
+4. Enter Dozer, Then click add new key.
+Save this for later, As you will need it.
+
+### Getting a The Orange Alliance API Key
+
+1. Go to https://docs.google.com/forms/d/e/1FAIpQLScw7UFFb9nrpU01Aa6v1xTwwKt1vIvj_u-90cPEHWi1LmiPHw/viewform
+2. Fill out the google form.
+3. TOA will send you an email sometime within the next week. (Provide a valid email please.)
+4. When you recieve the key, Import it into your config.
+
 ### Setting up the bot
 
 1. Install dependencies with `python -m pip install -Ur requirements.txt`
@@ -71,11 +86,12 @@ Through the rest of this README, we will assume that you have found the correct 
    1. Dozer uses [json](http://www.json.org/) for it's config file
 3. Add the Discord bot account's token to `discord_token` in `config.json`
 4. Add your Google Maps API key to `gmaps_key` in `config.json`
-5. Add information about your team and your bot to `tba` in `config.json`
-6. Add your ID, and anyone else's ID who should be able to use the developer commands, to the list `developers` in `config.json`
+5. Add your TBA API key to `tba` in `config.json`
+6. Add your TOA API key to `toa` in `config.json` (Assuming you have a API key)
+7. Add your ID, and anyone else's ID who should be able to use the developer commands, to the list `developers` in `config.json`
    1. Be careful giving this out. Developers can control everything your bot does and potentially get your [bot user token!](#getting-your-discord-bot-token)
-7. The default command prefix is &. If this is already in use on your server or you would like another prefix, you can change the `prefix` value in `config.json`.
-8. Run the bot again, you should see `Signed in as username#discrim (id)` after a few seconds.
+8. The default command prefix is &. If this is already in use on your server or you would like another prefix, you can change the `prefix` value in `config.json`.
+9. Run the bot again, you should see `Signed in as username#discrim (id)` after a few seconds.
 
 ### Adding the bot to your server
 
