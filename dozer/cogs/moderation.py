@@ -25,7 +25,8 @@ class Moderation(Cog):
 			await ctx.send(modlogmessage)
 			if modlogchannel is not None:
 				channel = ctx.guild.get_channel(modlogchannel.modlog_channel)
-				await channel.send(modlogmessage)
+				if channel is not None:
+					await channel.send(modlogmessage)
 			else:
 				await ctx.send("Please configure modlog channel to enable modlog functionality")
 
@@ -33,8 +34,10 @@ class Moderation(Cog):
 		coros = []
 		for channel in user.guild.channels:
 			overwrite = channel.overwrites_for(user)
-			overwrite.update(**overwrites)
-			coros.append(channel.set_permissions(target=user, overwrite=None if overwrite.is_empty() else overwrite))
+			can_permoverride = channel.permissions_for(user.guild.me).manage_roles
+			if can_permoverride:
+				overwrite.update(**overwrites)
+				coros.append(channel.set_permissions(target=user, overwrite=None if overwrite.is_empty() else overwrite))
 		await asyncio.gather(*coros)
 
 	async def punishmenttimer(self, ctx, timing, target, lookup, reason):
@@ -307,7 +310,8 @@ class Moderation(Cog):
 			messagelogchannel = session.query(Guildmessagelog).filter_by(id=message.guild.id).one_or_none()
 			if messagelogchannel is not None:
 				channel = message.guild.get_channel(messagelogchannel.messagelog_channel)
-				await channel.send(embed=e)
+				if channel is not None:
+					await channel.send(embed=e)
 
 	async def on_message_edit(self, before, after):
 		if after.edited_at is not None or before.edited_at is not None:
@@ -347,7 +351,8 @@ class Moderation(Cog):
 				messagelogchannel = session.query(Guildmessagelog).filter_by(id=before.guild.id).one_or_none()
 				if messagelogchannel is not None:
 					channel = before.guild.get_channel(messagelogchannel.messagelog_channel)
-					await channel.send(embed=e)
+					if channel is not None:
+						await channel.send(embed=e)
 
 	@command(aliases=["purge"])
 	@has_permissions(manage_messages=True)
