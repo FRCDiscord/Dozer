@@ -37,6 +37,7 @@ class TBA(Cog):
 			team_data = self.parser.get_team(team_num)
 		except KeyError:
 			raise BadArgument('Team {} does not exist.'.format(team_num))
+		if team_data.home_championship['2017'] == team_data.home_championship['2018'] :
 			home_cmp = '{}'.format(team_data.home_championship['2018'])
 		elif team_data.home_championship['2017'] != team_data.home_championship['2018'] :
 			home_cmp = '{}, 2017 and earlier | {}, 2018 and up '.format(team_data.home_championship['2017'], team_data.home_championship['2018'])
