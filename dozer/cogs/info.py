@@ -1,3 +1,4 @@
+from .. import db
 import discord, unicodedata
 from discord.ext.commands import cooldown, BucketType, guild_only
 from ._utils import *
@@ -23,22 +24,29 @@ class Info(Cog):
 		- Mention (not recommended) (`@Mr Cool Dude III | Team 1234`)
 		"""
 		async with ctx.typing():
-			member = member or ctx.author
-			icon_url = member.avatar_url_as(static_format='png')
-			e = discord.Embed(color=member.color)
-			e.set_thumbnail(url=icon_url)
-			e.add_field(name='Name', value=str(member))
-			e.add_field(name='ID', value=member.id)
-			e.add_field(name='Nickname', value=member.nick, inline=member.nick is None)
-			e.add_field(name='Bot Created' if member.bot else 'User Joined Discord', value=member.created_at.strftime(datetime_format))
-			e.add_field(name='Joined Guild', value=member.joined_at.strftime(datetime_format))
-			e.add_field(name='Color', value=str(member.color).upper())
-			
-			e.add_field(name='Status and Game', value='%s, playing %s' % (str(member.status).title(), member.game), inline=False)
-			roles = sorted(member.roles, reverse=True)[:-1] # Remove @everyone
-			e.add_field(name='Roles', value=', '.join(role.name for role in roles), inline=False)
-			e.add_field(name='Icon URL', value=icon_url, inline=False)
-		await ctx.send(embed=e)
+			with db.Session() as session:
+				member = member or ctx.author
+				teams = session.query(TeamNumbers).filter_by(user_id=member.id).order_by("team_type desc", "team_number asc").all()
+				icon_url = member.avatar_url_as(static_format='png')
+				Teams = ''
+				for i in teams:
+					Teams = "{}{} Team {} \n".format(Teams, i.team_type.upper(), i.team_number)
+				e = discord.Embed(color=member.color)
+				e.set_thumbnail(url=icon_url)
+				e.add_field(name='Name', value=str(member))
+				e.add_field(name='ID', value=member.id)
+				e.add_field(name='Nickname', value=member.nick, inline=member.nick is None)
+				e.add_field(name='Bot Created' if member.bot else 'User Joined Discord', value=member.created_at.strftime(datetime_format))
+				e.add_field(name='Joined Guild', value=member.joined_at.strftime(datetime_format))
+				e.add_field(name='Color', value=str(member.color).upper())
+				if member.bot == False :
+					e.add_field(name='Teams', value=Teams)
+				
+				e.add_field(name='Status and Game', value='%s, playing %s' % (str(member.status).title(), member.game), inline=False)
+				roles = sorted(member.roles, reverse=True)[:-1] # Remove @everyone
+				e.add_field(name='Roles', value=', '.join(role.name for role in roles), inline=False)
+				e.add_field(name='Icon URL', value=icon_url, inline=False)
+				await ctx.send(embed=e)
 	
 	member.example_usage = """
 	`{prefix}member` - get information about yourself
@@ -69,5 +77,13 @@ class Info(Cog):
 	`{prefix}guild` - get information about this guild
 	"""
 
+	
+class TeamNumbers(db.DatabaseObject):
+	__tablename__ = 'team_numbers'
+	user_id = db.Column(db.Integer, primary_key=True)
+	team_number = db.Column(db.Integer, primary_key=True)
+	team_type = db.Column(db.String, primary_key=True)
+
+	
 def setup(bot):
 	bot.add_cog(Info(bot))
