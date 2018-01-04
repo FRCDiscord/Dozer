@@ -1,5 +1,3 @@
-
-
 # Dozer
 Omnipotent guild management bot for FIRST Discord servers
 
@@ -77,7 +75,7 @@ Save this for later, As you will need it.
 1. Go to https://docs.google.com/forms/d/e/1FAIpQLScw7UFFb9nrpU01Aa6v1xTwwKt1vIvj_u-90cPEHWi1LmiPHw/viewform
 2. Fill out the google form.
 3. TOA will send you an email sometime within the next week. (Provide a valid email please.)
-4. When you recieve the key, Import it into your config.
+4. When you receive the key, Import it into your config.
 
 ### Setting up the bot
 
@@ -86,8 +84,8 @@ Save this for later, As you will need it.
    1. Dozer uses [json](http://www.json.org/) for it's config file
 3. Add the Discord bot account's token to `discord_token` in `config.json`
 4. Add your Google Maps API key to `gmaps_key` in `config.json`
-5. Add your TBA API key to `tba` in `config.json`
-6. Add your TOA API key to `toa` in `config.json` (Assuming you have a API key)
+5. Add your TBA API key to `TBA` in `config.json`
+6. Add your TOA API key to `toa` in `config.json` (Assuming you have an API key)
 7. Add your ID, and anyone else's ID who should be able to use the developer commands, to the list `developers` in `config.json`
    1. Be careful giving this out. Developers can control everything your bot does and potentially get your [bot user token!](#getting-your-discord-bot-token)
 8. The default command prefix is &. If this is already in use on your server or you would like another prefix, you can change the `prefix` value in `config.json`.
