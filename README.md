@@ -65,7 +65,7 @@ Through the rest of this README, we will assume that you have found the correct 
 ### Getting a The Blue Alliance API Key
 
 1. Go to https://www.thebluealliance.com
-2. Click More, Then Accounts
+2. Click More, then Accounts
 3. Scroll down to Read API Keys
 4. Enter Dozer, then click add new key.
 Save this for later as you will need it.
