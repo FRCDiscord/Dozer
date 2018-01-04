@@ -41,7 +41,7 @@ class Teams(Cog):
 		with db.Session() as session:
 			teams = session.query(TeamNumbers).filter_by(user_id=user.id).order_by("team_type desc", "team_number asc").all()
 			if len(teams) is 0:
-				raise BadArgument("Couldn't find any associations with that team!")
+				raise BadArgument("Couldn't find any team associations for that user!")
 			else:
 				e = discord.Embed(type='rich')
 				e.title = 'Teams for {}'.format(user.display_name)
@@ -67,7 +67,8 @@ class Teams(Cog):
 				e.description = "Users: \n"
 				for i in users:
 					user = ctx.guild.get_member(i.user_id)
-					e.description = "{}{} {} \n".format(e.description, user.display_name, user.mention)
+					if user is not None:
+						e.description = "{}{} {} \n".format(e.description, user.display_name, user.mention)
 				await ctx.send(embed=e)
 	onteam.example_usage = """
 	`{prefix}onteam type team_number` - Returns a list of users associated with a given team type and number
