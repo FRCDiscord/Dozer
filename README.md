@@ -67,15 +67,15 @@ Through the rest of this README, we will assume that you have found the correct 
 1. Go to https://www.thebluealliance.com
 2. Click More, Then Accounts
 3. Scroll down to Read API Keys
-4. Enter Dozer, Then click add new key.
-Save this for later, As you will need it.
+4. Enter Dozer, then click add new key.
+Save this for later as you will need it.
 
 ### Getting a The Orange Alliance API Key
 
 1. Go to https://docs.google.com/forms/d/e/1FAIpQLScw7UFFb9nrpU01Aa6v1xTwwKt1vIvj_u-90cPEHWi1LmiPHw/viewform
-2. Fill out the google form.
+2. Fill out the Google form.
 3. TOA will send you an email sometime within the next week. (Provide a valid email please.)
-4. When you receive the key, Import it into your config.
+4. When you receive the key, import it into your config.
 
 ### Setting up the bot
 
