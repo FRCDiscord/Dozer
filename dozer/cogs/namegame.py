@@ -93,7 +93,9 @@ class NameGameSession():
 			# check for existence
 			try:
 				team_data = tba_parser.get_team(team)
-			except KeyError:
+				test_for_invalid = team_data.nickname
+			except tbapi.InvalidKeyError:
+				print("Invalid team!")
 				return -1
 			actual_name = team_data.nickname
 		elif self.mode == "ftc":
