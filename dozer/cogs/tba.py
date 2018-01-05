@@ -33,10 +33,11 @@ class TBA(Cog):
 	@bot_has_permissions(embed_links=True)
 	async def team(self, ctx, team_num: int):
 		"""Get information on an FRC team by number."""
+		team_data = self.parser.get_team(team_num)
 		try:
-			team_data = self.parser.get_team(team_num)
-		except KeyError:
-			raise BadArgument('Team {} does not exist.'.format(team_num))
+			isValidTeam = team_data.nickname
+		except tbapi.InvalidKeyError:
+			raise BadArgument("Couldn't find data for team {}".format(team_num))
 		e = discord.Embed(color=blurple)
 		e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num), url='https://www.thebluealliance.com/team/{}'.format(team_num), icon_url='http://i.imgur.com/V8nrobr.png')
 		e.add_field(name='Name', value=team_data.nickname)
