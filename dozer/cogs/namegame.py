@@ -91,10 +91,12 @@ class NameGameSession():
 
 		if self.mode == "frc":
 			# check for existence
+			team_data = tba_parser.get_team(team)
 			try:
-				team_data = tba_parser.get_team(team)
-				actual_name = team_data.nickname
+				getattr(team_data, "Errors")
 			except tbapi.InvalidKeyError:
+				"""There is no error, so do nothing"""
+			else:
 				return -1
 			actual_name = team_data.nickname
 		elif self.mode == "ftc":
