@@ -502,6 +502,7 @@ class NameGame(Cog):
 	async def skip_player(self, ctx, game, player, msg=None):
 		if msg is not None:
 			await ctx.send(msg)
+		game.vote_time = -1
 		game.next_turn()
 		await self.send_turn_embed(ctx, game,
 			title=f"Player {player.display_name} was skipped and now has {game.players[player]+1} strike(s)!",
