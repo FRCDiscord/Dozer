@@ -2,7 +2,7 @@
 from .. import db
 from ._utils import *
 import discord
-from discord.ext.commands import BadArgument
+from discord.ext.commands import BadArgument, bot_has_permissions
 
 
 class Teams(Cog):
@@ -73,6 +73,18 @@ class Teams(Cog):
 	onteam.example_usage = """
 	`{prefix}onteam type team_number` - Returns a list of users associated with a given team type and number
 	"""
+
+	@bot_has_permissions(manage_nick=True)
+	async def on_member_join(self, member):
+		with db.Session as session:
+			query = session.query(TeamNumbers).filter_by(user_id=member.id).all()
+			if len(query) == 0:
+				print("Debugging: no team found in DB")
+			elif len(query) == 1:
+				member.edit(nick="{} {}".format(member.nick, query.team_number))
+				print("Debugging: 1 team found in DB")
+			elif len(query) > 1:
+				print("Debugging: more than one team association found")
 
 
 class TeamNumbers(db.DatabaseObject):
