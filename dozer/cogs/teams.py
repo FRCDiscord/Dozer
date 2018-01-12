@@ -76,15 +76,10 @@ class Teams(Cog):
 
 	@bot_has_permissions(manage_nick=True)
 	async def on_member_join(self, member):
-		with db.Session as session:
+		with db.Session() as session:
 			query = session.query(TeamNumbers).filter_by(user_id=member.id).all()
-			if len(query) == 0:
-				print("Debugging: no team found in DB")
-			elif len(query) == 1:
-				member.edit(nick="{} {}".format(member.nick, query.team_number))
-				print("Debugging: 1 team found in DB")
-			elif len(query) > 1:
-				print("Debugging: more than one team association found")
+			if len(query) == 1:
+				await member.edit(nick="{} {}".format(member.display_name, query[0].team_number))
 
 
 class TeamNumbers(db.DatabaseObject):
