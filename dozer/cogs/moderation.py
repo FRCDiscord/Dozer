@@ -117,7 +117,7 @@ class Moderation(Cog):
 
 	async def on_message(self, message):
 		if message.author.bot: return
-		if not message.guild.me.guild_permissions.manage_roles: return
+		if not message.guild.me.guild_permissions.manage_roles or message.guild is None: return
 
 		with db.Session() as session:
 			config = session.query(GuildNewMember).filter_by(guild_id=message.guild.id).one_or_none()
