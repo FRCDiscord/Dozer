@@ -74,6 +74,25 @@ class Moderation(Cog):
 					if lookup == Guildmute:
 						self.bot.loop.create_task(coro=self.unmute.callback(self=self, ctx=ctx, member_mentions=target))
 
+	async def _check_links_warn(self, msg, role):
+		warn_msg = await msg.channel.send(f"{msg.author.mention}, you need the `{role.name}` role to post links!")
+		await asyncio.sleep(3)
+		await warn_msg.delete()
+
+	async def check_links(self, msg):
+		if not msg.guild.me.guild_permissions.manage_messages:
+			return
+		with db.Session() as session:
+			config = session.query(GuildMessageLinks).filter_by(guild_id=msg.guild.id).one_or_none()
+			role = discord.utils.get(msg.guild.roles, id=config.role_id)
+			if role is None:
+				return
+			if role not in msg.author.roles and re.search("https?://", msg.content):
+				await msg.delete()
+				self.bot.loop.create_task(coro=self._check_links_warn(msg, role))
+				return True
+		return False
+
 	@command()
 	@has_permissions(ban_members=True)
 	@bot_has_permissions(ban_members=True)
@@ -117,8 +136,10 @@ class Moderation(Cog):
 
 	async def on_message(self, message):
 		if message.author.bot: return
-		if not message.guild.me.guild_permissions.manage_roles: return
+		if not message.guild.me.guild_permissions.manage_roles or message.guild is None: return
 
+		if await self.check_links(message):
+			return
 		with db.Session() as session:
 			config = session.query(GuildNewMember).filter_by(guild_id=message.guild.id).one_or_none()
 			if config is not None:
@@ -232,6 +253,35 @@ class Moderation(Cog):
 
 	@command()
 	@has_permissions(administrator=True)
+	@bot_has_permissions(manage_messages=True)
+	async def linkscrubconfig(self, ctx, *, link_role: SafeRoleConverter):
+		"""
+		Set a role that users must have in order to post links.
+		This accepts the safe default role conventions that the memberconfig command does.
+		"""
+		if link_role >= ctx.author.top_role:
+			raise BadArgument('Link role cannot be higher than your top role!')
+
+		with db.Session() as session:
+			settings = session.query(GuildMessageLinks).filter_by(guild_id=ctx.guild.id).one_or_none()
+			if settings is None:
+				settings = GuildMessageLinks(guild_id=ctx.guild.id, role_id=link_role.id)
+				session.add(settings)
+			else:
+				settings.role_id = link_role.id
+		await ctx.send(f'Link role set as `{link_role.name}`.')
+
+	linkscrubconfig.example_usage = """
+	`{prefix}linkscrubconfig Links` - set a role called "Links" as the link role
+	`{prefix}linkscrubconfig @everyone` - set the default role as the link role
+	`{prefix}linkscrubconfig everyone` - set the default role as the link role (ping-safe)
+	`{prefix}linkscrubconfig @ everyone` - set the default role as the link role (ping-safe)
+	`{prefix}linkscrubconfig @.everyone` - set the default role as the link role (ping-safe)
+	`{prefix}linkscrubconfig @/everyone` - set the default role as the link role (ping-safe)
+	"""
+
+	@command()
+	@has_permissions(administrator=True)
 	async def memberlogconfig(self, ctx, channel_mentions: discord.TextChannel):
 		"""Set the modlog channel for a server by passing the channel id"""
 		print(channel_mentions)
@@ -314,6 +364,7 @@ class Moderation(Cog):
 					await channel.send(embed=e)
 
 	async def on_message_edit(self, before, after):
+		await self.check_links(after)
 		if after.edited_at is not None or before.edited_at is not None:
 			# There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
 			e = discord.Embed(type='rich')
@@ -485,6 +536,12 @@ class Guildmessagelog(db.DatabaseObject):
 	id = db.Column(db.Integer, primary_key=True)
 	name = db.Column(db.String)
 	messagelog_channel = db.Column(db.Integer)
+
+
+class GuildMessageLinks(db.DatabaseObject):
+	__tablename__ = 'guild_msg_links'
+	guild_id = db.Column(db.Integer, primary_key=True)
+	role_id = db.Column(db.Integer, nullable=True)
 
 
 def setup(bot):
