@@ -79,7 +79,9 @@ class Teams(Cog):
 			with db.Session() as session:
 				query = session.query(TeamNumbers).filter_by(user_id=member.id).all()
 				if len(query) == 1:
-					await member.edit(nick="{} {}".format(member.display_name, query[0].team_number))
+					nick = "{} {}{}".format(member.display_name, query[0].team_type, query[0].team_number)
+					if len(nick) < 32:
+						await member.edit(nick=nick)
 
 
 class TeamNumbers(db.DatabaseObject):
