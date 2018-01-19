@@ -2,7 +2,7 @@
 from .. import db
 from ._utils import *
 import discord
-from discord.ext.commands import BadArgument, bot_has_permissions
+from discord.ext.commands import BadArgument
 
 
 class Teams(Cog):
