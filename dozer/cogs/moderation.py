@@ -84,6 +84,8 @@ class Moderation(Cog):
 			return
 		with db.Session() as session:
 			config = session.query(GuildMessageLinks).filter_by(guild_id=msg.guild.id).one_or_none()
+			if config is None:
+				return
 			role = discord.utils.get(msg.guild.roles, id=config.role_id)
 			if role is None:
 				return
