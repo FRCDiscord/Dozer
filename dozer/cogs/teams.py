@@ -77,10 +77,10 @@ class Teams(Cog):
 	async def on_member_join(self, member):
 		if member.guild.me.guild_permissions.manage_nicknames:
 			with db.Session() as session:
-				query = session.query(TeamNumbers).filter_by(user_id=member.id).all()
-				if len(query) == 1:
-					nick = "{} {}{}".format(member.display_name, query[0].team_type, query[0].team_number)
-					if len(nick) < 32:
+				query = session.query(TeamNumbers).filter_by(user_id=member.id).first()
+				if query is not None:
+					nick = "{} {}{}".format(member.display_name, query.team_type, query.team_number)
+					if len(nick) <= 32:
 						await member.edit(nick=nick)
 
 
