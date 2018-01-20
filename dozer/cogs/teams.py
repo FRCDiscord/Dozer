@@ -11,9 +11,13 @@ class Teams(Cog):
 		"""Sets an association with your team in the database."""
 		team_type = team_type.casefold()
 		with db.Session() as session:
-			dbtransaction = TeamNumbers(user_id=ctx.author.id, team_number=int(team_number), team_type=team_type)
-			session.add(dbtransaction)
-		await ctx.send("Team number set!")
+			dbcheck = session.query(TeamNumbers).filter_by(user_id=ctx.author.id, team_number=int(team_number), team_type=team_type).one_or_none()
+			if dbcheck is None:
+				dbtransaction = TeamNumbers(user_id=ctx.author.id, team_number=int(team_number), team_type=team_type)
+				session.add(dbtransaction)
+				await ctx.send("Team number set!")
+			else:
+				await ctx.send("You are already associated with that team!")
 	setteam.example_usage = """
 	`{prefix}setteam type team_number` - Creates an association in the database with a specified team
 	"""
