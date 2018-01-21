@@ -147,12 +147,16 @@ class Moderation(Cog):
 				string = config.message
 				content = message.content.casefold()
 				if string not in content: return
-				if not re.match('.*\d{1,4}.*', message.author.name):
-					try:
-						if not re.match('.*\d{1,4}.*', message.author.nick): return
-					except:
-						return
-						#user doesn't have nickname, and main name isn't valid
+				teams = session.query(TeamNumbers).filter_by(user_id=message.author.id).all()
+				if len(teams) is 0:
+					await message.channel.send("{0.mention}, you haven't set a team. Use {1}setteam frc teamnumber (or ftc teamnumber) to set a team.".format(message.author,self.bot.config['prefix']))
+					return #they don't have teams set, may want error message
+				name = message.author.display_name
+				number_found = False;
+				for i in teams:
+					if str(i.team_number) in name:
+						number_found = True; 
+				if not number_found: return
 				channel = config.channel_id
 				role_id = config.role_id
 				if message.channel.id != channel: return
@@ -549,6 +553,13 @@ class GuildMessageLinks(db.DatabaseObject):
 	__tablename__ = 'guild_msg_links'
 	guild_id = db.Column(db.Integer, primary_key=True)
 	role_id = db.Column(db.Integer, nullable=True)
+
+
+class TeamNumbers(db.DatabaseObject):
+	__tablename__ = 'team_numbers'
+	user_id = db.Column(db.Integer, primary_key=True)
+	team_number = db.Column(db.Integer, primary_key=True)
+	team_type = db.Column(db.String, primary_key=True)
 
 
 def setup(bot):
