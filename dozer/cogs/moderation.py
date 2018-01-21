@@ -148,6 +148,7 @@ class Moderation(Cog):
 				string = config.message
 				content = message.content.casefold()
 				if string not in content: return
+				if not re.match('.+\d{1,4}.+', message.author.nick): return
 				channel = config.channel_id
 				role_id = config.role_id
 				if message.channel.id != channel: return
