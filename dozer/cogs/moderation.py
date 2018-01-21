@@ -139,7 +139,6 @@ class Moderation(Cog):
 	async def on_message(self, message):
 		if message.author.bot: return
 		if not message.guild.me.guild_permissions.manage_roles or message.guild is None: return
-
 		if await self.check_links(message):
 			return
 		with db.Session() as session:
@@ -148,9 +147,9 @@ class Moderation(Cog):
 				string = config.message
 				content = message.content.casefold()
 				if string not in content: return
-				if not re.match('.+\d{1,4}.+', message.author.name):
+				if not re.match('.*\d{1,4}.*', message.author.name):
 					try:
-						if not re.match('.+\d{1,4}.+', message.author.nick): return
+						if not re.match('.*\d{1,4}.*', message.author.nick): return
 					except:
 						return
 						#user doesn't have nickname, and main name isn't valid
