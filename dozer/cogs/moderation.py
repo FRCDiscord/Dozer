@@ -156,8 +156,6 @@ class Moderation(Cog):
 				for i in teams:
 					if str(i.team_number) in name:
 						number_found = True;
-					if i.team_number == 0:
-						number_found = True;
 				if not number_found: return
 				channel = config.channel_id
 				role_id = config.role_id
