@@ -149,13 +149,15 @@ class Moderation(Cog):
 				if string not in content: return
 				teams = session.query(TeamNumbers).filter_by(user_id=message.author.id).all()
 				if len(teams) is 0:
-					await message.channel.send("{0.mention}, you haven't set a team. Use {1}setteam frc teamnumber (or ftc teamnumber) to set a team.".format(message.author,self.bot.config['prefix']))
+					await message.channel.send("{0.mention}, you haven't set a team. Use {1}setteam frc teamnumber (or ftc teamnumber) to set a team. If you are a volunteer, please set yourself to team 0000.".format(message.author,self.bot.config['prefix']))
 					return #they don't have teams set, may want error message
 				name = message.author.display_name
 				number_found = False;
 				for i in teams:
 					if str(i.team_number) in name:
-						number_found = True; 
+						number_found = True;
+					if i.team_number == 0:
+						number_found = True;
 				if not number_found: return
 				channel = config.channel_id
 				role_id = config.role_id
