@@ -7,10 +7,9 @@ from discord.ext.commands import BadArgument
 
 class Teams(Cog):
 	@command()
-	async def setteam(self, ctx, team_type, team_number):
+	async def setteam(self, ctx, team_type, team_number: int):
 		"""Sets an association with your team in the database."""
 		team_type = team_type.casefold()
-		team_number = int(team_number)
 		with db.Session() as session:
 			dbcheck = session.query(TeamNumbers).filter_by(user_id=ctx.author.id, team_number=team_number, team_type=team_type).one_or_none()
 			if dbcheck is None:
