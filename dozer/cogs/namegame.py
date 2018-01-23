@@ -253,7 +253,6 @@ class NameGame(Cog):
 	"""
 
 	@ng.command()
-	@has_permissions(manage_messages=True)
 	@game_is_running
 	async def unheck(self, ctx):
 		"""
