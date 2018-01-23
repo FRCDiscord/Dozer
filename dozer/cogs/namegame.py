@@ -241,6 +241,40 @@ class NameGame(Cog):
 			await ctx.send("Namegame channel cleared!")
 
 	#TODO: configurable time limits, ping on event, etc
+	# MORE TODO:
+	"""
+	fix %ng help
+	fix %ng startround
+	fix the wrong team dialouge
+	add pings
+	i hate bots
+	make %ng addplayer be rhetorical question
+	figure out these stupid turn issues
+	"""
+
+	@ng.command()
+	@has_permissions(manage_messages=True)
+	@game_is_running
+	async def unheck(self, ctx):
+		"""
+		Emergency removal of a haywire session. 
+		"""
+		game = self.games[ctx.channel.id]
+		game.running = False
+		try:
+			game.vote_task.cancel()
+		except Exception:
+			pass
+		try:
+			game.turn_task.cancel()
+		except Exception:
+			pass
+		
+		self.games.pop(game)
+
+	@ng.command()
+	async def modes(self, ctx):
+		await ctx.send(f"Supported game modes: `{', '.join(SUPPORTED_MODES)}`")
 
 	@ng.command()
 	async def startround(self, ctx, mode : str = None):
@@ -248,10 +282,11 @@ class NameGame(Cog):
 		Starts a namegame session.
 		One can select the robotics program by specifying one of "FRC" or "FTC".
 		"""
-		if mode is None:
+		if mode is None or mode.lower() not in SUPPORTED_MODES:
 			with db.Session() as session:
 				config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
 			mode = SUPPORTED_MODES[0] if config is None else config.mode
+			await ctx.send(f"Invalid game mode, assuming game mode `{mode}`. For a full list of game modes, run `{ctx.prefix}ng modes`")
 
 		with db.Session() as session:
 			config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
@@ -261,9 +296,6 @@ class NameGame(Cog):
 
 		if ctx.channel.id in self.games:
 			await ctx.send("A game is currently going on! Wait till the players finish up to start again.")
-			return
-		if mode.lower() not in SUPPORTED_MODES:
-			await ctx.send(f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
 			return
 		game = NameGameSession(mode.lower())
 		game.state_lock = asyncio.Lock(loop=self.bot.loop)
