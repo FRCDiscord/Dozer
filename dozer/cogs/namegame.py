@@ -44,6 +44,7 @@ def game_is_running(func):
 class NameGameSession():
 	def __init__(self, mode):
 		self.running = True
+		self.pings_enabled = False
 		self.players = OrderedDict()
 		self.removed_players = []
 		self.picked = []
@@ -209,7 +210,7 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 					await ctx.send(f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
 					return
 				if config is None:
-					config = NameGameConfig(guild_id=ctx.guild.id, channel_id=None, mode=mode)
+					config = NameGameConfig(guild_id=ctx.guild.id, channel_id=None, mode=mode, pings_enabled=False)
 					session.add(config)
 				else:
 					config.mode = mode
@@ -226,7 +227,7 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 					await ctx.send(f"The currently set namegame channel is {ctx.guild.get_channel(config.channel_id).mention}.\nTo clear this, run `{ctx.prefix}ng config clearsetchannel`")
 			else:
 				if config is None:
-					config = NameGameConfig(guild_id=ctx.guild.id, channel_id=channel.id, mode=SUPPORTED_MODES[0])
+					config = NameGameConfig(guild_id=ctx.guild.id, channel_id=channel.id, mode=SUPPORTED_MODES[0], pings_enabled=False)
 					session.add(config)
 				else:
 					config.channel_id = channel.id
@@ -240,15 +241,28 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 				config.channel_id = None
 			await ctx.send("Namegame channel cleared!")
 
+	@config.command()	
+	@has_permissions(manage_guild=True)
+	async def setpings(self, ctx, enabled : bool):
+		with db.Session() as session:
+			config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
+			if config is None:
+				config = NameGameConfig(guild_id=ctx.guild.id, channel_id=None, mode=SUPPORTED_MODES[0], pings_enabled=int(enabled))
+				session.add(config)
+			else:
+				config.pings_emabled = enabled
+			await ctx.send(f"Pings enabled set to `{enabled}`!")
+
+
 	#TODO: configurable time limits, ping on event, etc
 	# MORE TODO:
 	"""
-	fix %ng help
-	fix %ng startround
-	fix the wrong team dialouge
+	fix %ng help (done)
+	fix %ng startround (done)
+	fix the wrong team dialouge (????)
 	add pings
 	i hate bots
-	make %ng addplayer be rhetorical question
+	make %ng addplayer be rhetorical question (done)
 	figure out these stupid turn issues
 	"""
 
@@ -286,18 +300,21 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 				config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
 			mode = SUPPORTED_MODES[0] if config is None else config.mode
 			await ctx.send(f"Unspecified or invalid game mode,  assuming game mode `{mode}`. For a full list of game modes, run `{ctx.prefix}ng modes`")
-
+		
+		pings_enabled = False
 		with db.Session() as session:
 			config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
 			if config is not None and config.channel_id is not None and config.channel_id != ctx.channel.id:
 				await ctx.send("Games cannot be started in this channel!")
 				return
+			pings_enabled = (config is not None and config.pings_enabled)
 
 		if ctx.channel.id in self.games:
 			await ctx.send("A game is currently going on! Wait till the players finish up to start again.")
 			return
 		game = NameGameSession(mode.lower())
 		game.state_lock = asyncio.Lock(loop=self.bot.loop)
+		game.pings_enabled = pings_enabled
 		game.players[ctx.author] = 0
 		for player in ctx.message.mentions:
 			if player == ctx.author: 
@@ -549,7 +566,10 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 	async def send_turn_embed(self, ctx, game, **kwargs):
 		game.turn_embed = game.create_embed(**kwargs)
 		game.turn_msg = await ctx.send(embed=game.turn_embed)
-
+	
+	async def notify(self, ctx, game, msg):
+		if game.pings_enabled:
+			await ctx.send(msg)
 
 	async def on_reaction_add(self, reaction, user):
 		if reaction.message.channel.id not in self.games:
@@ -648,6 +668,7 @@ class NameGameConfig(db.DatabaseObject):
 	guild_id = db.Column(db.Integer, primary_key=True)
 	channel_id = db.Column(db.Integer, nullable=True)
 	mode = db.Column(db.String)
+	pings_enabled = db.Column(db.Integer)
 
 class NameGameLeaderboard(db.DatabaseObject):
 	__tablename__ = "namegame_leaderboard"
