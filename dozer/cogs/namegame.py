@@ -330,6 +330,7 @@ class NameGame(Cog):
 
 		with await game.state_lock:
 			added = False
+			players = ctx.message.mentions or [ctx.author]
 			for player in ctx.message.mentions:
 				if player.bot:
 					await ctx.send(f"You can't invite bot users like {player.mention}!")
