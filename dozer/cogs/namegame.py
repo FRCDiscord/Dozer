@@ -285,7 +285,7 @@ class NameGame(Cog):
 			with db.Session() as session:
 				config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
 			mode = SUPPORTED_MODES[0] if config is None else config.mode
-			await ctx.send(f"Invalid game mode, assuming game mode `{mode}`. For a full list of game modes, run `{ctx.prefix}ng modes`")
+			await ctx.send(f"Unspecified or invalid game mode,  assuming game mode `{mode}`. For a full list of game modes, run `{ctx.prefix}ng modes`")
 
 		with db.Session() as session:
 			config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
