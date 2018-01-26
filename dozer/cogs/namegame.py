@@ -52,7 +52,7 @@ class NameGameSession():
 		self.time = 60
 		self.vote_time = -1
 		self.number = 0
-		self._idx = 0
+		self.current_player = None
 		self.last_name = ""
 		self.last_team = 0
 		self.state_lock = None
@@ -76,7 +76,7 @@ class NameGameSession():
 		embed.description = description
 		embed.color = color
 		embed.add_field(name="Players", value=", ".join([p.display_name for p in self.players.keys()]) or "n/a")
-		embed.add_field(name=v+"Player", value=self.current_turn())
+		embed.add_field(name=v+"Player", value=self.current_player)
 		embed.add_field(name=v+"Number", value=self.number or "Wildcard")
 		embed.add_field(name="Time Left", value=self.time)
 
@@ -109,14 +109,16 @@ class NameGameSession():
 		self.last_team = team
 		return fuzz.partial_ratio(actual_name.lower(), name.lower())
 
-	def current_turn(self):
-		return list(self.players.keys())[self._idx]
-
 	def next_turn(self):
 		self.pass_tally = 0
 		self.fail_tally = 0
 		self.time = 60
-		self._idx = (self._idx + 1) % len(self.players)
+			
+		players = list(self.players.keys())
+		# set the current player to the next handle in the list
+
+		self.current_player = players[(players.index(self.current_player) + 1) % len(players)]
+		#self._idx = (self._idx + 1) % len(self.players)
 
 	def strike(self, player):
 		self.players[player] += 1
@@ -250,7 +252,7 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 				config = NameGameConfig(guild_id=ctx.guild.id, channel_id=None, mode=SUPPORTED_MODES[0], pings_enabled=int(enabled))
 				session.add(config)
 			else:
-				config.pings_emabled = enabled
+				config.pings_enabled = int(enabled)
 			await ctx.send(f"Pings enabled set to `{enabled}`!")
 
 
@@ -316,6 +318,7 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 		game.state_lock = asyncio.Lock(loop=self.bot.loop)
 		game.pings_enabled = pings_enabled
 		game.players[ctx.author] = 0
+		game.current_player = ctx.author
 		for player in ctx.message.mentions:
 			if player == ctx.author: 
 				continue
@@ -328,7 +331,8 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 			description="A game has been started! The info about the game is as follows:", 
 			color=discord.Color.green()
 		)
-		#await ctx.send(f"{game.current_turn().mention}, start us off!")
+		await self.notify(ctx, game, f"{game.current_player.mention}, start us off!")
+		#await ctx.send(f"{game.current_player.mention}, start us off!")
 		self.games[ctx.channel.id] = game	
 		game.turn_task = self.bot.loop.create_task(self.game_turn_countdown(ctx, game))
 	startround.example_usage = """
@@ -377,7 +381,7 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 		game = self.games[ctx.channel.id]
 
 		with await game.state_lock:
-			if ctx.author != game.current_turn():
+			if ctx.author != game.current_player:
 				if ctx.author in game.players:
 					await ctx.send("It's not your turn! You've been given a strike for this behaviour! Don't let it happen again...")
 					await self.strike(ctx, game, ctx.author)
@@ -415,6 +419,7 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 					extra_fields=[("Voting Time", game.vote_time)]
 				)
 				await game.turn_msg.add_reaction('❌')
+				await self.notify(ctx, game, f"{game.current_player.mention}, you're up! Current number: {game.number}")
 				game.vote_msg = game.turn_msg
 				game.vote_embed = game.turn_embed
 
@@ -429,7 +434,7 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 				vote_embed.color = discord.Color.gold()
 				vote_embed.title = "A vote is needed!"
 				vote_embed.description = "A player has made a choice with less than 50% similarity. The details of the pick are below. Click on the two emoji to vote if this is correct or not. A 50% majority of players is required to accept it, otherwise the player will get a strike."
-				vote_embed.add_field(name="Player", value=game.current_turn().mention)
+				vote_embed.add_field(name="Player", value=game.current_player.mention)
 				vote_embed.add_field(name="Team", value=team)
 				vote_embed.add_field(name="Said Name", value=name)
 				vote_embed.add_field(name="Actual Name", value=game.last_name)
@@ -455,7 +460,7 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 				await ctx.send("You can't leave a game you're not in!")
 				return
 			game.players[ctx.author] = 2
-			if ctx.author == game.current_turn():
+			if ctx.author == game.current_player:
 				await self.skip_player(ctx, game, ctx.author)
 			else:
 				await self.strike(ctx, game, ctx.author)
@@ -470,7 +475,7 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 		"""Skips the current player if the player wishes to forfeit their turn."""
 		game = self.games[ctx.channel.id]
 		with await game.state_lock:
-			if ctx.author != game.current_turn():
+			if ctx.author != game.current_player:
 				await ctx.send("It's not your turn! Only the current player can skip their turn!")
 			else:
 				await self.skip_player(ctx, game, ctx.author)
@@ -545,7 +550,7 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 				name="Strikes",
 				value="\n".join([f"{player.display_name}: {strikes}" for player, strikes in game.players.items()])
 		)
-		info_embed.add_field(name="Current Player", value=game.current_turn())
+		info_embed.add_field(name="Current Player", value=game.current_player)
 		info_embed.add_field(name="Current Number", value=game.number or "Wildcard")
 		info_embed.add_field(name="Time Left", value=game.time)
 		info_embed.add_field(name="Teams Picked", value=game.get_picked())
@@ -560,6 +565,8 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 			title=f"Player {player.display_name} was skipped and now has {game.players[player]+1} strike(s)!",
 			color=discord.Color.red()
 		)
+		if player != game.current_player:
+			await self.notify(ctx, game, f"{game.current_player.mention}, you're up! Current number: {game.number}")
 		await self.strike(ctx, game, player)
 
 	# send an embed that starts a new turn
@@ -597,10 +604,11 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 						description=f"Team {game.last_team} ({game.last_name}) was correct! Moving onto the next player as follows.",
 						color=discord.Color.green(),
 					)
+					await self.notify(ctx, game, f"{game.current_player.mention}, you're up! Current number: {game.number}")
 					game.vote_time = -1
 				elif game.fail_tally >= .5 * len(game.players):
 					await ctx.send(f"Team {game.last_team} was guessed wrong! Strike given to the responsible player and player is skipped.")
-					await self.skip_player(ctx, game, game.current_turn())
+					await self.skip_player(ctx, game, game.current_player)
 					game.vote_time = -1
 
 	async def on_reaction_remove(self, reaction, user):
@@ -643,7 +651,7 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 				await game.turn_msg.edit(embed=game.turn_embed)
 
 			if game.time == 0:
-				await self.skip_player(ctx, game, game.current_turn())
+				await self.skip_player(ctx, game, game.current_player)
 				return
 			game.turn_task = self.bot.loop.create_task(self.game_turn_countdown(ctx, game))
 
@@ -660,7 +668,7 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 				await game.vote_msg.edit(embed=game.vote_embed)
 			if game.vote_time == 0:
 				await ctx.send("The vote did not reach 50% in favor or in failure, so the responsible player is given a strike and skipped.")
-				await self.skip_player(ctx, game, game.current_turn())
+				await self.skip_player(ctx, game, game.current_player)
 
 			game.vote_task = self.bot.loop.create_task(self.game_vote_countdown(ctx, game))
 class NameGameConfig(db.DatabaseObject):
