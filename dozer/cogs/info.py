@@ -34,9 +34,9 @@ class Info(Cog):
 			e.add_field(name='Joined Guild', value=member.joined_at.strftime(datetime_format))
 			e.add_field(name='Color', value=str(member.color).upper())
 			
-			e.add_field(name='Status and Game', value='%s, playing %s' % (str(member.status).title(), member.game), inline=False)
+			e.add_field(name='Status and Game', value=f'{member.status}, '.title() + (f'playing {member.game}' if member.game else 'no game playing'), inline=False)
 			roles = sorted(member.roles, reverse=True)[:-1] # Remove @everyone
-			e.add_field(name='Roles', value=', '.join(role.name for role in roles), inline=False)
+			e.add_field(name='Roles', value=', '.join(role.name for role in roles) or "No roles", inline=False)
 			e.add_field(name='Icon URL', value=icon_url, inline=False)
 		await ctx.send(embed=e)
 	

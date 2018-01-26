@@ -74,6 +74,15 @@ class Teams(Cog):
 	`{prefix}onteam type team_number` - Returns a list of users associated with a given team type and number
 	"""
 
+	async def on_member_join(self, member):
+		if member.guild.me.guild_permissions.manage_nicknames:
+			with db.Session() as session:
+				query = session.query(TeamNumbers).filter_by(user_id=member.id).first()
+				if query is not None:
+					nick = "{} {}{}".format(member.display_name, query.team_type, query.team_number)
+					if len(nick) <= 32:
+						await member.edit(nick=nick)
+
 
 class TeamNumbers(db.DatabaseObject):
 	__tablename__ = 'team_numbers'
