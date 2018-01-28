@@ -44,6 +44,7 @@ def game_is_running(func):
 class NameGameSession():
 	def __init__(self, mode):
 		self.running = True
+		self.pings_enabled = False
 		self.players = OrderedDict()
 		self.removed_players = []
 		self.picked = []
@@ -51,7 +52,7 @@ class NameGameSession():
 		self.time = 60
 		self.vote_time = -1
 		self.number = 0
-		self._idx = 0
+		self.current_player = None
 		self.last_name = ""
 		self.last_team = 0
 		self.state_lock = None
@@ -75,7 +76,7 @@ class NameGameSession():
 		embed.description = description
 		embed.color = color
 		embed.add_field(name="Players", value=", ".join([p.display_name for p in self.players.keys()]) or "n/a")
-		embed.add_field(name=v+"Player", value=self.current_turn())
+		embed.add_field(name=v+"Player", value=self.current_player)
 		embed.add_field(name=v+"Number", value=self.number or "Wildcard")
 		embed.add_field(name="Time Left", value=self.time)
 
@@ -108,14 +109,16 @@ class NameGameSession():
 		self.last_team = team
 		return fuzz.partial_ratio(actual_name.lower(), name.lower())
 
-	def current_turn(self):
-		return list(self.players.keys())[self._idx]
-
 	def next_turn(self):
 		self.pass_tally = 0
 		self.fail_tally = 0
 		self.time = 60
-		self._idx = (self._idx + 1) % len(self.players)
+			
+		players = list(self.players.keys())
+		# set the current player to the next handle in the list
+
+		self.current_player = players[(players.index(self.current_player) + 1) % len(players)]
+		#self._idx = (self._idx + 1) % len(self.players)
 
 	def strike(self, player):
 		self.players[player] += 1
@@ -177,13 +180,13 @@ class NameGame(Cog):
 		game_embed.add_field(name="Times up!", value="You have 60 seconds to make a pick, or you get skipped and get a strike.")
 		game_embed.add_field(name="Shaking Things Up",value="Any team number that ends in a 0 mean that the next player has a wildcard, and can pick any legal team.")
 		game_embed.add_field(name="Pesky Commands", value=f"To start a game, type `{ctx.prefix}ng startround` and mention the players you want to play with. \
-				You can add people with `{ctx.prefix}ng addplayer`. \
-				When it's your turn, type `{ctx.prefix}ng pick <team> <teamname>` to execute your pick. \
-				If you need to skip, typing `{ctx.prefix}ng skip` gives you a strike and skips your turn. \
-				You can always do `{ctx.prefix}ng gameinfo` to get the current game status. \
-				If you ever need to quit, running `{ctx.prefix}ng drop` removes you from the game. \
-				For more detailed command help, run `{ctx.prefix}help ng.")
-		game_embed.add_field(name="Different Game Modes", value="You can play the name game with FTC teams too! To start a game playing with FTC teams, run `{ctx.prefix}ng startround ftc`")
+You can add people with `{ctx.prefix}ng addplayer <user_pings>`. \
+When it's your turn, type `{ctx.prefix}ng pick <team> <teamname>` to execute your pick. \
+If you need to skip, typing `{ctx.prefix}ng skip` gives you a strike and skips your turn. \
+You can always do `{ctx.prefix}ng gameinfo` to get the current game status. \
+If you ever need to quit, running `{ctx.prefix}ng drop` removes you from the game. \
+For more detailed command help, run `{ctx.prefix}help ng.`")
+		game_embed.add_field(name="Different Game Modes", value=f"You can play the name game with FTC teams too! To start a game playing with FTC teams, run `{ctx.prefix}ng startround ftc`")
 		await ctx.send(embed=game_embed)
 
 	info.example_usage = """
@@ -209,7 +212,7 @@ class NameGame(Cog):
 					await ctx.send(f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
 					return
 				if config is None:
-					config = NameGameConfig(guild_id=ctx.guild.id, channel_id=None, mode=mode)
+					config = NameGameConfig(guild_id=ctx.guild.id, channel_id=None, mode=mode, pings_enabled=False)
 					session.add(config)
 				else:
 					config.mode = mode
@@ -226,7 +229,7 @@ class NameGame(Cog):
 					await ctx.send(f"The currently set namegame channel is {ctx.guild.get_channel(config.channel_id).mention}.\nTo clear this, run `{ctx.prefix}ng config clearsetchannel`")
 			else:
 				if config is None:
-					config = NameGameConfig(guild_id=ctx.guild.id, channel_id=channel.id, mode=SUPPORTED_MODES[0])
+					config = NameGameConfig(guild_id=ctx.guild.id, channel_id=channel.id, mode=SUPPORTED_MODES[0], pings_enabled=False)
 					session.add(config)
 				else:
 					config.channel_id = channel.id
@@ -240,7 +243,53 @@ class NameGame(Cog):
 				config.channel_id = None
 			await ctx.send("Namegame channel cleared!")
 
+	@config.command()	
+	@has_permissions(manage_guild=True)
+	async def setpings(self, ctx, enabled : bool):
+		with db.Session() as session:
+			config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
+			if config is None:
+				config = NameGameConfig(guild_id=ctx.guild.id, channel_id=None, mode=SUPPORTED_MODES[0], pings_enabled=int(enabled))
+				session.add(config)
+			else:
+				config.pings_enabled = int(enabled)
+			await ctx.send(f"Pings enabled set to `{enabled}`!")
+
+
 	#TODO: configurable time limits, ping on event, etc
+	# MORE TODO:
+	"""
+	fix %ng help (done)
+	fix %ng startround (done)
+	fix the wrong team dialouge (????)
+	add pings
+	i hate bots
+	make %ng addplayer be rhetorical question (done)
+	figure out these stupid turn issues
+	"""
+
+	@ng.command()
+	@game_is_running
+	async def unheck(self, ctx):
+		"""
+		Emergency removal of a haywire session. 
+		"""
+		game = self.games[ctx.channel.id]
+		game.running = False
+		try:
+			game.vote_task.cancel()
+		except Exception:
+			pass
+		try:
+			game.turn_task.cancel()
+		except Exception:
+			pass
+		
+		self.games.pop(game)
+
+	@ng.command()
+	async def modes(self, ctx):
+		await ctx.send(f"Supported game modes: `{', '.join(SUPPORTED_MODES)}`")
 
 	@ng.command()
 	async def startround(self, ctx, mode : str = None):
@@ -248,26 +297,28 @@ class NameGame(Cog):
 		Starts a namegame session.
 		One can select the robotics program by specifying one of "FRC" or "FTC".
 		"""
-		if mode is None:
+		if mode is None or mode.lower() not in SUPPORTED_MODES:
 			with db.Session() as session:
 				config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
 			mode = SUPPORTED_MODES[0] if config is None else config.mode
-
+			await ctx.send(f"Unspecified or invalid game mode,  assuming game mode `{mode}`. For a full list of game modes, run `{ctx.prefix}ng modes`")
+		
+		pings_enabled = False
 		with db.Session() as session:
 			config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
 			if config is not None and config.channel_id is not None and config.channel_id != ctx.channel.id:
 				await ctx.send("Games cannot be started in this channel!")
 				return
+			pings_enabled = (config is not None and config.pings_enabled)
 
 		if ctx.channel.id in self.games:
 			await ctx.send("A game is currently going on! Wait till the players finish up to start again.")
 			return
-		if mode.lower() not in SUPPORTED_MODES:
-			await ctx.send(f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
-			return
 		game = NameGameSession(mode.lower())
 		game.state_lock = asyncio.Lock(loop=self.bot.loop)
+		game.pings_enabled = pings_enabled
 		game.players[ctx.author] = 0
+		game.current_player = ctx.author
 		for player in ctx.message.mentions:
 			if player == ctx.author: 
 				continue
@@ -280,7 +331,8 @@ class NameGame(Cog):
 			description="A game has been started! The info about the game is as follows:", 
 			color=discord.Color.green()
 		)
-		#await ctx.send(f"{game.current_turn().mention}, start us off!")
+		await self.notify(ctx, game, f"{game.current_player.mention}, start us off!")
+		#await ctx.send(f"{game.current_player.mention}, start us off!")
 		self.games[ctx.channel.id] = game	
 		game.turn_task = self.bot.loop.create_task(self.game_turn_countdown(ctx, game))
 	startround.example_usage = """
@@ -299,6 +351,7 @@ class NameGame(Cog):
 
 		with await game.state_lock:
 			added = False
+			players = ctx.message.mentions or [ctx.author]
 			for player in ctx.message.mentions:
 				if player.bot:
 					await ctx.send(f"You can't invite bot users like {player.mention}!")
@@ -328,7 +381,7 @@ class NameGame(Cog):
 		game = self.games[ctx.channel.id]
 
 		with await game.state_lock:
-			if ctx.author != game.current_turn():
+			if ctx.author != game.current_player:
 				if ctx.author in game.players:
 					await ctx.send("It's not your turn! You've been given a strike for this behaviour! Don't let it happen again...")
 					await self.strike(ctx, game, ctx.author)
@@ -366,6 +419,7 @@ class NameGame(Cog):
 					extra_fields=[("Voting Time", game.vote_time)]
 				)
 				await game.turn_msg.add_reaction('❌')
+				await self.notify(ctx, game, f"{game.current_player.mention}, you're up! Current number: {game.number}")
 				game.vote_msg = game.turn_msg
 				game.vote_embed = game.turn_embed
 
@@ -380,7 +434,7 @@ class NameGame(Cog):
 				vote_embed.color = discord.Color.gold()
 				vote_embed.title = "A vote is needed!"
 				vote_embed.description = "A player has made a choice with less than 50% similarity. The details of the pick are below. Click on the two emoji to vote if this is correct or not. A 50% majority of players is required to accept it, otherwise the player will get a strike."
-				vote_embed.add_field(name="Player", value=game.current_turn().mention)
+				vote_embed.add_field(name="Player", value=game.current_player.mention)
 				vote_embed.add_field(name="Team", value=team)
 				vote_embed.add_field(name="Said Name", value=name)
 				vote_embed.add_field(name="Actual Name", value=game.last_name)
@@ -406,7 +460,7 @@ class NameGame(Cog):
 				await ctx.send("You can't leave a game you're not in!")
 				return
 			game.players[ctx.author] = 2
-			if ctx.author == game.current_turn():
+			if ctx.author == game.current_player:
 				await self.skip_player(ctx, game, ctx.author)
 			else:
 				await self.strike(ctx, game, ctx.author)
@@ -421,7 +475,7 @@ class NameGame(Cog):
 		"""Skips the current player if the player wishes to forfeit their turn."""
 		game = self.games[ctx.channel.id]
 		with await game.state_lock:
-			if ctx.author != game.current_turn():
+			if ctx.author != game.current_player:
 				await ctx.send("It's not your turn! Only the current player can skip their turn!")
 			else:
 				await self.skip_player(ctx, game, ctx.author)
@@ -496,7 +550,7 @@ class NameGame(Cog):
 				name="Strikes",
 				value="\n".join([f"{player.display_name}: {strikes}" for player, strikes in game.players.items()])
 		)
-		info_embed.add_field(name="Current Player", value=game.current_turn())
+		info_embed.add_field(name="Current Player", value=game.current_player)
 		info_embed.add_field(name="Current Number", value=game.number or "Wildcard")
 		info_embed.add_field(name="Time Left", value=game.time)
 		info_embed.add_field(name="Teams Picked", value=game.get_picked())
@@ -511,13 +565,18 @@ class NameGame(Cog):
 			title=f"Player {player.display_name} was skipped and now has {game.players[player]+1} strike(s)!",
 			color=discord.Color.red()
 		)
+		if player != game.current_player:
+			await self.notify(ctx, game, f"{game.current_player.mention}, you're up! Current number: {game.number}")
 		await self.strike(ctx, game, player)
 
 	# send an embed that starts a new turn
 	async def send_turn_embed(self, ctx, game, **kwargs):
 		game.turn_embed = game.create_embed(**kwargs)
 		game.turn_msg = await ctx.send(embed=game.turn_embed)
-
+	
+	async def notify(self, ctx, game, msg):
+		if game.pings_enabled:
+			await ctx.send(msg)
 
 	async def on_reaction_add(self, reaction, user):
 		if reaction.message.channel.id not in self.games:
@@ -545,10 +604,11 @@ class NameGame(Cog):
 						description=f"Team {game.last_team} ({game.last_name}) was correct! Moving onto the next player as follows.",
 						color=discord.Color.green(),
 					)
+					await self.notify(ctx, game, f"{game.current_player.mention}, you're up! Current number: {game.number}")
 					game.vote_time = -1
 				elif game.fail_tally >= .5 * len(game.players):
 					await ctx.send(f"Team {game.last_team} was guessed wrong! Strike given to the responsible player and player is skipped.")
-					await self.skip_player(ctx, game, game.current_turn())
+					await self.skip_player(ctx, game, game.current_player)
 					game.vote_time = -1
 
 	async def on_reaction_remove(self, reaction, user):
@@ -591,7 +651,7 @@ class NameGame(Cog):
 				await game.turn_msg.edit(embed=game.turn_embed)
 
 			if game.time == 0:
-				await self.skip_player(ctx, game, game.current_turn())
+				await self.skip_player(ctx, game, game.current_player)
 				return
 			game.turn_task = self.bot.loop.create_task(self.game_turn_countdown(ctx, game))
 
@@ -608,7 +668,7 @@ class NameGame(Cog):
 				await game.vote_msg.edit(embed=game.vote_embed)
 			if game.vote_time == 0:
 				await ctx.send("The vote did not reach 50% in favor or in failure, so the responsible player is given a strike and skipped.")
-				await self.skip_player(ctx, game, game.current_turn())
+				await self.skip_player(ctx, game, game.current_player)
 
 			game.vote_task = self.bot.loop.create_task(self.game_vote_countdown(ctx, game))
 class NameGameConfig(db.DatabaseObject):
@@ -616,6 +676,7 @@ class NameGameConfig(db.DatabaseObject):
 	guild_id = db.Column(db.Integer, primary_key=True)
 	channel_id = db.Column(db.Integer, nullable=True)
 	mode = db.Column(db.String)
+	pings_enabled = db.Column(db.Integer)
 
 class NameGameLeaderboard(db.DatabaseObject):
 	__tablename__ = "namegame_leaderboard"
