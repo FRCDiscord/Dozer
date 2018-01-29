@@ -2,16 +2,17 @@ import json, os.path, sys
 from . import db
 
 config = {
-	'prefix': '&', 'developers': [], 
+	'prefix': '&', 'developers': [],
 	'tba': {
 		'key': ''
-	}, 
+	},
 	'toa': {
-		'key': 'Put TOA API key here', 
+		'key': 'Put TOA API key here',
 		'app_name': 'Dozer',
 	},
-	'gmaps_key': "PUT GOOGLE MAPS API KEY HERE", 
-	'discord_token': "Put Discord API Token here."
+	'gmaps_key': "PUT GOOGLE MAPS API KEY HERE",
+	'discord_token': "Put Discord API Token here.",
+	'is_backup': False
 }
 config_file = 'config.json'
 
