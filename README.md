@@ -1,6 +1,8 @@
 
 
 # Dozer
+![travis](https://www.travis-ci.org/FRCDiscord/Dozer.svg?branch=master)
+
 Omnipotent guild management bot for FIRST Discord servers
 
 Table of Contents
