@@ -39,7 +39,7 @@ class TBA(Cog):
 			getattr(team_data, "Errors")
 		except tbapi.InvalidKeyError:
 			e = discord.Embed(color=blurple)
-			e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num), url='https://www.thebluealliance.com/team/{}'.format(team_num), icon_url='http://i.imgur.com/V8nrobr.png')
+			e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num), url='https://www.thebluealliance.com/team/{}'.format(team_num), icon_url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
 			e.add_field(name='Name', value=team_data.nickname)
 			e.add_field(name='Rookie Year', value=team_data.rookie_year)
 			e.add_field(name='Location', value='{0.city}, {0.state_prov} {0.postal_code}, {0.country}'.format(team_data))
@@ -65,7 +65,7 @@ class TBA(Cog):
 			getattr(team_data, "Errors")
 		except tbapi.InvalidKeyError:
 			e = discord.Embed(color=blurple)
-			e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num), url='https://www.thebluealliance.com/team/{}'.format(team_num), icon_url='http://i.imgur.com/V8nrobr.png')
+			e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num), url='https://www.thebluealliance.com/team/{}'.format(team_num), icon_url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
 			e.add_field(name='Raw Data', value=team_data.flatten())
 			e.set_footer(text='Triggered by ' + ctx.author.display_name)
 			await ctx.send(embed=e)
