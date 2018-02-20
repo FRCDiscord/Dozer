@@ -42,7 +42,7 @@ Instructions for installing are located [here](https://github.com/pyenv/pyenv-in
 2. `pyenv global 3.6.3` sets 3.6.3 as the primary version for the current user
 3. run `python -V` to ensure that version 3.6 or newer is installed. 
 
-
+If you are on macOS, there may be more steps to complete involving SSL certificates to connect to Discord correctly. Please see [this thread](https://github.com/Rapptz/discord.py/issues/423) for more info.
 
 Through the rest of this README, we will assume that you have found the correct `python` executable for your setup and are using it accordingly.
 
