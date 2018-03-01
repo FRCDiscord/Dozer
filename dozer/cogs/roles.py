@@ -272,10 +272,50 @@ class Roles(Cog):
 	`{prefix}take cooldude#1234 Java` - takes any role named Java, giveable or not, from cooldude
 	"""
 
+	@group(invoke_without_command=True)
+	@bot_has_permissions(manage_roles=True)
+	async def autogiveme(self, ctx):
+		pass
+
+	@autogiveme.command(name="add")
+	@bot_has_permissions(manage_roles=True)
+	async def agm_add(self, ctx, name):
+		"""Makes an existing role autogiveable, or creates one if it doesn't exist. Name must not contain commas.
+				Similar to c
+				reate, but will use an existing role if one exists."""
+		await ctx.send("test")
+		if ',' in name:
+			raise BadArgument('giveable role names must not contain commas!')
+		norm_name = self.normalize(name)
+		with db.Session() as session:
+			settings = session.query(GuildSettings).filter_by(id=ctx.guild.id).one_or_none()
+			if settings is None:
+				settings = GuildSettings(id=ctx.guild.id)
+				session.add(settings)
+			if norm_name in (giveable.norm_name for giveable in settings.autogiveable_roles):
+				raise BadArgument('that role already exists and is giveable!')
+			candidates = [role for role in ctx.guild.roles if self.normalize(role.name) == norm_name]
+
+			if not candidates:
+				role = await ctx.guild.create_role(name=name, reason='Giveable role created by {}'.format(ctx.author))
+			elif len(candidates) == 1:
+				role = candidates[0]
+			else:
+				raise BadArgument('{} roles with that name exist!'.format(len(candidates)))
+			settings.autogiveable_roles.append(GiveableRole.from_role(role))
+		await ctx.send(
+			'Role "{0}" added! Use `{1}{2} {0}` to get it!'.format(role.name, ctx.prefix, ctx.command.parent))
+
+	add.example_usage = """
+			`{prefix}giveme add Java` - creates or finds a role named "Java" and makes it giveable
+			`{prefix}giveme Java` - gives you the Java role that was just found or created
+			"""
+
 class GuildSettings(db.DatabaseObject):
 	__tablename__ = 'guilds'
 	id = db.Column(db.Integer, primary_key=True)
 	giveable_roles = db.relationship('GiveableRole', back_populates='guild_settings')
+	autogiveable_roles = db.relationship('AutoGiveableRole', back_populates='guild_settings')
 
 class GiveableRole(db.DatabaseObject):
 	__tablename__ = 'giveable_roles'
@@ -288,6 +328,19 @@ class GiveableRole(db.DatabaseObject):
 	@classmethod
 	def from_role(cls, role):
 		"""Creates a GiveableRole record from a discord.Role."""
+		return cls(id=role.id, name=role.name, norm_name=Roles.normalize(role.name))
+
+class AutoGiveableRole(db.DatabaseObject):
+	__tablename__ = 'autogiveable_roles'
+	id = db.Column(db.Integer, primary_key=True)
+	name = db.Column(db.String(100), nullable=False)
+	norm_name = db.Column(db.String(100), nullable=False)
+	guild_id = db.Column(db.Integer, db.ForeignKey('guilds.id'))
+	guild_settings = db.relationship('GuildSettings', back_populates='autogiveable_roles')
+
+	@classmethod
+	def from_role(cls, role):
+		"""Creates a AutoGiveableRole record from a discord.Role."""
 		return cls(id=role.id, name=role.name, norm_name=Roles.normalize(role.name))
 
 class MissingMember(db.DatabaseObject):
