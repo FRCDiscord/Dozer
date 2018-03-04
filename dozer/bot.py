@@ -23,12 +23,12 @@ class Dozer(commands.Bot):
 	
 	async def on_ready(self):
 		logger = logging.Logger(name='logger')
-		logger.level = 20
+		logger.level = logging.INFO
 		handler = logging.StreamHandler(stream=sys.stdout)
-		handler.level = 20
+		handler.level = logging.INFO
 		logger.addHandler(handler)
 		handler.setFormatter(fmt=logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s'))
-		logger.log(level=20, msg='Signed in as {0!s} ({0.id})'.format(self.user))
+		logger.log(level=logging.INFO, msg='Signed in as {0!s} ({0.id})'.format(self.user))
 		if self.config['is_backup']:
 			status = discord.Status.dnd
 		else:
