@@ -1,6 +1,13 @@
-import discord, re, traceback
+import discord, re, traceback, logging, sys
 from discord.ext import commands
 from . import utils
+
+logger = logging.Logger(name='dozer')
+logger.level = logging.INFO
+handler = logging.StreamHandler(stream=sys.stdout)
+handler.level = logging.INFO
+logger.addHandler(handler)
+handler.setFormatter(fmt=logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s'))
 
 class InvalidContext(commands.CheckFailure):
 	"""
@@ -22,7 +29,7 @@ class Dozer(commands.Bot):
 		self.check(self.global_checks)
 	
 	async def on_ready(self):
-		print('Signed in as {0!s} ({0.id})'.format(self.user))
+		logger.info('Signed in as {0!s} ({0.id})'.format(self.user))
 		if self.config['is_backup']:
 			status = discord.Status.dnd
 		else:
@@ -53,10 +60,10 @@ class Dozer(commands.Bot):
 		else:
 			await ctx.send('```\n%s\n```' % ''.join(traceback.format_exception_only(type(err), err)).strip())
 			if isinstance(ctx.channel, discord.TextChannel):
-				print('Error in command <{0}> ({1.name!r}({1.id}) {2}({2.id}) {3}({3.id}) {4!r})'.format(ctx.command, ctx.guild, ctx.channel, ctx.author, ctx.message.content))
+				logger.error('Error in command <{0}> ({1.name!r}({1.id}) {2}({2.id}) {3}({3.id}) {4!r})'.format(ctx.command, ctx.guild, ctx.channel, ctx.author, ctx.message.content))
 			else:
-				print('Error in command <{0}> (DM {1}({1.id}) {2!r})'.format(ctx.command, ctx.channel.recipient, ctx.message.content))
-			traceback.print_exception(type(err), err, err.__traceback__)
+				logger.error('Error in command <{0}> (DM {1}({1.id}) {2!r})'.format(ctx.command, ctx.channel.recipient, ctx.message.content))
+			logger.error(''.join(traceback.format_exception(type(err), err, err.__traceback__)))
 	
 	@staticmethod
 	def format_error(ctx, err, *, word_re=re.compile('[A-Z][a-z]+')):
