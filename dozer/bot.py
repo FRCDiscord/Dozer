@@ -1,4 +1,4 @@
-import discord, re, traceback
+import discord, re, traceback, logging
 from discord.ext import commands
 from . import utils
 
@@ -22,7 +22,8 @@ class Dozer(commands.Bot):
 		self.check(self.global_checks)
 	
 	async def on_ready(self):
-		print('Signed in as {0!s} ({0.id})'.format(self.user))
+		logger = logging.Logger(name='logger')
+		logger.info(msg='Signed in as {0!s} ({0.id})'.format(self.user))
 		if self.config['is_backup']:
 			status = discord.Status.dnd
 		else:
