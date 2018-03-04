@@ -2,6 +2,13 @@ import discord, re, traceback, logging, sys
 from discord.ext import commands
 from . import utils
 
+logger = logging.Logger(name='dozer')
+logger.level = logging.INFO
+handler = logging.StreamHandler(stream=sys.stdout)
+handler.level = logging.INFO
+logger.addHandler(handler)
+handler.setFormatter(fmt=logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s'))
+
 class InvalidContext(commands.CheckFailure):
 	"""
 	Check failure raised by the global check for an invalid command context - executed by a bot, exceeding global rate-limit, etc.
@@ -22,12 +29,6 @@ class Dozer(commands.Bot):
 		self.check(self.global_checks)
 	
 	async def on_ready(self):
-		logger = logging.Logger(name='logger')
-		logger.level = logging.INFO
-		handler = logging.StreamHandler(stream=sys.stdout)
-		handler.level = logging.INFO
-		logger.addHandler(handler)
-		handler.setFormatter(fmt=logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s'))
 		logger.log(level=logging.INFO, msg='Signed in as {0!s} ({0.id})'.format(self.user))
 		if self.config['is_backup']:
 			status = discord.Status.dnd
