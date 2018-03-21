@@ -60,7 +60,6 @@ class Moderation(Cog):
 				await self.modlogger(ctx=ctx, action="muted", target=target, reason=reason)
 		if time is not 0:
 			reasoning = re.sub(pattern=regexstring, string=reason, repl="").lstrip("  ")
-			print(reasoning)
 			if lookup == Deafen:
 				await self.modlogger(ctx=ctx, action="deafened", target=target, reason=reasoning)
 			if lookup == Guildmute:
@@ -123,15 +122,12 @@ class Moderation(Cog):
 	@has_permissions(administrator=True)
 	async def modlogconfig(self, ctx, channel_mentions: discord.TextChannel):
 		"""Set the modlog channel for a server by passing the channel id"""
-		print(channel_mentions)
 		with db.Session() as session:
 			config = session.query(Guildmodlog).filter_by(id=str(ctx.guild.id)).one_or_none()
 			if config is not None:
-				print("config is not none")
 				config.name = ctx.guild.name
 				config.modlog_channel = str(channel_mentions.id)
 			else:
-				print("Config is none")
 				config = Guildmodlog(id=ctx.guild.id, modlog_channel=channel_mentions.id, name=ctx.guild.name)
 				session.add(config)
 			await ctx.send(ctx.message.author.mention + ', modlog settings configured!')
@@ -286,15 +282,12 @@ class Moderation(Cog):
 	@has_permissions(administrator=True)
 	async def memberlogconfig(self, ctx, channel_mentions: discord.TextChannel):
 		"""Set the modlog channel for a server by passing the channel id"""
-		print(channel_mentions)
 		with db.Session() as session:
 			config = session.query(Guildmemberlog).filter_by(id=str(ctx.guild.id)).one_or_none()
 			if config is not None:
-				print("config is not none")
 				config.name = ctx.guild.name
 				config.memberlog_channel = str(channel_mentions.id)
 			else:
-				print("Config is none")
 				config = Guildmemberlog(id=ctx.guild.id, memberlog_channel=channel_mentions.id, name=ctx.guild.name)
 				session.add(config)
 			await ctx.send(ctx.message.author.mention + ', memberlog settings configured!')
@@ -303,15 +296,12 @@ class Moderation(Cog):
 	@has_permissions(administrator=True)
 	async def messagelogconfig(self, ctx, channel_mentions: discord.TextChannel):
 		"""Set the modlog channel for a server by passing the channel id"""
-		print(channel_mentions)
 		with db.Session() as session:
 			config = session.query(Guildmessagelog).filter_by(id=str(ctx.guild.id)).one_or_none()
 			if config is not None:
-				print("config is not none")
 				config.name = ctx.guild.name
 				config.messagelog_channel = str(channel_mentions.id)
 			else:
-				print("Config is none")
 				config = Guildmessagelog(id=ctx.guild.id, messagelog_channel=channel_mentions.id, name=ctx.guild.name)
 				session.add(config)
 			await ctx.send(ctx.message.author.mention + ', messagelog settings configured!')

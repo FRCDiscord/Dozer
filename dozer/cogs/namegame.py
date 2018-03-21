@@ -13,6 +13,7 @@ from datetime import timedelta
 from collections import OrderedDict
 from fuzzywuzzy import fuzz
 from functools import wraps
+from dozer.bot import logger
 
 SUPPORTED_MODES = ["frc", "ftc"]
 def keep_alive(func):
@@ -27,7 +28,7 @@ def keep_alive(func):
 				if isinstance(e, asyncio.CancelledError):
 					return
 				# panic to the console, and to chat
-				traceback.print_exc()
+				logger.error(traceback.format_exc())
 				await ctx.send(f"```Error in game loop:\n{e.__class__.__name__}: {e}```")
 	return wrapper
 
