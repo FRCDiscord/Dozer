@@ -164,7 +164,7 @@ class Moderation(Cog):
 				session.add(config)
 
 		role_name = role.name
-		await ctx.send("New Member Channel configured as: {channel}. Role configured as: {role}. Message: {message}".format(channel=ctx.channel.name, role=role_name, message=message))
+		await ctx.send("New Member Channel configured as: {channel}. Role configured as: {role}. Message: {message}".format(channel=channel_mention.name, role=role_name, message=message))
 
 	nmconfig.example_usage = """
 	`{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel so if someone types "I have read the rules and regulations" it assigns them the Member role. 
