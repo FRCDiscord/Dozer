@@ -653,7 +653,6 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 
 			if game.time == 0:
 				await self.skip_player(ctx, game, game.current_player)
-				return
 			game.turn_task = self.bot.loop.create_task(self.game_turn_countdown(ctx, game))
 
 		
