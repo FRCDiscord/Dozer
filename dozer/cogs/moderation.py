@@ -307,12 +307,15 @@ class Moderation(Cog):
 			await ctx.send(ctx.message.author.mention + ', messagelog settings configured!')
 
 	async def on_member_join(self, member):
-		memberjoinedmessage = "{} has joined the server! Enjoy your stay! This server now has {} members".format(member.display_name, member.guild.member_count)
+		join = discord.Embed(type='rich', color=0x00FF00)
+		join.set_author(name = 'Member Joined', icon_url = member.avatar_url_as(format='png', size=32))
+		join.description = "+ {} ({})".format(member.mention, member.id)
+		join.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
 		with db.Session() as session:
 			memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
 			if memberlogchannel is not None:
 				channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
-				await channel.send(memberjoinedmessage)
+				await channel.send(embed=join)
 			user = session.query(Guildmute).filter_by(id=member.id).one_or_none()
 			if user is not None and user.guild == member.guild.id:
 				await self.permoverride(member, add_reactions=False, send_messages=False)
@@ -321,12 +324,15 @@ class Moderation(Cog):
 				await self.permoverride(member, read_messages=False)
 
 	async def on_member_remove(self, member):
-		memberleftmessage = "{} has left the server! This server now has {} members".format(member.display_name, member.guild.member_count)
+		leave = discord.Embed(type='rich', color=0xFF0000)
+		leave.set_author(name = 'Member Left', icon_url = member.avatar_url_as(format='png', size=32))
+		leave.description = "- {} ({})".format(member, member.id)
+		leave.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
 		with db.Session() as session:
 			memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
 			if memberlogchannel is not None:
 				channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
-				await channel.send(memberleftmessage)
+				await channel.send(embed=leave)
 
 	async def on_message_delete(self, message):
 		e = discord.Embed(type='rich')
