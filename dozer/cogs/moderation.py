@@ -307,10 +307,9 @@ class Moderation(Cog):
 			await ctx.send(ctx.message.author.mention + ', messagelog settings configured!')
 
 	async def on_member_join(self, member):
-		join = discord.Embed(type='rich')
+		join = discord.Embed(type='rich', color=0x00FF00)
 		join.set_author(name = 'Member Joined', icon_url = member.avatar_url_as(format='png', size=32))
-		join.color = 0x00FF00
-		join.description = "+ {}#{}".format(member.name, member.discriminator)
+		join.description = "+ {} ({})".format(member.mention, member.id)
 		join.footer = "{} | {} members".format(member.guild.name, member.guild.member_count)
 		with db.Session() as session:
 			memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
@@ -325,10 +324,9 @@ class Moderation(Cog):
 				await self.permoverride(member, read_messages=False)
 
 	async def on_member_remove(self, member):
-		leave = discord.Embed(type='rich')
+		leave = discord.Embed(type='rich', color=0xFF0000)
 		leave.set_author(name = 'Member Left', icon_url = member.avatar_url_as(format='png', size=32))
-		leave.color = 0xFF0000
-		leave.description = "- {}#{}".format(member.name, member.discriminator)
+		leave.description = "- {}#{} ({})".format(member.name, member.discriminator, member.id)
 		leave.footer = "{} | {} members".format(member.guild.name, member.guild.member_count
 		with db.Session() as session:
 			memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
