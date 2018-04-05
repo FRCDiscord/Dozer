@@ -310,7 +310,7 @@ class Moderation(Cog):
 		join = discord.Embed(type='rich', color=0x00FF00)
 		join.set_author(name = 'Member Joined', icon_url = member.avatar_url_as(format='png', size=32))
 		join.description = "+ {} ({})".format(member.mention, member.id)
-		join.footer = "{} | {} members".format(member.guild.name, member.guild.member_count)
+		join.set_footer("{} | {} members".format(member.guild.name, member.guild.member_count))
 		with db.Session() as session:
 			memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
 			if memberlogchannel is not None:
@@ -327,7 +327,7 @@ class Moderation(Cog):
 		leave = discord.Embed(type='rich', color=0xFF0000)
 		leave.set_author(name = 'Member Left', icon_url = member.avatar_url_as(format='png', size=32))
 		leave.description = "- {}#{} ({})".format(member.name, member.discriminator, member.id)
-		leave.footer = "{} | {} members".format(member.guild.name, member.guild.member_count
+		leave.set_footer("{} | {} members".format(member.guild.name, member.guild.member_count))
 		with db.Session() as session:
 			memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
 			if memberlogchannel is not None:
