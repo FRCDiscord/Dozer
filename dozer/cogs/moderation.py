@@ -369,6 +369,7 @@ class Moderation(Cog):
 
 	async def on_message_edit(self, before, after):
 		await self.check_links(after)
+		if before.author.bot: return
 		if after.edited_at is not None or before.edited_at is not None:
 			# There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
 			e = discord.Embed(type='rich')
