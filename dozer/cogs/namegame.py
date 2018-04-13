@@ -282,8 +282,7 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 			return
 		with db.Session() as session:
 			session.query(NameGameLeaderboard).filter_by(game_mode=mode).delete()
-			session.commit()
-			await ctx.send(f"Cleared leaderboard for mode {mode}")
+		await ctx.send(f"Cleared leaderboard for mode {mode}")
 
 	#TODO: configurable time limits, ping on event, etc
 	# MORE TODO:

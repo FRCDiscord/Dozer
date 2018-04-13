@@ -320,11 +320,11 @@ class Moderation(Cog):
 			if memberlogchannel is not None:
 				channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
 				await channel.send(embed=join)
-			user = session.query(Guildmute).filter_by(id=member.id).one_or_none()
-			if user is not None and user.guild == member.guild.id:
+			user = session.query(Guildmute).filter_by(id=member.id, guild=member.guild.id).one_or_none()
+			if user is not None:
 				await self.permoverride(member, add_reactions=False, send_messages=False)
-			user = session.query(Deafen).filter_by(id=member.id).one_or_none()
-			if user is not None and user.guild == member.guild.id:
+			user = session.query(Deafen).filter_by(id=member.id, guild=member.guild.id).one_or_none()
+			if user is not None:
 				await self.permoverride(member, read_messages=False)
 
 	async def on_member_remove(self, member):
@@ -431,7 +431,7 @@ class Moderation(Cog):
 	@bot_has_permissions(manage_roles=True)
 	async def mute(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
 		async with ctx.typing(), db.Session() as session:
-			user = session.query(Guildmute).filter_by(id=member_mentions.id).one_or_none()
+			user = session.query(Guildmute).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
 			if user is not None:
 				await ctx.send("User is already muted!")
 			else:
