@@ -309,7 +309,7 @@ class Moderation(Cog):
 	async def on_member_join(self, member):
 		join = discord.Embed(type='rich', color=0x00FF00)
 		join.set_author(name = 'Member Joined', icon_url = member.avatar_url_as(format='png', size=32))
-		join.description = "+ {} ({})".format(member.mention, member.id)
+		join.description = "{0.mention}\n{0} ({0.id})".format(member)
 		join.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
 		with db.Session() as session:
 			memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
@@ -326,7 +326,7 @@ class Moderation(Cog):
 	async def on_member_remove(self, member):
 		leave = discord.Embed(type='rich', color=0xFF0000)
 		leave.set_author(name = 'Member Left', icon_url = member.avatar_url_as(format='png', size=32))
-		leave.description = "- {} ({})".format(member, member.id)
+		leave.description = "{0.mention}\n{0} ({0.id})".format(member)
 		leave.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
 		with db.Session() as session:
 			memberlogchannel = session.query(Guildmemberlog).filter_by(id=member.guild.id).one_or_none()
