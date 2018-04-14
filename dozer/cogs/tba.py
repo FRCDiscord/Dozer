@@ -86,7 +86,7 @@ class TBA(Cog):
 		try:
 			getattr(team_data, "Errors")
 		except tbapi.InvalidKeyError:
-			location = '{0.city}, {0.state_prov} {0.postal_code}, {0.country}'.format(team_data)
+			location = '{0.city}, {0.state_prov} {0.country}'.format(team_data)
 			gmaps = googlemaps.Client(key=self.gmaps_key)
 			geolocator = Nominatim()
 			geolocation = geolocator.geocode(location)
