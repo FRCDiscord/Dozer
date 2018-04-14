@@ -73,6 +73,7 @@ class Moderation(Cog):
 					if lookup == Guildmute:
 						self.bot.loop.create_task(coro=self.unmute.callback(self=self, ctx=ctx, member_mentions=target))
 
+
 	async def _check_links_warn(self, msg, role):
 		warn_msg = await msg.channel.send(f"{msg.author.mention}, you need the `{role.name}` role to post links!")
 		await asyncio.sleep(3)
@@ -316,11 +317,11 @@ class Moderation(Cog):
 			if memberlogchannel is not None:
 				channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
 				await channel.send(embed=join)
-			user = session.query(Guildmute).filter_by(id=member.id).one_or_none()
-			if user is not None and user.guild == member.guild.id:
+			user = session.query(Guildmute).filter_by(id=member.id, guild=member.guild.id).one_or_none()
+			if user is not None:
 				await self.permoverride(member, add_reactions=False, send_messages=False)
-			user = session.query(Deafen).filter_by(id=member.id).one_or_none()
-			if user is not None and user.guild == member.guild.id:
+			user = session.query(Deafen).filter_by(id=member.id, guild=member.guild.id).one_or_none()
+			if user is not None:
 				await self.permoverride(member, read_messages=False)
 
 	async def on_member_remove(self, member):
@@ -354,6 +355,8 @@ class Moderation(Cog):
 				for x in i.fields:
 					e.add_field(name=x.name, value=x.value)
 				e.add_field(name="Footer", value=i.footer)
+		if message.attachments:
+			e.add_field(name="Attachments", value=", ".join([i.url for i in message.attachments]))
 		with db.Session() as session:
 			messagelogchannel = session.query(Guildmessagelog).filter_by(id=message.guild.id).one_or_none()
 			if messagelogchannel is not None:
@@ -363,6 +366,7 @@ class Moderation(Cog):
 
 	async def on_message_edit(self, before, after):
 		await self.check_links(after)
+		if before.author.bot: return
 		if after.edited_at is not None or before.edited_at is not None:
 			# There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
 			e = discord.Embed(type='rich')
@@ -384,6 +388,8 @@ class Moderation(Cog):
 					for x in i.fields:
 						e.add_field(name=x.name, value=x.value)
 					e.add_field(name="Footer", value=i.footer)
+			if before.attachments:
+				e.add_field(name="Attachments", value=", ".join([i.url for i in message.attachments]))
 			if 0 < len(after.content) < 1024:
 				e.add_field(name="New message", value=after.content)
 			elif len(after.content) != 0:
@@ -396,6 +402,8 @@ class Moderation(Cog):
 					e.add_field(name="Timestamp", value=i.timestamp)
 					for x in i.fields:
 						e.add_field(name=x.name, value=x.value)
+			if after.attachments:
+				e.add_field(name="Attachments", value=", ".join([i.url for i in message.attachments]))
 			with db.Session() as session:
 				messagelogchannel = session.query(Guildmessagelog).filter_by(id=before.guild.id).one_or_none()
 				if messagelogchannel is not None:
@@ -420,7 +428,7 @@ class Moderation(Cog):
 	@bot_has_permissions(manage_roles=True)
 	async def mute(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
 		async with ctx.typing(), db.Session() as session:
-			user = session.query(Guildmute).filter_by(id=member_mentions.id).one_or_none()
+			user = session.query(Guildmute).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
 			if user is not None:
 				await ctx.send("User is already muted!")
 			else:
@@ -447,7 +455,7 @@ class Moderation(Cog):
 	@bot_has_permissions(manage_roles=True)
 	async def deafen(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
 		async with ctx.typing(), db.Session() as session:
-			user = session.query(Deafen).filter_by(id=member_mentions.id).one_or_none()
+			user = session.query(Deafen).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
 			if user is not None:
 				await ctx.send("User is already deafened!")
 			else:
@@ -460,7 +468,7 @@ class Moderation(Cog):
 	@bot_has_permissions(manage_roles=True)
 	async def selfdeafen(self, ctx, timing, *, reason="No reason provided"):
 		async with ctx.typing(), db.Session() as session:
-			user = session.query(Deafen).filter_by(id=ctx.author.id).one_or_none()
+			user = session.query(Deafen).filter_by(id=ctx.author.id, guild=ctx.guild.id).one_or_none()
 			if user is not None:
 				await ctx.send("You are already deafened!")
 			else:

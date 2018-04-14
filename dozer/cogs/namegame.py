@@ -35,6 +35,7 @@ def keep_alive(func):
 def game_is_running(func):
 	@wraps(func)
 	async def wrapper(self, ctx, *args, **kwargs):
+
 		if ctx.channel.id not in self.games:
 			await ctx.send(f"There's not a game going on! Start one with `{ctx.prefix}ng startround`")
 			return
@@ -60,6 +61,7 @@ class NameGameSession():
 		self.turn_msg = None
 		self.turn_embed = None
 		self.turn_task = None
+		self.turn_count = 0
 
 		self.pass_tally = 0
 		self.fail_tally = 0
@@ -111,6 +113,7 @@ class NameGameSession():
 		return fuzz.partial_ratio(actual_name.lower(), name.lower())
 
 	def next_turn(self):
+		self.turn_count += 1
 		self.pass_tally = 0
 		self.fail_tally = 0
 		self.time = 60
@@ -130,7 +133,7 @@ class NameGameSession():
 		return False
 
 	def check_win(self):
-		return len(self.players) == 1
+		return len(self.players) == 1 and self.turn_count > 6
 
 	def get_picked(self):
 		return ", ".join(map(str, sorted(self.picked))) or "No Picked Teams"
@@ -256,6 +259,30 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 				config.pings_enabled = int(enabled)
 			await ctx.send(f"Pings enabled set to `{enabled}`!")
 
+
+	@config.command()
+	@has_permissions(manage_guild=True)
+	async def leaderboardedit(self, ctx, mode : str, user : discord.User, wins : int):
+		if mode not in SUPPORTED_MODES:
+			await ctx.send(f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
+			return
+		with db.Session() as session:
+			record = session.query(NameGameLeaderboard).filter_by(game_mode=mode, user_id=user.id).one_or_none()
+			if record is None:
+				await ctx.send("User not on leaderboard!")
+				return
+			record.wins = wins
+			await ctx.send(f"{user.display_name}'s wins now set to: **{wins}**")
+
+	@config.command()
+	@has_permissions(manage_guild=True)
+	async def leaderboardclear(self, ctx, mode : str):
+		if mode not in SUPPORTED_MODES:
+			await ctx.send(f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
+			return
+		with db.Session() as session:
+			session.query(NameGameLeaderboard).filter_by(game_mode=mode).delete()
+		await ctx.send(f"Cleared leaderboard for mode {mode}")
 
 	#TODO: configurable time limits, ping on event, etc
 	# MORE TODO:
@@ -518,7 +545,7 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
 	async def strike(self, ctx, game, player):
 		if game.strike(player):
 			await ctx.send(f"Player {player.mention} is ELIMINATED!")
-		if len(game.players) == 0:
+		if len(game.players) == 0 or game.turn_count <= 6:
 			await ctx.send("Game disbanded, no winner called!")
 			game.running = False
 		if game.check_win():
@@ -683,6 +710,5 @@ class NameGameLeaderboard(db.DatabaseObject):
 	user_id = db.Column(db.Integer, primary_key=True)
 	wins = db.Column(db.Integer)
 	game_mode = db.Column(db.String)
-
 def setup(bot):
 	bot.add_cog(NameGame(bot))
