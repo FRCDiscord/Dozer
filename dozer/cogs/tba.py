@@ -122,11 +122,8 @@ class TBA(Cog):
             if current_second < 10:
                 current_second = "0{}".format(current_second)
             await ctx.send(
-                "Timezone: {0} UTC{1:+g} \nCurrent Time: {2}:{3}:{4} {5} ({6}:{3}:{4})".format(timezone["timeZoneName"],
-                                                                                               utc_offset, current_hour,
-                                                                                               current_minute,
-                                                                                               current_second, dayTime,
-                                                                                               current_hour_original))
+                "Timezone: {0} UTC{1:+g} \nCurrent Time: {2}:{3}:{4} {5} ({6}:{3}:{4})".format(
+                timezone["timeZoneName"], utc_offset, current_hour, current_minute, current_second, dayTime, current_hour_original))
         else:
             raise BadArgument('Team {} does not exist.'.format(team_num))
 

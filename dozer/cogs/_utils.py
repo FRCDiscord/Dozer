@@ -92,8 +92,7 @@ class Reactor:
             await self.message.add_reaction(emoji)
         while True:
             try:
-                reaction, reacting_member = await self.bot.wait_for('reaction_add', check=self._check_reaction,
-                                                                    timeout=self.timeout)
+                reaction, reacting_member = await self.bot.wait_for('reaction_add', check=self._check_reaction, timeout=self.timeout)
             except asyncio.TimeoutError:
                 break
 

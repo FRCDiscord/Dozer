@@ -59,14 +59,12 @@ class Dozer(commands.Bot):
             await ctx.send('{}, {}'.format(ctx.author.mention, err.args[0]))
         elif isinstance(err, commands.MissingPermissions):
             permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in err.missing_perms]
-            await ctx.send('{}, you need {} permissions to run this command!'.format(ctx.author.mention,
-                                                                                     utils.pretty_concat(
-                                                                                         permission_names)))
+            await ctx.send('{}, you need {} permissions to run this command!'.format(
+                           ctx.author.mention, utils.pretty_concat(permission_names)))
         elif isinstance(err, commands.BotMissingPermissions):
             permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in err.missing_perms]
-            await ctx.send('{}, I need {} permissions to run this command!'.format(ctx.author.mention,
-                                                                                   utils.pretty_concat(
-                                                                                       permission_names)))
+            await ctx.send('{}, I need {} permissions to run this command!'.format(
+                           ctx.author.mention, utils.pretty_concat(permission_names)))
         elif isinstance(err, commands.CommandOnCooldown):
             await ctx.send(
                 '{}, That command is on cooldown! Try again in {:.2f}s!'.format(ctx.author.mention, err.retry_after))
@@ -75,15 +73,11 @@ class Dozer(commands.Bot):
         else:
             await ctx.send('```\n%s\n```' % ''.join(traceback.format_exception_only(type(err), err)).strip())
             if isinstance(ctx.channel, discord.TextChannel):
-                logger.error(
-                    'Error in command <{0}> ({1.name!r}({1.id}) {2}({2.id}) {3}({3.id}) {4!r})'.format(ctx.command,
-                                                                                                       ctx.guild,
-                                                                                                       ctx.channel,
-                                                                                                       ctx.author,
-                                                                                                       ctx.message.content))
+                logger.error('Error in command <{0}> ({1.name!r}({1.id}) {2}({2.id}) {3}({3.id}) {4!r})'.format(
+                             ctx.command, ctx.guild, ctx.channel, ctx.author, ctx.message.content))
             else:
-                logger.error('Error in command <{0}> (DM {1}({1.id}) {2!r})'.format(ctx.command, ctx.channel.recipient,
-                                                                                    ctx.message.content))
+                logger.error('Error in command <{0}> (DM {1}({1.id}) {2!r})'.format(
+                             ctx.command, ctx.channel.recipient, ctx.message.content))
             logger.error(''.join(traceback.format_exception(type(err), err, err.__traceback__)))
 
     @staticmethod

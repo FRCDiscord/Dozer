@@ -191,13 +191,13 @@ class NameGame(Cog):
                              value="You have 60 seconds to make a pick, or you get skipped and get a strike.")
         game_embed.add_field(name="Shaking Things Up",
                              value="Any team number that ends in a 0 mean that the next player has a wildcard, and can pick any legal team.")
-        game_embed.add_field(name="Pesky Commands", value=f"To start a game, type `{ctx.prefix}ng startround` and mention the players you want to play with. \
-You can add people with `{ctx.prefix}ng addplayer <user_pings>`. \
-When it's your turn, type `{ctx.prefix}ng pick <team> <teamname>` to execute your pick. \
-If you need to skip, typing `{ctx.prefix}ng skip` gives you a strike and skips your turn. \
-You can always do `{ctx.prefix}ng gameinfo` to get the current game status. \
-If you ever need to quit, running `{ctx.prefix}ng drop` removes you from the game. \
-For more detailed command help, run `{ctx.prefix}help ng.`")
+        game_embed.add_field(name="Pesky Commands", value=(f"To start a game, type `{ctx.prefix}ng startround` and mention the players you want to play with. "
+                             f"You can add people with `{ctx.prefix}ng addplayer <user_pings>`. "
+                             f"When it's your turn, type `{ctx.prefix}ng pick <team> <teamname>` to execute your pick. "
+                             f"If you need to skip, typing `{ctx.prefix}ng skip` gives you a strike and skips your turn. "
+                             f"You can always do `{ctx.prefix}ng gameinfo` to get the current game status. "
+                             f"If you ever need to quit, running `{ctx.prefix}ng drop` removes you from the game. "
+                             f"For more detailed command help, run `{ctx.prefix}help ng.`"))
         game_embed.add_field(name="Different Game Modes",
                              value=f"You can play the name game with FTC teams too! To start a game playing with FTC teams, run `{ctx.prefix}ng startround ftc`")
         await ctx.send(embed=game_embed)

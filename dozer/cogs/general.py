@@ -83,8 +83,7 @@ class General(Cog):
             info.add_field(name='Usage', value=usage.format(prefix=ctx.prefix, name=ctx.invoked_with), inline=False)
         info.set_footer(text='Dozer Help | {!r} command | Info'.format(command.qualified_name))
         await self._show_help(ctx, info, 'Subcommands: {prefix}{signature}', '', '{command.qualified_name!r} command',
-                              command.commands if isinstance(command, Group) else set(), command=command,
-                              signature=command.signature)
+                              command.commands if isinstance(command, Group) else set(), command=command, signature=command.signature)
 
     async def _help_cog(self, ctx, cog):
         """Gets the help message for one cog."""
@@ -104,8 +103,7 @@ class General(Cog):
             pages = []
             for page_num, page_commands in enumerate(command_chunks):
                 format_args['page_num'] = page_num + 1
-                page = discord.Embed(title=title.format(**format_args), description=description.format(**format_args),
-                                     color=discord.Color.blue())
+                page = discord.Embed(title=title.format(**format_args), description=description.format(**format_args), color=discord.Color.blue())
                 for command in page_commands:
                     if command.short_doc:
                         embed_value = command.short_doc
@@ -137,8 +135,7 @@ class General(Cog):
         else:  # No commands, and no info page
             format_args['len_pages'] = 1
             format_args['page_num'] = 1
-            embed = discord.Embed(title=title.format(**format_args), description=description.format(**format_args),
-                                  color=discord.Color.blue())
+            embed = discord.Embed(title=title.format(**format_args), description=description.format(**format_args), color=discord.Color.blue())
             embed.set_footer(text=footer.format(**format_args))
             await ctx.send(embed=embed)
 
