@@ -1,4 +1,4 @@
-import asyncio, discord, functools, re, traceback
+import asyncio, discord, functools, re
 from discord.ext.commands import BadArgument, has_permissions, bot_has_permissions, RoleConverter
 from .. import db
 from ._utils import *
@@ -64,17 +64,14 @@ class Moderation(Cog):
 				await self.modlogger(ctx=ctx, action="deafened", target=target, reason=reasoning)
 			if lookup == Guildmute:
 				await self.modlogger(ctx=ctx, action="muted", target=target, reason=reasoning)
-			try:
-				await asyncio.sleep(time)
-				with db.Session() as session:
-					user = session.query(lookup).filter_by(id=target.id).one_or_none()
-					if user is not None:
-						if lookup == Deafen:
-							self.bot.loop.create_task(coro=self.undeafen.callback(self=self, ctx=ctx, member_mentions=target))
-						if lookup == Guildmute:
-							self.bot.loop.create_task(coro=self.unmute.callback(self=self, ctx=ctx, member_mentions=target))
-			except Exception as e:
-				traceback.print_exc()
+			await asyncio.sleep(time)
+			with db.Session() as session:
+				user = session.query(lookup).filter_by(id=target.id).one_or_none()
+				if user is not None:
+					if lookup == Deafen:
+						self.bot.loop.create_task(coro=self.undeafen.callback(self=self, ctx=ctx, member_mentions=target))
+					if lookup == Guildmute:
+						self.bot.loop.create_task(coro=self.unmute.callback(self=self, ctx=ctx, member_mentions=target))
 
 
 	async def _check_links_warn(self, msg, role):
