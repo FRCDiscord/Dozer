@@ -26,8 +26,8 @@ class Maintenance(Cog):
         await self.bot.shutdown()
 
     shutdown.example_usage = """
-	`{prefix}shutdown` - stop the bot
-	"""
+    `{prefix}shutdown` - stop the bot
+    """
 
     @command()
     async def restart(self, ctx):
@@ -45,8 +45,8 @@ class Maintenance(Cog):
         os.execv(sys.executable, args + sys.argv[1:])
 
     restart.example_usage = """
-	`{prefix}restart` - restart the bot
-	"""
+    `{prefix}restart` - restart the bot
+    """
 
     @command()
     async def update(self, ctx):
@@ -63,8 +63,8 @@ class Maintenance(Cog):
             await ctx.bot.get_command('restart').callback(self, ctx)
 
     update.example_usage = """
-	`{prefix}update` - update to the latest commit and restart
-	"""
+    `{prefix}update` - update to the latest commit and restart
+    """
 
 
 def setup(bot):

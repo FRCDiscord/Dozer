@@ -22,8 +22,8 @@ class General(Cog):
             content=response.content + '\nTook %d ms to respond.' % (delay.seconds * 1000 + delay.microseconds // 1000))
 
     ping.example_usage = """
-	`{prefix}ping` - Calculate and display the bot's response time
-	"""
+    `{prefix}ping` - Calculate and display the bot's response time
+    """
 
     @cooldown(1, 10, BucketType.channel)
     @command(name='help', aliases=['about'])
@@ -51,10 +51,10 @@ class General(Cog):
                 await self._help_command(ctx, command)
 
     base_help.example_usage = """
-	`{prefix}help` - General help message
-	`{prefix}help help` - Help about the help command
-	`{prefix}help General` - Help about the General category
-	"""
+    `{prefix}help` - General help message
+    `{prefix}help help` - Help about the help command
+    `{prefix}help General` - Help about the General category
+    """
 
     async def _help_all(self, ctx):
         """Gets the help message for all commands."""
@@ -64,9 +64,9 @@ class General(Cog):
         info.add_field(name='About',
                        value="Dozer: A collaborative bot for FIRST Discord servers, developed by the FRC Discord Server Development Team")
         info.add_field(name='About `{}{}`'.format(ctx.prefix, ctx.invoked_with), value=inspect.cleandoc("""
-		This command can show info for all commands, a specific command, or a category of commands.
-		Use `{0}{1} {1}` for more information.
-		""".format(ctx.prefix, ctx.invoked_with)), inline=False)
+        This command can show info for all commands, a specific command, or a category of commands.
+        Use `{0}{1} {1}` for more information.
+        """.format(ctx.prefix, ctx.invoked_with)), inline=False)
         info.add_field(name='Support',
                        value="Join our development server at https://discord.gg/bB8tcQ8 for support, to help with development, or if you have any questions or comments!")
         info.add_field(name="Open Source",
@@ -180,9 +180,9 @@ class General(Cog):
                 await ctx.send(text)
 
     invites.example_usage = """
-	`{prefix}invtes 5` - Generates 5 single use invites.
-	`{prefix}invites 2 12` Generates 2 single use invites that last for 12 hours.
-	"""
+    `{prefix}invtes 5` - Generates 5 single use invites.
+    `{prefix}invites 2 12` Generates 2 single use invites that last for 12 hours.
+    """
 
     @command()
     @has_permissions(administrator=True)
@@ -203,8 +203,8 @@ class General(Cog):
         await ctx.send("Welcome channel set to {}".format(welcome_channel.mention))
 
     welcomeconfig.example_usage = """
-	`{prefix}welcomeconfig #new-members` - Sets the invite channel to #new-members.
-	"""
+    `{prefix}welcomeconfig #new-members` - Sets the invite channel to #new-members.
+    """
 
 
 def setup(bot):

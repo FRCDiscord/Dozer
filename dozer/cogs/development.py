@@ -32,8 +32,8 @@ class Development(Cog):
         await msg.edit(content='Reloaded extension %s' % extension)
 
     reload.example_usage = """
-	`{prefix}reload development` - reloads the development cog
-	"""
+    `{prefix}reload development` - reloads the development cog
+    """
 
     @command(name='eval')
     async def evaluate(self, ctx, *, code):
@@ -63,9 +63,9 @@ class Development(Cog):
         await ctx.send(embed=e)
 
     evaluate.example_usage = """
-	`{prefix}eval 0.1 + 0.2` - calculates 0.1 + 0.2
-	`{prefix}eval await ctx.send('Hello world!')` - send "Hello World!" to this channel
-	"""
+    `{prefix}eval 0.1 + 0.2` - calculates 0.1 + 0.2
+    `{prefix}eval await ctx.send('Hello world!')` - send "Hello World!" to this channel
+    """
 
     @command(name='su', pass_context=True)
     async def pseudo(self, ctx, user: discord.Member, *, command):
@@ -77,8 +77,8 @@ class Development(Cog):
         return await self.bot.invoke(context)
 
     pseudo.example_usage = """
-	`{prefix}su cooldude#1234 {prefix}ping` - simulate cooldude sending `{prefix}ping`
-	"""
+    `{prefix}su cooldude#1234 {prefix}ping` - simulate cooldude sending `{prefix}ping`
+    """
 
 
 def load_function(code, globals_, locals_):

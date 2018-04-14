@@ -171,8 +171,8 @@ class NameGame(Cog):
         await self.info.callback(self, ctx)
 
     ng.example_usage = """
-	`{prefix}ng` - show a description on how the robotics team namegame works. 
-	"""
+    `{prefix}ng` - show a description on how the robotics team namegame works. 
+    """
 
     @ng.command()
     @bot_has_permissions(embed_links=True)
@@ -203,15 +203,15 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
         await ctx.send(embed=game_embed)
 
     info.example_usage = """
-	`{prefix}ng help` - show a description on how the robotics team namegame works
-	"""
+    `{prefix}ng help` - show a description on how the robotics team namegame works
+    """
 
     @ng.group(invoke_without_command=True)
     async def config(self, ctx):
         await ctx.send(f"""`{ctx.prefix}ng config` reference:
-				`{ctx.prefix}ng config defaultmode [mode]` - set tbe default game mode used when startround is used with no arguments
-				`{ctx.prefix}ng config setchannel [channel_mention]` - set the channel that games are allowed to be run in
-				`{ctx.prefix}ng config clearsetchannel` - clear the set channel for games""")
+                `{ctx.prefix}ng config defaultmode [mode]` - set tbe default game mode used when startround is used with no arguments
+                `{ctx.prefix}ng config setchannel [channel_mention]` - set the channel that games are allowed to be run in
+                `{ctx.prefix}ng config clearsetchannel` - clear the set channel for games""")
 
     @config.command()
     @has_permissions(manage_guild=True)
@@ -384,8 +384,8 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
         game.turn_task = self.bot.loop.create_task(self.game_turn_countdown(ctx, game))
 
     startround.example_usage = """
-	`{prefix}ng startround frc` - start an FRC namegame session.
-	"""
+    `{prefix}ng startround frc` - start an FRC namegame session.
+    """
 
     @ng.command()
     @game_is_running
@@ -420,8 +420,8 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
             ))
 
     addplayer.example_usage = """
-	`{prefix}ng addplayer @user1, @user2` - add user1 and user2 to the game.
-	"""
+    `{prefix}ng addplayer @user1, @user2` - add user1 and user2 to the game.
+    """
 
     @ng.command()
     @game_is_running
@@ -501,8 +501,8 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
                 game.vote_task = self.bot.loop.create_task(self.game_vote_countdown(ctx, game))
 
     pick.example_usage = """
-	`{prefix}ng pick 254 poofy cheeses` - attempt to guess team 254 with a specified name of "poofy cheeses".
-	"""
+    `{prefix}ng pick 254 poofy cheeses` - attempt to guess team 254 with a specified name of "poofy cheeses".
+    """
 
     @ng.command()
     @game_is_running
@@ -522,8 +522,8 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
                 await self.display_info(ctx, game)
 
     drop.example_usage = """
-	`{prefix}ng drop` - remove the initiator of the command from the current game
-	"""
+    `{prefix}ng drop` - remove the initiator of the command from the current game
+    """
 
     @ng.command()
     @game_is_running
@@ -537,8 +537,8 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
                 await self.skip_player(ctx, game, ctx.author)
 
     skip.example_usage = """
-	`{prefix}ng skip` - skip the current player's turn
-	"""
+    `{prefix}ng skip` - skip the current player's turn
+    """
 
     @ng.command()
     @game_is_running
@@ -548,8 +548,8 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
         await self.display_info(ctx, game)
 
     gameinfo.example_usage = """
-	`{prefix}ng gameinfo` - display info about the currently running game.
-	"""
+    `{prefix}ng gameinfo` - display info about the currently running game.
+    """
 
     @ng.command()
     async def leaderboard(self, ctx, mode: str = None):
@@ -571,8 +571,8 @@ For more detailed command help, run `{ctx.prefix}help ng.`")
             await ctx.send(embed=embed)
 
     leaderboard.example_usage = """
-	`{prefix}ng leaderboard ftc` - display the namegame winning leaderboards for FTC.
-	"""
+    `{prefix}ng leaderboard ftc` - display the namegame winning leaderboards for FTC.
+    """
 
     async def strike(self, ctx, game, player):
         if game.strike(player):

@@ -26,8 +26,8 @@ class TOA(Cog):
         await self.team.callback(self, ctx, team_num)
 
     toa.example_usage = """
-	`{prefix}toa 5667` - show information on team 5667, the Robominers
-	"""
+    `{prefix}toa 5667` - show information on team 5667, the Robominers
+    """
 
     @toa.command()
     @bot_has_permissions(embed_links=True)
@@ -70,8 +70,8 @@ class TOA(Cog):
         await ctx.send(embed=e)
 
     team.example_usage = """
-	`{prefix}toa team 12670` - show information on team 12670, Eclipse
-	"""
+    `{prefix}toa team 12670` - show information on team 12670, Eclipse
+    """
 
 
 def setup(bot):

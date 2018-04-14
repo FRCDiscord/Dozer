@@ -28,8 +28,8 @@ class TBA(Cog):
         await self.team.callback(self, ctx, team_num)
 
     tba.example_usage = """
-	`{prefix}tba 5052` - show information on team 5052, the RoboLobos
-	"""
+    `{prefix}tba 5052` - show information on team 5052, the RoboLobos
+    """
 
     @tba.command()
     @bot_has_permissions(embed_links=True)
@@ -55,8 +55,8 @@ class TBA(Cog):
             raise BadArgument("Couldn't find data for team {}".format(team_num))
 
     team.example_usage = """
-	`{prefix}tba team 4131` - show information on team 4131, the Iron Patriots
-	"""
+    `{prefix}tba team 4131` - show information on team 4131, the Iron Patriots
+    """
 
     @tba.command()
     async def raw(self, ctx, team_num: int):
@@ -79,8 +79,8 @@ class TBA(Cog):
             raise BadArgument('Team {} does not exist.'.format(team_num))
 
     raw.example_usage = """
-	`{prefix}tba raw 4150` - show raw information on team 4150, FRobotics
-	"""
+    `{prefix}tba raw 4150` - show raw information on team 4150, FRobotics
+    """
 
     @command()
     async def timezone(self, ctx, team_num: int):
@@ -131,8 +131,8 @@ class TBA(Cog):
             raise BadArgument('Team {} does not exist.'.format(team_num))
 
     timezone.example_usage = """
-	`{prefix}timezone 3572` - show the local time of team 3572, Wavelength
-	"""
+    `{prefix}timezone 3572` - show the local time of team 3572, Wavelength
+    """
 
 
 def setup(bot):

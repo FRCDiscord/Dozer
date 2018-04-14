@@ -56,8 +56,8 @@ class Fun(Cog):
                 await msg.delete()
 
     fight.example_usage = """
-	`{prefix}fight @user2#2322 - Initiates a fight with @user2#2322`
-	"""
+    `{prefix}fight @user2#2322 - Initiates a fight with @user2#2322`
+    """
 
 
 def setup(bot):

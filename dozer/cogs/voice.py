@@ -45,8 +45,8 @@ class Voice(Cog):
                                                                                                              voice_channel=voice_channel))
 
     voicebind.example_usage = """
-	`{prefix}voicebind "General #1" voice-general-1` - sets up Dozer to give users  `voice-general-1` when they join voice channel "General #1", which will be removed when they leave.
-	"""
+    `{prefix}voicebind "General #1" voice-general-1` - sets up Dozer to give users  `voice-general-1` when they join voice channel "General #1", which will be removed when they leave.
+    """
 
     @command()
     @bot_has_permissions(manage_roles=True)
@@ -66,8 +66,8 @@ class Voice(Cog):
                     voice_channel=voice_channel))
 
     voiceunbind.example_usage = """
-	`{prefix}voiceunbind "General #1"` - Removes automatic role-giving for users in "General #1".
-	"""
+    `{prefix}voiceunbind "General #1"` - Removes automatic role-giving for users in "General #1".
+    """
 
     @command()
     @bot_has_permissions(manage_roles=True)
@@ -82,8 +82,8 @@ class Voice(Cog):
         await ctx.send(embed=embed)
 
     voicebindlist.example_usage = """
-	`{prefix}voicebindlist` - Lists all the voice channel to role bindings for the current server bound with the voicebind command.
-	"""
+    `{prefix}voicebindlist` - Lists all the voice channel to role bindings for the current server bound with the voicebind command.
+    """
 
 
 class Voicebinds(db.DatabaseObject):

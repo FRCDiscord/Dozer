@@ -46,9 +46,9 @@ class Info(Cog):
         await ctx.send(embed=e)
 
     member.example_usage = """
-	`{prefix}member` - get information about yourself
-	`{prefix}member cooldude#1234` - get information about cooldude
-	"""
+    `{prefix}member` - get information about yourself
+    `{prefix}member cooldude#1234` - get information about cooldude
+    """
 
     @guild_only()
     @cooldown(1, 10, BucketType.channel)
@@ -71,8 +71,8 @@ class Info(Cog):
         await ctx.send(embed=e)
 
     guild.example_usage = """
-	`{prefix}guild` - get information about this guild
-	"""
+    `{prefix}guild` - get information about this guild
+    """
 
 
 def setup(bot):

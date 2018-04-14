@@ -176,8 +176,8 @@ class Moderation(Cog):
                 channel=channel_mention.name, role=role_name, message=message))
 
     nmconfig.example_usage = """
-	`{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel so if someone types "I have read the rules and regulations" it assigns them the Member role. 
-	"""
+    `{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel so if someone types "I have read the rules and regulations" it assigns them the Member role. 
+    """
 
     @command()
     @has_permissions(manage_roles=True)
@@ -231,8 +231,8 @@ class Moderation(Cog):
         await msg.edit(embed=e)
 
     timeout.example_usage = """
-	`{prefix}timeout 60` - prevents sending messages in this channel for 1 minute (60s)
-	"""
+    `{prefix}timeout 60` - prevents sending messages in this channel for 1 minute (60s)
+    """
 
     @command()
     @has_permissions(administrator=True)
@@ -254,13 +254,13 @@ class Moderation(Cog):
         await ctx.send('Member role set as `{}`.'.format(member_role.name))
 
     memberconfig.example_usage = """
-	`{prefix}memberconfig Members` - set a role called "Members" as the member role
-	`{prefix}memberconfig @everyone` - set the default role as the member role
-	`{prefix}memberconfig everyone` - set the default role as the member role (ping-safe)
-	`{prefix}memberconfig @ everyone` - set the default role as the member role (ping-safe)
-	`{prefix}memberconfig @.everyone` - set the default role as the member role (ping-safe)
-	`{prefix}memberconfig @/everyone` - set the default role as the member role (ping-safe)
-	"""
+    `{prefix}memberconfig Members` - set a role called "Members" as the member role
+    `{prefix}memberconfig @everyone` - set the default role as the member role
+    `{prefix}memberconfig everyone` - set the default role as the member role (ping-safe)
+    `{prefix}memberconfig @ everyone` - set the default role as the member role (ping-safe)
+    `{prefix}memberconfig @.everyone` - set the default role as the member role (ping-safe)
+    `{prefix}memberconfig @/everyone` - set the default role as the member role (ping-safe)
+    """
 
     @command()
     @has_permissions(administrator=True)
@@ -283,13 +283,13 @@ class Moderation(Cog):
         await ctx.send(f'Link role set as `{link_role.name}`.')
 
     linkscrubconfig.example_usage = """
-	`{prefix}linkscrubconfig Links` - set a role called "Links" as the link role
-	`{prefix}linkscrubconfig @everyone` - set the default role as the link role
-	`{prefix}linkscrubconfig everyone` - set the default role as the link role (ping-safe)
-	`{prefix}linkscrubconfig @ everyone` - set the default role as the link role (ping-safe)
-	`{prefix}linkscrubconfig @.everyone` - set the default role as the link role (ping-safe)
-	`{prefix}linkscrubconfig @/everyone` - set the default role as the link role (ping-safe)
-	"""
+    `{prefix}linkscrubconfig Links` - set a role called "Links" as the link role
+    `{prefix}linkscrubconfig @everyone` - set the default role as the link role
+    `{prefix}linkscrubconfig everyone` - set the default role as the link role (ping-safe)
+    `{prefix}linkscrubconfig @ everyone` - set the default role as the link role (ping-safe)
+    `{prefix}linkscrubconfig @.everyone` - set the default role as the link role (ping-safe)
+    `{prefix}linkscrubconfig @/everyone` - set the default role as the link role (ping-safe)
+    """
 
     @command()
     @has_permissions(administrator=True)
@@ -434,8 +434,8 @@ class Moderation(Cog):
             delete_after=5)
 
     prune.example_usage = """
-	`{prefix}prune 10` - Delete the last 10 messages in the current channel.
-	"""
+    `{prefix}prune 10` - Delete the last 10 messages in the current channel.
+    """
 
     @command()
     @has_permissions(kick_members=True)
@@ -494,8 +494,8 @@ class Moderation(Cog):
                 self.bot.loop.create_task(self.punishment_timer(ctx, timing, ctx.author, lookup=Deafen, reason=reason))
 
     selfdeafen.example_usage = """
-	``[prefix]selfdeafen time (1h5m, both optional) reason``: deafens you if you need to get work done
-	"""
+    ``[prefix]selfdeafen time (1h5m, both optional) reason``: deafens you if you need to get work done
+    """
 
     @command()
     @has_permissions(kick_members=True)

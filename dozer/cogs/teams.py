@@ -21,8 +21,8 @@ class Teams(Cog):
                 raise BadArgument("You are already associated with that team!")
 
     setteam.example_usage = """
-	`{prefix}setteam type team_number` - Creates an association in the database with a specified team
-	"""
+    `{prefix}setteam type team_number` - Creates an association in the database with a specified team
+    """
 
     @command()
     async def removeteam(self, ctx, team_type, team_number):
@@ -38,8 +38,8 @@ class Teams(Cog):
                 await ctx.send("Couldn't find any associations with that team!")
 
     removeteam.example_usage = """
-	`{prefix}removeteam type team_number` - Removes your associations with a specified team 
-	"""
+    `{prefix}removeteam type team_number` - Removes your associations with a specified team 
+    """
 
     @command()
     async def teamsfor(self, ctx, user: discord.Member = None):
@@ -60,8 +60,8 @@ class Teams(Cog):
                 await ctx.send(embed=e)
 
     teamsfor.example_usage = """
-	`{prefix}teamsfor member` - Returns all team associations with the mentioned user. Assumes caller if blank.
-	"""
+    `{prefix}teamsfor member` - Returns all team associations with the mentioned user. Assumes caller if blank.
+    """
 
     @command()
     async def onteam(self, ctx, team_type, team_number):
@@ -82,8 +82,8 @@ class Teams(Cog):
                 await ctx.send(embed=e)
 
     onteam.example_usage = """
-	`{prefix}onteam type team_number` - Returns a list of users associated with a given team type and number
-	"""
+    `{prefix}onteam type team_number` - Returns a list of users associated with a given team type and number
+    """
 
     async def on_member_join(self, member):
         if member.guild.me.guild_permissions.manage_nicknames:
