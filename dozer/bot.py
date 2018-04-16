@@ -14,6 +14,10 @@ handler.level = logging.INFO
 logger.addHandler(handler)
 handler.setFormatter(fmt=logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s'))
 
+if discord.version_info.major < 1:
+    logger.error("Your installed discord.py version is too low ({0.major}.{0.minor}.{0.micro}), please upgrade to at least 1.0.0a".format(discord.version_info))
+    sys.exit(1)
+
 
 class InvalidContext(commands.CheckFailure):
     """
@@ -43,8 +47,14 @@ class Dozer(commands.Bot):
             status = discord.Status.dnd
         else:
             status = discord.Status.online
-        await self.change_presence(
-            game=discord.Game(name='%shelp | %d guilds' % (self.config['prefix'], len(self.guilds))), status=status)
+        game = discord.Game(name='%shelp | %d guilds' % (self.config['prefix'], len(self.guilds)))
+        try:
+            await self.change_presence(activity=game, status=status)
+        except TypeError:
+            logger.warning("You are running an older version of the discord.py rewrite (with breaking changes)! "
+                           "To upgrade, run `pip install -r requirements.txt --upgrade`")
+            await self.change_presence(game=game, status=status)
+
 
     async def get_context(self, message):
         ctx = await super().get_context(message, cls=DozerContext)
