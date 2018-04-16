@@ -22,31 +22,44 @@ class SafeRoleConverter(RoleConverter):
 
 
 class Moderation(Cog):
-    async def mod_logger(self, ctx, action, target, reason):
-        modlog_message = "{} has {} {} because {}".format(ctx.author, action, target, reason)
-        modlog_message = clean(ctx=ctx, text=modlog_message)
-        with db.Session() as session:
-            modlog_channel = session.query(GuildModLog).filter_by(id=ctx.guild.id).one_or_none()
-            await ctx.send(modlog_message)
-            if modlog_channel is not None:
-                channel = ctx.guild.get_channel(modlog_channel.modlog_channel)
-                if channel is not None:
-                    await channel.send(modlog_message)
-            else:
-                await ctx.send("Please configure modlog channel to enable modlog functionality")
+    async def mod_log(self, member : discord.Member, action : str, target : discord.User, reason, orig_channel=None, embed_color=discord.Color.red()):
+        #modlog_message = "{} has {} {} because {}".format(ctx.author, action, target, reason)
+        modlog_embed = discord.Embed(
+            color = embed_color,
+            title = f"User {action}!"
 
-    async def perm_override(self, user, **overwrites):
+        )
+        modlog_embed.add_field(name=f"{action.capitalize()} user", value=f"{target.mention} ({target} | {target.id})", inline=False)
+        modlog_embed.add_field(name="Requested by", value=f"{member.mention} ({member} | {member.id})", inline=False)
+        modlog_embed.add_field(name="Reason", value=reason, inline=False)
+
+        # modlog_message = "{} has {} {} because {}".format(member, action, target, reason)
+        # modlog_message = clean(ctx=ctx, text=modlog_message)
+
+        with db.Session() as session:
+            modlog_channel = session.query(GuildModLog).filter_by(id=member.guild.id).one_or_none()
+            if orig_channel is not None:
+                await orig_channel.send(embed=modlog_embed)
+            if modlog_channel is not None:
+                channel = member.guild.get_channel(modlog_channel.modlog_channel)
+                if channel is not None:
+                    await channel.send(embed=modlog_embed)
+            else:
+                if orig_channel is not None:
+                    await orig_channel.send("Please configure modlog channel to enable modlog functionality")
+
+    async def perm_override(self, member, **overwrites):
         coros = []
-        for channel in user.guild.channels:
-            overwrite = channel.overwrites_for(user)
-            can_perm_override = channel.permissions_for(user.guild.me).manage_roles
+        for channel in member.guild.channels:
+            overwrite = channel.overwrites_for(member)
+            can_perm_override = channel.permissions_for(member.guild.me).manage_roles
             if can_perm_override:
                 overwrite.update(**overwrites)
                 coros.append(
-                    channel.set_permissions(target=user, overwrite=None if overwrite.is_empty() else overwrite))
+                    channel.set_permissions(target=member, overwrite=None if overwrite.is_empty() else overwrite))
         await asyncio.gather(*coros)
 
-    async def punishment_timer(self, ctx, timing, target, lookup, reason):
+    async def punishment_timer(self, ctx, timing, target, punishment, reason):
         regex_string = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?")
         matches = re.match(regex_string, timing).groupdict()
         try:
@@ -58,25 +71,20 @@ class Moderation(Cog):
         except:
             minutes = 0
         time = (hours * 3600) + (minutes * 60)
-        if time is 0:
-            if lookup == Deafen:
-                await self.mod_logger(ctx=ctx, action="deafened", target=target, reason=reason)
-            if lookup == GuildMute:
-                await self.mod_logger(ctx=ctx, action="muted", target=target, reason=reason)
-        if time is not 0:
+        if time == 0:
+            await self.mod_log(member=ctx.author, action=punishment.past_participle, target=target, reason=reason, orig_channel=ctx.channel)
+        else:
             reasoning = re.sub(pattern=regex_string, string=reason, repl="").lstrip("  ")
-            if lookup == Deafen:
-                await self.mod_logger(ctx=ctx, action="deafened", target=target, reason=reasoning)
-            if lookup == GuildMute:
-                await self.mod_logger(ctx=ctx, action="muted", target=target, reason=reasoning)
+            await self.mod_log(member=ctx.author, action=punishment.past_participle, target=target, reason=reasoning, orig_channel=ctx.channel)
+
             await asyncio.sleep(time)
             with db.Session() as session:
-                user = session.query(lookup).filter_by(id=target.id).one_or_none()
+                user = session.query(punishment).filter_by(id=target.id).one_or_none()
                 if user is not None:
-                    if lookup == Deafen:
+                    if punishment == Deafen:
                         self.bot.loop.create_task(
                             coro=self.undeafen.callback(self=self, ctx=ctx, member_mentions=target))
-                    if lookup == GuildMute:
+                    if punishment == Mute:
                         self.bot.loop.create_task(coro=self.unmute.callback(self=self, ctx=ctx, member_mentions=target))
 
     async def _check_links_warn(self, msg, role):
@@ -103,26 +111,26 @@ class Moderation(Cog):
     @command()
     @has_permissions(ban_members=True)
     @bot_has_permissions(ban_members=True)
-    async def ban(self, ctx, user_mentions: discord.User, *, reason="No reason provided"):
-        "Bans the user mentioned."
-        await ctx.guild.ban(user_mentions, reason=reason)
-        await self.mod_logger(ctx=ctx, action="banned", target=user_mentions, reason=reason)
+    async def ban(self, ctx, user_mention: discord.User, *, reason="No reason provided"):
+        """Bans the user mentioned."""
+        await ctx.guild.ban(user_mention, reason=reason)
+        await self.mod_log(member=ctx.author, action="banned", target=user_mention, reason=reason, orig_channel=ctx.channel)
 
     @command()
     @has_permissions(ban_members=True)
     @bot_has_permissions(ban_members=True)
-    async def unban(self, ctx, user_mentions: discord.User, *, reason="No reason provided"):
-        "Unbans the user ID mentioned."
-        await ctx.guild.unban(user_mentions, reason=reason)
-        await self.mod_logger(ctx=ctx, action="unbanned", target=user_mentions, reason=reason)
+    async def unban(self, ctx, user_mention: discord.User, *, reason="No reason provided"):
+        """Unbans the user mentioned."""
+        await ctx.guild.unban(user_mention, reason=reason)
+        await self.mod_log(member=ctx.author, action="banned", target=user_mention, reason=reason, orig_channel=ctx.channel)
 
     @command()
     @has_permissions(kick_members=True)
     @bot_has_permissions(kick_members=True)
-    async def kick(self, ctx, user_mentions: discord.User, *, reason="No reason provided"):
-        "Kicks the user mentioned."
-        await ctx.guild.kick(user_mentions, reason=reason)
-        await self.mod_logger(ctx=ctx, action="kicked", target=user_mentions, reason=reason)
+    async def kick(self, ctx, user_mention: discord.User, *, reason="No reason provided"):
+        """Kicks the user mentioned."""
+        await ctx.guild.kick(user_mention, reason=reason)
+        await self.mod_log(member=ctx.author, action="kicked", target=user_mention, reason=reason, orig_channel=ctx.channel)
 
     @command()
     @has_permissions(administrator=True)
@@ -139,8 +147,8 @@ class Moderation(Cog):
             await ctx.send(ctx.message.author.mention + ', modlog settings configured!')
 
     async def on_message(self, message):
-        if message.author.bot: return
-        if not message.guild.me.guild_permissions.manage_roles or message.guild is None: return
+        if message.author.bot or message.guild is None or not message.guild.me.guild_permissions.manage_roles:
+            return
 
         if await self.check_links(message):
             return
@@ -329,7 +337,7 @@ class Moderation(Cog):
             if memberlogchannel is not None:
                 channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
                 await channel.send(embed=join)
-            user = session.query(GuildMute).filter_by(id=member.id, guild=member.guild.id).one_or_none()
+            user = session.query(Mute).filter_by(id=member.id, guild=member.guild.id).one_or_none()
             if user is not None:
                 await self.perm_override(member, add_reactions=False, send_messages=False)
             user = session.query(Deafen).filter_by(id=member.id, guild=member.guild.id).one_or_none()
@@ -442,26 +450,27 @@ class Moderation(Cog):
     @bot_has_permissions(manage_roles=True)
     async def mute(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
         async with ctx.typing(), db.Session() as session:
-            user = session.query(GuildMute).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
+            user = session.query(Mute).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
             if user is not None:
                 await ctx.send("User is already muted!")
             else:
-                user = GuildMute(id=member_mentions.id, guild=ctx.guild.id)
+                user = Mute(id=member_mentions.id, guild=ctx.guild.id)
                 session.add(user)
                 await self.perm_override(member_mentions, send_messages=False, add_reactions=False)
                 self.bot.loop.create_task(
-                    self.punishment_timer(ctx, reason, member_mentions, lookup=GuildMute, reason=reason))
+                    self.punishment_timer(ctx, reason, member_mentions, punishment=Mute, reason=reason))
 
     @command()
     @has_permissions(kick_members=True)
     @bot_has_permissions(manage_roles=True)
     async def unmute(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
         async with ctx.typing(), db.Session() as session:
-            user = session.query(GuildMute).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
+            user = session.query(Mute).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
             if user is not None:
                 session.delete(user)
                 await self.perm_override(member_mentions, send_messages=None, add_reactions=None)
-                await self.mod_logger(ctx=ctx, action="unmuted", target=member_mentions, reason=reason)
+                await self.mod_log(member=ctx.author, action="unmuted", target=member_mentions, reason=reason,
+                                   orig_channel=ctx.channel, embed_color=discord.Color.green())
             else:
                 await ctx.send("User is not muted!")
 
@@ -478,7 +487,7 @@ class Moderation(Cog):
                 session.add(user)
                 await self.perm_override(member_mentions, read_messages=False)
                 self.bot.loop.create_task(
-                    self.punishment_timer(ctx, reason, member_mentions, lookup=Deafen, reason=reason))
+                    self.punishment_timer(ctx, reason, member_mentions, punishment=Deafen, reason=reason))
 
     @command()
     @bot_has_permissions(manage_roles=True)
@@ -490,8 +499,8 @@ class Moderation(Cog):
             else:
                 user = Deafen(id=ctx.author.id, guild=ctx.guild.id, self_inflicted=True)
                 session.add(user)
-                await self.perm_override(user=ctx.author, read_messages=False)
-                self.bot.loop.create_task(self.punishment_timer(ctx, timing, ctx.author, lookup=Deafen, reason=reason))
+                await self.perm_override(member=ctx.author, read_messages=False)
+                self.bot.loop.create_task(self.punishment_timer(ctx, timing, ctx.author, punishment=Deafen, reason=reason))
 
     selfdeafen.example_usage = """
     ``[prefix]selfdeafen time (1h5m, both optional) reason``: deafens you if you need to get work done
@@ -504,19 +513,21 @@ class Moderation(Cog):
         async with ctx.typing(), db.Session() as session:
             user = session.query(Deafen).filter_by(id=member_mentions.id, guild=ctx.guild.id).one_or_none()
             if user is not None:
-                await self.perm_override(user=member_mentions, read_messages=None)
+                await self.perm_override(member=member_mentions, read_messages=None)
                 session.delete(user)
                 if user.self_inflicted:
                     reason = "self deafen timer expired"
-                await self.mod_logger(ctx=ctx, action="undeafened", target=member_mentions, reason=reason)
+                await self.mod_log(member=ctx.author, action="undeafened", target=member_mentions, reason=reason,
+                                   orig_channel=ctx.channel, embed_color=discord.Color.green())
             else:
                 await ctx.send("User is not deafened!")
 
 
-class GuildMute(db.DatabaseObject):
+class Mute(db.DatabaseObject):
     __tablename__ = 'mutes'
     id = db.Column(db.Integer, primary_key=True)
     guild = db.Column(db.Integer, primary_key=True)
+    past_participle = "muted"
 
 
 class Deafen(db.DatabaseObject):
@@ -524,6 +535,7 @@ class Deafen(db.DatabaseObject):
     id = db.Column(db.Integer, primary_key=True)
     guild = db.Column(db.Integer, primary_key=True)
     self_inflicted = db.Column(db.Boolean)
+    past_participle = "deafened"
 
 
 class GuildModLog(db.DatabaseObject):
