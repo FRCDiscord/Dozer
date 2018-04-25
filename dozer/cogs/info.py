@@ -39,7 +39,7 @@ class Info(Cog):
             e.add_field(name='Color', value=str(member.color).upper())
 
             e.add_field(name='Status and Game', value=f'{member.status}, '.title() + (
-                f'{member.activity.type!s}'[13:] + f' {member.activity.name}' if member.activity else 'no game playing'), inline=False)
+                f'{member.activity.type.name}' + f' {member.activity.name}' if member.activity else 'no game playing'), inline=False)
             roles = sorted(member.roles, reverse=True)[:-1]  # Remove @everyone
             e.add_field(name='Roles', value=', '.join(role.name for role in roles) or "No roles", inline=False)
             e.add_field(name='Icon URL', value=icon_url, inline=False)
