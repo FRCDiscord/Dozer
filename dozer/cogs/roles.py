@@ -62,6 +62,13 @@ class Roles(Cog):
             for role in member.roles[1:]:  # Exclude the @everyone role
                 db_member.missing_roles.append(MissingRole(role_id=role.id, role_name=role.name))
 
+    async def on_guild_role_delete(self, role):
+        print(role)
+        with db.Session() as session:
+            dbrole = session.query(GiveableRole).filter_by(id=role.id).one_or_none()
+            if dbrole is not None:
+                session.delete(dbrole)
+
     @group(invoke_without_command=True)
     @bot_has_permissions(manage_roles=True)
     async def giveme(self, ctx, *, roles):
