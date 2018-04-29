@@ -62,12 +62,14 @@ class Roles(Cog):
             for role in member.roles[1:]:  # Exclude the @everyone role
                 db_member.missing_roles.append(MissingRole(role_id=role.id, role_name=role.name))
 
-    async def on_guild_role_delete(self, role):
-        print(role)
+    async def givemepurge(self, role):
         with db.Session() as session:
             dbrole = session.query(GiveableRole).filter_by(id=role.id).one_or_none()
             if dbrole is not None:
                 session.delete(dbrole)
+
+    async def on_guild_role_delete(self, role):
+        await self.givemepurge(role)
 
     @group(invoke_without_command=True)
     @bot_has_permissions(manage_roles=True)
@@ -103,6 +105,22 @@ class Roles(Cog):
     `{prefix}giveme Java` - gives you the role called Java, if it exists
     `{prefix}giveme Java, Python` - gives you the roles called Java and Python, if they exist
     """
+
+    @giveme.command()
+    @bot_has_permissions(manage_roles=True)
+    @has_permissions(manage_roles=True)
+    async def purge(self, ctx):
+        counter = 0
+        with db.Session() as session:
+            roles = session.query(GiveableRole).filter_by(guild_id=ctx.guild.id)
+            guildroles = []
+            for i in ctx.guild.roles:
+                guildroles.append(i.id)
+            for role in roles:
+                if role.id not in guildroles:
+                    await self.givemepurge(role)
+                    counter += 1
+        await ctx.send("Purged {} role(s)".format(counter))
 
     @giveme.command()
     @bot_has_permissions(manage_roles=True)
