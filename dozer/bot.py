@@ -1,3 +1,5 @@
+"""Bot object for Dozer"""
+
 import discord
 import logging
 import re
@@ -7,16 +9,16 @@ from discord.ext import commands
 
 from . import utils
 
-logger = logging.Logger(name='dozer')
-logger.level = logging.INFO
-handler = logging.StreamHandler(stream=sys.stdout)
-handler.level = logging.INFO
-logger.addHandler(handler)
-handler.setFormatter(fmt=logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s'))
+DOZER_LOGGER = logging.Logger(name='dozer')
+DOZER_LOGGER.level = logging.INFO
+DOZER_HANDLER = logging.StreamHandler(stream=sys.stdout)
+DOZER_HANDLER.level = logging.INFO
+DOZER_LOGGER.addHandler(DOZER_HANDLER)
+DOZER_HANDLER.setFormatter(fmt=logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s'))
 
 if discord.version_info.major < 1:
-    logger.error("Your installed discord.py version is too low "
-                 "({0.major}.{0.minor}.{0.micro}), please upgrade to at least 1.0.0a".format(discord.version_info))
+    DOZER_LOGGER.error("Your installed discord.py version is too low "
+                       "({%s.major}.{%s.minor}.{%s.micro}), please upgrade to at least 1.0.0a" % discord.version_info)
     sys.exit(1)
 
 
@@ -43,7 +45,7 @@ class Dozer(commands.Bot):
         self.check(self.global_checks)
 
     async def on_ready(self):
-        logger.info('Signed in as {0!s} ({0.id})'.format(self.user))
+        DOZER_LOGGER.info('Signed in as {0!s} ({0.id})'.format(self.user))
         if self.config['is_backup']:
             status = discord.Status.dnd
         else:
@@ -52,8 +54,8 @@ class Dozer(commands.Bot):
         try:
             await self.change_presence(activity=game, status=status)
         except TypeError:
-            logger.warning("You are running an older version of the discord.py rewrite (with breaking changes)! "
-                           "To upgrade, run `pip install -r requirements.txt --upgrade`")
+            DOZER_LOGGER.warning("You are running an older version of the discord.py rewrite (with breaking changes)! "
+                                 "To upgrade, run `pip install -r requirements.txt --upgrade`")
             await self.change_presence(game=game, status=status)
 
 
@@ -84,12 +86,12 @@ class Dozer(commands.Bot):
         else:
             await ctx.send('```\n%s\n```' % ''.join(traceback.format_exception_only(type(err), err)).strip())
             if isinstance(ctx.channel, discord.TextChannel):
-                logger.error('Error in command <{0}> ({1.name!r}({1.id}) {2}({2.id}) {3}({3.id}) {4!r})'.format(
+                DOZER_LOGGER.error('Error in command <{0}> ({1.name!r}({1.id}) {2}({2.id}) {3}({3.id}) {4!r})'.format(
                     ctx.command, ctx.guild, ctx.channel, ctx.author, ctx.message.content))
             else:
-                logger.error('Error in command <{0}> (DM {1}({1.id}) {2!r})'.format(
+                DOZER_LOGGER.error('Error in command <{0}> (DM {1}({1.id}) {2!r})'.format(
                     ctx.command, ctx.channel.recipient, ctx.message.content))
-            logger.error(''.join(traceback.format_exception(type(err), err, err.__traceback__)))
+            DOZER_LOGGER.error(''.join(traceback.format_exception(type(err), err, err.__traceback__)))
 
     @staticmethod
     def format_error(ctx, err, *, word_re=re.compile('[A-Z][a-z]+')):
