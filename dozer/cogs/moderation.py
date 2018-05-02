@@ -16,7 +16,8 @@ class SafeRoleConverter(RoleConverter):
             return await super().convert(ctx, arg)
         except BadArgument:
             if arg.casefold() in (
-            'everyone', '@everyone', '@/everyone', '@.everyone', '@ everyone', '@\N{ZERO WIDTH SPACE}everyone'):
+                                  'everyone', '@everyone', '@/everyone', '@.everyone', '@ everyone', '@\N{ZERO WIDTH SPACE}everyone'
+                                 ):
                 return ctx.guild.default_role
             else:
                 raise

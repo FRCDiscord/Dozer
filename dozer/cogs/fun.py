@@ -1,3 +1,4 @@
+"""Adds fun commands to the bot"""
 import random
 from asyncio import sleep
 
@@ -7,7 +8,7 @@ from ._utils import *
 
 
 class Fun(Cog):
-
+    """Fun commands"""
     @command()
     async def fight(self, ctx, opponent: discord.Member):
         """Start a fight with another user."""
@@ -61,4 +62,5 @@ class Fun(Cog):
 
 
 def setup(bot):
+    """Adds the fun cog to Dozer"""
     bot.add_cog(Fun(bot))
