@@ -1,3 +1,4 @@
+"""Adds fun commands to the bot"""
 import random
 from asyncio import sleep
 
@@ -7,6 +8,7 @@ from ._utils import *
 
 
 class Fun(Cog):
+    """Fun commands"""
     @guild_only()
     @cooldown(1, 20, BucketType.channel)
     @command()
@@ -62,4 +64,5 @@ class Fun(Cog):
 
 
 def setup(bot):
+    """Adds the fun cog to Dozer"""
     bot.add_cog(Fun(bot))
