@@ -1,3 +1,5 @@
+"""Provides database storage for the Dozer Discord bot"""
+
 import sqlalchemy
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, ForeignKeyConstraint
 from sqlalchemy.ext.declarative import declarative_base
@@ -12,6 +14,7 @@ DatabaseObject.__table_args__ = {'extend_existing': True}  # allow use of the re
 
 
 class CtxSession(Session):
+    """Provides a context session for the database system."""
     def __enter__(self):
         return self
 

@@ -1,15 +1,16 @@
+"""Provides moderation commands for Dozer."""
 import asyncio
-import discord
 import re
+import discord
 
 from discord.ext.commands import BadArgument, has_permissions, bot_has_permissions, RoleConverter
 
 from ._utils import *
 from .. import db
-from ..utils import clean
 
 
 class SafeRoleConverter(RoleConverter):
+    """Safely converts roles"""
     async def convert(self, ctx, arg):
         try:
             return await super().convert(ctx, arg)
@@ -27,7 +28,7 @@ class Moderation(Cog):
     """=== Helper functions ==="""
 
     async def mod_log(self, member : discord.Member, action : str, target : discord.User, reason, orig_channel=None, embed_color=discord.Color.red()):
-        #modlog_message = "{} has {} {} because {}".format(ctx.author, action, target, reason)
+        """Generates a modlog embed"""
         modlog_embed = discord.Embed(
             color = embed_color,
             title = f"User {action}!"
@@ -37,8 +38,6 @@ class Moderation(Cog):
         modlog_embed.add_field(name="Requested by", value=f"{member.mention} ({member} | {member.id})", inline=False)
         modlog_embed.add_field(name="Reason", value=reason, inline=False)
 
-        # modlog_message = "{} has {} {} because {}".format(member, action, target, reason)
-        # modlog_message = clean(ctx=ctx, text=modlog_message)
 
         with db.Session() as session:
             modlog_channel = session.query(GuildModLog).filter_by(id=member.guild.id).one_or_none()
@@ -53,6 +52,7 @@ class Moderation(Cog):
                     await orig_channel.send("Please configure modlog channel to enable modlog functionality")
 
     async def perm_override(self, member, **overwrites):
+        """Applies permission overrides"""
         coros = []
         for channel in member.guild.channels:
             overwrite = channel.overwrites_for(member)
@@ -64,6 +64,7 @@ class Moderation(Cog):
         await asyncio.gather(*coros)
 
     async def punishment_timer(self, ctx, timing, target, punishment, reason):
+        """Parses time strings and punishes people accordingly."""
         regex_string = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?")
         matches = re.match(regex_string, timing).groupdict()
         try:
@@ -92,11 +93,13 @@ class Moderation(Cog):
                         self.bot.loop.create_task(coro=self.unmute.callback(self=self, ctx=ctx, member_mentions=target))
 
     async def _check_links_warn(self, msg, role):
+        """Warns a user that they can't send links"""
         warn_msg = await msg.channel.send(f"{msg.author.mention}, you need the `{role.name}` role to post links!")
         await asyncio.sleep(3)
         await warn_msg.delete()
 
     async def check_links(self, msg):
+        """Checks messages for links, then checks if the author is allowed to send links"""
         if msg.guild is None or not msg.guild.me.guild_permissions.manage_messages:
             return
         with db.Session() as session:
@@ -115,6 +118,7 @@ class Moderation(Cog):
     """=== Event handlers ==="""
 
     async def on_member_join(self, member):
+        """Logs that a member joined."""
         join = discord.Embed(type='rich', color=0x00FF00)
         join.set_author(name='Member Joined', icon_url=member.avatar_url_as(format='png', size=32))
         join.description = "{0.mention}\n{0} ({0.id})".format(member)
@@ -132,6 +136,7 @@ class Moderation(Cog):
                 await self.perm_override(member, read_messages=False)
 
     async def on_member_remove(self, member):
+        """Logs that a member left."""
         leave = discord.Embed(type='rich', color=0xFF0000)
         leave.set_author(name='Member Left', icon_url=member.avatar_url_as(format='png', size=32))
         leave.description = "{0.mention}\n{0} ({0.id})".format(member)
@@ -143,6 +148,7 @@ class Moderation(Cog):
                 await channel.send(embed=leave)
 
     async def on_message(self, message):
+        """Check things when messages come in."""
         if message.author.bot or message.guild is None or not message.guild.me.guild_permissions.manage_roles:
             return
 
@@ -159,8 +165,8 @@ class Moderation(Cog):
                 if message.channel.id != channel: return
                 await message.author.add_roles(discord.utils.get(message.guild.roles, id=role_id))
 
-
     async def on_message_delete(self, message):
+        """When a message is deleted, log it."""
         e = discord.Embed(type='rich')
         e.title = 'Message Deletion'
         e.color = 0xFF0000
@@ -190,6 +196,7 @@ class Moderation(Cog):
                     await channel.send(embed=e)
 
     async def on_message_edit(self, before, after):
+        """Logs message edits."""
         await self.check_links(after)
         if before.author.bot: return
         if after.edited_at is not None or before.edited_at is not None:
@@ -564,7 +571,9 @@ class Moderation(Cog):
     `{prefix}messagelogconfig #orwellian-dystopia` - set a channel named #orwellian-dystopia to log message edits/deletions
     """
 
+
 class Mute(db.DatabaseObject):
+    """Provides a DB config to track mutes."""
     __tablename__ = 'mutes'
     id = db.Column(db.Integer, primary_key=True)
     guild = db.Column(db.Integer, primary_key=True)
@@ -572,6 +581,7 @@ class Mute(db.DatabaseObject):
 
 
 class Deafen(db.DatabaseObject):
+    """Provides a DB config to track deafens."""
     __tablename__ = 'deafens'
     id = db.Column(db.Integer, primary_key=True)
     guild = db.Column(db.Integer, primary_key=True)
@@ -580,6 +590,7 @@ class Deafen(db.DatabaseObject):
 
 
 class GuildModLog(db.DatabaseObject):
+    """Provides a DB config to track which channel a guild uses for modlogs."""
     __tablename__ = 'modlogconfig'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -587,12 +598,14 @@ class GuildModLog(db.DatabaseObject):
 
 
 class MemberRole(db.DatabaseObject):
+    """Keeps track of member roles."""
     __tablename__ = 'member_roles'
     id = db.Column(db.Integer, primary_key=True)
     member_role = db.Column(db.Integer, nullable=True)
 
 
 class GuildNewMember(db.DatabaseObject):
+    """Keeps track of things for onboarding new server members."""
     __tablename__ = 'new_members'
     guild_id = db.Column(db.Integer, primary_key=True)
     channel_id = db.Column(db.Integer)
@@ -601,6 +614,7 @@ class GuildNewMember(db.DatabaseObject):
 
 
 class GuildMemberLog(db.DatabaseObject):
+    """Keeps track of which channels guilds use for member logs."""
     __tablename__ = 'memberlogconfig'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -608,6 +622,7 @@ class GuildMemberLog(db.DatabaseObject):
 
 
 class GuildMessageLog(db.DatabaseObject):
+    """Keeps track of which channels use for message edit/deletion logs."""
     __tablename__ = 'messagelogconfig'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -615,10 +630,12 @@ class GuildMessageLog(db.DatabaseObject):
 
 
 class GuildMessageLinks(db.DatabaseObject):
+    """Keeps track of message links settings in guilds."""
     __tablename__ = 'guild_msg_links'
     guild_id = db.Column(db.Integer, primary_key=True)
     role_id = db.Column(db.Integer, nullable=True)
 
 
 def setup(bot):
+    """Adds the moderation cog to the bot."""
     bot.add_cog(Moderation(bot))
