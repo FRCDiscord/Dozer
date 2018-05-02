@@ -1,3 +1,5 @@
+"""Role management commands."""
+
 import discord
 import discord.utils
 from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgument
@@ -19,6 +21,7 @@ class Roles(Cog):
                     await ctx.send("Purged missing roles")
 
     async def on_member_join(self, member):
+        """Restores a member's roles when they join if they have joined before."""
         me = member.guild.me
         top_restorable = me.top_role.position if me.guild_permissions.manage_roles else 0
         with db.Session() as session:
@@ -62,6 +65,7 @@ class Roles(Cog):
         await dest.send(embed=e)
 
     async def on_member_remove(self, member):
+        """Saves a member's roles when they leave in case they rejoin."""
         guild_id = member.guild.id
         member_id = member.id
         with db.Session() as session:
@@ -278,6 +282,7 @@ class Roles(Cog):
 
     @staticmethod
     def normalize(name):
+        """Normalizes a role for consistency in the DB."""
         return name.strip().casefold()
 
     @giveme.command()
@@ -337,12 +342,14 @@ class Roles(Cog):
 
 
 class GuildSettings(db.DatabaseObject):
+    """Represents a guild's settings in the DB"""
     __tablename__ = 'guilds'
     id = db.Column(db.Integer, primary_key=True)
     giveable_roles = db.relationship('GiveableRole', back_populates='guild_settings')
 
 
 class GiveableRole(db.DatabaseObject):
+    """Database object for maintaining a list of giveable roles."""
     __tablename__ = 'giveable_roles'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
@@ -357,6 +364,7 @@ class GiveableRole(db.DatabaseObject):
 
 
 class MissingMember(db.DatabaseObject):
+    """Is this necessary any more?"""
     __tablename__ = 'missing_members'
     guild_id = db.Column(db.Integer, primary_key=True)
     member_id = db.Column(db.Integer, primary_key=True)
@@ -364,9 +372,10 @@ class MissingMember(db.DatabaseObject):
 
 
 class MissingRole(db.DatabaseObject):
+    """Actually, what does this do?"""
     __tablename__ = 'missing_roles'
     __table_args__ = (
-    db.ForeignKeyConstraint(['guild_id', 'member_id'], ['missing_members.guild_id', 'missing_members.member_id']),)
+        db.ForeignKeyConstraint(['guild_id', 'member_id'], ['missing_members.guild_id', 'missing_members.member_id']))
     role_id = db.Column(db.Integer, primary_key=True)
     guild_id = db.Column(db.Integer)  # Guild ID doesn't have to be primary because role IDs are unique across guilds
     member_id = db.Column(db.Integer, primary_key=True)
@@ -375,4 +384,5 @@ class MissingRole(db.DatabaseObject):
 
 
 def setup(bot):
+    """Adds the roles cog to the main bot project."""
     bot.add_cog(Roles(bot))

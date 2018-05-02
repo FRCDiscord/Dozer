@@ -1,10 +1,14 @@
+"""Maintenance commands for bot developers"""
+
 import os
 import sys
 
 from discord.ext.commands import NotOwner
 
-from dozer.bot import logger
+from dozer.bot import DOZER_LOGGER
 from ._utils import *
+
+logger = DOZER_LOGGER
 
 
 class Maintenance(Cog):
@@ -68,4 +72,5 @@ class Maintenance(Cog):
 
 
 def setup(bot):
+    """Adds the maintenance cog to the bot process."""
     bot.add_cog(Maintenance(bot))

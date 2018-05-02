@@ -1,3 +1,5 @@
+"""Provides access to The Orange Alliance for FTC data."""
+
 import json
 from asyncio import sleep
 from datetime import datetime
@@ -41,7 +43,7 @@ class TOAParser(object):
                     # it seems sometimes toa forgets to return data as application/json and not text/html
                     data = json.loads(await response.text())
                     if data:
-                        res._update(data[0])
+                        res._update(data[0]) # Pylint complains about this but I don't know how to fix it
                     else:
                         res.error = True
                     return res
@@ -52,6 +54,7 @@ class TOAParser(object):
 
 
 class TOAResponse(object):
+    """Represents a response from the TOA API."""
     def __init__(self):
         self.error = False
 

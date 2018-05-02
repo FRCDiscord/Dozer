@@ -1,3 +1,5 @@
+"""Initializes the bot and deals with the configuration file"""
+
 import json
 import os.path
 import sys
