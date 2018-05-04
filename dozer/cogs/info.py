@@ -29,6 +29,8 @@ class Info(Cog):
         async with ctx.typing():
             member = member or ctx.author
             icon_url = member.avatar_url_as(static_format='png')
+            activity_name = member.activity.type.name.replace("listening", "listening to") if member.activity else None
+
             e = discord.Embed(color=member.color)
             e.set_thumbnail(url=icon_url)
             e.add_field(name='Name', value=str(member))
@@ -40,7 +42,7 @@ class Info(Cog):
             e.add_field(name='Color', value=str(member.color).upper())
 
             e.add_field(name='Status and Game', value=f'{member.status}, '.title() + (
-                f'playing {member.game}' if member.game else 'no game playing'), inline=False)
+                f'{activity_name}' + f' {member.activity.name}' if member.activity else 'no game playing'), inline=False)
             roles = sorted(member.roles, reverse=True)[:-1]  # Remove @everyone
             e.add_field(name='Roles', value=', '.join(role.name for role in roles) or "No roles", inline=False)
             e.add_field(name='Icon URL', value=icon_url, inline=False)
