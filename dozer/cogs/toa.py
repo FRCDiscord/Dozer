@@ -1,3 +1,4 @@
+"""Provides commands that pull information from The Orange Alliance, an FTC info API."""
 import gzip
 import pickle
 
@@ -10,9 +11,11 @@ embed_color = discord.Color(0xff9800)
 
 
 class TOA(Cog):
+    """TOA commands"""
     def __init__(self, bot):
         super().__init__(bot)
         self.parser = TOAParser(bot.config['toa']['key'], bot.http._session, app_name=bot.config['toa']['app_name'])
+        # The line above has an error (bot.http._session is a protected class)
         with gzip.open("ftc_teams.pickle.gz") as f:
             self._teams = pickle.load(f)
 
@@ -22,7 +25,7 @@ class TOA(Cog):
         Get FTC-related information from The Orange Alliance.
         If no subcommand is specified, the `team` subcommand is inferred, and the argument is taken as a team number.
         """
-        await self.team.callback(self, ctx, team_num)
+        await self.team.callback(self, ctx, team_num) # This works but Pylint throws an error
 
     toa.example_usage = """
     `{prefix}toa 5667` - show information on team 5667, the Robominers
@@ -49,7 +52,7 @@ class TOA(Cog):
                 # rip
                 await ctx.send("This team does not have any data on it yet, or it does not exist!")
                 return
-            team_data._update(last_season)
+            team_data._update(last_season) # Pylint says this is bad, how should it be fixed?
             team_data.team_name_short = last_season['name']
 
         # many team entries lack a valid url
@@ -74,4 +77,5 @@ class TOA(Cog):
 
 
 def setup(bot):
+    """Adds the TOA cog to the bot."""
     bot.add_cog(TOA(bot))
