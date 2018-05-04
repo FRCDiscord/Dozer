@@ -16,8 +16,7 @@ class SafeRoleConverter(RoleConverter):
             return await super().convert(ctx, arg)
         except BadArgument:
             if arg.casefold() in (
-                            'everyone', '@everyone', '@/everyone', '@.everyone', '@ everyone', '@\N{ZERO WIDTH SPACE}everyone'
-                                 ):
+                    'everyone', '@everyone', '@/everyone', '@.everyone', '@ everyone', '@\N{ZERO WIDTH SPACE}everyone'):
                 return ctx.guild.default_role
             else:
                 raise
@@ -70,11 +69,11 @@ class Moderation(Cog):
         matches = re.match(regex_string, timing).groupdict()
         try:
             hours = int(matches.get('hours'))
-        except:
+        except ValueError:
             hours = 0
         try:
             minutes = int(matches.get('minutes'))
-        except:
+        except ValueError:
             minutes = 0
         time = (hours * 3600) + (minutes * 60)
         if time == 0:
@@ -160,10 +159,12 @@ class Moderation(Cog):
             if config is not None:
                 string = config.message
                 content = message.content.casefold()
-                if string not in content: return
+                if string not in content:
+                    return
                 channel = config.channel_id
                 role_id = config.role_id
-                if message.channel.id != channel: return
+                if message.channel.id != channel:
+                    return
                 await message.author.add_roles(discord.utils.get(message.guild.roles, id=role_id))
 
     async def on_message_delete(self, message):
@@ -199,7 +200,8 @@ class Moderation(Cog):
     async def on_message_edit(self, before, after):
         """Logs message edits."""
         await self.check_links(after)
-        if before.author.bot: return
+        if before.author.bot:
+            return
         if after.edited_at is not None or before.edited_at is not None:
             # There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
             e = discord.Embed(type='rich')

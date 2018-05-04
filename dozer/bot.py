@@ -18,7 +18,8 @@ DOZER_HANDLER.setFormatter(fmt=logging.Formatter('[%(asctime)s] [%(levelname)s] 
 
 if discord.version_info.major < 1:
     DOZER_LOGGER.error("Your installed discord.py version is too low "
-                       "%d.%d.%d, please upgrade to at least 1.0.0a" % discord.version_info.major,
+                       "%d.%d.%d, please upgrade to at least 1.0.0a",
+                       discord.version_info.major,
                        discord.version_info.minor,
                        discord.version_info.micro)
     sys.exit(1)
@@ -50,7 +51,7 @@ class Dozer(commands.Bot):
 
     async def on_ready(self):
         """Things to run when the bot has initialized and signed in"""
-        DOZER_LOGGER.info('Signed in as %d!s (%d.id)'% self.user)
+        DOZER_LOGGER.info('Signed in as %d!s (%d.id)', self.user, self.user)
         if self.config['is_backup']:
             status = discord.Status.dnd
         else:
@@ -90,11 +91,12 @@ class Dozer(commands.Bot):
         else:
             await ctx.send('```\n%s\n```' % ''.join(traceback.format_exception_only(type(err), err)).strip())
             if isinstance(ctx.channel, discord.TextChannel):
-                DOZER_LOGGER.error('Error in command <%d> (%d.name!r(%d.id) %d(%d.id) %d(%d.id) %d)' %
-                                   ctx.command, ctx.guild, ctx.channel, ctx.author, ctx.message.content)
+                DOZER_LOGGER.error('Error in command <%d> (%d.name!r(%d.id) %d(%d.id) %d(%d.id) %d)',
+                                   ctx.command, ctx.guild, ctx.guild, ctx.channel, ctx.channel,
+                                   ctx.author, ctx.author, ctx.message.content)
             else:
-                DOZER_LOGGER.error('Error in command <%d> (DM %d(%d.id) %d)' % ctx.command, ctx.channel.recipient,
-                                   ctx.message.content)
+                DOZER_LOGGER.error('Error in command <%d> (DM %d(%d.id) %d)', ctx.command, ctx.channel.recipient,
+                                   ctx.channel.recipient, ctx.message.content)
             DOZER_LOGGER.error(''.join(traceback.format_exception(type(err), err, err.__traceback__)))
 
     @staticmethod
