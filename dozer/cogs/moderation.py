@@ -16,7 +16,7 @@ class SafeRoleConverter(RoleConverter):
             return await super().convert(ctx, arg)
         except BadArgument:
             if arg.casefold() in (
-                                  'everyone', '@everyone', '@/everyone', '@.everyone', '@ everyone', '@\N{ZERO WIDTH SPACE}everyone'
+                            'everyone', '@everyone', '@/everyone', '@.everyone', '@ everyone', '@\N{ZERO WIDTH SPACE}everyone'
                                  ):
                 return ctx.guild.default_role
             else:
@@ -28,17 +28,17 @@ class Moderation(Cog):
 
     """=== Helper functions ==="""
 
-    async def mod_log(self, member : discord.Member, action : str, target : discord.User, reason, orig_channel=None, embed_color=discord.Color.red()):
+    async def mod_log(self, member: discord.Member, action: str, target: discord.User, reason, orig_channel=None,
+                      embed_color=discord.Color.red()):
         """Generates a modlog embed"""
         modlog_embed = discord.Embed(
-            color = embed_color,
-            title = f"User {action}!"
+            color=embed_color,
+            title=f"User {action}!"
 
         )
         modlog_embed.add_field(name=f"{action.capitalize()} user", value=f"{target.mention} ({target} | {target.id})", inline=False)
         modlog_embed.add_field(name="Requested by", value=f"{member.mention} ({member} | {member.id})", inline=False)
         modlog_embed.add_field(name="Reason", value=reason, inline=False)
-
 
         with db.Session() as session:
             modlog_channel = session.query(GuildModLog).filter_by(id=member.guild.id).one_or_none()
@@ -264,7 +264,8 @@ class Moderation(Cog):
             targets = {member_role}
         else:
             await ctx.send(
-                '{0.author.mention}, the members role has not been configured. This may not work as expected. Use `{0.prefix}help memberconfig` to see how to set this up.'.format(
+                '{0.author.mention}, the members role has not been configured. This may not work as expected. Use '
+                '`{0.prefix}help memberconfig` to see how to set this up.'.format(
                     ctx))
             targets = set(sorted(ctx.guild.roles)[:ctx.author.top_role.position])
 

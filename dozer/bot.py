@@ -32,6 +32,7 @@ class InvalidContext(commands.CheckFailure):
 
 
 class DozerContext(commands.Context):
+    """Cleans all messages before sending"""
     async def send(self, content=None, **kwargs):
         if content is not None:
             content = utils.clean(self, content, mass=True, member=False, role=False, channel=False)
@@ -39,6 +40,7 @@ class DozerContext(commands.Context):
 
 
 class Dozer(commands.Bot):
+    """Botty things that are critical to Dozer working"""
     _global_cooldown = commands.Cooldown(1, 1, commands.BucketType.user)  # One command per second per user
 
     def __init__(self, config):
@@ -47,6 +49,7 @@ class Dozer(commands.Bot):
         self.check(self.global_checks)
 
     async def on_ready(self):
+        """Things to run when the bot has initialized and signed in"""
         DOZER_LOGGER.info('Signed in as %d!s (%d.id)'% self.user)
         if self.config['is_backup']:
             status = discord.Status.dnd
@@ -59,7 +62,6 @@ class Dozer(commands.Bot):
             DOZER_LOGGER.warning("You are running an older version of the discord.py rewrite (with breaking changes)! "
                                  "To upgrade, run `pip install -r requirements.txt --upgrade`")
             await self.change_presence(game=game, status=status)
-
 
     async def get_context(self, message):
         ctx = await super().get_context(message, cls=DozerContext)
@@ -97,6 +99,7 @@ class Dozer(commands.Bot):
 
     @staticmethod
     def format_error(ctx, err, *, word_re=re.compile('[A-Z][a-z]+')):
+        """TODO: Figure out what this does"""
         type_words = word_re.findall(type(err).__name__)
         type_msg = ' '.join(map(str.lower, type_words))
 
@@ -106,6 +109,7 @@ class Dozer(commands.Bot):
             return type_msg
 
     def global_checks(self, ctx):
+        """Checks that should be executed before passed to the command"""
         if ctx.author.bot:
             raise InvalidContext('Bots cannot run commands!')
         retry_after = self._global_cooldown.update_rate_limit()
@@ -119,6 +123,7 @@ class Dozer(commands.Bot):
         super().run(token)
 
     async def shutdown(self):
+        """Shuts down the bot"""
         await self.logout()
         await self.close()
         self.loop.stop()

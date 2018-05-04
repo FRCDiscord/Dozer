@@ -1,3 +1,4 @@
+"""Utilities for Dozer."""
 import asyncio
 import inspect
 
@@ -8,42 +9,52 @@ __all__ = ['command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk
 
 
 class CommandMixin:
+    """Example usage processing"""
     _example_usage = None
 
     @property
     def example_usage(self):
+        """Example usage property"""
         return self._example_usage
 
     @example_usage.setter
     def example_usage(self, usage):
+        """Sets example usage"""
         self._example_usage = inspect.cleandoc(usage)
 
 
 class Command(commands.Command, CommandMixin):
+    """Represents a command"""
     pass
 
 
 class Group(commands.Group, CommandMixin):
+    """Class for command groups"""
     def command(self, **kwargs):
+        """Initiates a command"""
         kwargs.setdefault('cls', Command)
         return super(Group, self).command(**kwargs)
 
     def group(self, **kwargs):
+        """Initiates a command group"""
         kwargs.setdefault('cls', Group)
         return super(Group, self).command(**kwargs)
 
 
 def command(**kwargs):
+    """Represents bot commands"""
     kwargs.setdefault('cls', Command)
     return commands.command(**kwargs)
 
 
 def group(**kwargs):
+    """Links command groups"""
     kwargs.setdefault('cls', Group)
     return commands.command(**kwargs)
 
 
 class Cog:
+    """Initiates cogs."""
     def __init__(self, bot):
         self.bot = bot
 
@@ -110,9 +121,11 @@ class Reactor:
             await self.message.remove_reaction(emoji, self.me)
 
     def do(self, action):
+        """If there's an action reaction, do the action."""
         self._action = action
 
     def stop(self):
+        """Listener for stop reactions."""
         self._action = self._stop_reaction
 
     def _check_reaction(self, reaction, member):
@@ -176,6 +189,7 @@ class Paginator(Reactor):
                     self.stop()
 
     def go_to_page(self, page):
+        """Goes to a specific help page"""
         if isinstance(page, int):
             page = page % self.len_pages
             if page < 0:
@@ -184,12 +198,14 @@ class Paginator(Reactor):
         self.do(self.message.edit(embed=self.pages[self.page]))
 
     def next(self, amt=1):
+        """Goes to the next help page"""
         if isinstance(self.page, int):
             self.go_to_page(self.page + amt)
         else:
             self.go_to_page(amt - 1)
 
     def prev(self, amt=1):
+        """Goes to the previous help page"""
         if isinstance(self.page, int):
             self.go_to_page(self.page - amt)
         else:
