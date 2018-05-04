@@ -135,7 +135,10 @@ disable=print-statement,
 	    no-self-use,
 	    wildcard-import,
 	    broad-except,
-	    pointless-string-statement
+	    pointless-string-statement,
+	    fixme,
+	    len-as-condition,
+	    dangerous-default-value
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -481,7 +484,7 @@ valid-metaclass-classmethod-first-arg=mcs
 max-args=10
 
 # Maximum number of attributes for a class (see R0902).
-max-attributes=10
+max-attributes=25
 
 # Maximum number of boolean expressions in a if statement
 max-bool-expr=5
