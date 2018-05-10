@@ -544,7 +544,6 @@ class NameGame(Cog):
     """
 
     @ng.command()
-    @ng.command()
     @game_is_running
     async def gameinfo(self, ctx):
         """Display info about the currently running game."""
