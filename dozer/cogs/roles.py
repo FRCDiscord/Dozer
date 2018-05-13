@@ -5,10 +5,18 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 from ._utils import *
 from .. import db
+from .. import bot
 
 
 class Roles(Cog):
     """Commands for role management."""
+
+    def __init__(self, aa):
+        for command in self.giveme.walk_commands():
+            @command.before_invoke
+            async def givemeautopurge(self, ctx):
+                if await self.ctxpurge(ctx, False):
+                    await ctx.send("That role does not exist any more, removing from list")
 
     async def on_member_join(self, member):
         me = member.guild.me
@@ -68,6 +76,25 @@ class Roles(Cog):
             if dbrole is not None:
                 session.delete(dbrole)
 
+    async def ctxpurge(self, ctx, returncounter):
+        counter = 0
+        with db.Session() as session:
+            roles = session.query(GiveableRole).filter_by(guild_id=ctx.guild.id)
+            guildroles = []
+            for i in ctx.guild.roles:
+                guildroles.append(i.id)
+            for role in roles:
+                if role.id not in guildroles:
+                    await self.givemepurge(role)
+                    counter += 1
+        if returncounter:
+            return counter
+        else:
+            if counter > 0:
+                return True
+            else:
+                return False
+
     async def on_guild_role_delete(self, role):
         await self.givemepurge(role)
 
@@ -110,16 +137,7 @@ class Roles(Cog):
     @bot_has_permissions(manage_roles=True)
     @has_permissions(manage_roles=True)
     async def purge(self, ctx):
-        counter = 0
-        with db.Session() as session:
-            roles = session.query(GiveableRole).filter_by(guild_id=ctx.guild.id)
-            guildroles = []
-            for i in ctx.guild.roles:
-                guildroles.append(i.id)
-            for role in roles:
-                if role.id not in guildroles:
-                    await self.givemepurge(role)
-                    counter += 1
+        counter = await self.ctxpurge(ctx, True)
         await ctx.send("Purged {} role(s)".format(counter))
 
     @giveme.command()
