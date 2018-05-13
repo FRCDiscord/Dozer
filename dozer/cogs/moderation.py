@@ -1,11 +1,13 @@
 import asyncio
 import discord
 import re
+import datetime
 
 from discord.ext.commands import BadArgument, has_permissions, bot_has_permissions, RoleConverter
 
 from ._utils import *
 from .. import db
+
 from ..utils import clean
 
 
@@ -36,6 +38,7 @@ class Moderation(Cog):
         modlog_embed.add_field(name=f"{action.capitalize()} user", value=f"{target.mention} ({target} | {target.id})", inline=False)
         modlog_embed.add_field(name="Requested by", value=f"{member.mention} ({member} | {member.id})", inline=False)
         modlog_embed.add_field(name="Reason", value=reason, inline=False)
+        modlog_embed.add_field(name="Timestamp", value=str(datetime.datetime.now()), inline=False)
 
         # modlog_message = "{} has {} {} because {}".format(member, action, target, reason)
         # modlog_message = clean(ctx=ctx, text=modlog_message)
@@ -237,6 +240,11 @@ class Moderation(Cog):
                         await channel.send(embed=e)
 
     """=== Direct moderation commands ==="""
+
+    @command()
+    @has_permissions(kick_members=True)
+    async def warn(self, ctx, user: discord.User, *, reason):
+        await self.mod_log(member=ctx.author, action="warned", target=user, reason=reason)
 
     @command()
     @has_permissions(manage_roles=True)
