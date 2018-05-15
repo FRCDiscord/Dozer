@@ -199,7 +199,7 @@ class Moderation(Cog):
             # There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
             e = discord.Embed(type='rich')
             e.title = 'Message Edited'
-            e.color = 0xFF0000
+            e.color = 0xFFC400
             e.add_field(name='Author', value=before.author)
             e.add_field(name='Author pingable', value=before.author.mention)
             e.add_field(name='Channel', value=before.channel)
