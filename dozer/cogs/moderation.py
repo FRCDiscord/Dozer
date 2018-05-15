@@ -167,6 +167,7 @@ class Moderation(Cog):
         e = discord.Embed(type='rich')
         e.title = 'Message Deletion'
         e.color = 0xFF0000
+        e.timestamp = datetime.datetime.utcnow()
         e.add_field(name='Author', value=message.author)
         e.add_field(name='Author pingable', value=message.author.mention)
         e.add_field(name='Channel', value=message.channel)
@@ -200,6 +201,7 @@ class Moderation(Cog):
             e = discord.Embed(type='rich')
             e.title = 'Message Edited'
             e.color = 0xFFC400
+            e.timestamp = after.edited_at
             e.add_field(name='Author', value=before.author)
             e.add_field(name='Author pingable', value=before.author.mention)
             e.add_field(name='Channel', value=before.channel)
