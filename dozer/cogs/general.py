@@ -155,7 +155,7 @@ class General(Cog):
         The generated link gives all permissions the bot requires. If permissions are removed, some commands will be unusable.
         """
         perms = 0
-        for cmd in sorted(set(ctx.bot.walk_commands()), key=lambda c: c.qualified_name):
+        for cmd in ctx.bot.walk_commands():
             perms |= cmd.required_permissions.value
         await ctx.send('<{}>'.format(discord.utils.oauth_url(ctx.me.id, discord.Permissions(perms))))
 
