@@ -37,7 +37,7 @@ class Moderation(Cog):
         )
         modlog_embed.add_field(name=f"{action.capitalize()} user", value=f"{target.mention} ({target} | {target.id})", inline=False)
         modlog_embed.add_field(name="Requested by", value=f"{member.mention} ({member} | {member.id})", inline=False)
-        modlog_embed.add_field(name="Reason", value=reason, inline=False)
+        modlog_embed.add_field(name="Reason", value=reason or "No reason specified", inline=False)
         modlog_embed.add_field(name="Timestamp", value=str(datetime.datetime.now()), inline=False)
 
         # modlog_message = "{} has {} {} because {}".format(member, action, target, reason)
@@ -100,7 +100,7 @@ class Moderation(Cog):
         await warn_msg.delete()
 
     async def check_links(self, msg):
-        if msg.guild is None or not msg.guild.me.guild_permissions.manage_messages:
+        if msg.guild is None or not isinstance(msg.author, Member) or not msg.guild.me.guild_permissions.manage_messages:
             return
         with db.Session() as session:
             config = session.query(GuildMessageLinks).filter_by(guild_id=msg.guild.id).one_or_none()
