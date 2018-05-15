@@ -148,6 +148,17 @@ class General(Cog):
         if len(nicktochangeto) > 32:
             await ctx.send("Warning: truncated nickname to 32 characters")
 
+    @command()
+    async def invite(self, ctx):
+        """
+        Display the bot's invite link.
+        The generated link gives all permissions the bot requires. If permissions are removed, some commands will be unusable.
+        """
+        perms = 0
+        for cmd in sorted(set(ctx.bot.walk_commands()), key=lambda c: c.qualified_name):
+            perms |= cmd.required_permissions.value
+        await ctx.send('<{}>'.format(discord.utils.oauth_url(ctx.me.id, discord.Permissions(perms))))
+
     @has_permissions(create_instant_invite=True)
     @bot_has_permissions(create_instant_invite=True)
     @command()
