@@ -1,6 +1,6 @@
 import discord
 import discord.utils
-from discord.ext.commands import bot_has_permissions, cooldown, BucketType, has_permissions, BadArgument
+from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgument
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 from ._utils import *

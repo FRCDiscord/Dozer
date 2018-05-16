@@ -1,14 +1,27 @@
 import asyncio
 import inspect
+import discord
 
 from collections.abc import Mapping
 from discord.ext import commands
 
-__all__ = ['command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk']
+__all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk']
 
 
 class CommandMixin:
     _example_usage = None
+    _required_permissions = None
+
+    def __init__(self, name, callback, **kwargs):
+        super().__init__(name=name, callback=callback, **kwargs)  # All must be named for commands.Group.__init__
+        if hasattr(callback, '__required_permissions__'):
+            self._required_permissions = callback.__required_permissions__
+
+    @property
+    def required_permissions(self):
+        if self._required_permissions is None:
+            self._required_permissions = discord.Permissions()
+        return self._required_permissions
 
     @property
     def example_usage(self):
@@ -19,11 +32,11 @@ class CommandMixin:
         self._example_usage = inspect.cleandoc(usage)
 
 
-class Command(commands.Command, CommandMixin):
+class Command(CommandMixin, commands.Command):
     pass
 
 
-class Group(commands.Group, CommandMixin):
+class Group(CommandMixin, commands.Group):
     def command(self, **kwargs):
         kwargs.setdefault('cls', Command)
         return super(Group, self).command(**kwargs)
@@ -214,3 +227,28 @@ def chunk(iterable, size):
     contents = list(iterable)
     for i in range(0, len(contents), size):
         yield contents[i:i + size]
+
+
+def bot_has_permissions(**required):
+    def predicate(ctx):
+        given = ctx.channel.permissions_for((ctx.guild or ctx.channel).me)
+        missing = [name for name, value in required.items() if getattr(given, name) != value]
+
+        if missing:
+            raise commands.BotMissingPermissions(missing)
+        else:
+            return True
+
+    def decorator(func):
+        if isinstance(func, Command):
+            func.checks.append(predicate)
+            func.required_permissions.update(**required)
+        else:
+            if hasattr(func, '__commands_checks__'):
+                func.__commands_checks__.append(predicate)
+            else:
+                func.__commands_checks__ = [predicate]
+            func.__required_permissions__ = discord.Permissions()
+            func.__required_permissions__.update(**required)
+        return func
+    return decorator

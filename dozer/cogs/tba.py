@@ -4,7 +4,7 @@ from datetime import timedelta
 import discord
 import googlemaps
 import tbapi
-from discord.ext.commands import BadArgument, bot_has_permissions
+from discord.ext.commands import BadArgument
 from geopy.geocoders import Nominatim
 
 from ._utils import *

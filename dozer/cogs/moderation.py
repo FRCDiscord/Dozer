@@ -3,7 +3,7 @@ import discord
 import re
 import datetime
 
-from discord.ext.commands import BadArgument, has_permissions, bot_has_permissions, RoleConverter
+from discord.ext.commands import BadArgument, has_permissions, RoleConverter
 
 from ._utils import *
 from .. import db

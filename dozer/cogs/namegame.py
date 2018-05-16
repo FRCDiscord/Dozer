@@ -7,7 +7,7 @@ from functools import wraps
 
 import discord
 import tbapi
-from discord.ext.commands import bot_has_permissions, has_permissions
+from discord.ext.commands import has_permissions
 from fuzzywuzzy import fuzz
 
 from dozer.bot import logger
