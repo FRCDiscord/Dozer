@@ -2,6 +2,7 @@
 import asyncio
 import re
 import discord
+import datetime
 
 from discord.ext.commands import BadArgument, has_permissions, bot_has_permissions, RoleConverter
 
@@ -100,7 +101,7 @@ class Moderation(Cog):
 
     async def check_links(self, msg):
         """Checks messages for links, then checks if the author is allowed to send links"""
-        if msg.guild is None or not msg.guild.me.guild_permissions.manage_messages:
+        if msg.guild is None or not isinstance(msg.author, Member) or not msg.guild.me.guild_permissions.manage_messages:
             return
         with db.Session() as session:
             config = session.query(GuildMessageLinks).filter_by(guild_id=msg.guild.id).one_or_none()
@@ -247,6 +248,11 @@ class Moderation(Cog):
                         await channel.send(embed=e)
 
     """=== Direct moderation commands ==="""
+
+    @command()
+    @has_permissions(kick_members=True)
+    async def warn(self, ctx, user: discord.User, *, reason):
+        await self.mod_log(member=ctx.author, action="warned", target=user, reason=reason)
 
     @command()
     @has_permissions(manage_roles=True)
