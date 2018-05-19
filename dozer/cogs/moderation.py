@@ -100,7 +100,7 @@ class Moderation(Cog):
         await warn_msg.delete()
 
     async def check_links(self, msg):
-        if msg.guild is None or not isinstance(msg.author, Member) or not msg.guild.me.guild_permissions.manage_messages:
+        if msg.guild is None or not isinstance(msg.author, discord.Member) or not msg.guild.me.guild_permissions.manage_messages:
             return
         with db.Session() as session:
             config = session.query(GuildMessageLinks).filter_by(guild_id=msg.guild.id).one_or_none()
