@@ -1,5 +1,5 @@
 import discord
-from discord.ext.commands import has_permissions, bot_has_permissions
+from discord.ext.commands import has_permissions
 
 from ._utils import *
 from .. import db

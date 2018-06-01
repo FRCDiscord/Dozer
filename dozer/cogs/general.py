@@ -1,6 +1,6 @@
 import discord
 import inspect
-from discord.ext.commands import BadArgument, bot_has_permissions, cooldown, BucketType, Group, has_permissions
+from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions
 
 from ._utils import *
 from .. import db
@@ -147,6 +147,17 @@ class General(Cog):
         await ctx.send("Nick successfully changed to " + nicktochangeto[:32])
         if len(nicktochangeto) > 32:
             await ctx.send("Warning: truncated nickname to 32 characters")
+
+    @command()
+    async def invite(self, ctx):
+        """
+        Display the bot's invite link.
+        The generated link gives all permissions the bot requires. If permissions are removed, some commands will be unusable.
+        """
+        perms = 0
+        for cmd in ctx.bot.walk_commands():
+            perms |= cmd.required_permissions.value
+        await ctx.send('<{}>'.format(discord.utils.oauth_url(ctx.me.id, discord.Permissions(perms))))
 
     @has_permissions(create_instant_invite=True)
     @bot_has_permissions(create_instant_invite=True)
