@@ -3,7 +3,7 @@ import datetime
 from datetime import timedelta
 
 import discord
-from discord.ext.commands import BadArgument, bot_has_permissions
+from discord.ext.commands import BadArgument
 import googlemaps
 import tbapi
 from geopy.geocoders import Nominatim

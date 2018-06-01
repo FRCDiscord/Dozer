@@ -8,7 +8,7 @@ from functools import wraps
 
 import tbapi
 import discord
-from discord.ext.commands import bot_has_permissions, has_permissions
+from discord.ext.commands import has_permissions
 from fuzzywuzzy import fuzz
 
 from dozer.bot import DOZER_LOGGER
@@ -121,7 +121,7 @@ class NameGameSession():
 
         self.last_name = actual_name
         self.last_team = team
-        return fuzz.partial_ratio(actual_name.lower(), name.lower())
+        return fuzz.ratio(actual_name.lower(), name.lower())
 
     def next_turn(self):
         """Processes the next turn transition"""
