@@ -1,9 +1,10 @@
 """Utilities for Dozer."""
 import asyncio
 import inspect
-import discord
 
 from collections.abc import Mapping
+
+import discord
 from discord.ext import commands
 
 __all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk']
@@ -21,6 +22,7 @@ class CommandMixin:
 
     @property
     def required_permissions(self):
+        """Required permissions handler"""
         if self._required_permissions is None:
             self._required_permissions = discord.Permissions()
         return self._required_permissions
@@ -246,7 +248,9 @@ def chunk(iterable, size):
 
 
 def bot_has_permissions(**required):
+    """Checks if bot has permissions"""
     def predicate(ctx):
+        """Function to tell the bot if it has the right permissions"""
         given = ctx.channel.permissions_for((ctx.guild or ctx.channel).me)
         missing = [name for name, value in required.items() if getattr(given, name) != value]
 
@@ -256,6 +260,7 @@ def bot_has_permissions(**required):
             return True
 
     def decorator(func):
+        """Defines the bot_has_permissions decorator"""
         if isinstance(func, Command):
             func.checks.append(predicate)
             func.required_permissions.update(**required)

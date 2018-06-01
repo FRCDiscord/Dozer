@@ -1,8 +1,8 @@
 """Provides moderation commands for Dozer."""
 import asyncio
 import re
-import discord
 import datetime
+import discord
 
 from discord.ext.commands import BadArgument, has_permissions, RoleConverter
 
@@ -41,7 +41,7 @@ class Moderation(Cog):
         modlog_embed.add_field(name="Reason", value=reason, inline=False)
         modlog_embed.add_field(name="Timestamp", value=str(datetime.datetime.now()), inline=False)
 
-	with db.Session() as session:
+        with db.Session() as session:
             modlog_channel = session.query(GuildModLog).filter_by(id=member.guild.id).one_or_none()
             if orig_channel is not None:
                 await orig_channel.send(embed=modlog_embed)
@@ -101,8 +101,8 @@ class Moderation(Cog):
         await warn_msg.delete()
 
     async def check_links(self, msg):
-		"""Checks messages for links, then checks if the author is allowed to send links"""
-	if msg.guild is None or not isinstance(msg.author, discord.Member) or not msg.guild.me.guild_permissions.manage_messages:
+        """Checks messages for links, then checks if the author is allowed to send links"""
+        if msg.guild is None or not isinstance(msg.author, discord.Member) or not msg.guild.me.guild_permissions.manage_messages:
             return
         with db.Session() as session:
             config = session.query(GuildMessageLinks).filter_by(guild_id=msg.guild.id).one_or_none()
@@ -255,6 +255,7 @@ class Moderation(Cog):
     @command()
     @has_permissions(kick_members=True)
     async def warn(self, ctx, user: discord.User, *, reason):
+        """Does nothing but trigger modlog with the correct parameters, used to warn members without punishment"""
         await self.mod_log(member=ctx.author, action="warned", target=user, reason=reason)
 
     @command()
