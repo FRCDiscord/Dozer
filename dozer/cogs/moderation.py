@@ -256,6 +256,7 @@ class Moderation(Cog):
     @command()
     @has_permissions(kick_members=True)
     async def warn(self, ctx, user: discord.User, *, reason):
+        """Does nothing but trigger modlog with the correct parameters, used to warn members without punishment"""
         await self.mod_log(member=ctx.author, action="warned", target=user, reason=reason)
 
     @command()
