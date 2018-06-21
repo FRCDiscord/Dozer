@@ -564,7 +564,7 @@ class Moderation(Cog):
                 config = GuildMemberLog(id=ctx.guild.id, memberlog_channel=channel_mentions.id, name=ctx.guild.name)
                 session.add(config)
             await ctx.send(ctx.message.author.mention + ', memberlog settings configured!')
-    memberconfig.example_usage = """
+    memberlogconfig.example_usage = """
     `{prefix}memberlogconfig #join-leave-logs` - set a channel named #join-leave-logs to log joins/leaves 
     """
 
