@@ -9,7 +9,8 @@ class Filter(Cog):
 
 	"""The filters need to be compiled each time they're run, but we don't want to compile every filter
 	Every time it's run, or all of them at once when the bot starts. So the first time that filter is run,
-	the compiled object is placed in here.
+	the compiled object is placed in here. This dict is actually a dict full of dicts, with each parent dict's key
+	being the guild ID for easy accessing.
 	"""
 	filter_dict = {}
 
@@ -18,7 +19,24 @@ class Filter(Cog):
 	This can detect if a string is a regex pattern or simply a word. If this equates to false, the friendly name is also
 	set to the pattern.
 	"""
-	regex_pattern = r"/^((?:(?:[^?+*{}()[\]\\|]+|\\.|\[(?:\^?\\.|\^[^\\]|[^\\^])(?:[^\]\\]+|\\.)*\]|\((?:\?[:=!]|\?<[=!]|\?>)?(?1)??\)|\(\?(?:R|[+-]?\d+)\))(?:(?:[?+*]|\{\d+(?:,\d*)?\})[?+]?)?|\|)*)$/"
+	regex_pattern = r"""
+/
+^                                             # start of string
+(                                             # first group start
+  (?:
+    (?:[^?+*{}()[\]\\|]+                      # literals and ^, $
+     | \\.                                    # escaped characters
+     | \[ (?: \^?\\. | \^[^\\] | [^\\^] )     # character classes
+          (?: [^\]\\]+ | \\. )* \]
+     | \( (?:\?[:=!]|\?<[=!]|\?>)? (?1)?? \)  # parenthesis, with recursive content
+     | \(\? (?:R|[+-]?\d+) \)                 # recursive matching
+     )
+    (?: (?:[?+*]|\{\d+(?:,\d*)?\}) [?+]? )?   # quantifiers
+  | \|                                        # alternative
+  )*                                          # repeat content
+)                                             # end first group
+$                                             # end of string
+/"""
 
 	"""Helper Functions"""
 
@@ -39,8 +57,14 @@ class Filter(Cog):
 			else:
 				return ctx.channel
 
-	"""Event Handlers"""
+	def load_filters(self, guild_id):
+		with db.Session() as session:
+			results = session.query(WordFilter).filter(WordFilter.guild_id==guild_id).all()
+			self.filter_dict[guild_id] = {}
+			for filter in results:
+				self.filter_dict[guild_id][filter.id] = re.compile(filter.pattern)
 
+	"""Event Handlers"""
 
 	"""Commands"""
 	@group(invoke_without_command=True)
@@ -48,7 +72,7 @@ class Filter(Cog):
 		with db.Session() as session:
 			results = session.query(WordFilter).filter(WordFilter.guild_id==ctx.guild.id).all()
 		if results == []:
-			#TODO: Make this a embed
+			# TODO: Make this a embed
 			await ctx.send("No filters found for this server. Use `{}filter add <>` to add one.".format(
 				ctx.bot.command_prefix))
 			return
@@ -72,12 +96,25 @@ class Filter(Cog):
 		new_filter = WordFilter(guild_id=ctx.guild.id, pattern=pattern, friendly_name=friendly_name or None)
 		with db.Session() as session:
 			session.add(new_filter)
-		self.filter_dict[new_filter.id] = re.compile(pattern)
+		self.load_filters(ctx.guild.id)
 		embed = discord.Embed()
 		embed.title = "Filter {} added".format(new_filter.id)
 		embed.description = "A new filter with the name `{}` was added.".format(friendly_name or pattern)
 		embed.add_field(name="Pattern", value="`{}`".format(pattern))
 		await ctx.send(embed=embed)
+
+	@filter.command()
+	async def remove(self, ctx, id):
+		with db.Session() as session:
+			result = session.query(WordFilter).filter(WordFilter.id == id).one_or_none()
+			if result is None:
+				await ctx.send("Filter ID {} not found!".format(id))
+				return
+			if result.guild_id is not ctx.guild.id:
+				await ctx.send("That Filter does not belong to this guild.")
+				return
+			session.delete(result)
+			self.load_filters(ctx.guild.id)
 
 	@filter.command(name="dm")
 	async def dm_config(self, ctx, config: bool):
@@ -90,6 +127,39 @@ class Filter(Cog):
 			else:
 				result.dm = config
 			await ctx.send("The DM setting for this guild has been changed from {} to {}.".format(before_setting, result.dm))
+
+	@filter.group(invoke_without_command=True)
+	async def whitelist(self, ctx):
+		with db.Session() as session:
+			results = session.query(WordFilterRoleWhitelist).filter(WordFilterRoleWhitelist.guild_id == ctx.guild.id).all()
+			roles_text = ""
+			for db_role in results:
+				role = discord.utils.get(ctx.guild.roles, id=db_role.role_id)
+				roles_text += "{}\n".format(role.name)
+			embed = discord.Embed()
+			embed.title = "Whitlisted roles for {}".format(ctx.guild.name)
+			embed.description = "Anybody with any of the roles below will not have their messages filtered."
+			embed.add_field(name="Roles",value=roles_text or "No roles")
+			await ctx.send(embed=embed)
+
+	@whitelist.command(name="add")
+	async def whitelist_add(self, ctx, *, role: discord.Role):
+		with db.Session() as session:
+			result = session.query(WordFilterRoleWhitelist).filter(WordFilterRoleWhitelist.role_id == role.id).one_or_none()
+			if result is not None:
+				await ctx.send("That role is already whitelisted.")
+			whitelist_entry = WordFilterRoleWhitelist(guild_id=ctx.guild.id, role_id=role.id)
+			session.add(whitelist_entry)
+			await ctx.send("Whitelisted `{}` for this guild.".format(role.name))
+
+	@whitelist.command(name="remove")
+	async def whitelist_remove(self, ctx, *, role:discord.Role):
+		with db.Session() as session:
+			result = session.query(WordFilterRoleWhitelist).filter(WordFilterRoleWhitelist.role_id == role.id).one_or_none()
+			if result is None:
+				await ctx.send("That role is not whitelisted.")
+			session.delete(result)
+			await ctx.send("The role `{}` is no longer whitelisted.".format(role.name))
 
 
 def setup(bot):
@@ -117,4 +187,5 @@ class WordFilterDMSetting(db.DatabaseObject):
 class WordFilterRoleWhitelist(db.DatabaseObject):
 	__tablename__ = "word_filter_role_whitelist"
 	id = db.Column(db.Integer, primary_key=True)
+	guild_id = db.Column(db.Integer)
 	role_id = db.Column(db.Integer)
