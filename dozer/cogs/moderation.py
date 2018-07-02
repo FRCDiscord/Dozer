@@ -1,11 +1,13 @@
 import asyncio
 import discord
 import re
+import datetime
 
-from discord.ext.commands import BadArgument, has_permissions, bot_has_permissions, RoleConverter
+from discord.ext.commands import BadArgument, has_permissions, RoleConverter
 
 from ._utils import *
 from .. import db
+
 from ..utils import clean
 
 
@@ -35,7 +37,8 @@ class Moderation(Cog):
         )
         modlog_embed.add_field(name=f"{action.capitalize()} user", value=f"{target.mention} ({target} | {target.id})", inline=False)
         modlog_embed.add_field(name="Requested by", value=f"{member.mention} ({member} | {member.id})", inline=False)
-        modlog_embed.add_field(name="Reason", value=reason, inline=False)
+        modlog_embed.add_field(name="Reason", value=reason or "No reason specified", inline=False)
+        modlog_embed.add_field(name="Timestamp", value=str(datetime.datetime.now()), inline=False)
 
         # modlog_message = "{} has {} {} because {}".format(member, action, target, reason)
         # modlog_message = clean(ctx=ctx, text=modlog_message)
@@ -97,7 +100,7 @@ class Moderation(Cog):
         await warn_msg.delete()
 
     async def check_links(self, msg):
-        if msg.guild is None or not msg.guild.me.guild_permissions.manage_messages:
+        if msg.guild is None or not isinstance(msg.author, discord.Member) or not msg.guild.me.guild_permissions.manage_messages:
             return
         with db.Session() as session:
             config = session.query(GuildMessageLinks).filter_by(guild_id=msg.guild.id).one_or_none()
@@ -164,6 +167,7 @@ class Moderation(Cog):
         e = discord.Embed(type='rich')
         e.title = 'Message Deletion'
         e.color = 0xFF0000
+        e.timestamp = datetime.datetime.utcnow()
         e.add_field(name='Author', value=message.author)
         e.add_field(name='Author pingable', value=message.author.mention)
         e.add_field(name='Channel', value=message.channel)
@@ -196,7 +200,8 @@ class Moderation(Cog):
             # There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
             e = discord.Embed(type='rich')
             e.title = 'Message Edited'
-            e.color = 0xFF0000
+            e.color = 0xFFC400
+            e.timestamp = after.edited_at
             e.add_field(name='Author', value=before.author)
             e.add_field(name='Author pingable', value=before.author.mention)
             e.add_field(name='Channel', value=before.channel)
@@ -237,6 +242,11 @@ class Moderation(Cog):
                         await channel.send(embed=e)
 
     """=== Direct moderation commands ==="""
+
+    @command()
+    @has_permissions(kick_members=True)
+    async def warn(self, ctx, user: discord.User, *, reason):
+        await self.mod_log(member=ctx.author, action="warned", target=user, reason=reason)
 
     @command()
     @has_permissions(manage_roles=True)
@@ -543,7 +553,7 @@ class Moderation(Cog):
                 config = GuildMemberLog(id=ctx.guild.id, memberlog_channel=channel_mentions.id, name=ctx.guild.name)
                 session.add(config)
             await ctx.send(ctx.message.author.mention + ', memberlog settings configured!')
-    memberconfig.example_usage = """
+    memberlogconfig.example_usage = """
     `{prefix}memberlogconfig #join-leave-logs` - set a channel named #join-leave-logs to log joins/leaves 
     """
 
