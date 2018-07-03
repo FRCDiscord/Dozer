@@ -1,10 +1,10 @@
 import sqlalchemy
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, ForeignKeyConstraint
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, ForeignKeyConstraint, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, Session, sessionmaker
 
 __all__ = ['engine', 'DatabaseObject', 'Session', 'Column', 'Integer', 'String', 'ForeignKey', 'relationship',
-           'Boolean']
+           'Boolean', 'DateTime']
 
 engine = sqlalchemy.create_engine('sqlite:///dozer.db')
 DatabaseObject = declarative_base(bind=engine, name='DatabaseObject')
