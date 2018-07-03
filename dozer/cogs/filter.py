@@ -47,7 +47,8 @@ class Filter(Cog):
 		if message.author.id == self.bot.user.id:
 			return
 		with db.Session() as session:
-			roles = session.query(WordFilterRoleWhitelist).filter(WordFilterRoleWhitelist.guild_id==message.guild.id).all()
+			roles = session.query(WordFilterRoleWhitelist).filter(WordFilterRoleWhitelist.guild_id==message.guild.id,
+																  WordFilter.enabled == 1).all()
 		role_ids = []
 		for role in roles:
 			role_ids.append(role.role_id)
@@ -64,7 +65,7 @@ class Filter(Cog):
 		for id, filter in filters.items():
 			if filter.search(message.content) is not None:
 				await message.delete()
-				await message.channel.send("Banned word detected!", delete_after=3.0)
+				await message.channel.send("{}, Banned word detected!".format(message.author.mention), delete_after=5.0)
 				time = datetime.datetime.now()
 				with db.Session() as session:
 					infraction = WordFilterInfraction(member_id=message.author.id, filter_id=id,
@@ -108,7 +109,7 @@ class Filter(Cog):
 			embed.add_field(name="Commands", value="""There are several commands you can use to manage the filters.
 `{0}filter add test` - Adds test as a filter.
 `{0}filter remove 1` - Removes filter 1
-`{0}filter dm_config true` - Any messages containing a filtered word will be DMed
+`{0}filter dm true` - Any messages containing a filtered word will be DMed
 `{0}filter whitelist` - See all of the whitelisted roles
 `{0}filter whitelist add Administrators` - Make the Administrators role whitelisted for the filter.
 `{0}filter whitelist remove Moderators` - Make the Moderators role no longer whitelisted.""".format(self.bot.command_prefix))
@@ -118,7 +119,7 @@ class Filter(Cog):
 			await ctx.message.add_reaction("📬")
 	filter.example_usage = """`{prefix}filter add test` - Adds test as a filter.
 `{prefix}filter remove 1` - Removes filter 1
-`{prefix}filter dm_config true` - Any messages containing a filtered word will be DMed
+`{prefix}filter dm true` - Any messages containing a filtered word will be DMed
 `{prefix}filter whitelist` - See all of the whitelisted roles
 `{prefix}filter whitelist add Administrators` - Make the Administrators role whitelisted for the filter.
 `{prefix}filter whitelist remove Moderators` - Make the Moderators role no longer whitelisted."""
