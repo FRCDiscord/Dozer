@@ -85,7 +85,7 @@ class Filter(Cog):
 
 	@group(invoke_without_command=True)
 	@guild_only()
-	async def filter(self, ctx):
+	async def filter(self, ctx, advanced = False):
 		"""List and manage filtered words"""
 		with db.Session() as session:
 			results = session.query(WordFilter).filter(WordFilter.guild_id == ctx.guild.id,
@@ -98,7 +98,9 @@ class Filter(Cog):
 
 		filter_text = ""
 		for filter in results:
-			filter_text += "ID {}: `{}`".format(filter.id, filter.friendly_name or filter.pattern)
+			filter_text += "ID {}: `{}`".format(filter.id, filter.friendly_name)
+			if advanced:
+				filter_text += ": Pattern: `{}`".format(filter.pattern)
 			if results.index(filter) != (len(results)-1):
 				filter_text += "\n"
 
@@ -154,7 +156,7 @@ class Filter(Cog):
 				await ctx.send("That Filter does not belong to this guild.")
 				return
 			result.enabled = False
-			await ctx.send("Filter `{}` with name `{}` deleted.".format(result.id,result.friendly_name or result.pattern))
+			await ctx.send("Filter `{}` with name `{}` deleted.".format(result.id,result.friendly_name))
 			self.load_filters(ctx.guild.id)
 	remove.example_usage = "{prefix}filter remove 7"
 
