@@ -13,10 +13,11 @@ from .. import bot
 class Roles(Cog):
     """Commands for role management."""
 
-    def __init__(self, aa):
+    def __init__(self, cog):
         for command in self.giveme.walk_commands():
             @command.before_invoke
             async def givemeautopurge(self, ctx):
+                """Before invoking a giveme command, run a purge"""
                 if await self.ctx_purge(ctx):
                     await ctx.send("Purged missing roles")
 
@@ -75,6 +76,7 @@ class Roles(Cog):
                 db_member.missing_roles.append(MissingRole(role_id=role.id, role_name=role.name))
 
     async def giveme_purge(self, rolelist):
+        """Purges roles in the giveme database that no longer exist"""
         with db.Session() as session:
             for role in rolelist:
                 dbrole = session.query(GiveableRole).filter_by(id=role.id).one_or_none()
@@ -82,6 +84,7 @@ class Roles(Cog):
                     session.delete(dbrole)
 
     async def ctx_purge(self, ctx):
+        """Purges all giveme roles that no longer exist in a guild"""
         counter = 0
         with db.Session() as session:
             roles = session.query(GiveableRole).filter_by(guild_id=ctx.guild.id)
@@ -97,6 +100,7 @@ class Roles(Cog):
         return counter
 
     async def on_guild_role_delete(self, role):
+        """Automatically delete giveme roles if they are deleted from the guild"""
         rolelist = [role]
         await self.giveme_purge(rolelist)
 
@@ -139,6 +143,7 @@ class Roles(Cog):
     @bot_has_permissions(manage_roles=True)
     @has_permissions(manage_roles=True)
     async def purge(self, ctx):
+        """Force a purge of giveme roles that no longer exist in the guild"""
         counter = await self.ctx_purge(ctx)
         await ctx.send("Purged {} role(s)".format(counter))
 
@@ -374,8 +379,8 @@ class MissingMember(db.DatabaseObject):
 class MissingRole(db.DatabaseObject):
     """Actually, what does this do?"""
     __tablename__ = 'missing_roles'
-    __table_args__ = (
-        db.ForeignKeyConstraint(['guild_id', 'member_id'], ['missing_members.guild_id', 'missing_members.member_id']))
+    # __table_args__ = (
+    #    db.ForeignKeyConstraint(['guild_id', 'member_id'], ['missing_members.guild_id', 'missing_members.member_id']))
     role_id = db.Column(db.Integer, primary_key=True)
     guild_id = db.Column(db.Integer)  # Guild ID doesn't have to be primary because role IDs are unique across guilds
     member_id = db.Column(db.Integer, primary_key=True)
