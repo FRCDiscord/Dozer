@@ -75,13 +75,12 @@ class Moderation(Cog):
         except:
             minutes = 0
         time = (hours * 3600) + (minutes * 60)
-        if time == 0 and modlog:
-            await self.mod_log(member=ctx.author, action=punishment.past_participle, target=target, reason=reason, orig_channel=ctx.channel)
-        else:
-            reasoning = re.sub(pattern=regex_string, string=reason, repl="").lstrip("  ")
-            if modlog:
-                await self.mod_log(member=ctx.author, action=punishment.past_participle, target=target, reason=reasoning, orig_channel=ctx.channel)
-
+        reason = re.sub(pattern=regex_string, string=reason, repl="").lstrip("  ")
+        if modlog:
+            print("Modlog is true")
+            await self.mod_log(member=ctx.author, action=punishment.past_participle, target=target, reason=reason,
+                               orig_channel=ctx.channel)
+        if time != 0:
             await asyncio.sleep(time)
             with db.Session() as session:
                 user = session.query(punishment).filter_by(id=target.id).one_or_none()
