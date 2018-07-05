@@ -63,7 +63,7 @@ class Moderation(Cog):
                     channel.set_permissions(target=member, overwrite=None if overwrite.is_empty() else overwrite))
         await asyncio.gather(*coros)
 
-    async def punishment_timer(self, ctx, timing, target, punishment, reason, nomodlog=False):
+    async def punishment_timer(self, ctx, timing, target, punishment, reason, modlog=True):
         regex_string = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?")
         matches = re.match(regex_string, timing).groupdict()
         try:
@@ -75,11 +75,11 @@ class Moderation(Cog):
         except:
             minutes = 0
         time = (hours * 3600) + (minutes * 60)
-        if time == 0 and not nomodlog:
+        if time == 0 and modlog:
             await self.mod_log(member=ctx.author, action=punishment.past_participle, target=target, reason=reason, orig_channel=ctx.channel)
         else:
             reasoning = re.sub(pattern=regex_string, string=reason, repl="").lstrip("  ")
-            if not nomodlog:
+            if modlog:
                 await self.mod_log(member=ctx.author, action=punishment.past_participle, target=target, reason=reasoning, orig_channel=ctx.channel)
 
             await asyncio.sleep(time)
@@ -409,7 +409,7 @@ class Moderation(Cog):
                 session.add(user)
                 await ctx.send("Deafening...")
                 await self.perm_override(member=ctx.author, read_messages=False)
-                self.bot.loop.create_task(self.punishment_timer(ctx, timing, ctx.author, punishment=Deafen, reason=reason, nomodlog=True))
+                self.bot.loop.create_task(self.punishment_timer(ctx, timing, ctx.author, punishment=Deafen, reason=reason, modlog=False))
 
     selfdeafen.example_usage = """
     `{prefix}selfdeafen time (1h5m, both optional) reason`: deafens you if you need to get work done
