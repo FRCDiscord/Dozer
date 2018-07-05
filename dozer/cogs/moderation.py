@@ -63,7 +63,7 @@ class Moderation(Cog):
                     channel.set_permissions(target=member, overwrite=None if overwrite.is_empty() else overwrite))
         await asyncio.gather(*coros)
 
-    async def punishment_timer(self, ctx, timing, target, punishment, reason):
+    async def punishment_timer(self, ctx, timing, target, punishment, reason, nomodlog=False):
         regex_string = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?")
         matches = re.match(regex_string, timing).groupdict()
         try:
@@ -75,11 +75,12 @@ class Moderation(Cog):
         except:
             minutes = 0
         time = (hours * 3600) + (minutes * 60)
-        if time == 0:
+        if time == 0 and not nomodlog:
             await self.mod_log(member=ctx.author, action=punishment.past_participle, target=target, reason=reason, orig_channel=ctx.channel)
         else:
             reasoning = re.sub(pattern=regex_string, string=reason, repl="").lstrip("  ")
-            await self.mod_log(member=ctx.author, action=punishment.past_participle, target=target, reason=reasoning, orig_channel=ctx.channel)
+            if not nomodlog:
+                await self.mod_log(member=ctx.author, action=punishment.past_participle, target=target, reason=reasoning, orig_channel=ctx.channel)
 
             await asyncio.sleep(time)
             with db.Session() as session:
@@ -340,7 +341,7 @@ class Moderation(Cog):
     """
 
     @command()
-    @has_permissions(kick_members=True)
+    @has_permissions(manage_roles=True)
     @bot_has_permissions(manage_roles=True)
     async def mute(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
         """Mute a user to prevent them from sending messages"""
@@ -359,7 +360,7 @@ class Moderation(Cog):
     """
 
     @command()
-    @has_permissions(kick_members=True)
+    @has_permissions(manage_roles=True)
     @bot_has_permissions(manage_roles=True)
     async def unmute(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
         """Unmute a user to allow them to send messages again."""
@@ -377,7 +378,7 @@ class Moderation(Cog):
     """
 
     @command()
-    @has_permissions(kick_members=True)
+    @has_permissions(manage_roles=True)
     @bot_has_permissions(manage_roles=True)
     async def deafen(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
         """Deafen a user to prevent them from both sending messages but also reading messages."""
@@ -407,15 +408,16 @@ class Moderation(Cog):
             else:
                 user = Deafen(id=ctx.author.id, guild=ctx.guild.id, self_inflicted=True)
                 session.add(user)
+                await ctx.send("Deafening...")
                 await self.perm_override(member=ctx.author, read_messages=False)
-                self.bot.loop.create_task(self.punishment_timer(ctx, timing, ctx.author, punishment=Deafen, reason=reason))
+                self.bot.loop.create_task(self.punishment_timer(ctx, timing, ctx.author, punishment=Deafen, reason=reason, nomodlog=True))
 
     selfdeafen.example_usage = """
     `{prefix}selfdeafen time (1h5m, both optional) reason`: deafens you if you need to get work done
     """
 
     @command()
-    @has_permissions(kick_members=True)
+    @has_permissions(manage_roles=True)
     @bot_has_permissions(manage_roles=True)
     async def undeafen(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
         """Undeafen a user to allow them to see message and send message again."""
@@ -424,10 +426,9 @@ class Moderation(Cog):
             if user is not None:
                 await self.perm_override(member=member_mentions, read_messages=None)
                 session.delete(user)
-                if user.self_inflicted:
-                    reason = "Self-deafen timer expired"
-                await self.mod_log(member=ctx.author, action="undeafened", target=member_mentions, reason=reason,
-                                   orig_channel=ctx.channel, embed_color=discord.Color.green())
+                if not user.self_inflicted:
+                    await self.mod_log(member=ctx.author, action="undeafened", target=member_mentions, reason=reason,
+                                       orig_channel=ctx.channel, embed_color=discord.Color.green())
             else:
                 await ctx.send("User is not deafened!")
     undeafen.example_usage = """
