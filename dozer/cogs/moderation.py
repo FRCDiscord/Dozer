@@ -407,7 +407,6 @@ class Moderation(Cog):
             else:
                 user = Deafen(id=ctx.author.id, guild=ctx.guild.id, self_inflicted=True)
                 session.add(user)
-                await ctx.send("Deafening...")
                 await self.perm_override(member=ctx.author, read_messages=False)
                 self.bot.loop.create_task(self.punishment_timer(ctx, timing, ctx.author, punishment=Deafen, reason=reason, modlog=False))
 
