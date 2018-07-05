@@ -159,7 +159,6 @@ class Moderation(Cog):
                 role_id = config.role_id
                 if message.channel.id != channel: return
                 await message.author.add_roles(discord.utils.get(message.guild.roles, id=role_id))
-                await message.delete()
 
 
     async def on_message_delete(self, message):
