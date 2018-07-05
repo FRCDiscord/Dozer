@@ -77,7 +77,6 @@ class Moderation(Cog):
         time = (hours * 3600) + (minutes * 60)
         reason = re.sub(pattern=regex_string, string=reason, repl="").lstrip("  ")
         if modlog:
-            print("Modlog is true")
             await self.mod_log(member=ctx.author, action=punishment.past_participle, target=target, reason=reason,
                                orig_channel=ctx.channel)
         if time != 0:
