@@ -102,6 +102,10 @@ class Teams(Cog):
             f'{type_.upper()} team {num} ({count} member{"s" if count > 1 else ""})' for (type_, num), count in counts)
         await ctx.send(embed=embed)
 
+    top.example_usage = """
+    `{prefix}onteam top` - List the 10 teams with the most members in this guild
+    """
+
     async def on_member_join(self, member):
         if member.guild.me.guild_permissions.manage_nicknames:
             with db.Session() as session:
