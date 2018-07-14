@@ -43,6 +43,7 @@ class Teams(Cog):
     """
 
     @command()
+    @guild_only()
     async def teamsfor(self, ctx, user: discord.Member = None):
         """Allows you to see the teams for the mentioned user. If no user is mentioned, your teams are displayed."""
         if user is None:
@@ -65,6 +66,7 @@ class Teams(Cog):
     """
 
     @group(invoke_without_command=True)
+    @guild_only()
     async def onteam(self, ctx, team_type, team_number):
         """Allows you to see who has associated themselves with a particular team."""
         team_type = team_type.casefold()
@@ -87,6 +89,7 @@ class Teams(Cog):
     """
 
     @onteam.command()
+    @guild_only()
     async def top(self, ctx):
         """Show the top 10 teams by number of members in this guild."""
         with db.Session() as session:
