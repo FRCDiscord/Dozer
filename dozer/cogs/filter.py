@@ -243,9 +243,8 @@ class WordFilterSetting(db.DatabaseObject):
 
 class WordFilterRoleWhitelist(db.DatabaseObject):
     __tablename__ = "word_filter_role_whitelist"
-    id = db.Column(db.Integer, primary_key=True)
     guild_id = db.Column(db.Integer)
-    role_id = db.Column(db.Integer)
+    role_id = db.Column(db.Integer, primary_key=True)
 
 
 class WordFilterInfraction(db.DatabaseObject):
