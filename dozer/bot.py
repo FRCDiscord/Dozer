@@ -34,7 +34,7 @@ class InvalidContext(commands.CheckFailure):
 
 class DozerContext(commands.Context):
     """Cleans all messages before sending"""
-    async def send(self, content, *args, **kwargs):
+    async def send(self, content, **kwargs):
         if content is not None:
             content = utils.clean(self, content, mass=True, member=False, role=False, channel=False)
         return await super().send(content, **kwargs)
@@ -63,7 +63,7 @@ class Dozer(commands.Bot):
             DOZER_LOGGER.warning("You are running an older version of the discord.py rewrite (with breaking changes)! "
                                  "To upgrade, run `pip install -r requirements.txt --upgrade`")
 
-    async def get_context(self, message, cls=DozerContext):
+    async def get_context(self, message, *, cls=DozerContext):
         ctx = await super().get_context(message, cls=cls)
         return ctx
 
@@ -118,7 +118,7 @@ class Dozer(commands.Bot):
             raise InvalidContext('Global rate-limit exceeded!')
         return True
 
-    def run(self):
+    def run(self, *args, **kwargs):
         token = self.config['discord_token']
         del self.config['discord_token']  # Prevent token dumping
         super().run(token)
