@@ -62,7 +62,6 @@ class Dozer(commands.Bot):
         except TypeError:
             DOZER_LOGGER.warning("You are running an older version of the discord.py rewrite (with breaking changes)! "
                                  "To upgrade, run `pip install -r requirements.txt --upgrade`")
-            await self.change_presence(game=game, status=status)
 
     async def get_context(self, message):
         ctx = await super().get_context(message, cls=DozerContext)

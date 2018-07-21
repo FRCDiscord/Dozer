@@ -14,11 +14,11 @@ from ..utils import clean
 
 class SafeRoleConverter(RoleConverter):
     """Safely converts roles"""
-    async def convert(self, ctx, arg):
+    async def convert(self, ctx, argument):
         try:
-            return await super().convert(ctx, arg)
+            return await super().convert(ctx, argument)
         except BadArgument:
-            if arg.casefold() in (
+            if argument.casefold() in (
                     'everyone', '@everyone', '@/everyone', '@.everyone', '@ everyone', '@\N{ZERO WIDTH SPACE}everyone'):
                 return ctx.guild.default_role
             else:

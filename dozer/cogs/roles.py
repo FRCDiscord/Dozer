@@ -14,6 +14,7 @@ class Roles(Cog):
     """Commands for role management."""
 
     def __init__(self, cog):
+        super().__init__(bot)
         for command in self.giveme.walk_commands():
             @command.before_invoke
             async def givemeautopurge(self, ctx):

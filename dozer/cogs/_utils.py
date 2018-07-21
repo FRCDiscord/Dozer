@@ -16,6 +16,8 @@ class CommandMixin:
     _required_permissions = None
 
     def __init__(self, name, callback, **kwargs):
+        self.message = None
+        self.reactor = None
         super().__init__(name=name, callback=callback, **kwargs)  # All must be named for commands.Group.__init__
         if hasattr(callback, '__required_permissions__'):
             self._required_permissions = callback.__required_permissions__
