@@ -47,15 +47,15 @@ class Command(CommandMixin, commands.Command):
 
 class Group(CommandMixin, commands.Group):
     """Class for command groups"""
-    def command(self, **kwargs):
+    def command(self, *args, **kwargs):
         """Initiates a command"""
         kwargs.setdefault('cls', Command)
-        return super(Group, self).command(**kwargs)
+        return super(Group, self).command(*args, **kwargs)
 
-    def group(self, **kwargs):
+    def group(self, *args, **kwargs):
         """Initiates a command group"""
         kwargs.setdefault('cls', Group)
-        return super(Group, self).command(**kwargs)
+        return super(Group, self).command(*args, **kwargs)
 
 
 def command(**kwargs):
@@ -185,6 +185,8 @@ class Paginator(Reactor):
             self.pages = pages
         self.len_pages = len(pages)
         self.page = start
+        self.message = None
+        self.reactor = None
 
     async def __aiter__(self):
         self.reactor = super().__aiter__()

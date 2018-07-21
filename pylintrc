@@ -145,7 +145,8 @@ disable=print-statement,
         duplicate-code,
         redefined-outer-name,
 	    unused-variable,
-	    protected-access
+	    protected-access,
+	    unsubscriptable-object
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

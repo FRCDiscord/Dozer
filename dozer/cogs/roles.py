@@ -7,13 +7,12 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 
 from ._utils import *
 from .. import db
-from .. import bot
 
 
 class Roles(Cog):
     """Commands for role management."""
 
-    def __init__(self, cog):
+    def __init__(self, bot):
         super().__init__(bot)
         for command in self.giveme.walk_commands():
             @command.before_invoke
