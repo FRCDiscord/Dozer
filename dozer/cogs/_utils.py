@@ -113,6 +113,7 @@ class Reactor:
             ctx.me).manage_messages  # Check for required permissions
         self.timeout = timeout
         self._action = None
+        self.message = None
 
     async def __aiter__(self):
         self.message = await self.dest.send(embed=self.pages[self.page])
