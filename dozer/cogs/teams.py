@@ -1,7 +1,7 @@
 """Commands for making and seeing robotics team associations."""
 
-import discord
 import collections
+import discord
 from discord.ext.commands import BadArgument, guild_only
 
 from ._utils import *
