@@ -44,10 +44,9 @@ class Filter(Cog):
         if message.author.id == self.bot.user.id:
             return
         with db.Session() as session:
-            roles = session.query(WordFilterRoleWhitelist).filter_by(guild_id = message.guild.id,
-                                                                     enabled = 1).all()
+            roles = session.query(WordFilterRoleWhitelist).filter_by(guild_id = message.guild.id).all()
         whitelisted_ids = set(role.role_id for role in roles)
-        if any(x in whitelisted_ids for x in message.author.roles):
+        if any(x.id in whitelisted_ids for x in message.author.roles):
             return
         filters = {}
         try:
