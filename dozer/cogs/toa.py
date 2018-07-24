@@ -2,7 +2,6 @@ import gzip
 import pickle
 
 import discord
-from discord.ext.commands import bot_has_permissions
 
 from ._toa import *
 from ._utils import *

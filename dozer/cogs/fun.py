@@ -2,12 +2,13 @@ import random
 from asyncio import sleep
 
 import discord
-
+from discord.ext.commands import cooldown, BucketType, guild_only
 from ._utils import *
 
 
 class Fun(Cog):
-
+    @guild_only()
+    @cooldown(1, 20, BucketType.channel)
     @command()
     async def fight(self, ctx, opponent: discord.Member):
         """Start a fight with another user."""
