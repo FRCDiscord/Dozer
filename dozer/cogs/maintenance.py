@@ -33,16 +33,7 @@ class Maintenance(Cog):
     async def restart(self, ctx):
         """Restarts the bot."""
         await ctx.send('Restarting')
-        await self.bot.shutdown()
-        script = sys.argv[0]
-        if script.startswith(os.getcwd()):
-            script = script[len(os.getcwd()):].lstrip(os.sep)
-
-        if script.endswith('__main__.py'):
-            args = [sys.executable, '-m', script[:-len('__main__.py')].rstrip(os.sep).replace(os.sep, '.')]
-        else:
-            args = [sys.executable, script]
-        os.execv(sys.executable, args + sys.argv[1:])
+        await self.bot.shutdown(restart=True)
 
     restart.example_usage = """
     `{prefix}restart` - restart the bot
@@ -55,7 +46,7 @@ class Maintenance(Cog):
         This pulls from whatever repository `origin` is linked to.
         If there are changes to download, and the download is successful, the bot restarts to apply changes.
         """
-        res = os.popen("git pull origin master").read()
+        res = os.popen("git pull").read()
         if res.startswith('Already up-to-date.'):
             await ctx.send('```\n' + res + '```')
         else:

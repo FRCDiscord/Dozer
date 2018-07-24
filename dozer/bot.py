@@ -39,6 +39,7 @@ class Dozer(commands.Bot):
     def __init__(self, config):
         super().__init__(command_prefix=config['prefix'])
         self.config = config
+        self._restarting = False
         self.check(self.global_checks)
 
     async def on_ready(self):
@@ -113,7 +114,8 @@ class Dozer(commands.Bot):
         del self.config['discord_token']  # Prevent token dumping
         super().run(token)
 
-    async def shutdown(self):
+    async def shutdown(self, restart=False):
+        self._restarting = restart
         await self.logout()
         await self.close()
         self.loop.stop()
