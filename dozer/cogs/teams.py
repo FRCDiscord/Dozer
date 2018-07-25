@@ -1,5 +1,6 @@
 import discord
-from discord.ext.commands import BadArgument
+import collections
+from discord.ext.commands import BadArgument, guild_only
 
 from ._utils import *
 from .. import db
@@ -42,6 +43,7 @@ class Teams(Cog):
     """
 
     @command()
+    @guild_only()
     async def teamsfor(self, ctx, user: discord.Member = None):
         """Allows you to see the teams for the mentioned user. If no user is mentioned, your teams are displayed."""
         if user is None:
@@ -63,7 +65,8 @@ class Teams(Cog):
     `{prefix}teamsfor member` - Returns all team associations with the mentioned user. Assumes caller if blank.
     """
 
-    @command()
+    @group(invoke_without_command=True)
+    @guild_only()
     async def onteam(self, ctx, team_type, team_number):
         """Allows you to see who has associated themselves with a particular team."""
         team_type = team_type.casefold()
@@ -83,6 +86,24 @@ class Teams(Cog):
 
     onteam.example_usage = """
     `{prefix}onteam type team_number` - Returns a list of users associated with a given team type and number
+    """
+
+    @onteam.command()
+    @guild_only()
+    async def top(self, ctx):
+        """Show the top 10 teams by number of members in this guild."""
+        with db.Session() as session:
+            team_keys = session.query(TeamNumbers.team_type, TeamNumbers.team_number) \
+                .filter(TeamNumbers.user_id.in_({member.id for member in ctx.guild.members})).all()
+
+        counts = sorted(collections.Counter(team_keys).most_common(10), key=lambda tup: tup[0])
+        embed = discord.Embed(title=f'Top teams in {ctx.guild.name}', color=discord.Color.blue())
+        embed.description = '\n'.join(
+            f'{type_.upper()} team {num} ({count} member{"s" if count > 1 else ""})' for (type_, num), count in counts)
+        await ctx.send(embed=embed)
+
+    top.example_usage = """
+    `{prefix}onteam top` - List the 10 teams with the most members in this guild
     """
 
     async def on_member_join(self, member):
