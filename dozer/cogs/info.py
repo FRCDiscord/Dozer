@@ -57,6 +57,7 @@ class Info(Cog):
     @cooldown(1, 10, BucketType.channel)
     @command(aliases=['server', 'guildinfo', 'serverinfo'])
     async def guild(self, ctx):
+        """Retrieve information about this guild."""
         guild = ctx.guild
         e = discord.Embed(color=blurple)
         e.set_thumbnail(url=guild.icon_url)
