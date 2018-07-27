@@ -51,7 +51,7 @@ class Dozer(commands.Bot):
 
     async def on_ready(self):
         """Things to run when the bot has initialized and signed in"""
-        DOZER_LOGGER.info('Signed in as %d!s (%d.id)', self.user, self.user)
+        DOZER_LOGGER.info('Signed in as {}#{} ({})'.format(self.user.name, self.user.discriminator, self.user.id))
         if self.config['is_backup']:
             status = discord.Status.dnd
         else:

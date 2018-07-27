@@ -43,7 +43,7 @@ class TOAParser:
                     # it seems sometimes toa forgets to return data as application/json and not text/html
                     data = json.loads(await response.text())
                     if data:
-                        res._update(data[0]) # Pylint complains about this but I don't know how to fix it
+                        res._update(data[0])
                     else:
                         res.error = True
                     return res

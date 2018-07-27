@@ -25,7 +25,7 @@ class TOA(Cog):
         Get FTC-related information from The Orange Alliance.
         If no subcommand is specified, the `team` subcommand is inferred, and the argument is taken as a team number.
         """
-        await self.team.callback(self, ctx, team_num) # This works but Pylint throws an error
+        await self.team.callback(self, ctx, team_num)
 
     toa.example_usage = """
     `{prefix}toa 5667` - show information on team 5667, the Robominers
@@ -52,7 +52,7 @@ class TOA(Cog):
                 # rip
                 await ctx.send("This team does not have any data on it yet, or it does not exist!")
                 return
-            team_data._update(last_season) # Pylint says this is bad, how should it be fixed?
+            team_data._update(last_season)
             team_data.team_name_short = last_season['name']
 
         # many team entries lack a valid url
@@ -69,7 +69,7 @@ class TOA(Cog):
         e.add_field(name='Website', value=website or 'n/a')
         e.add_field(name='Team Info Page', value='https://www.theorangealliance.org/teams/{}'.format(team_num))
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
-        await ctx.send(embed=e)
+        await ctx.send('', embed=e)
 
     team.example_usage = """
     `{prefix}toa team 12670` - show information on team 12670, Eclipse

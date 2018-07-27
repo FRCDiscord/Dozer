@@ -8,8 +8,6 @@ from discord.ext.commands import NotOwner
 from dozer.bot import DOZER_LOGGER
 from ._utils import *
 
-logger = DOZER_LOGGER
-
 
 class Maintenance(Cog):
     """
@@ -26,7 +24,10 @@ class Maintenance(Cog):
     async def shutdown(self, ctx):
         """Force-stops the bot."""
         await ctx.send('Shutting down')
-        logger.info('Shutting down at request of %d (in %d, #%d)', ctx.author, ctx.guild, ctx.channel)
+        DOZER_LOGGER.info('Shutting down at request of {}#{} (in {}, #{})'.format(ctx.author.name,
+                                                                                  ctx.author.discriminator,
+                                                                                  ctx.guild.name,
+                                                                                  ctx.channel.name))
         await self.bot.shutdown()
 
     shutdown.example_usage = """
