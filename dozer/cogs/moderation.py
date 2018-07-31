@@ -2,8 +2,10 @@ import asyncio
 import discord
 import re
 import datetime
+import time
 
 from typing import Union
+from enum import Enum
 from discord.ext.commands import BadArgument, has_permissions, RoleConverter
 
 from ._utils import *
@@ -67,9 +69,9 @@ class Moderation(Cog):
                     channel.set_permissions(target=member, overwrite=None if overwrite.is_empty() else overwrite))
         await asyncio.gather(*coros)
 
-    async def punishment_timer(self, timing, target, punishment, reason):
-        regex_string = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?")
-        matches = re.match(regex_string, timing).groupdict()
+    hm_regex = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?((?P<seconds>\d+)s)?")
+    def hm_to_seconds(self, hm_str):
+        matches = re.match(self.hm_regex, hm_str).groupdict()
         try:
             hours = int(matches.get('hours'))
         except:
@@ -78,20 +80,45 @@ class Moderation(Cog):
             minutes = int(matches.get('minutes'))
         except:
             minutes = 0
-        time = (hours * 3600) + (minutes * 60)
-        reason = re.sub(pattern=regex_string, string=reason, repl="").lstrip("  ")
+        try:
+            seconds = int(matches.get('seconds'))
+        except:
+            seconds = 0
+        return (hours * 3600) + (minutes * 60) + seconds
 
-        if time != 0:
-            await asyncio.sleep(time)
-            with db.Session() as session:
-                user = session.query(punishment).filter_by(id=target.id).one_or_none()
-                if user is not None:
-                    # TODO: modlogs
-                    if punishment == Deafen:
-                        self.bot.loop.create_task(
-                            coro=self._undeafen(target))
-                    if punishment == Mute:
-                        self.bot.loop.create_task(coro=self._unmute(target))
+    async def punishment_timer(self, seconds, target: discord.Member, punishment, reason, actor: discord.Member, orig_channel=None):
+        if seconds == 0:
+            return
+
+        # register the timer
+        with db.Session() as session:
+            ent = PunishmentTimerRecord(
+                guild_id=target.guild.id,
+                actor_id=actor.id,
+                target_id=target.id,
+                orig_channel_id=orig_channel.id if orig_channel else 0,
+                type=punishment.type,
+                reason=reason,
+                target_ts=int(seconds + time.time())
+            )
+            session.add(ent)
+            session.commit() # necessary to generate an autoincrement id
+            ent_id = ent.id
+
+        await asyncio.sleep(seconds)
+
+        with db.Session() as session:
+            user = session.query(punishment).filter_by(id=target.id).one_or_none()
+            if user is not None:
+                await self.mod_log(actor, "un" + punishment.past_participle, target, reason, orig_channel, embed_color=discord.Color.green())
+                if punishment == Deafen:
+                    self.bot.loop.create_task(coro=self._undeafen(target))
+                elif punishment == Mute:
+                    self.bot.loop.create_task(coro=self._unmute(target))
+
+            ent = session.query(PunishmentTimerRecord).filter_by(id=ent_id).one_or_none() # necessary to refresh the entry for the current session
+            if ent:
+                session.delete(ent)
 
     async def _check_links_warn(self, msg, role):
         warn_msg = await msg.channel.send(f"{msg.author.mention}, you need the `{role.name}` role to post links!")
@@ -114,9 +141,9 @@ class Moderation(Cog):
                 return True
         return False
 
-    """=== context-free backend functions ig ==="""
+    """=== context-free backend functions ==="""
 
-    async def _mute(self, member: discord.Member, reason: str="No reason provided"):
+    async def _mute(self, member: discord.Member, reason: str="No reason provided", seconds=0, actor=None, orig_channel=None):
         with db.Session() as session:
             if session.query(Mute).filter_by(id=member.id, guild=member.guild.id).one_or_none() is not None:
                 return False # member already muted
@@ -124,8 +151,9 @@ class Moderation(Cog):
                 user = Mute(id=member.id, guild=member.guild.id)
                 session.add(user)
                 await self.perm_override(member, send_messages=False, add_reactions=False)
+
                 self.bot.loop.create_task(
-                    self.punishment_timer(reason, member, punishment=Mute, reason=reason))
+                    self.punishment_timer(seconds, member, Mute, reason, actor or member.guild.me, orig_channel=orig_channel))
                 return True
 
     async def _unmute(self, member: discord.Member):
@@ -138,8 +166,7 @@ class Moderation(Cog):
             else:
                 return False # member not muted
 
-
-    async def _deafen(self, member: discord.Member, reason: str="No reason provided", timing=None, self_inflicted: bool=False):
+    async def _deafen(self, member: discord.Member, reason: str="No reason provided", seconds=0, self_inflicted: bool=False, actor=None, orig_channel=None):
         with db.Session() as session:
             if session.query(Deafen).filter_by(id=member.id, guild=member.guild.id).one_or_none() is not None:
                 return False
@@ -147,8 +174,12 @@ class Moderation(Cog):
                 user = Deafen(id=member.id, guild=member.guild.id, self_inflicted=self_inflicted)
                 session.add(user)
                 await self.perm_override(member, read_messages=False)
+
+                if self_inflicted and seconds == 0:
+                    seconds = 30 # prevent lockout in case of bad argument
                 self.bot.loop.create_task(
-                    self.punishment_timer(timing if timing else reason, member, punishment=Deafen, reason=reason))
+                    self.punishment_timer(seconds, member,
+                                          punishment=Deafen, reason=reason, actor=actor or member.guild.me, orig_channel=orig_channel))
                 return True
 
     async def _undeafen(self, member: discord.Member):
@@ -165,6 +196,21 @@ class Moderation(Cog):
                 return False
 
     """=== Event handlers ==="""
+
+    async def on_ready(self):
+        with db.Session() as session:
+            q = session.query(PunishmentTimerRecord).all()
+            for r in q:
+                guild = self.bot.get_guild(r.guild_id)
+                actor = guild.get_member(r.actor_id)
+                target = guild.get_member(r.target_id)
+                orig_channel = self.bot.get_channel(r.orig_channel_id)
+                type = r.type
+                reason = r.reason or ""
+                seconds = max(int(r.target_ts - time.time()), 0.01)
+                session.delete(r)
+                self.bot.loop.create_task(self.punishment_timer(seconds, target, PunishmentTimerRecord.type_map[type], reason, actor, orig_channel))
+                print(f"Restarted timer {actor} {PunishmentTimerRecord.type_map[type]} {target}")
 
     async def on_member_join(self, member):
         join = discord.Embed(type='rich', color=0x00FF00)
@@ -403,7 +449,9 @@ class Moderation(Cog):
     async def mute(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
         """Mute a user to prevent them from sending messages"""
         async with ctx.typing():
-            if await self._mute(member_mentions, reason):
+            seconds = self.hm_to_seconds(reason)
+            reason = re.sub(pattern=self.hm_regex, string=reason, repl="").lstrip("  ") or "No reason provided"
+            if await self._mute(member_mentions, reason=reason, seconds=seconds, actor=ctx.author, orig_channel=ctx.channel):
                 await self.mod_log(ctx.author, "muted", member_mentions, reason, ctx.channel, discord.Color.red())
             else:
                 await ctx.send("Member is already muted!")
@@ -432,7 +480,9 @@ class Moderation(Cog):
     async def deafen(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
         """Deafen a user to prevent them from both sending messages but also reading messages."""
         async with ctx.typing():
-            if await self._deafen(member_mentions, reason, self_inflicted=False):
+            seconds = self.hm_to_seconds(reason)
+            reason = re.sub(pattern=self.hm_regex, string=reason, repl="").lstrip("  ") or "No reason provided"
+            if await self._deafen(member_mentions, reason, seconds=seconds, self_inflicted=False, actor=ctx.author, orig_channel=ctx.channel):
                 await self.mod_log(ctx.author, "deafened", member_mentions, reason, ctx.channel, discord.Color.red())
             else:
                 await ctx.send("Member is already deafened!")
@@ -443,10 +493,12 @@ class Moderation(Cog):
 
     @command()
     @bot_has_permissions(manage_roles=True)
-    async def selfdeafen(self, ctx, timing, *, reason="No reason provided"):
+    async def selfdeafen(self, ctx, *, reason="No reason provided"):
         """Deafen yourself for a given time period to prevent you from reading or sending messages; useful as a study tool."""
         async with ctx.typing():
-            if await self._deafen(ctx.author, reason, timing=timing, self_inflicted=True):
+            seconds = self.hm_to_seconds(reason)
+            reason = re.sub(pattern=self.hm_regex, string=reason, repl="").lstrip("  ") or "No reason provided"
+            if await self._deafen(ctx.author, reason, seconds=seconds, self_inflicted=True, actor=ctx.author, orig_channel=ctx.channel):
                 await self.mod_log(ctx.author, "deafened", ctx.author, reason, ctx.channel, discord.Color.red())
             else:
                 await ctx.send("You are already deafened!")
@@ -606,6 +658,7 @@ class Mute(db.DatabaseObject):
     id = db.Column(db.Integer, primary_key=True)
     guild = db.Column(db.Integer, primary_key=True)
     past_participle = "muted"
+    type = 1
 
 
 class Deafen(db.DatabaseObject):
@@ -614,6 +667,7 @@ class Deafen(db.DatabaseObject):
     guild = db.Column(db.Integer, primary_key=True)
     self_inflicted = db.Column(db.Boolean)
     past_participle = "deafened"
+    type = 2
 
 
 class GuildModLog(db.DatabaseObject):
@@ -656,6 +710,21 @@ class GuildMessageLinks(db.DatabaseObject):
     guild_id = db.Column(db.Integer, primary_key=True)
     role_id = db.Column(db.Integer, nullable=True)
 
+class PunishmentTimerRecord(db.DatabaseObject):
+    __tablename__ = "punishment_timers"
+    id = db.Column(db.Integer, primary_key=True)
+    guild_id = db.Column(db.Integer)
+    actor_id = db.Column(db.Integer)
+    target_id = db.Column(db.Integer)
+    orig_channel_id = db.Column(db.Integer, nullable=True)
+    type = db.Column(db.Integer)
+    reason = db.Column(db.String, nullable=True)
+    target_ts = db.Column(db.Integer)
+
+    type_map = {
+        1: Mute,
+        2: Deafen
+    }
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
