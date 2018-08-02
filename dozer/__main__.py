@@ -1,7 +1,7 @@
 """Initializes the bot and deals with the configuration file"""
 
 import json
-import os.path
+import os
 import sys
 
 from . import db
@@ -43,5 +43,17 @@ for ext in os.listdir('dozer/cogs'):
         bot.load_extension('dozer.cogs.' + ext[:-3])  # Remove '.py'
 
 db.DatabaseObject.metadata.create_all()
-
 bot.run()
+
+# restart the bot if the bot flagged itself to do so
+if bot._restarting:
+    script = sys.argv[0]
+    if script.startswith(os.getcwd()):
+        script = script[len(os.getcwd()):].lstrip(os.sep)
+
+    if script.endswith('__main__.py'):
+        args = [sys.executable, '-m', script[:-len('__main__.py')].rstrip(os.sep).replace(os.sep, '.')]
+    else:
+        args = [sys.executable, script]
+    os.execv(sys.executable, args + sys.argv[1:])
+
