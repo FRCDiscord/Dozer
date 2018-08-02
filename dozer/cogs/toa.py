@@ -1,3 +1,4 @@
+"""Provides commands that pull information from The Orange Alliance, an FTC info API."""
 import gzip
 import pickle
 
@@ -10,9 +11,11 @@ embed_color = discord.Color(0xff9800)
 
 
 class TOA(Cog):
+    """TOA commands"""
     def __init__(self, bot):
         super().__init__(bot)
         self.parser = TOAParser(bot.config['toa']['key'], bot.http._session, app_name=bot.config['toa']['app_name'])
+        # The line above has an error (bot.http._session is a protected class)
         with gzip.open("ftc_teams.pickle.gz") as f:
             self._teams = pickle.load(f)
 
@@ -66,7 +69,7 @@ class TOA(Cog):
         e.add_field(name='Website', value=website or 'n/a')
         e.add_field(name='Team Info Page', value='https://www.theorangealliance.org/teams/{}'.format(team_num))
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
-        await ctx.send(embed=e)
+        await ctx.send('', embed=e)
 
     team.example_usage = """
     `{prefix}toa team 12670` - show information on team 12670, Eclipse
@@ -74,4 +77,5 @@ class TOA(Cog):
 
 
 def setup(bot):
+    """Adds the TOA cog to the bot."""
     bot.add_cog(TOA(bot))

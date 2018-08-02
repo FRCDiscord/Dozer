@@ -1,5 +1,7 @@
-import discord
+"""General, basic commands that are common for Discord bots"""
+
 import inspect
+import discord
 from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions
 
 from ._utils import *
@@ -68,9 +70,11 @@ class General(Cog):
         Use `{0}{1} {1}` for more information.
         """.format(ctx.prefix, ctx.invoked_with)), inline=False)
         info.add_field(name='Support',
-                       value="Join our development server at https://discord.gg/bB8tcQ8 for support, to help with development, or if you have any questions or comments!")
+                       value="Join our development server at https://discord.gg/bB8tcQ8 for support, to help with development, or if "
+                             "you have any questions or comments!")
         info.add_field(name="Open Source",
-                       value="Dozer is open source! Feel free to view and contribute to our Python code [on Github](https://github.com/FRCDiscord/Dozer)")
+                       value="Dozer is open source! Feel free to view and contribute to our Python code "
+                             "[on Github](https://github.com/FRCDiscord/Dozer)")
         info.set_footer(text='Dozer Help | all commands | Info page')
         await self._show_help(ctx, info, 'Dozer: Commands', '', 'all commands', ctx.bot.commands)
 
@@ -96,7 +100,8 @@ class General(Cog):
         """Creates and sends a template help message, with arguments filled in."""
         format_args['prefix'] = ctx.prefix
         footer = 'Dozer Help | {} | Page {}'.format(footer,
-                                                    '{page_num} of {len_pages}')  # Page info is inserted as a parameter so page_num and len_pages aren't evaluated now
+                                                    '{page_num} of {len_pages}')
+        # Page info is inserted as a parameter so page_num and len_pages aren't evaluated now
         if commands:
             command_chunks = list(chunk(sorted(commands, key=lambda cmd: cmd.name), 4))
             format_args['len_pages'] = len(command_chunks)
@@ -216,11 +221,13 @@ class General(Cog):
 
 
 def setup(bot):
+    """Adds the general cog to the bot"""
     bot.remove_command('help')
     bot.add_cog(General(bot))
 
 
 class WelcomeChannel(db.DatabaseObject):
+    """Maintains a list of channels for welcome messages"""
     __tablename__ = 'welcome_channel'
     id = db.Column(db.Integer, primary_key=True)
     channel_id = db.Column(db.Integer, nullable=True)
