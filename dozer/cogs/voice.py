@@ -1,4 +1,3 @@
-"""Provides commands for voice, currently only voice and text channel access bindings."""
 import discord
 from discord.ext.commands import has_permissions
 
@@ -7,9 +6,7 @@ from .. import db
 
 
 class Voice(Cog):
-    """Commands interacting with voice."""
     async def on_voice_state_update(self, member, before, after):
-        """Handles voicebinds when members join/leave voice channels"""
         # skip this if we have no perms, or if it's something like a mute/deafen
         if member.guild.me.guild_permissions.manage_roles and before.channel != after.channel:
             # determine if it's a join/leave event as well.
@@ -90,7 +87,6 @@ class Voice(Cog):
 
 
 class Voicebinds(db.DatabaseObject):
-    """DB object to keep track of voice to text channel access bindings."""
     __tablename__ = 'voicebinds'
     id = db.Column(db.Integer, primary_key=True)
     guild_id = db.Column(db.Integer)
@@ -99,5 +95,4 @@ class Voicebinds(db.DatabaseObject):
 
 
 def setup(bot):
-    """Add this cog to the main bot."""
     bot.add_cog(Voice(bot))

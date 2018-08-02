@@ -1,4 +1,3 @@
-"""Commands specific to development. Only approved developers can use these commands."""
 import copy
 import re
 import discord
@@ -61,7 +60,7 @@ class Development(Cog):
             e.title = 'Python Evaluation - Error'
             e.color = 0xFF0000
             e.add_field(name='Error', value='```\n%s\n```' % repr(err))
-        await ctx.send('', embed=e)
+        await ctx.send(embed=e)
 
     evaluate.example_usage = """
     `{prefix}eval 0.1 + 0.2` - calculates 0.1 + 0.2
@@ -83,7 +82,6 @@ class Development(Cog):
 
 
 def load_function(code, globals_, locals_):
-    """Loads functions if possible"""
     function_header = 'async def evaluated_function(ctx):'
 
     lines = code.splitlines()
@@ -100,13 +98,12 @@ def load_function(code, globals_, locals_):
         try:
             exec(function_header + '\n\treturn ' + lines[0], globals_, locals_)
         except SyntaxError as err:  # Either adding the 'return' caused an error, or it's user error
-            if err.text[err.offset - 1] == '=' or err.text[err.offset - 3:err.offset] == 'del' \
-                    or err.text[err.offset - 6:err.offset] == 'return':  # return-caused error
+            if err.text[err.offset - 1] == '=' or err.text[err.offset - 3:err.offset] == 'del' or err.text[
+                                                                                                  err.offset - 6:err.offset] == 'return':  # return-caused error
                 exec(function_header + '\n\t' + lines[0], globals_, locals_)
             else:  # user error
                 raise err
 
 
 def setup(bot):
-    """Adds the development cog to the bot."""
     bot.add_cog(Development(bot))

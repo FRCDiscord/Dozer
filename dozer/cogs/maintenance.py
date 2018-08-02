@@ -1,11 +1,9 @@
-"""Maintenance commands for bot developers"""
-
 import os
 import sys
 
 from discord.ext.commands import NotOwner
 
-from dozer.bot import DOZER_LOGGER
+from dozer.bot import logger
 from ._utils import *
 
 
@@ -24,10 +22,7 @@ class Maintenance(Cog):
     async def shutdown(self, ctx):
         """Force-stops the bot."""
         await ctx.send('Shutting down')
-        DOZER_LOGGER.info('Shutting down at request of {}#{} (in {}, #{})'.format(ctx.author.name,
-                                                                                  ctx.author.discriminator,
-                                                                                  ctx.guild.name,
-                                                                                  ctx.channel.name))
+        logger.info('Shutting down at request of {0.author} (in {0.guild}, #{0.channel})'.format(ctx))
         await self.bot.shutdown()
 
     shutdown.example_usage = """
@@ -73,5 +68,4 @@ class Maintenance(Cog):
 
 
 def setup(bot):
-    """Adds the maintenance cog to the bot process."""
     bot.add_cog(Maintenance(bot))
