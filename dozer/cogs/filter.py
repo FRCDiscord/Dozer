@@ -27,7 +27,7 @@ class Filter(Cog):
             else:
                 results = results.value
 
-            if results is "1":
+            if results:
                 await ctx.author.send(embed=embed)
                 await ctx.message.add_reaction("📬")
             else:
@@ -54,6 +54,7 @@ class Filter(Cog):
         except KeyError:
             self.load_filters(message.guild.id)
             filters = self.filter_dict[message.guild.id]
+        deleted = False
         for id, filter in filters.items():
             if filter.search(message.content) is not None:
                 await message.channel.send("{}, Banned word detected!".format(message.author.mention), delete_after=5.0)
@@ -63,7 +64,9 @@ class Filter(Cog):
                                                       timestamp=time,
                                                       message=message.content)
                     session.add(infraction)
-                await message.delete()
+                if not deleted:
+                    await message.delete()
+                    deleted = True
 
     """Event Handlers"""
 
@@ -99,11 +102,11 @@ class Filter(Cog):
         await self.check_dm_filter(ctx, embed)
 
     filter.example_usage = """`{prefix}filter add test` - Adds test as a filter.
-`{prefix}filter remove 1` - Removes filter 1
-`{prefix}filter dm true` - Any messages containing a filtered word will be DMed
-`{prefix}filter whitelist` - See all of the whitelisted roles
-`{prefix}filter whitelist add Administrators` - Make the Administrators role whitelisted for the filter.
-`{prefix}filter whitelist remove Moderators` - Make the Moderators role no longer whitelisted."""
+    `{prefix}filter remove 1` - Removes filter 1
+    `{prefix}filter dm true` - Any messages containing a filtered word will be DMed
+    `{prefix}filter whitelist` - See all of the whitelisted roles
+    `{prefix}filter whitelist add Administrators` - Make the Administrators role whitelisted for the filter.
+    `{prefix}filter whitelist remove Moderators` - Make the Moderators role no longer whitelisted."""
 
     @guild_only()
     @has_permissions(manage_guild=True)
