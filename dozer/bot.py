@@ -101,7 +101,7 @@ class Dozer(commands.Bot):
 
     @staticmethod
     def format_error(ctx, err, *, word_re=re.compile('[A-Z][a-z]+')):
-        """TODO: Figure out what this does"""
+        """Turns an exception into a user-friendly (or -friendlier, at least) error message."""
         type_words = word_re.findall(type(err).__name__)
         type_msg = ' '.join(map(str.lower, type_words))
 
