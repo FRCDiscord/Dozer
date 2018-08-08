@@ -253,7 +253,7 @@ def chunk(iterable, size):
 
 
 def bot_has_permissions(**required):
-    """Checks if bot has permissions"""
+    """Decorator to check if bot has certain permissions when added to a command"""
     def predicate(ctx):
         """Function to tell the bot if it has the right permissions"""
         given = ctx.channel.permissions_for((ctx.guild or ctx.channel).me)
