@@ -54,7 +54,7 @@ class Moderation(Cog):
                     await orig_channel.send("Please configure modlog channel to enable modlog functionality")
 
     async def perm_override(self, member, **overwrites):
-        """Applies permission overrides"""
+        """Applies the given overrides to the given member in their guild."""
         coros = []
         for channel in member.guild.channels:
             overwrite = channel.overwrites_for(member)
