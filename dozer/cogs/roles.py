@@ -369,7 +369,7 @@ class GiveableRole(db.DatabaseObject):
 
 
 class MissingMember(db.DatabaseObject):
-    """Is this necessary any more?"""
+    """Required for the relationship with the MissingRole class and table."""
     __tablename__ = 'missing_members'
     guild_id = db.Column(db.Integer, primary_key=True)
     member_id = db.Column(db.Integer, primary_key=True)
