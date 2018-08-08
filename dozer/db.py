@@ -14,7 +14,7 @@ DatabaseObject.__table_args__ = {'extend_existing': True}  # allow use of the re
 
 
 class CtxSession(Session):
-    """Provides a context session for the database system."""
+    """Allows sessions to be used as context managers and asynchronous context managers."""
     def __enter__(self):
         return self
 
