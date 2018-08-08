@@ -27,7 +27,7 @@ def clean(ctx, text=None, *, mass=True, member=True, role=True, channel=True):
 
 
 def is_clean(ctx, text=None):
-    """Checks if the message needs to be cleaned."""
+    """Checks if the message is clean already and doesn't need to be cleaned."""
     if text is None:
         text = ctx.message.content
     return all(regex.search(text) is None for regex in (mass_mention, member_mention, role_mention, channel_mention))
