@@ -83,7 +83,7 @@ class Development(Cog):
 
 
 def load_function(code, globals_, locals_):
-    """Loads functions if possible"""
+    """Loads the user-evaluted code as a function so it can be executed."""
     function_header = 'async def evaluated_function(ctx):'
 
     lines = code.splitlines()
