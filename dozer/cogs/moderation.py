@@ -72,18 +72,9 @@ class Moderation(Cog):
     hm_regex = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?((?P<seconds>\d+)s)?")
     def hm_to_seconds(self, hm_str):
         matches = re.match(self.hm_regex, hm_str).groupdict()
-        try:
-            hours = int(matches.get('hours'))
-        except:
-            hours = 0
-        try:
-            minutes = int(matches.get('minutes'))
-        except:
-            minutes = 0
-        try:
-            seconds = int(matches.get('seconds'))
-        except:
-            seconds = 0
+        hours = int(matches.get('hours') or 0)
+        minutes = int(matches.get('minutes') or 0)
+        seconds = int(matches.get('seconds') or 0)
         return (hours * 3600) + (minutes * 60) + seconds
 
     async def punishment_timer(self, seconds, target: discord.Member, punishment, reason, actor: discord.Member, orig_channel=None):
@@ -111,10 +102,7 @@ class Moderation(Cog):
             user = session.query(punishment).filter_by(id=target.id).one_or_none()
             if user is not None:
                 await self.mod_log(actor, "un" + punishment.past_participle, target, reason, orig_channel, embed_color=discord.Color.green())
-                if punishment == Deafen:
-                    self.bot.loop.create_task(coro=self._undeafen(target))
-                elif punishment == Mute:
-                    self.bot.loop.create_task(coro=self._unmute(target))
+                self.bot.loop.create_task(coro=punishment.finished_callback(self, target))
 
             ent = session.query(PunishmentTimerRecord).filter_by(id=ent_id).one_or_none() # necessary to refresh the entry for the current session
             if ent:
@@ -658,6 +646,7 @@ class Mute(db.DatabaseObject):
     id = db.Column(db.Integer, primary_key=True)
     guild = db.Column(db.Integer, primary_key=True)
     past_participle = "muted"
+    finished_callback = Moderation._unmute
     type = 1
 
 
@@ -667,6 +656,7 @@ class Deafen(db.DatabaseObject):
     guild = db.Column(db.Integer, primary_key=True)
     self_inflicted = db.Column(db.Boolean)
     past_participle = "deafened"
+    finished_callback = Moderation._undeafen
     type = 2
 
 
@@ -721,10 +711,7 @@ class PunishmentTimerRecord(db.DatabaseObject):
     reason = db.Column(db.String, nullable=True)
     target_ts = db.Column(db.Integer)
 
-    type_map = {
-        1: Mute,
-        2: Deafen
-    }
+    type_map = { p.type: p for p in (Mute, Deafen) }
 
 def setup(bot):
     bot.add_cog(Moderation(bot))
