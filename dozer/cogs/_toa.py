@@ -9,7 +9,7 @@ import aiohttp
 import async_timeout
 
 
-class TOAParser(object):
+class TOAParser:
     """
     A class to make async requests to The Orange Alliance.
     """
@@ -43,7 +43,7 @@ class TOAParser(object):
                     # it seems sometimes toa forgets to return data as application/json and not text/html
                     data = json.loads(await response.text())
                     if data:
-                        res._update(data[0]) # Pylint complains about this but I don't know how to fix it
+                        res._update(data[0])
                     else:
                         res.error = True
                     return res
@@ -53,7 +53,7 @@ class TOAParser(object):
                     raise
 
 
-class TOAResponse(object):
+class TOAResponse:
     """Represents a response from the TOA API."""
     def __init__(self):
         self.error = False

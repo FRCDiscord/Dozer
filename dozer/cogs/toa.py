@@ -69,7 +69,7 @@ class TOA(Cog):
         e.add_field(name='Website', value=website or 'n/a')
         e.add_field(name='Team Info Page', value='https://www.theorangealliance.org/teams/{}'.format(team_num))
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
-        await ctx.send(embed=e)
+        await ctx.send('', embed=e)
 
     team.example_usage = """
     `{prefix}toa team 12670` - show information on team 12670, Eclipse

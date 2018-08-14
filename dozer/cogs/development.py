@@ -61,7 +61,7 @@ class Development(Cog):
             e.title = 'Python Evaluation - Error'
             e.color = 0xFF0000
             e.add_field(name='Error', value='```\n%s\n```' % repr(err))
-        await ctx.send(embed=e)
+        await ctx.send('', embed=e)
 
     evaluate.example_usage = """
     `{prefix}eval 0.1 + 0.2` - calculates 0.1 + 0.2
@@ -83,7 +83,7 @@ class Development(Cog):
 
 
 def load_function(code, globals_, locals_):
-    """Loads functions if possible"""
+    """Loads the user-evaluted code as a function so it can be executed."""
     function_header = 'async def evaluated_function(ctx):'
 
     lines = code.splitlines()

@@ -2,6 +2,7 @@
 __pycache__
 config.json
 dozer.db
+cilog.txt
 
 # IDEA
 .idea/Dozer.iml

@@ -34,7 +34,7 @@ class InvalidContext(commands.CheckFailure):
 
 class DozerContext(commands.Context):
     """Cleans all messages before sending"""
-    async def send(self, content=None, **kwargs):
+    async def send(self, content, **kwargs):
         if content is not None:
             content = utils.clean(self, content, mass=True, member=False, role=False, channel=False)
         return await super().send(content, **kwargs)
@@ -47,11 +47,12 @@ class Dozer(commands.Bot):
     def __init__(self, config):
         super().__init__(command_prefix=config['prefix'])
         self.config = config
+        self._restarting = False
         self.check(self.global_checks)
 
     async def on_ready(self):
         """Things to run when the bot has initialized and signed in"""
-        DOZER_LOGGER.info('Signed in as %d!s (%d.id)', self.user, self.user)
+        DOZER_LOGGER.info('Signed in as {}#{} ({})'.format(self.user.name, self.user.discriminator, self.user.id))
         if self.config['is_backup']:
             status = discord.Status.dnd
         else:
@@ -62,46 +63,45 @@ class Dozer(commands.Bot):
         except TypeError:
             DOZER_LOGGER.warning("You are running an older version of the discord.py rewrite (with breaking changes)! "
                                  "To upgrade, run `pip install -r requirements.txt --upgrade`")
-            await self.change_presence(game=game, status=status)
 
-    async def get_context(self, message):
-        ctx = await super().get_context(message, cls=DozerContext)
+    async def get_context(self, message, *, cls=DozerContext):
+        ctx = await super().get_context(message, cls=cls)
         return ctx
 
-    async def on_command_error(self, ctx, err):
-        if isinstance(err, commands.NoPrivateMessage):
-            await ctx.send('{}, This command cannot be used in DMs.'.format(ctx.author.mention))
-        elif isinstance(err, commands.UserInputError):
-            await ctx.send('{}, {}'.format(ctx.author.mention, self.format_error(ctx, err)))
-        elif isinstance(err, commands.NotOwner):
-            await ctx.send('{}, {}'.format(ctx.author.mention, err.args[0]))
-        elif isinstance(err, commands.MissingPermissions):
-            permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in err.missing_perms]
-            await ctx.send('{}, you need {} permissions to run this command!'.format(
-                ctx.author.mention, utils.pretty_concat(permission_names)))
-        elif isinstance(err, commands.BotMissingPermissions):
-            permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in err.missing_perms]
-            await ctx.send('{}, I need {} permissions to run this command!'.format(
-                ctx.author.mention, utils.pretty_concat(permission_names)))
-        elif isinstance(err, commands.CommandOnCooldown):
-            await ctx.send(
-                '{}, That command is on cooldown! Try again in {:.2f}s!'.format(ctx.author.mention, err.retry_after))
-        elif isinstance(err, (commands.CommandNotFound, InvalidContext)):
+    async def on_command_error(self, context, exception):
+        if isinstance(exception, commands.NoPrivateMessage):
+            await context.send('{}, This command cannot be used in DMs.'.format(context.author.mention))
+        elif isinstance(exception, commands.UserInputError):
+            await context.send('{}, {}'.format(context.author.mention, self.format_error(context, exception)))
+        elif isinstance(exception, commands.NotOwner):
+            await context.send('{}, {}'.format(context.author.mention, exception.args[0]))
+        elif isinstance(exception, commands.MissingPermissions):
+            permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in exception.missing_perms]
+            await context.send('{}, you need {} permissions to run this command!'.format(
+                context.author.mention, utils.pretty_concat(permission_names)))
+        elif isinstance(exception, commands.BotMissingPermissions):
+            permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in exception.missing_perms]
+            await context.send('{}, I need {} permissions to run this command!'.format(
+                context.author.mention, utils.pretty_concat(permission_names)))
+        elif isinstance(exception, commands.CommandOnCooldown):
+            await context.send(
+                '{}, That command is on cooldown! Try again in {:.2f}s!'.format(context.author.mention, exception.retry_after))
+        elif isinstance(exception, (commands.CommandNotFound, InvalidContext)):
             pass  # Silent ignore
         else:
-            await ctx.send('```\n%s\n```' % ''.join(traceback.format_exception_only(type(err), err)).strip())
-            if isinstance(ctx.channel, discord.TextChannel):
+            await context.send('```\n%s\n```' % ''.join(traceback.format_exception_only(type(exception), exception)).strip())
+            if isinstance(context.channel, discord.TextChannel):
                 DOZER_LOGGER.error('Error in command <%d> (%d.name!r(%d.id) %d(%d.id) %d(%d.id) %d)',
-                                   ctx.command, ctx.guild, ctx.guild, ctx.channel, ctx.channel,
-                                   ctx.author, ctx.author, ctx.message.content)
+                                   context.command, context.guild, context.guild, context.channel, context.channel,
+                                   context.author, context.author, context.message.content)
             else:
-                DOZER_LOGGER.error('Error in command <%d> (DM %d(%d.id) %d)', ctx.command, ctx.channel.recipient,
-                                   ctx.channel.recipient, ctx.message.content)
-            DOZER_LOGGER.error(''.join(traceback.format_exception(type(err), err, err.__traceback__)))
+                DOZER_LOGGER.error('Error in command <%d> (DM %d(%d.id) %d)', context.command, context.channel.recipient,
+                                   context.channel.recipient, context.message.content)
+            DOZER_LOGGER.error(''.join(traceback.format_exception(type(exception), exception, exception.__traceback__)))
 
     @staticmethod
     def format_error(ctx, err, *, word_re=re.compile('[A-Z][a-z]+')):
-        """TODO: Figure out what this does"""
+        """Turns an exception into a user-friendly (or -friendlier, at least) error message."""
         type_words = word_re.findall(type(err).__name__)
         type_msg = ' '.join(map(str.lower, type_words))
 
@@ -119,13 +119,14 @@ class Dozer(commands.Bot):
             raise InvalidContext('Global rate-limit exceeded!')
         return True
 
-    def run(self):
+    def run(self, *args, **kwargs):
         token = self.config['discord_token']
         del self.config['discord_token']  # Prevent token dumping
         super().run(token)
 
-    async def shutdown(self):
+    async def shutdown(self, restart=False):
         """Shuts down the bot"""
+        self._restarting = restart
         await self.logout()
         await self.close()
         self.loop.stop()

@@ -12,11 +12,11 @@ from .. import db
 
 class SafeRoleConverter(RoleConverter):
     """Safely converts roles"""
-    async def convert(self, ctx, arg):
+    async def convert(self, ctx, argument):
         try:
-            return await super().convert(ctx, arg)
+            return await super().convert(ctx, argument)
         except BadArgument:
-            if arg.casefold() in (
+            if argument.casefold() in (
                     'everyone', '@everyone', '@/everyone', '@.everyone', '@ everyone', '@\N{ZERO WIDTH SPACE}everyone'):
                 return ctx.guild.default_role
             else:
@@ -54,7 +54,7 @@ class Moderation(Cog):
                     await orig_channel.send("Please configure modlog channel to enable modlog functionality")
 
     async def perm_override(self, member, **overwrites):
-        """Applies permission overrides"""
+        """Applies the given overrides to the given member in their guild."""
         coros = []
         for channel in member.guild.channels:
             overwrite = channel.overwrites_for(member)
@@ -65,7 +65,7 @@ class Moderation(Cog):
                     channel.set_permissions(target=member, overwrite=None if overwrite.is_empty() else overwrite))
         await asyncio.gather(*coros)
 
-    async def punishment_timer(self, ctx, timing, target, punishment, reason):
+    async def punishment_timer(self, ctx, timing, target, punishment, reason, modlog=True):
         """Parses time strings and punishes people accordingly."""
         regex_string = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?")
         matches = re.match(regex_string, timing).groupdict()
@@ -78,12 +78,11 @@ class Moderation(Cog):
         except ValueError:
             minutes = 0
         time = (hours * 3600) + (minutes * 60)
-        if time == 0:
-            await self.mod_log(member=ctx.author, action=punishment.past_participle, target=target, reason=reason, orig_channel=ctx.channel)
-        else:
-            reasoning = re.sub(pattern=regex_string, string=reason, repl="").lstrip("  ")
-            await self.mod_log(member=ctx.author, action=punishment.past_participle, target=target, reason=reasoning, orig_channel=ctx.channel)
-
+        reason = re.sub(pattern=regex_string, string=reason, repl="").lstrip("  ")
+        if modlog:
+            await self.mod_log(member=ctx.author, action=punishment.past_participle, target=target, reason=reason,
+                               orig_channel=ctx.channel)
+        if time != 0:
             await asyncio.sleep(time)
             with db.Session() as session:
                 user = session.query(punishment).filter_by(id=target.id).one_or_none()
@@ -360,7 +359,7 @@ class Moderation(Cog):
     """
 
     @command()
-    @has_permissions(kick_members=True)
+    @has_permissions(manage_roles=True)
     @bot_has_permissions(manage_roles=True)
     async def mute(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
         """Mute a user to prevent them from sending messages"""
@@ -379,7 +378,7 @@ class Moderation(Cog):
     """
 
     @command()
-    @has_permissions(kick_members=True)
+    @has_permissions(manage_roles=True)
     @bot_has_permissions(manage_roles=True)
     async def unmute(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
         """Unmute a user to allow them to send messages again."""
@@ -397,7 +396,7 @@ class Moderation(Cog):
     """
 
     @command()
-    @has_permissions(kick_members=True)
+    @has_permissions(manage_roles=True)
     @bot_has_permissions(manage_roles=True)
     async def deafen(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
         """Deafen a user to prevent them from both sending messages but also reading messages."""
@@ -428,14 +427,14 @@ class Moderation(Cog):
                 user = Deafen(id=ctx.author.id, guild=ctx.guild.id, self_inflicted=True)
                 session.add(user)
                 await self.perm_override(member=ctx.author, read_messages=False)
-                self.bot.loop.create_task(self.punishment_timer(ctx, timing, ctx.author, punishment=Deafen, reason=reason))
+                self.bot.loop.create_task(self.punishment_timer(ctx, timing, ctx.author, punishment=Deafen, reason=reason, modlog=False))
 
     selfdeafen.example_usage = """
     `{prefix}selfdeafen time (1h5m, both optional) reason`: deafens you if you need to get work done
     """
 
     @command()
-    @has_permissions(kick_members=True)
+    @has_permissions(manage_roles=True)
     @bot_has_permissions(manage_roles=True)
     async def undeafen(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
         """Undeafen a user to allow them to see message and send message again."""
@@ -444,10 +443,9 @@ class Moderation(Cog):
             if user is not None:
                 await self.perm_override(member=member_mentions, read_messages=None)
                 session.delete(user)
-                if user.self_inflicted:
-                    reason = "Self-deafen timer expired"
-                await self.mod_log(member=ctx.author, action="undeafened", target=member_mentions, reason=reason,
-                                   orig_channel=ctx.channel, embed_color=discord.Color.green())
+                if not user.self_inflicted:
+                    await self.mod_log(member=ctx.author, action="undeafened", target=member_mentions, reason=reason,
+                                       orig_channel=ctx.channel, embed_color=discord.Color.green())
             else:
                 await ctx.send("User is not deafened!")
     undeafen.example_usage = """

@@ -16,6 +16,8 @@ class CommandMixin:
     _required_permissions = None
 
     def __init__(self, name, callback, **kwargs):
+        self.message = None
+        self.reactor = None
         super().__init__(name=name, callback=callback, **kwargs)  # All must be named for commands.Group.__init__
         if hasattr(callback, '__required_permissions__'):
             self._required_permissions = callback.__required_permissions__
@@ -45,15 +47,15 @@ class Command(CommandMixin, commands.Command):
 
 class Group(CommandMixin, commands.Group):
     """Class for command groups"""
-    def command(self, **kwargs):
+    def command(self, *args, **kwargs):
         """Initiates a command"""
         kwargs.setdefault('cls', Command)
-        return super(Group, self).command(**kwargs)
+        return super(Group, self).command(*args, **kwargs)
 
-    def group(self, **kwargs):
+    def group(self, *args, **kwargs):
         """Initiates a command group"""
         kwargs.setdefault('cls', Group)
-        return super(Group, self).command(**kwargs)
+        return super(Group, self).command(*args, **kwargs)
 
 
 def command(**kwargs):
@@ -111,6 +113,7 @@ class Reactor:
             ctx.me).manage_messages  # Check for required permissions
         self.timeout = timeout
         self._action = None
+        self.message = None
 
     async def __aiter__(self):
         self.message = await self.dest.send(embed=self.pages[self.page])
@@ -183,6 +186,8 @@ class Paginator(Reactor):
             self.pages = pages
         self.len_pages = len(pages)
         self.page = start
+        self.message = None
+        self.reactor = None
 
     async def __aiter__(self):
         self.reactor = super().__aiter__()
@@ -248,7 +253,7 @@ def chunk(iterable, size):
 
 
 def bot_has_permissions(**required):
-    """Checks if bot has permissions"""
+    """Decorator to check if bot has certain permissions when added to a command"""
     def predicate(ctx):
         """Function to tell the bot if it has the right permissions"""
         given = ctx.channel.permissions_for((ctx.guild or ctx.channel).me)

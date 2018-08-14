@@ -142,9 +142,13 @@ disable=print-statement,
 	    exec-used,
 	    no-member,
 	    assigning-non-slot,
-            duplicate-code,
-            redefined-outer-name,
-	    unused-variable
+        duplicate-code,
+        redefined-outer-name,
+	    unused-variable,
+	    protected-access,
+	    unsubscriptable-object,
+	    logging-not-lazy,
+	    logging-format-interpolation
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option

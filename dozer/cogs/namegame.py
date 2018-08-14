@@ -677,7 +677,7 @@ class NameGame(Cog):
         game.turn_msg = await ctx.send(embed=game.turn_embed)
 
     async def notify(self, ctx, game, msg):
-        """Notifies."""
+        """Notifies people in the channel when it's their turn."""
         if game.pings_enabled:
             await ctx.send(msg)
 

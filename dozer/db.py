@@ -6,7 +6,7 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, Session, sessionmaker
 
 __all__ = ['engine', 'DatabaseObject', 'Session', 'Column', 'Integer', 'String', 'ForeignKey', 'relationship',
-           'Boolean']
+           'Boolean', 'ForeignKeyConstraint']
 
 engine = sqlalchemy.create_engine('sqlite:///dozer.db')
 DatabaseObject = declarative_base(bind=engine, name='DatabaseObject')
@@ -14,7 +14,7 @@ DatabaseObject.__table_args__ = {'extend_existing': True}  # allow use of the re
 
 
 class CtxSession(Session):
-    """Provides a context session for the database system."""
+    """Allows sessions to be used as context managers and asynchronous context managers."""
     def __enter__(self):
         return self
 

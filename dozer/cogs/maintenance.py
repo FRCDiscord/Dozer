@@ -8,8 +8,6 @@ from discord.ext.commands import NotOwner
 from dozer.bot import DOZER_LOGGER
 from ._utils import *
 
-logger = DOZER_LOGGER
-
 
 class Maintenance(Cog):
     """
@@ -26,7 +24,10 @@ class Maintenance(Cog):
     async def shutdown(self, ctx):
         """Force-stops the bot."""
         await ctx.send('Shutting down')
-        logger.info('Shutting down at request of %d (in %d, #%d)', ctx.author, ctx.guild, ctx.channel)
+        DOZER_LOGGER.info('Shutting down at request of {}#{} (in {}, #{})'.format(ctx.author.name,
+                                                                                  ctx.author.discriminator,
+                                                                                  ctx.guild.name,
+                                                                                  ctx.channel.name))
         await self.bot.shutdown()
 
     shutdown.example_usage = """
@@ -37,16 +38,7 @@ class Maintenance(Cog):
     async def restart(self, ctx):
         """Restarts the bot."""
         await ctx.send('Restarting')
-        await self.bot.shutdown()
-        script = sys.argv[0]
-        if script.startswith(os.getcwd()):
-            script = script[len(os.getcwd()):].lstrip(os.sep)
-
-        if script.endswith('__main__.py'):
-            args = [sys.executable, '-m', script[:-len('__main__.py')].rstrip(os.sep).replace(os.sep, '.')]
-        else:
-            args = [sys.executable, script]
-        os.execv(sys.executable, args + sys.argv[1:])
+        await self.bot.shutdown(restart=True)
 
     restart.example_usage = """
     `{prefix}restart` - restart the bot
@@ -59,7 +51,7 @@ class Maintenance(Cog):
         This pulls from whatever repository `origin` is linked to.
         If there are changes to download, and the download is successful, the bot restarts to apply changes.
         """
-        res = os.popen("git pull origin master").read()
+        res = os.popen("git pull").read()
         if res.startswith('Already up-to-date.'):
             await ctx.send('```\n' + res + '```')
         else:
