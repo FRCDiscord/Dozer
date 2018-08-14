@@ -364,7 +364,7 @@ class GiveableRole(db.DatabaseObject):
 
 
 class MissingMember(db.DatabaseObject):
-    """Is this necessary any more?"""
+    """Required for the relationship with the MissingRole class and table."""
     __tablename__ = 'missing_members'
     guild_id = db.Column(db.Integer, primary_key=True)
     member_id = db.Column(db.Integer, primary_key=True)
@@ -372,10 +372,10 @@ class MissingMember(db.DatabaseObject):
 
 
 class MissingRole(db.DatabaseObject):
-    """Actually, what does this do?"""
+    """Holds what roles a given member had when they last left the guild."""
     __tablename__ = 'missing_roles'
     __table_args__ = (
-        db.ForeignKeyConstraint(['guild_id', 'member_id'], ['missing_members.guild_id', 'missing_members.member_id']))
+        db.ForeignKeyConstraint(['guild_id', 'member_id'], ['missing_members.guild_id', 'missing_members.member_id']),)
     role_id = db.Column(db.Integer, primary_key=True)
     guild_id = db.Column(db.Integer)  # Guild ID doesn't have to be primary because role IDs are unique across guilds
     member_id = db.Column(db.Integer, primary_key=True)

@@ -729,9 +729,7 @@ class NameGame(Cog):
             self._on_reaction(game, reaction, user, -1)
 
     def _on_reaction(self, game, reaction, user, inc):
-        """as they say, don't repeat yourself
-        also, as this is just manipulating memory, it's not async"""
-
+        """Handles pass/fail reactions"""
         if reaction.message.id == game.vote_msg.id and user in game.players:
             if reaction.emoji == '❌':
                 game.fail_tally += inc
