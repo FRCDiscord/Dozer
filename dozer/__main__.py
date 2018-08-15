@@ -1,3 +1,5 @@
+"""Initializes the bot and deals with the configuration file"""
+
 import json
 import os
 import sys
@@ -54,4 +56,3 @@ if bot._restarting:
     else:
         args = [sys.executable, script]
     os.execv(sys.executable, args + sys.argv[1:])
-

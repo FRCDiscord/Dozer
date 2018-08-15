@@ -1,5 +1,7 @@
-import discord
+"""Commands for making and seeing robotics team associations."""
+
 import collections
+import discord
 from discord.ext.commands import BadArgument, guild_only
 
 from ._utils import *
@@ -7,6 +9,7 @@ from .. import db
 
 
 class Teams(Cog):
+    """Commands for making and seeing robotics team associations."""
     @command()
     async def setteam(self, ctx, team_type, team_number: int):
         """Sets an association with your team in the database."""
@@ -72,7 +75,7 @@ class Teams(Cog):
         team_type = team_type.casefold()
         with db.Session() as session:
             users = session.query(TeamNumbers).filter_by(team_number=team_number, team_type=team_type).all()
-            if len(users) == 0:
+            if not users:
                 await ctx.send("Nobody on that team found!")
             else:
                 e = discord.Embed(type='rich')
@@ -107,6 +110,7 @@ class Teams(Cog):
     """
 
     async def on_member_join(self, member):
+        """Adds a user's team association to their name when they join (if exactly 1 association)"""
         if member.guild.me.guild_permissions.manage_nicknames:
             with db.Session() as session:
                 query = session.query(TeamNumbers).filter_by(user_id=member.id).first()
@@ -117,6 +121,7 @@ class Teams(Cog):
 
 
 class TeamNumbers(db.DatabaseObject):
+    """DB object for tracking team associations."""
     __tablename__ = 'team_numbers'
     user_id = db.Column(db.Integer, primary_key=True)
     team_number = db.Column(db.Integer, primary_key=True)
@@ -124,4 +129,5 @@ class TeamNumbers(db.DatabaseObject):
 
 
 def setup(bot):
+    """Adds this cog to the main bot"""
     bot.add_cog(Teams(bot))
