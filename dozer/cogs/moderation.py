@@ -3,10 +3,10 @@ import asyncio
 import re
 import datetime
 import time
-import discord
-
 from typing import Union
-from enum import Enum
+from logging import getLogger
+
+import discord
 from discord.ext.commands import BadArgument, has_permissions, RoleConverter
 
 from ._utils import *
@@ -134,7 +134,7 @@ class Moderation(Cog):
 
     """=== context-free backend functions ==="""
 
-    async def _mute(self, member: discord.Member, reason: str="No reason provided", seconds=0, actor=None, orig_channel=None):
+    async def _mute(self, member: discord.Member, reason: str = "No reason provided", seconds=0, actor=None, orig_channel=None):
         """Mutes a user.
         member: the member to be muted
         reason: a reason string without a time specifier
@@ -165,7 +165,8 @@ class Moderation(Cog):
             else:
                 return False # member not muted
 
-    async def _deafen(self, member: discord.Member, reason: str="No reason provided", seconds=0, self_inflicted: bool=False, actor=None, orig_channel=None):
+    async def _deafen(self, member: discord.Member, reason: str = "No reason provided", seconds=0, self_inflicted: bool = False, actor=None,
+                      orig_channel=None):
         """Deafens a user.
         member: the member to be deafened
         reason: a reason string without a time specifier
@@ -206,6 +207,7 @@ class Moderation(Cog):
     """=== Event handlers ==="""
 
     async def on_ready(self):
+        """Restore punishment timers on bot startup"""
         with db.Session() as session:
             q = session.query(PunishmentTimerRecord).all()
             for r in q:
@@ -213,12 +215,13 @@ class Moderation(Cog):
                 actor = guild.get_member(r.actor_id)
                 target = guild.get_member(r.target_id)
                 orig_channel = self.bot.get_channel(r.orig_channel_id)
-                type = r.type
+                punishment_type = r.type
                 reason = r.reason or ""
                 seconds = max(int(r.target_ts - time.time()), 0.01)
                 session.delete(r)
-                self.bot.loop.create_task(self.punishment_timer(seconds, target, PunishmentTimerRecord.type_map[type], reason, actor, orig_channel))
-                print(f"Restarted timer {actor} {PunishmentTimerRecord.type_map[type]} {target}")
+                self.bot.loop.create_task(self.punishment_timer(seconds, target, PunishmentTimerRecord.type_map[punishment_type], reason, actor,
+                                                                orig_channel))
+                getLogger('dozer').info(f"Restarted {PunishmentTimerRecord.type_map[punishment_type].__name__} of {target} in {guild}")
 
     async def on_member_join(self, member):
         """Logs that a member joined."""
@@ -359,7 +362,7 @@ class Moderation(Cog):
         """Sends a message to the mod log specifying the member has been warned without punishment."""
         await self.mod_log(actor=ctx.author, action="warned", target=member, reason=reason)
 
-    warn.example_usage= """
+    warn.example_usage = """
     `{prefix}`warn @user reason - warns a user for "reason"
     """
 
@@ -742,7 +745,9 @@ class GuildMessageLinks(db.DatabaseObject):
     guild_id = db.Column(db.Integer, primary_key=True)
     role_id = db.Column(db.Integer, nullable=True)
 
+
 class PunishmentTimerRecord(db.DatabaseObject):
+    """Keeps track of current punishment timers in case the bot is restarted."""
     __tablename__ = "punishment_timers"
     id = db.Column(db.Integer, primary_key=True)
     guild_id = db.Column(db.Integer)
@@ -753,7 +758,8 @@ class PunishmentTimerRecord(db.DatabaseObject):
     reason = db.Column(db.String, nullable=True)
     target_ts = db.Column(db.Integer)
 
-    type_map = { p.type: p for p in (Mute, Deafen) }
+    type_map = {p.type: p for p in (Mute, Deafen)}
+
 
 def setup(bot):
     """Adds the moderation cog to the bot."""
