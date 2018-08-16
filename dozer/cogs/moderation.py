@@ -1,8 +1,9 @@
+"""Provides moderation commands for Dozer."""
 import asyncio
-import discord
 import re
 import datetime
 import time
+import discord
 
 from typing import Union
 from enum import Enum
@@ -11,16 +12,15 @@ from discord.ext.commands import BadArgument, has_permissions, RoleConverter
 from ._utils import *
 from .. import db
 
-from ..utils import clean
-
 
 class SafeRoleConverter(RoleConverter):
-    async def convert(self, ctx, arg):
+    """Allows for @everyone to be specified without pinging everyone"""
+    async def convert(self, ctx, argument):
         try:
-            return await super().convert(ctx, arg)
+            return await super().convert(ctx, argument)
         except BadArgument:
-            if arg.casefold() in (
-            'everyone', '@everyone', '@/everyone', '@.everyone', '@ everyone', '@\N{ZERO WIDTH SPACE}everyone'):
+            if argument.casefold() in (
+                    'everyone', '@everyone', '@/everyone', '@.everyone', '@ everyone', '@\N{ZERO WIDTH SPACE}everyone'):
                 return ctx.guild.default_role
             else:
                 raise
@@ -31,20 +31,18 @@ class Moderation(Cog):
 
     """=== Helper functions ==="""
 
-    async def mod_log(self, actor : discord.Member, action : str, target : Union[discord.User, discord.Member], reason, orig_channel=None, embed_color=discord.Color.red()):
-        #modlog_message = "{} has {} {} because {}".format(ctx.author, action, target, reason)
+    async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member], reason, orig_channel=None,
+                      embed_color=discord.Color.red()):
+        """Generates a modlog embed"""
         modlog_embed = discord.Embed(
-            color = embed_color,
-            title = f"User {action}!"
+            color=embed_color,
+            title=f"User {action}!"
 
         )
         modlog_embed.add_field(name=f"{action.capitalize()} user", value=f"{target.mention} ({target} | {target.id})", inline=False)
         modlog_embed.add_field(name="Requested by", value=f"{actor.mention} ({actor} | {actor.id})", inline=False)
         modlog_embed.add_field(name="Reason", value=reason or "No reason specified", inline=False)
         modlog_embed.add_field(name="Timestamp", value=str(datetime.datetime.now()), inline=False)
-
-        # modlog_message = "{} has {} {} because {}".format(member, action, target, reason)
-        # modlog_message = clean(ctx=ctx, text=modlog_message)
 
         with db.Session() as session:
             modlog_channel = session.query(GuildModLog).filter_by(id=actor.guild.id).one_or_none()
@@ -59,6 +57,7 @@ class Moderation(Cog):
                     await orig_channel.send("Please configure modlog channel to enable modlog functionality")
 
     async def perm_override(self, member, **overwrites):
+        """Applies the given overrides to the given member in their guild."""
         coros = []
         for channel in member.guild.channels:
             overwrite = channel.overwrites_for(member)
@@ -71,6 +70,7 @@ class Moderation(Cog):
 
     hm_regex = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?((?P<seconds>\d+)s)?")
     def hm_to_seconds(self, hm_str):
+        """Converts an hour-minute string to seconds. For example, '1h15m' returns 4500"""
         matches = re.match(self.hm_regex, hm_str).groupdict()
         hours = int(matches.get('hours') or 0)
         minutes = int(matches.get('minutes') or 0)
@@ -78,6 +78,7 @@ class Moderation(Cog):
         return (hours * 3600) + (minutes * 60) + seconds
 
     async def punishment_timer(self, seconds, target: discord.Member, punishment, reason, actor: discord.Member, orig_channel=None):
+        """Asynchronous task that sleeps for a set time to unmute/undeafen a member for a set period of time."""
         if seconds == 0:
             return
 
@@ -109,11 +110,13 @@ class Moderation(Cog):
                 session.delete(ent)
 
     async def _check_links_warn(self, msg, role):
+        """Warns a user that they can't send links."""
         warn_msg = await msg.channel.send(f"{msg.author.mention}, you need the `{role.name}` role to post links!")
         await asyncio.sleep(3)
         await warn_msg.delete()
 
     async def check_links(self, msg):
+        """Checks messages for the links role if necessary, then checks if the author is allowed to send links in the server"""
         if msg.guild is None or not isinstance(msg.author, discord.Member) or not msg.guild.me.guild_permissions.manage_messages:
             return
         with db.Session() as session:
@@ -132,6 +135,13 @@ class Moderation(Cog):
     """=== context-free backend functions ==="""
 
     async def _mute(self, member: discord.Member, reason: str="No reason provided", seconds=0, actor=None, orig_channel=None):
+        """Mutes a user.
+        member: the member to be muted
+        reason: a reason string without a time specifier
+        seconds: a duration of time for the mute to be applied. If 0, then the mute is indefinite. Do not set negative durations.
+        actor: the acting user who requested the mute
+        orig_channel: the channel of the request origin
+        """
         with db.Session() as session:
             if session.query(Mute).filter_by(id=member.id, guild=member.guild.id).one_or_none() is not None:
                 return False # member already muted
@@ -145,6 +155,7 @@ class Moderation(Cog):
                 return True
 
     async def _unmute(self, member: discord.Member):
+        """Unmutes a user."""
         with db.Session() as session:
             user = session.query(Mute).filter_by(id=member.id, guild=member.guild.id).one_or_none()
             if user is not None:
@@ -155,6 +166,14 @@ class Moderation(Cog):
                 return False # member not muted
 
     async def _deafen(self, member: discord.Member, reason: str="No reason provided", seconds=0, self_inflicted: bool=False, actor=None, orig_channel=None):
+        """Deafens a user.
+        member: the member to be deafened
+        reason: a reason string without a time specifier
+        seconds: a duration of time for the mute to be applied. If 0, then the mute is indefinite. Do not set negative durations.
+        self_inflicted: specifies if the deafen is a self-deafen
+        actor: the acting user who requested the mute
+        orig_channel: the channel of the request origin
+        """
         with db.Session() as session:
             if session.query(Deafen).filter_by(id=member.id, guild=member.guild.id).one_or_none() is not None:
                 return False
@@ -171,6 +190,7 @@ class Moderation(Cog):
                 return True
 
     async def _undeafen(self, member: discord.Member):
+        """Undeafens a user."""
         with db.Session() as session:
             user = session.query(Deafen).filter_by(id=member.id, guild=member.guild.id).one_or_none()
             if user is not None:
@@ -201,6 +221,7 @@ class Moderation(Cog):
                 print(f"Restarted timer {actor} {PunishmentTimerRecord.type_map[type]} {target}")
 
     async def on_member_join(self, member):
+        """Logs that a member joined."""
         join = discord.Embed(type='rich', color=0x00FF00)
         join.set_author(name='Member Joined', icon_url=member.avatar_url_as(format='png', size=32))
         join.description = "{0.mention}\n{0} ({0.id})".format(member)
@@ -218,6 +239,7 @@ class Moderation(Cog):
                 await self.perm_override(member, read_messages=False)
 
     async def on_member_remove(self, member):
+        """Logs that a member left."""
         leave = discord.Embed(type='rich', color=0xFF0000)
         leave.set_author(name='Member Left', icon_url=member.avatar_url_as(format='png', size=32))
         leave.description = "{0.mention}\n{0} ({0.id})".format(member)
@@ -229,6 +251,7 @@ class Moderation(Cog):
                 await channel.send(embed=leave)
 
     async def on_message(self, message):
+        """Check things when messages come in."""
         if message.author.bot or message.guild is None or not message.guild.me.guild_permissions.manage_roles:
             return
 
@@ -239,14 +262,16 @@ class Moderation(Cog):
             if config is not None:
                 string = config.message
                 content = message.content.casefold()
-                if string not in content: return
+                if string not in content:
+                    return
                 channel = config.channel_id
                 role_id = config.role_id
-                if message.channel.id != channel: return
+                if message.channel.id != channel:
+                    return
                 await message.author.add_roles(discord.utils.get(message.guild.roles, id=role_id))
 
-
     async def on_message_delete(self, message):
+        """When a message is deleted, log it."""
         e = discord.Embed(type='rich')
         e.title = 'Message Deletion'
         e.color = 0xFF0000
@@ -277,8 +302,10 @@ class Moderation(Cog):
                     await channel.send(embed=e)
 
     async def on_message_edit(self, before, after):
+        """Logs message edits."""
         await self.check_links(after)
-        if before.author.bot: return
+        if before.author.bot:
+            return
         if after.edited_at is not None or before.edited_at is not None:
             # There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
             e = discord.Embed(type='rich')
@@ -328,8 +355,13 @@ class Moderation(Cog):
 
     @command()
     @has_permissions(kick_members=True)
-    async def warn(self, ctx, user: discord.User, *, reason):
-        await self.mod_log(actor=ctx.author, action="warned", target=user, reason=reason)
+    async def warn(self, ctx, member: discord.Member, *, reason):
+        """Sends a message to the mod log specifying the member has been warned without punishment."""
+        await self.mod_log(actor=ctx.author, action="warned", target=member, reason=reason)
+
+    warn.example_usage= """
+    `{prefix}`warn @user reason - warns a user for "reason"
+    """
 
     @command()
     @has_permissions(manage_roles=True)
@@ -349,7 +381,8 @@ class Moderation(Cog):
             targets = {member_role}
         else:
             await ctx.send(
-                '{0.author.mention}, the members role has not been configured. This may not work as expected. Use `{0.prefix}help memberconfig` to see how to set this up.'.format(
+                '{0.author.mention}, the members role has not been configured. This may not work as expected. Use '
+                '`{0.prefix}help memberconfig` to see how to set this up.'.format(
                     ctx))
             targets = set(sorted(ctx.guild.roles)[:ctx.author.top_role.position])
 
@@ -641,7 +674,9 @@ class Moderation(Cog):
     `{prefix}messagelogconfig #orwellian-dystopia` - set a channel named #orwellian-dystopia to log message edits/deletions
     """
 
+
 class Mute(db.DatabaseObject):
+    """Provides a DB config to track mutes."""
     __tablename__ = 'mutes'
     id = db.Column(db.Integer, primary_key=True)
     guild = db.Column(db.Integer, primary_key=True)
@@ -651,6 +686,7 @@ class Mute(db.DatabaseObject):
 
 
 class Deafen(db.DatabaseObject):
+    """Provides a DB config to track deafens."""
     __tablename__ = 'deafens'
     id = db.Column(db.Integer, primary_key=True)
     guild = db.Column(db.Integer, primary_key=True)
@@ -661,6 +697,7 @@ class Deafen(db.DatabaseObject):
 
 
 class GuildModLog(db.DatabaseObject):
+    """Provides a DB config to track which channel a guild uses for modlogs."""
     __tablename__ = 'modlogconfig'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -668,12 +705,14 @@ class GuildModLog(db.DatabaseObject):
 
 
 class MemberRole(db.DatabaseObject):
+    """Keeps track of member roles."""
     __tablename__ = 'member_roles'
     id = db.Column(db.Integer, primary_key=True)
     member_role = db.Column(db.Integer, nullable=True)
 
 
 class GuildNewMember(db.DatabaseObject):
+    """Keeps track of things for onboarding new server members."""
     __tablename__ = 'new_members'
     guild_id = db.Column(db.Integer, primary_key=True)
     channel_id = db.Column(db.Integer)
@@ -682,6 +721,7 @@ class GuildNewMember(db.DatabaseObject):
 
 
 class GuildMemberLog(db.DatabaseObject):
+    """Keeps track of which channels guilds use for member logs."""
     __tablename__ = 'memberlogconfig'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -689,6 +729,7 @@ class GuildMemberLog(db.DatabaseObject):
 
 
 class GuildMessageLog(db.DatabaseObject):
+    """Keeps track of which channels use for message edit/deletion logs."""
     __tablename__ = 'messagelogconfig'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
@@ -696,6 +737,7 @@ class GuildMessageLog(db.DatabaseObject):
 
 
 class GuildMessageLinks(db.DatabaseObject):
+    """Keeps track of message links settings in guilds."""
     __tablename__ = 'guild_msg_links'
     guild_id = db.Column(db.Integer, primary_key=True)
     role_id = db.Column(db.Integer, nullable=True)
@@ -714,4 +756,5 @@ class PunishmentTimerRecord(db.DatabaseObject):
     type_map = { p.type: p for p in (Mute, Deafen) }
 
 def setup(bot):
+    """Adds the moderation cog to the bot."""
     bot.add_cog(Moderation(bot))

@@ -1,3 +1,4 @@
+"""Provides commands for pulling certain information."""
 import discord
 from discord.ext.commands import cooldown, BucketType, guild_only
 
@@ -78,4 +79,5 @@ class Info(Cog):
 
 
 def setup(bot):
+    """Adds the info cog to the bot"""
     bot.add_cog(Info(bot))
