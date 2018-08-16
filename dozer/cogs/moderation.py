@@ -438,7 +438,7 @@ class Moderation(Cog):
         """Mute a user to prevent them from sending messages"""
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
-            reason = re.sub(pattern=self.hm_regex, string=reason, repl="").lstrip("  ") or "No reason provided"
+            reason = self.hm_regex.sub(reason, "") or "No reason provided"
             if await self._mute(member_mentions, reason=reason, seconds=seconds, actor=ctx.author, orig_channel=ctx.channel):
                 await self.mod_log(ctx.author, "muted", member_mentions, reason, ctx.channel, discord.Color.red())
             else:
@@ -469,7 +469,7 @@ class Moderation(Cog):
         """Deafen a user to prevent them from both sending messages but also reading messages."""
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
-            reason = re.sub(pattern=self.hm_regex, string=reason, repl="").lstrip("  ") or "No reason provided"
+            reason = self.hm_regex.sub(reason, "") or "No reason provided"
             if await self._deafen(member_mentions, reason, seconds=seconds, self_inflicted=False, actor=ctx.author, orig_channel=ctx.channel):
                 await self.mod_log(ctx.author, "deafened", member_mentions, reason, ctx.channel, discord.Color.red())
             else:
@@ -485,7 +485,7 @@ class Moderation(Cog):
         """Deafen yourself for a given time period to prevent you from reading or sending messages; useful as a study tool."""
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
-            reason = re.sub(pattern=self.hm_regex, string=reason, repl="").lstrip("  ") or "No reason provided"
+            reason = self.hm_regex.sub(reason, "") or "No reason provided"
             if await self._deafen(ctx.author, reason, seconds=seconds, self_inflicted=True, actor=ctx.author, orig_channel=ctx.channel):
                 await self.mod_log(ctx.author, "deafened", ctx.author, reason, ctx.channel, discord.Color.red())
             else:
