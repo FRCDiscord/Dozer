@@ -1,15 +1,12 @@
 # runtime files
 __pycache__
+*.pyc
 config.json
 dozer.db
 cilog.txt
 
 # IDEA
-.idea/Dozer.iml
-.idea/misc.xml
-.idea/modules.xml
-.idea/workspace.xml
-.idea/vcs.xml
+.idea/
 
 # for vim
 [._]*.s[a-v][a-z]
