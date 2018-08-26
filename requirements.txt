@@ -5,3 +5,4 @@ googlemaps
 datetime
 geopy
 fuzzywuzzy
+psycopg2
