@@ -28,7 +28,11 @@ class CtxSession(Session):
         return self.__exit__(err_type, err, tb)
 
 
+DatabaseObject = None
+
+
 def db_init(db_url):
+    """Initializes the database connection"""
     global Session
     global DatabaseObject
     engine = sqlalchemy.create_engine(db_url)
