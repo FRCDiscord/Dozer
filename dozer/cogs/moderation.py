@@ -77,7 +77,8 @@ class Moderation(Cog):
         seconds = int(matches.get('seconds') or 0)
         return (hours * 3600) + (minutes * 60) + seconds
 
-    async def punishment_timer(self, seconds, target: discord.Member, punishment, reason, actor: discord.Member, orig_channel=None, global_modlog=True):
+    async def punishment_timer(self, seconds, target: discord.Member, punishment, reason, actor: discord.Member, orig_channel=None,
+                               global_modlog=True):
         """Asynchronous task that sleeps for a set time to unmute/undeafen a member for a set period of time."""
         if seconds == 0:
             return
@@ -102,7 +103,13 @@ class Moderation(Cog):
         with db.Session() as session:
             user = session.query(punishment).filter_by(id=target.id).one_or_none()
             if user is not None:
-                await self.mod_log(actor, "un" + punishment.past_participle, target, reason, orig_channel, embed_color=discord.Color.green(), global_modlog=global_modlog)
+                await self.mod_log(actor,
+                                   "un" + punishment.past_participle,
+                                   target,
+                                   reason,
+                                   orig_channel,
+                                   embed_color=discord.Color.green(),
+                                   global_modlog=global_modlog)
                 self.bot.loop.create_task(coro=punishment.finished_callback(self, target))
 
             ent = session.query(PunishmentTimerRecord).filter_by(id=ent_id).one_or_none() # necessary to refresh the entry for the current session
@@ -187,7 +194,11 @@ class Moderation(Cog):
                     seconds = 30 # prevent lockout in case of bad argument
                 self.bot.loop.create_task(
                     self.punishment_timer(seconds, member,
-                                          punishment=Deafen, reason=reason, actor=actor or member.guild.me, orig_channel=orig_channel, global_modlog=self_inflicted))
+                                          punishment=Deafen,
+                                          reason=reason,
+                                          actor=actor or member.guild.me,
+                                          orig_channel=orig_channel,
+                                          global_modlog=self_inflicted))
                 return True
 
     async def _undeafen(self, member: discord.Member):
