@@ -32,7 +32,7 @@ class Moderation(Cog):
     """=== Helper functions ==="""
 
     async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member], reason, orig_channel=None,
-                      embed_color=discord.Color.red()):
+                      embed_color=discord.Color.red(), global_modlog=True):
         """Generates a modlog embed"""
         modlog_embed = discord.Embed(
             color=embed_color,
@@ -48,7 +48,7 @@ class Moderation(Cog):
             modlog_channel = session.query(GuildModLog).filter_by(id=actor.guild.id).one_or_none()
             if orig_channel is not None:
                 await orig_channel.send(embed=modlog_embed)
-            if modlog_channel is not None:
+            if modlog_channel is not None and global_modlog:
                 channel = actor.guild.get_channel(modlog_channel.modlog_channel)
                 if channel is not None and channel != orig_channel: # prevent duplicate embeds
                     await channel.send(embed=modlog_embed)
@@ -77,7 +77,7 @@ class Moderation(Cog):
         seconds = int(matches.get('seconds') or 0)
         return (hours * 3600) + (minutes * 60) + seconds
 
-    async def punishment_timer(self, seconds, target: discord.Member, punishment, reason, actor: discord.Member, orig_channel=None):
+    async def punishment_timer(self, seconds, target: discord.Member, punishment, reason, actor: discord.Member, orig_channel=None, global_modlog=True):
         """Asynchronous task that sleeps for a set time to unmute/undeafen a member for a set period of time."""
         if seconds == 0:
             return
@@ -102,7 +102,7 @@ class Moderation(Cog):
         with db.Session() as session:
             user = session.query(punishment).filter_by(id=target.id).one_or_none()
             if user is not None:
-                await self.mod_log(actor, "un" + punishment.past_participle, target, reason, orig_channel, embed_color=discord.Color.green())
+                await self.mod_log(actor, "un" + punishment.past_participle, target, reason, orig_channel, embed_color=discord.Color.green(), global_modlog=global_modlog)
                 self.bot.loop.create_task(coro=punishment.finished_callback(self, target))
 
             ent = session.query(PunishmentTimerRecord).filter_by(id=ent_id).one_or_none() # necessary to refresh the entry for the current session
@@ -187,7 +187,7 @@ class Moderation(Cog):
                     seconds = 30 # prevent lockout in case of bad argument
                 self.bot.loop.create_task(
                     self.punishment_timer(seconds, member,
-                                          punishment=Deafen, reason=reason, actor=actor or member.guild.me, orig_channel=orig_channel))
+                                          punishment=Deafen, reason=reason, actor=actor or member.guild.me, orig_channel=orig_channel, global_modlog=self_inflicted))
                 return True
 
     async def _undeafen(self, member: discord.Member):
@@ -523,7 +523,7 @@ class Moderation(Cog):
             seconds = self.hm_to_seconds(reason)
             reason = self.hm_regex.sub(reason, "") or "No reason provided"
             if await self._deafen(ctx.author, reason, seconds=seconds, self_inflicted=True, actor=ctx.author, orig_channel=ctx.channel):
-                await self.mod_log(ctx.author, "deafened", ctx.author, reason, ctx.channel, discord.Color.red())
+                await self.mod_log(ctx.author, "deafened", ctx.author, reason, ctx.channel, discord.Color.red(), global_modlog=False)
             else:
                 await ctx.send("You are already deafened!")
 
