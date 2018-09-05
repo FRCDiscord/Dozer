@@ -681,8 +681,8 @@ class Moderation(Cog):
 class Mute(db.DatabaseObject):
     """Provides a DB config to track mutes."""
     __tablename__ = 'mutes'
-    id = db.Column(db.Integer, primary_key=True)
-    guild = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.BigInteger, primary_key=True)
+    guild = db.Column(db.BigInteger, primary_key=True)
     past_participle = "muted"
     finished_callback = Moderation._unmute
     type = 1
@@ -691,8 +691,8 @@ class Mute(db.DatabaseObject):
 class Deafen(db.DatabaseObject):
     """Provides a DB config to track deafens."""
     __tablename__ = 'deafens'
-    id = db.Column(db.Integer, primary_key=True)
-    guild = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.BigInteger, primary_key=True)
+    guild = db.Column(db.BigInteger, primary_key=True)
     self_inflicted = db.Column(db.Boolean)
     past_participle = "deafened"
     finished_callback = Moderation._undeafen
@@ -702,61 +702,61 @@ class Deafen(db.DatabaseObject):
 class GuildModLog(db.DatabaseObject):
     """Provides a DB config to track which channel a guild uses for modlogs."""
     __tablename__ = 'modlogconfig'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.BigInteger, primary_key=True)
     name = db.Column(db.String)
-    modlog_channel = db.Column(db.Integer, nullable=True)
+    modlog_channel = db.Column(db.BigInteger, nullable=True)
 
 
 class MemberRole(db.DatabaseObject):
     """Keeps track of member roles."""
     __tablename__ = 'member_roles'
-    id = db.Column(db.Integer, primary_key=True)
-    member_role = db.Column(db.Integer, nullable=True)
+    id = db.Column(db.BigInteger, primary_key=True)
+    member_role = db.Column(db.BigInteger, nullable=True)
 
 
 class GuildNewMember(db.DatabaseObject):
     """Keeps track of things for onboarding new server members."""
     __tablename__ = 'new_members'
-    guild_id = db.Column(db.Integer, primary_key=True)
-    channel_id = db.Column(db.Integer)
-    role_id = db.Column(db.Integer)
+    guild_id = db.Column(db.BigInteger, primary_key=True)
+    channel_id = db.Column(db.BigInteger)
+    role_id = db.Column(db.BigInteger)
     message = db.Column(db.String)
 
 
 class GuildMemberLog(db.DatabaseObject):
     """Keeps track of which channels guilds use for member logs."""
     __tablename__ = 'memberlogconfig'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.BigInteger, primary_key=True)
     name = db.Column(db.String)
-    memberlog_channel = db.Column(db.Integer)
+    memberlog_channel = db.Column(db.BigInteger)
 
 
 class GuildMessageLog(db.DatabaseObject):
     """Keeps track of which channels use for message edit/deletion logs."""
     __tablename__ = 'messagelogconfig'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.BigInteger, primary_key=True)
     name = db.Column(db.String)
-    messagelog_channel = db.Column(db.Integer)
+    messagelog_channel = db.Column(db.BigInteger)
 
 
 class GuildMessageLinks(db.DatabaseObject):
     """Keeps track of message links settings in guilds."""
     __tablename__ = 'guild_msg_links'
-    guild_id = db.Column(db.Integer, primary_key=True)
-    role_id = db.Column(db.Integer, nullable=True)
+    guild_id = db.Column(db.BigInteger, primary_key=True)
+    role_id = db.Column(db.BigInteger, nullable=True)
 
 
 class PunishmentTimerRecord(db.DatabaseObject):
     """Keeps track of current punishment timers in case the bot is restarted."""
     __tablename__ = "punishment_timers"
-    id = db.Column(db.Integer, primary_key=True)
-    guild_id = db.Column(db.Integer)
-    actor_id = db.Column(db.Integer)
-    target_id = db.Column(db.Integer)
-    orig_channel_id = db.Column(db.Integer, nullable=True)
-    type = db.Column(db.Integer)
+    id = db.Column(db.BigInteger, primary_key=True)
+    guild_id = db.Column(db.BigInteger)
+    actor_id = db.Column(db.BigInteger)
+    target_id = db.Column(db.BigInteger)
+    orig_channel_id = db.Column(db.BigInteger, nullable=True)
+    type = db.Column(db.BigInteger)
     reason = db.Column(db.String, nullable=True)
-    target_ts = db.Column(db.Integer)
+    target_ts = db.Column(db.BigInteger)
 
     type_map = {p.type: p for p in (Mute, Deafen)}
 

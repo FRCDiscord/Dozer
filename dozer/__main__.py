@@ -3,6 +3,7 @@
 import json
 import os
 import sys
+from .db import db_init
 
 from . import db
 
@@ -15,6 +16,7 @@ config = {
         'key': 'Put TOA API key here',
         'app_name': 'Dozer',
     },
+    'db_url': 'sqlite:///dozer.db',
     'gmaps_key': "PUT GOOGLE MAPS API KEY HERE",
     'discord_token': "Put Discord API Token here.",
     'is_backup': False
@@ -24,6 +26,8 @@ config_file = 'config.json'
 if os.path.isfile(config_file):
     with open(config_file) as f:
         config.update(json.load(f))
+
+db_init(config['db_url'])
 
 with open('config.json', 'w') as f:
     json.dump(config, f, indent='\t')

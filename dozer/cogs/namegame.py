@@ -782,17 +782,17 @@ class NameGame(Cog):
 class NameGameConfig(db.DatabaseObject):
     """Configuration storage object"""
     __tablename__ = "namegame_config"
-    guild_id = db.Column(db.Integer, primary_key=True)
-    channel_id = db.Column(db.Integer, nullable=True)
+    guild_id = db.Column(db.BigInteger, primary_key=True)
+    channel_id = db.Column(db.BigInteger, nullable=True)
     mode = db.Column(db.String)
-    pings_enabled = db.Column(db.Integer)
+    pings_enabled = db.Column(db.BigInteger)
 
 
 class NameGameLeaderboard(db.DatabaseObject):
     """Leaderboard storage object"""
     __tablename__ = "namegame_leaderboard"
-    user_id = db.Column(db.Integer, primary_key=True)
-    wins = db.Column(db.Integer)
+    user_id = db.Column(db.BigInteger, primary_key=True)
+    wins = db.Column(db.BigInteger)
     game_mode = db.Column(db.String)
 
 

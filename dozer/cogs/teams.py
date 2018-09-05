@@ -123,8 +123,8 @@ class Teams(Cog):
 class TeamNumbers(db.DatabaseObject):
     """DB object for tracking team associations."""
     __tablename__ = 'team_numbers'
-    user_id = db.Column(db.Integer, primary_key=True)
-    team_number = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.BigInteger, primary_key=True)
+    team_number = db.Column(db.BigInteger, primary_key=True)
     team_type = db.Column(db.String, primary_key=True)
 
 
