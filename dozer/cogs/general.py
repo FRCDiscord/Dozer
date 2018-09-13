@@ -229,5 +229,5 @@ def setup(bot):
 class WelcomeChannel(db.DatabaseObject):
     """Maintains a list of channels for welcome messages"""
     __tablename__ = 'welcome_channel'
-    id = db.Column(db.Integer, primary_key=True)
-    channel_id = db.Column(db.Integer, nullable=True)
+    id = db.Column(db.BigInteger, primary_key=True)
+    channel_id = db.Column(db.BigInteger, nullable=True)

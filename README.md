@@ -70,7 +70,7 @@ Through the rest of this README, we will assume that you have found the correct 
 
 1. Install dependencies with `python -m pip install -Ur requirements.txt`
 2. Run the bot once with `python -m dozer`. This will crash, but generate a default config file.
-   1. Dozer uses [json](http://www.json.org/) for it's config file
+   1. Dozer uses [json](http://www.json.org/) for its config file
 3. Add the Discord bot account's token to `discord_token` in `config.json`
 4. Add your Google Maps API key to `gmaps_key` in `config.json`
 5. Add information about your team and your bot to `tba` in `config.json`
@@ -91,4 +91,9 @@ Note: This process will eventually be replaced by an `invite` command.
 
 3. Try it out! `[prefix]help` to see what Dozer can do.
 
-   # 
+### Setting up the database systems
+If you want just a database file with no replication, Dozer will work using SQLite without needing any extra work on your end.
+If you're interested in using a more advanced database system, we recommend postgres. You can set up postgres on your own server
+or use a service such as ElephantSQL. To make it work in Dozer, install the psycopg2 pip package, then change the `db_url` key
+in `config.json` to a URL that follows this format: `postgresql://username:password@host/db_name_in_postgres` with the correct
+information filled in.
