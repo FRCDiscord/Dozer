@@ -1,3 +1,4 @@
+"""Namegame, where you try to remember a team number starting with the last number of the previous played team"""
 import asyncio
 import gzip
 import pickle
@@ -5,12 +6,12 @@ import traceback
 from collections import OrderedDict
 from functools import wraps
 
-import discord
 import tbapi
+import discord
 from discord.ext.commands import has_permissions
 from fuzzywuzzy import fuzz
 
-from dozer.bot import logger
+from dozer.bot import DOZER_LOGGER
 from ._utils import *
 from .. import db
 
@@ -18,9 +19,10 @@ SUPPORTED_MODES = ["frc", "ftc"]
 
 
 def keep_alive(func):
-    # keeps the wrapped async function alive; functions must have self and ctx as args
+    """Keeps the wrapped async function alive; functions must have self and ctx as args"""
     @wraps(func)
     async def wrapper(self, ctx, *args, **kwargs):
+        """Wraps namegame"""
         while True:
             try:
                 return await func(self, ctx, *args, **kwargs)
@@ -29,15 +31,17 @@ def keep_alive(func):
                 if isinstance(e, asyncio.CancelledError):
                     return
                 # panic to the console, and to chat
-                logger.error(traceback.format_exc())
+                DOZER_LOGGER.error(traceback.format_exc())
                 await ctx.send(f"```Error in game loop:\n{e.__class__.__name__}: {e}```")
 
     return wrapper
 
 
 def game_is_running(func):
+    """Check if there's an active game in a channel"""
     @wraps(func)
     async def wrapper(self, ctx, *args, **kwargs):
+        """Wraps the checker"""
         if ctx.channel.id not in self.games:
             await ctx.send(f"There's not a game going on! Start one with `{ctx.prefix}ng startround`")
             return
@@ -48,6 +52,7 @@ def game_is_running(func):
 
 
 class NameGameSession():
+    """NameGame session object"""
     def __init__(self, mode):
         self.running = True
         self.pings_enabled = False
@@ -77,6 +82,7 @@ class NameGameSession():
         self.vote_task = None
 
     def create_embed(self, title="", description="", color=discord.Color.blurple(), extra_fields=[], start=False):
+        """Creates an embed."""
         v = "Starting " if start else "Current "
         embed = discord.Embed()
         embed.title = title
@@ -92,6 +98,7 @@ class NameGameSession():
         return embed
 
     def check_name(self, ctx, team, name):
+        """Checks the name of the team"""
         tba_parser = ctx.cog.tba_parser
         ftc_teams = ctx.cog.ftc_teams
 
@@ -117,6 +124,7 @@ class NameGameSession():
         return fuzz.ratio(actual_name.lower(), name.lower())
 
     def next_turn(self):
+        """Processes the next turn transition"""
         self.turn_count += 1
         self.pass_tally = 0
         self.fail_tally = 0
@@ -130,6 +138,7 @@ class NameGameSession():
     # self._idx = (self._idx + 1) % len(self.players)
 
     def strike(self, player):
+        """Gives players strikes"""
         self.players[player] += 1
         if self.players[player] >= 3 or len(self.players) == 1:
             self.removed_players.append(player)
@@ -138,13 +147,19 @@ class NameGameSession():
         return False
 
     def check_win(self):
+        """Checks if someone won the game"""
         return len(self.players) == 1 and self.turn_count > 6
 
     def get_picked(self):
+        """Gets the picked teams"""
         return ", ".join(map(str, sorted(self.picked))) or "No Picked Teams"
+
+    def get_picked_num(self, index):
+        return ", ".join(map(str, sorted(self.picked)[index:index+170])) or "No Picked Teams"
 
 
 class NameGame(Cog):
+    """Namegame commands"""
     def __init__(self, bot):
         super().__init__(bot)
         with gzip.open("ftc_teams.pickle.gz") as f:
@@ -181,25 +196,35 @@ class NameGame(Cog):
         game_embed = discord.Embed()
         game_embed.color = discord.Color.magenta()
         game_embed.title = "How to play"
-        game_embed.description = "This is a very simple little game where players will name a team number and name that starts with the last digit of the last named team. Some more specific rules are below:"
+        game_embed.description = "This is a very simple little game where players will name a team number and name that " \
+                                 "starts with the last digit of the last named team. Some more specific rules are below:"
         game_embed.add_field(name="No Double Picking", value="Only pick teams once.")
         game_embed.add_field(name="Three Strikes, You're Out!",
-                             value="You are only allowed three strikes, which are given by picking out of turn, getting the team name wrong, picking a non existant team, being voted that your pick is incorrect, not picking in time, or picking a already picked team.")
+                             value="You are only allowed three strikes, which are given by picking out of turn, "
+                                   "getting the team name wrong, picking a non existant team, being voted that your "
+                                   "pick is incorrect, not picking in time, or picking a already picked team.")
         game_embed.add_field(name="No Cheatsy Doodles",
                              value="No looking up teams on TBA, TOA, VexDB, or other methods, that's just unfair.")
         game_embed.add_field(name="Times up!",
                              value="You have 60 seconds to make a pick, or you get skipped and get a strike.")
         game_embed.add_field(name="Shaking Things Up",
-                             value="Any team number that ends in a 0 mean that the next player has a wildcard, and can pick any legal team.")
-        game_embed.add_field(name="Pesky Commands", value=(f"To start a game, type `{ctx.prefix}ng startround` and mention the players you want to play with. "
-                             f"You can add people with `{ctx.prefix}ng addplayer <user_pings>`. "
-                             f"When it's your turn, type `{ctx.prefix}ng pick <team> <teamname>` to execute your pick. "
-                             f"If you need to skip, typing `{ctx.prefix}ng skip` gives you a strike and skips your turn. "
-                             f"You can always do `{ctx.prefix}ng gameinfo` to get the current game status. "
-                             f"If you ever need to quit, running `{ctx.prefix}ng drop` removes you from the game. "
-                             f"For more detailed command help, run `{ctx.prefix}help ng.`"))
+                             value="Any team number that ends in a 0 mean that the next player has a wildcard, "
+                                   "and can pick any legal team.")
+        game_embed.add_field(name="Pesky Commands", value=(f"To start a game, type `{ctx.prefix}ng startround` and "
+                                                           f"mention the players you want to play with. "
+                                                           f"You can add people with `{ctx.prefix}ng addplayer <user_pings>`. "
+                                                           f"When it's your turn, type `{ctx.prefix}ng pick <team> "
+                                                           f"<teamname>` to execute your pick. "
+                                                           f"If you need to skip, typing `{ctx.prefix}ng skip` gives you"
+                                                           f" a strike and skips your turn."
+                                                           f"You can always do `{ctx.prefix}ng gameinfo` to get the "
+                                                           f"current game status. "
+                                                           f"If you ever need to quit, running `{ctx.prefix}ng drop` "
+                                                           f"removes you from the game. "
+                                                           f"For more detailed command help, run `{ctx.prefix}help ng.`"))
         game_embed.add_field(name="Different Game Modes",
-                             value=f"You can play the name game with FTC teams too! To start a game playing with FTC teams, run `{ctx.prefix}ng startround ftc`")
+                             value=f"You can play the name game with FTC teams too! To start a game playing with "
+                                   f"FTC teams, run `{ctx.prefix}ng startround ftc`")
         await ctx.send(embed=game_embed)
 
     info.example_usage = """
@@ -208,6 +233,7 @@ class NameGame(Cog):
 
     @ng.group(invoke_without_command=True)
     async def config(self, ctx):
+        """Configuration for namegame"""
         await ctx.send(f"""`{ctx.prefix}ng config` reference:
                 `{ctx.prefix}ng config defaultmode [mode]` - set tbe default game mode used when startround is used with no arguments
                 `{ctx.prefix}ng config setchannel [channel_mention]` - set the channel that games are allowed to be run in
@@ -216,6 +242,7 @@ class NameGame(Cog):
     @config.command()
     @has_permissions(manage_guild=True)
     async def defaultmode(self, ctx, mode: str = None):
+        """Configuration of the default game mode (FRC, FTC, etc.)"""
         with db.Session() as session:
             config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
             if mode is None:
@@ -236,15 +263,18 @@ class NameGame(Cog):
     @config.command()
     @has_permissions(manage_guild=True)
     async def setchannel(self, ctx, channel: discord.TextChannel = None):
+        """Sets the namegame channel"""
         with db.Session() as session:
             config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
             if channel is None:
                 if config is None or config.channel_id is None:
                     await ctx.send(
-                        f"There is no currently set namegame channel.\nTo set a channel, run `{ctx.prefix}ng config setchannel [channel_mention]`")
+                        f"There is no currently set namegame channel.\nTo set a channel, run `{ctx.prefix}ng config "
+                        f"setchannel [channel_mention]`")
                 else:
                     await ctx.send(
-                        f"The currently set namegame channel is {ctx.guild.get_channel(config.channel_id).mention}.\nTo clear this, run `{ctx.prefix}ng config clearsetchannel`")
+                        f"The currently set namegame channel is {ctx.guild.get_channel(config.channel_id).mention}.\n"
+                        f"To clear this, run `{ctx.prefix}ng config clearsetchannel`")
             else:
                 if config is None:
                     config = NameGameConfig(guild_id=ctx.guild.id, channel_id=channel.id, mode=SUPPORTED_MODES[0],
@@ -257,6 +287,7 @@ class NameGame(Cog):
     @config.command()
     @has_permissions(manage_guild=True)
     async def clearsetchannel(self, ctx):
+        """Clears the set namegame channel"""
         with db.Session() as session:
             config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
             if config is not None:
@@ -266,6 +297,7 @@ class NameGame(Cog):
     @config.command()
     @has_permissions(manage_guild=True)
     async def setpings(self, ctx, enabled: bool):
+        """Sets whether or not pings are enabled"""
         with db.Session() as session:
             config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
             if config is None:
@@ -279,6 +311,7 @@ class NameGame(Cog):
     @config.command()
     @has_permissions(manage_guild=True)
     async def leaderboardedit(self, ctx, mode: str, user: discord.User, wins: int):
+        """Edits the leaderboard"""
         if mode not in SUPPORTED_MODES:
             await ctx.send(
                 f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
@@ -294,6 +327,7 @@ class NameGame(Cog):
     @config.command()
     @has_permissions(manage_guild=True)
     async def leaderboardclear(self, ctx, mode: str):
+        """Clears the leaderboard"""
         if mode not in SUPPORTED_MODES:
             await ctx.send(
                 f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
@@ -335,6 +369,7 @@ class NameGame(Cog):
 
     @ng.command()
     async def modes(self, ctx):
+        """Returns a list of supported modes"""
         await ctx.send(f"Supported game modes: `{', '.join(SUPPORTED_MODES)}`")
 
     @ng.command()
@@ -348,7 +383,8 @@ class NameGame(Cog):
                 config = session.query(NameGameConfig).filter_by(guild_id=ctx.guild.id).one_or_none()
             mode = SUPPORTED_MODES[0] if config is None else config.mode
             await ctx.send(
-                f"Unspecified or invalid game mode,  assuming game mode `{mode}`. For a full list of game modes, run `{ctx.prefix}ng modes`")
+                f"Unspecified or invalid game mode,  assuming game mode `{mode}`. For a full list of game modes, run "
+                f"`{ctx.prefix}ng modes`")
 
         pings_enabled = False
         with db.Session() as session:
@@ -376,8 +412,7 @@ class NameGame(Cog):
         await self.send_turn_embed(ctx, game,
                                    title=f"{mode.upper()} Name Game",
                                    description="A game has been started! The info about the game is as follows:",
-                                   color=discord.Color.green()
-                                   )
+                                   color=discord.Color.green())
         await self.notify(ctx, game, f"{game.current_player.mention}, start us off!")
         # await ctx.send(f"{game.current_player.mention}, start us off!")
         self.games[ctx.channel.id] = game
@@ -412,7 +447,8 @@ class NameGame(Cog):
                 game.players[player] = 0
                 added = True
 
-            if not added: return
+            if not added:
+                return
             await ctx.send(embed=game.create_embed(
                 title="Players have been added to the game.",
                 description="See below for an updated player list.",
@@ -437,7 +473,8 @@ class NameGame(Cog):
                     await self.strike(ctx, game, ctx.author)
                 else:
                     await ctx.send(
-                        f"Let the people playing play! If you want to join, ask one of the people currently playing to run `{ctx.prefix}ng addplayer {ctx.author.display_name}`")
+                        f"Let the people playing play! If you want to join, ask one of the people currently playing to "
+                        f"run `{ctx.prefix}ng addplayer {ctx.author.display_name}`")
                 return
 
             if game.time < 0:
@@ -468,10 +505,11 @@ class NameGame(Cog):
                 game.vote_player = ctx.author
                 await self.send_turn_embed(ctx, game,
                                            title="Team correct!",
-                                           description=f"Team {team} ({game.last_name}) was {ratio}% correct! Moving onto the next player as follows. Click the red X to override this decision.",
+                                           description=f"Team {team} ({game.last_name}) was {ratio}% correct! Moving "
+                                                       f"onto the next player as follows. Click the red X to override "
+                                                       f"this decision.",
                                            color=discord.Color.green(),
-                                           extra_fields=[("Voting Time", game.vote_time)]
-                                           )
+                                           extra_fields=[("Voting Time", game.vote_time)])
                 await game.turn_msg.add_reaction('❌')
                 await self.notify(ctx, game, f"{game.current_player.mention}, you're up! Current number: {game.number}")
                 game.vote_msg = game.turn_msg
@@ -487,7 +525,10 @@ class NameGame(Cog):
                 vote_embed = discord.Embed()
                 vote_embed.color = discord.Color.gold()
                 vote_embed.title = "A vote is needed!"
-                vote_embed.description = "A player has made a choice with less than 50% similarity. The details of the pick are below. Click on the two emoji to vote if this is correct or not. A 50% majority of players is required to accept it, otherwise the player will get a strike."
+                vote_embed.description = "A player has made a choice with less than 50% similarity. The details of the " \
+                                         "pick are below. Click on the two emoji to vote if this is correct or not. A" \
+                                         " 50% majority of players is required to accept it, otherwise the player will " \
+                                         "get a strike."
                 vote_embed.add_field(name="Player", value=game.current_player.mention)
                 vote_embed.add_field(name="Team", value=team)
                 vote_embed.add_field(name="Said Name", value=name)
@@ -575,6 +616,7 @@ class NameGame(Cog):
     """
 
     async def strike(self, ctx, game, player):
+        """Gives a player a strike."""
         if game.strike(player):
             await ctx.send(f"Player {player.mention} is ELIMINATED!")
         if len(game.players) == 0 or game.turn_count <= 6:
@@ -596,15 +638,17 @@ class NameGame(Cog):
             win_embed.title = "We have a winner!"
             win_embed.add_field(name="Winning Player", value=winner)
             win_embed.add_field(name="Wins Total", value=record.wins)
-            win_embed.add_field(name="Teams Picked", value=game.get_picked())
+            for pick_list in range(round(self.picked/170) or 1): # 170 is the max num of 4 digit teams that can be displayed
+                win_embed.add_field(name="Teams Picked {}".format(pick_list+1),
+                                    value=game.get_picked_num(pick_list*170))
             await ctx.send(embed=win_embed)
-
             game.running = False
 
         if not game.running:
             self.games.pop(ctx.channel.id)
 
     async def display_info(self, ctx, game):
+        """Displays info about the current game"""
         info_embed = discord.Embed(title="Current Game Info", color=discord.Color.blue())
         info_embed.add_field(name="Game Type", value=game.mode.upper())
         info_embed.add_field(
@@ -614,32 +658,37 @@ class NameGame(Cog):
         info_embed.add_field(name="Current Player", value=game.current_player)
         info_embed.add_field(name="Current Number", value=game.number or "Wildcard")
         info_embed.add_field(name="Time Left", value=game.time)
-        info_embed.add_field(name="Teams Picked", value=game.get_picked())
+        for pick_list in range(round(self.picked / 170) or 1):  # 170 is the max num of 4 digit teams that can be displayed
+            info_embed.add_field(name="Teams Picked {}".format(pick_list + 1),
+                                value=game.get_picked_num(pick_list * 170))
         await ctx.send(embed=info_embed)
 
     async def skip_player(self, ctx, game, player, msg=None):
+        """Skips a player"""
         if msg is not None:
             await ctx.send(msg)
         game.vote_time = -1
         game.next_turn()
         await self.send_turn_embed(ctx, game,
                                    title=f"Player {player.display_name} was skipped and now has {game.players[player]+1} strike(s)!",
-                                   color=discord.Color.red()
-                                   )
+                                   color=discord.Color.red())
         if player != game.current_player:
             await self.notify(ctx, game, f"{game.current_player.mention}, you're up! Current number: {game.number}")
         await self.strike(ctx, game, player)
 
     # send an embed that starts a new turn
     async def send_turn_embed(self, ctx, game, **kwargs):
+        """Sends an embed that starts a new turn"""
         game.turn_embed = game.create_embed(**kwargs)
         game.turn_msg = await ctx.send(embed=game.turn_embed)
 
     async def notify(self, ctx, game, msg):
+        """Notifies people in the channel when it's their turn."""
         if game.pings_enabled:
             await ctx.send(msg)
 
     async def on_reaction_add(self, reaction, user):
+        """When reactions are added, trigger the voting handler"""
         if reaction.message.channel.id not in self.games:
             return
         game = self.games[reaction.message.channel.id]
@@ -662,9 +711,9 @@ class NameGame(Cog):
                     game.next_turn()
                     await self.send_turn_embed(ctx, game,
                                                title="Team correct!",
-                                               description=f"Team {game.last_team} ({game.last_name}) was correct! Moving onto the next player as follows.",
-                                               color=discord.Color.green(),
-                                               )
+                                               description=f"Team {game.last_team} ({game.last_name}) was correct! "
+                                                           f"Moving onto the next player as follows.",
+                                               color=discord.Color.green())
                     await self.notify(ctx, game,
                                       f"{game.current_player.mention}, you're up! Current number: {game.number}")
                     game.vote_time = -1
@@ -675,6 +724,7 @@ class NameGame(Cog):
                     game.vote_time = -1
 
     async def on_reaction_remove(self, reaction, user):
+        """When a reaction is removed, do vote handling"""
         if reaction.message.channel.id not in self.games:
             return
         game = self.games[reaction.message.channel.id]
@@ -685,9 +735,7 @@ class NameGame(Cog):
             self._on_reaction(game, reaction, user, -1)
 
     def _on_reaction(self, game, reaction, user, inc):
-        # as they say, don't repeat yourself
-        # also, as this is just manipulating memory, it's not async
-
+        """Handles pass/fail reactions"""
         if reaction.message.id == game.vote_msg.id and user in game.players:
             if reaction.emoji == '❌':
                 game.fail_tally += inc
@@ -698,6 +746,7 @@ class NameGame(Cog):
 
     @keep_alive
     async def game_turn_countdown(self, ctx, game):
+        """Counts down the time remaining left in the turn"""
         await asyncio.sleep(1)
         with await game.state_lock:
             if not game.running:
@@ -719,6 +768,7 @@ class NameGame(Cog):
 
     @keep_alive
     async def game_vote_countdown(self, ctx, game):
+        """Counts down the time remaining left to vote"""
         await asyncio.sleep(1)
         with await game.state_lock:
             if not (game.running and not game.vote_correct and game.vote_embed and game.vote_time > 0):
@@ -736,19 +786,22 @@ class NameGame(Cog):
 
 
 class NameGameConfig(db.DatabaseObject):
+    """Configuration storage object"""
     __tablename__ = "namegame_config"
-    guild_id = db.Column(db.Integer, primary_key=True)
-    channel_id = db.Column(db.Integer, nullable=True)
+    guild_id = db.Column(db.BigInteger, primary_key=True)
+    channel_id = db.Column(db.BigInteger, nullable=True)
     mode = db.Column(db.String)
-    pings_enabled = db.Column(db.Integer)
+    pings_enabled = db.Column(db.BigInteger)
 
 
 class NameGameLeaderboard(db.DatabaseObject):
+    """Leaderboard storage object"""
     __tablename__ = "namegame_leaderboard"
-    user_id = db.Column(db.Integer, primary_key=True)
-    wins = db.Column(db.Integer)
+    user_id = db.Column(db.BigInteger, primary_key=True)
+    wins = db.Column(db.BigInteger)
     game_mode = db.Column(db.String)
 
 
 def setup(bot):
+    """Adds the namegame cog to the bot"""
     bot.add_cog(NameGame(bot))

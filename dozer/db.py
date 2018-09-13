@@ -1,8 +1,13 @@
+"""Provides database storage for the Dozer Discord bot"""
+
 import sqlalchemy
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, ForeignKeyConstraint, DateTime
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, ForeignKeyConstraint, BigInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, Session, sessionmaker
 
+__all__ = ['DatabaseObject', 'Session', 'Column', 'Integer', 'String', 'ForeignKey', 'relationship',
+           'Boolean', 'ForeignKeyConstraint', 'BigInteger', ]
 __all__ = ['engine', 'DatabaseObject', 'Session', 'Column', 'Integer', 'String', 'ForeignKey', 'relationship',
            'Boolean', 'DateTime']
 
@@ -12,6 +17,7 @@ DatabaseObject.__table_args__ = {'extend_existing': True}  # allow use of the re
 
 
 class CtxSession(Session):
+    """Allows sessions to be used as context managers and asynchronous context managers."""
     def __enter__(self):
         return self
 
@@ -29,4 +35,14 @@ class CtxSession(Session):
         return self.__exit__(err_type, err, tb)
 
 
-Session = sessionmaker(bind=engine, class_=CtxSession)
+DatabaseObject = None
+
+
+def db_init(db_url):
+    """Initializes the database connection"""
+    global Session
+    global DatabaseObject
+    engine = sqlalchemy.create_engine(db_url)
+    DatabaseObject = declarative_base(bind=engine, name='DatabaseObject')
+    DatabaseObject.__table_args__ = {'extend_existing': True}  # allow use of the reload command with db cogs
+    Session = sessionmaker(bind=engine, class_=CtxSession)

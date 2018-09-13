@@ -1,10 +1,11 @@
+"""A series of commands that talk to The Blue Alliance."""
 import datetime
 from datetime import timedelta
 
 import discord
+from discord.ext.commands import BadArgument
 import googlemaps
 import tbapi
-from discord.ext.commands import BadArgument
 from geopy.geocoders import Nominatim
 
 from ._utils import *
@@ -13,6 +14,7 @@ blurple = discord.Color.blurple()
 
 
 class TBA(Cog):
+    """Commands that talk to The Blue Alliance"""
     def __init__(self, bot):
         super().__init__(bot)
         tba_config = bot.config['tba']
@@ -123,7 +125,7 @@ class TBA(Cog):
                 current_second = "0{}".format(current_second)
             await ctx.send(
                 "Timezone: {0} UTC{1:+g} \nCurrent Time: {2}:{3}:{4} {5} ({6}:{3}:{4})".format(
-                timezone["timeZoneName"], utc_offset, current_hour, current_minute, current_second, dayTime, current_hour_original))
+                    timezone["timeZoneName"], utc_offset, current_hour, current_minute, current_second, dayTime, current_hour_original))
         else:
             raise BadArgument('Team {} does not exist.'.format(team_num))
 
@@ -131,5 +133,7 @@ class TBA(Cog):
     `{prefix}timezone 3572` - show the local time of team 3572, Wavelength
     """
 
+
 def setup(bot):
+    """Adds the TBA cog to the bot"""
     bot.add_cog(TBA(bot))

@@ -1,3 +1,5 @@
+"""Provides access to The Orange Alliance for FTC data."""
+
 import json
 from asyncio import sleep
 from datetime import datetime
@@ -7,7 +9,7 @@ import aiohttp
 import async_timeout
 
 
-class TOAParser(object):
+class TOAParser:
     """
     A class to make async requests to The Orange Alliance.
     """
@@ -51,7 +53,8 @@ class TOAParser(object):
                     raise
 
 
-class TOAResponse(object):
+class TOAResponse:
+    """Represents a response from the TOA API."""
     def __init__(self):
         self.error = False
 
