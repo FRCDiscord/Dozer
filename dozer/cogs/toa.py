@@ -16,8 +16,21 @@ class TOA(Cog):
         super().__init__(bot)
         self.parser = TOAParser(bot.config['toa']['key'], bot.http._session, app_name=bot.config['toa']['app_name'])
         # The line above has an error (bot.http._session is a protected class)
-        with gzip.open("ftc_teams.pickle.gz") as f:
-            self._teams = pickle.load(f)
+
+        if not bot.config['toa']['teamdata_url']:
+            with gzip.open("ftc_teams.pickle.gz") as f:
+                self._teams = pickle.load(f)
+        else:
+            self._teams = None
+
+    async def get_teamdata(self, team_num: int):
+        if self._teams is None:
+            async with async_timeout.timeout(5) as _, self.bot.http._session.get(urljoin(self.bot.config['toa']['teamdata_url'], str(team_num))) as response:
+                data = await response.json() if response.status < 400 else {}
+        else:
+            data = self._teams.get(team_num, {})
+
+        return data
 
     @group(invoke_without_command=True)
     async def toa(self, ctx, team_num: int):
@@ -35,39 +48,28 @@ class TOA(Cog):
     @bot_has_permissions(embed_links=True)
     async def team(self, ctx, team_num: int):
         """Get information on an FTC team by number."""
-        team_data = await self.parser.req("team/" + str(team_num))
-        # TOA's rookie year listing is :b:roke, so we have to fix it ourselves
-        # This is a _nasty_ hack
-        data = self._teams.get(team_num, {
-            'rookie_year': 2017,
-            'seasons': [{
-                'website': 'n/a',
-            }]
-        })
-        last_season = data['seasons'][0]
-        team_data.rookie_year = data['rookie_year']
+        # Fun fact: this no longer actually queries TOA. It queries a server that provides FIRST data.
+        team_data = await self.get_teamdata(team_num) #await self.parser.req("team/" + str(team_num))
+        if not team_data:
+            # rip
+            await ctx.send("This team does not have any data on it yet, or it does not exist!")
+            return
 
-        if team_data.error:
-            if team_num not in self._teams:
-                # rip
-                await ctx.send("This team does not have any data on it yet, or it does not exist!")
-                return
-            team_data._update(last_season) # Pylint says this is bad, how should it be fixed?
-            team_data.team_name_short = last_season['name']
+        season_data = team_data['seasons'][0]
 
         # many team entries lack a valid url
-        website = (team_data.website or last_season['website']).strip()
+        website = (season_data['website']).strip()
         if website and not (website.startswith("http://") or website.startswith("https://")):
             website = "http://" + website
-        e = discord.Embed(color=embed_color)
-        e.set_author(name='FIRST® Tech Challenge Team {}'.format(team_num),
-                     url='https://www.theorangealliance.org/teams/{}'.format(team_num),
-                     icon_url='https://cdn.discordapp.com/icons/342152047753166859/de4d258c0cab5bee0b04d406172ec585.jpg')
-        e.add_field(name='Name', value=team_data.team_name_short)
-        e.add_field(name='Rookie Year', value=team_data.rookie_year)
-        e.add_field(name='Location', value=', '.join((team_data.city, team_data.state_prov, team_data.country)))
+        e = discord.Embed(color=embed_color,
+                          title=f'FIRST® Tech Challenge Team {team_num}',
+                          url=f'https://www.theorangealliance.org/teams/{team_num}')
+                          #icon_url='https://cdn.discordapp.com/icons/342152047753166859/de4d258c0cab5bee0b04d406172ec585.jpg')
+        e.add_field(name='Name', value=season_data["name"])
+        e.add_field(name='Rookie Year', value=team_data['rookie_year'])
+        e.add_field(name='Location', value=', '.join((season_data["city"], season_data["state_prov"], season_data["country"])))
         e.add_field(name='Website', value=website or 'n/a')
-        e.add_field(name='Team Info Page', value='https://www.theorangealliance.org/teams/{}'.format(team_num))
+        #e.add_field(name='Team Info Page', value=f'https://www.theorangealliance.org/teams/{team_num}')
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send('', embed=e)
 

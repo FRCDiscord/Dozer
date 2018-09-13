@@ -15,6 +15,7 @@ config = {
     'toa': {
         'key': 'Put TOA API key here',
         'app_name': 'Dozer',
+        'teamdata_url': ''
     },
     'db_url': 'sqlite:///dozer.db',
     'gmaps_key': "PUT GOOGLE MAPS API KEY HERE",
