@@ -48,10 +48,11 @@ class Moderation(Cog):
             modlog_channel = session.query(GuildModLog).filter_by(id=actor.guild.id).one_or_none()
             if orig_channel is not None:
                 await orig_channel.send(embed=modlog_embed)
-            if modlog_channel is not None and global_modlog:
-                channel = actor.guild.get_channel(modlog_channel.modlog_channel)
-                if channel is not None and channel != orig_channel: # prevent duplicate embeds
-                    await channel.send(embed=modlog_embed)
+            if modlog_channel is not None:
+                if global_modlog:
+                    channel = actor.guild.get_channel(modlog_channel.modlog_channel)
+                    if channel is not None and channel != orig_channel: # prevent duplicate embeds
+                        await channel.send(embed=modlog_embed)
             else:
                 if orig_channel is not None:
                     await orig_channel.send("Please configure modlog channel to enable modlog functionality")
@@ -69,6 +70,7 @@ class Moderation(Cog):
         await asyncio.gather(*coros)
 
     hm_regex = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?((?P<seconds>\d+)s)?")
+
     def hm_to_seconds(self, hm_str):
         """Converts an hour-minute string to seconds. For example, '1h15m' returns 4500"""
         matches = re.match(self.hm_regex, hm_str).groupdict()
