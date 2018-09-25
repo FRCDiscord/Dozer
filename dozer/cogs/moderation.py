@@ -200,7 +200,7 @@ class Moderation(Cog):
                                           reason=reason,
                                           actor=actor or member.guild.me,
                                           orig_channel=orig_channel,
-                                          global_modlog=self_inflicted))
+                                          global_modlog=not self_inflicted))
                 return True
 
     async def _undeafen(self, member: discord.Member):
