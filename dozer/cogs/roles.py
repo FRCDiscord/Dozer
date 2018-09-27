@@ -328,7 +328,7 @@ class Roles(Cog):
         await member.add_roles(role)
         e = discord.Embed(color=blurple)
         e.add_field(name='Success!', value='I Gave {} to {}!'.format(role, member))
-        e.set_footer(text='Triggered by ' + ctx.author.display_name')
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
     give.example_usage = """
