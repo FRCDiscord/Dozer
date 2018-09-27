@@ -35,6 +35,25 @@ class TBA(Cog):
 
     @tba.command()
     @bot_has_permissions(embed_links=True)
+    async def status(self, ctx):
+        """Get information from the TBA API Status."""
+        status_data = self.parser.get_status()
+        e = discord.Embed(color=blurple)
+        e.set_author(name='The Blue Allaiance API Diagnostic',
+                         url='https://www.thebluealliance.com/apidocs',
+                         icon_url='https://www.thebluealliance.com/icons/favicon-32x32.png')
+        e.add_field(name='Current Season', value=status_data.current_season)
+        e.add_field(name='Max Season', value=status_data.max_season)
+        e.add_field(name='Datafeed Down', value=status_data.is_datafeed_down)
+        e.set_footer(text='Triggered by ' + ctx.author.display_name + '. Powered By The Blue Alliance.')
+        await ctx.send(embed=e)
+
+    status.example_usage = """
+    `{prefix}tba status` - Show Information from the TBA API status.
+    """
+
+    @tba.command()
+    @bot_has_permissions(embed_links=True)
     async def team(self, ctx, team_num: int):
         """Get information on an FRC team by number."""
         team_data = self.parser.get_team(team_num)
@@ -47,17 +66,48 @@ class TBA(Cog):
                          icon_url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
             e.add_field(name='Name', value=team_data.nickname)
             e.add_field(name='Rookie Year', value=team_data.rookie_year)
+            e.add_field(name='Home Championship', value="2011 thru 2017: " + team_data.home_championship['2017'] + "\n 2018 thru 2020: " + team_data.home_championship['2018'])
             e.add_field(name='Location',
                         value='{0.city}, {0.state_prov} {0.postal_code}, {0.country}'.format(team_data))
             e.add_field(name='Website', value=team_data.website)
             e.add_field(name='TBA Link', value='https://www.thebluealliance.com/team/{}'.format(team_num))
-            e.set_footer(text='Triggered by ' + ctx.author.display_name)
+            e.add_field(name='Sponsors', value=team_data.name)
+            e.set_footer(text='Triggered by ' + ctx.author.display_name + '. Powered By The Blue Alliance.')
             await ctx.send(embed=e)
         else:
             raise BadArgument("Couldn't find data for team {}".format(team_num))
 
     team.example_usage = """
     `{prefix}tba team 4131` - show information on team 4131, the Iron Patriots
+    """
+    
+    @tba.command()
+    @bot_has_permissions(embed_links=True)
+    async def event(self, ctx, event_key):
+        """Get information on an FRC event by event key (year+eventcode, ex. 2019mimus)."""
+        event_data = self.parser.get_event(event_key)
+        try:
+            getattr(event_data, "Errors")
+        except tbapi.InvalidKeyError:
+            e = discord.Embed(color=blurple)
+            e.set_author(name=str(event_data.year) + ' ' + event_data.name,
+                        url='https://www.thebluealliance.com/event/{}'.format(event_key),
+                        icon_url='https://www.thebluealliance.com/icons/favicon-32x32.png')
+            e.add_field(name='Event Type', value=event_data.event_type_string)
+            e.add_field(name='Google Maps URL', value=event_data.gmaps_url)
+            e.add_field(name='Location Name', value=event_data.location_name)
+            e.add_field(name='Start Date', value=event_data.start_date)
+            e.add_field(name='End Date', value=event_data.end_date)
+            e.add_field(name='Event Timezone', value=event_data.timezone)
+            e.add_field(name='Event Website', value=event_data.website)
+            e.add_field(name='TBA Link', value='https://thebluealliance.com/event/{}'.format(event_key))
+            e.set_footer(text='Triggered by ' + ctx.author.display_name + '. Powered By The Blue Alliance.')
+            await ctx.send(embed=e)
+        else:
+            raise BadArgument("Couldn't find data for event key {}".format(event_key))
+
+    event.example_usage = """
+    `{prefix}tba event 2019mimus` - show information on the 2019 FIM District Muskegon Event.
     """
 
     @tba.command()
@@ -75,7 +125,7 @@ class TBA(Cog):
                          url='https://www.thebluealliance.com/team/{}'.format(team_num),
                          icon_url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
             e.add_field(name='Raw Data', value=team_data.flatten())
-            e.set_footer(text='Triggered by ' + ctx.author.display_name)
+            e.set_footer(text='Triggered by ' + ctx.author.display_name + '. Powered By The Blue Alliance.')
             await ctx.send(embed=e)
         else:
             raise BadArgument('Team {} does not exist.'.format(team_num))
