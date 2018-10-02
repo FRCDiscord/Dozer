@@ -40,8 +40,8 @@ class TBA(Cog):
         status_data = self.parser.get_status()
         e = discord.Embed(color=blurple)
         e.set_author(name='The Blue Allaiance API Diagnostic',
-                         url='https://www.thebluealliance.com/apidocs',
-                         icon_url='https://www.thebluealliance.com/icons/favicon-32x32.png')
+             url='https://www.thebluealliance.com/apidocs',
+             icon_url='https://www.thebluealliance.com/icons/favicon-32x32.png')
         e.add_field(name='Current Season', value=status_data.current_season)
         e.add_field(name='Max Season', value=status_data.max_season)
         e.add_field(name='Datafeed Down', value=status_data.is_datafeed_down)
@@ -62,8 +62,8 @@ class TBA(Cog):
         except tbapi.InvalidKeyError:
             e = discord.Embed(color=blurple)
             e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num),
-                         url='https://www.thebluealliance.com/team/{}'.format(team_num),
-                         icon_url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
+                url='https://www.thebluealliance.com/team/{}'.format(team_num),
+                icon_url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
             e.add_field(name='Name', value=team_data.nickname)
             e.add_field(name='Rookie Year', value=team_data.rookie_year)
             e.add_field(name='Home Championship', value="2011 thru 2017: " + team_data.home_championship['2017'] + "\n 2018 thru 2020: " + team_data.home_championship['2018'])
@@ -91,8 +91,8 @@ class TBA(Cog):
         except tbapi.InvalidKeyError:
             e = discord.Embed(color=blurple)
             e.set_author(name=str(event_data.year) + ' ' + event_data.name,
-                        url='https://www.thebluealliance.com/event/{}'.format(event_key),
-                        icon_url='https://www.thebluealliance.com/icons/favicon-32x32.png')
+                url='https://www.thebluealliance.com/event/{}'.format(event_key),
+                icon_url='https://www.thebluealliance.com/icons/favicon-32x32.png')
             e.add_field(name='Event Type', value=event_data.event_type_string)
             e.add_field(name='Google Maps URL', value=event_data.gmaps_url)
             e.add_field(name='Location Name', value=event_data.location_name)
@@ -122,8 +122,8 @@ class TBA(Cog):
         except tbapi.InvalidKeyError:
             e = discord.Embed(color=blurple)
             e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num),
-                         url='https://www.thebluealliance.com/team/{}'.format(team_num),
-                         icon_url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
+                url='https://www.thebluealliance.com/team/{}'.format(team_num),
+                icon_url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
             e.add_field(name='Raw Data', value=team_data.flatten())
             e.set_footer(text='Triggered by ' + ctx.author.display_name + '. Powered By The Blue Alliance.')
             await ctx.send(embed=e)
