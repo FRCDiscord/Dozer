@@ -43,7 +43,7 @@ class Info(Cog):
 
             e.add_field(name='Status and Game', value=f'{member.status}, '.title() + (
                 f'{activity_name}' + f' {member.activity.name}' if member.activity else 'no game playing'), inline=False)
-            roles = sorted(member.roles, reverse=True)[:-1]  # Remove @everyone
+            roles = reversed(member.roles[1:])  # Remove @everyone
             e.add_field(name='Roles', value=', '.join(role.name for role in roles) or "No roles", inline=False)
             e.add_field(name='Icon URL', value=icon_url, inline=False)
         await ctx.send(embed=e)

@@ -19,14 +19,14 @@ class Voice(Cog):
                 with db.Session() as session:
                     config = session.query(Voicebinds).filter_by(channel_id=after.channel.id).one_or_none()
                     if config is not None:
-                        await member.add_roles(discord.utils.get(member.guild.roles, id=config.role_id))
+                        await member.add_roles(member.guild.get_role(config.role_id))
 
             if before.channel is not None:
                 # leave event, take role
                 with db.Session() as session:
                     config = session.query(Voicebinds).filter_by(channel_id=before.channel.id).one_or_none()
                     if config is not None:
-                        await member.remove_roles(discord.utils.get(member.guild.roles, id=config.role_id))
+                        await member.remove_roles(member.guild.get_role(config.role_id))
 
     @command()
     @bot_has_permissions(manage_roles=True)
@@ -59,7 +59,7 @@ class Voice(Cog):
         with db.Session() as session:
             config = session.query(Voicebinds).filter_by(channel_id=voice_channel.id).one_or_none()
             if config is not None:
-                role = discord.utils.get(ctx.guild.roles, id=config.role_id)
+                role = ctx.guild.get_role(config.role_id)
                 session.delete(config)
                 await ctx.send(
                     "Role `{role}` will no longer be given to users in voice channel `{voice_channel}`!".format(
@@ -80,7 +80,7 @@ class Voice(Cog):
         with db.Session() as session:
             for config in session.query(Voicebinds).filter_by(guild_id=ctx.guild.id).all():
                 channel = discord.utils.get(ctx.guild.voice_channels, id=config.channel_id)
-                role = discord.utils.get(ctx.guild.roles, id=config.role_id)
+                role = ctx.guild.get_role(config.role_id)
                 embed.add_field(name=channel, value="`{}`".format(role))
         await ctx.send(embed=embed)
 
