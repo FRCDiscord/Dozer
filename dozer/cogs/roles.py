@@ -33,9 +33,8 @@ class Roles(Cog):
                 return  # New member - nothing to restore
 
             valid, cant_give, missing = set(), set(), set()
-            role_ids = {role.id: role for role in member.guild.roles}
             for missing_role in restore.missing_roles:
-                role = role_ids.get(missing_role.role_id)
+                role = member.guild.get_role(missing_role.role_id)
                 if role is None:  # Role with that ID does not exist
                     missing.add(missing_role.role_name)
                 elif role.position > top_restorable:
@@ -263,7 +262,7 @@ class Roles(Cog):
                 raise BadArgument('that role does not exist or is not giveable!')
             else:
                 session.delete(role)
-        role = discord.utils.get(ctx.guild.roles, id=role.id)  # Not null because we already checked for id in valid_ids
+        role = ctx.guild.get_role(role.id)  # Not null because we already checked for id in valid_ids
         await role.delete(reason='Giveable role deleted by {}'.format(ctx.author))
         await ctx.send('Role "{0}" deleted!'.format(role))
 
