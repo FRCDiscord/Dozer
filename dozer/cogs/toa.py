@@ -37,7 +37,7 @@ class TOA(Cog):
         """Get information on an FTC team by number."""
         res = await self.parser.req("team/" + str(team_num))
 
-        if len(json.loads(res)) == 0 :
+        if len(json.loads(res)) == 0:
             if team_num not in self._teams:
                 await ctx.send("This team does not have any data on it yet, or it does not exist!")
                 return
