@@ -35,39 +35,24 @@ class TOA(Cog):
     @bot_has_permissions(embed_links=True)
     async def team(self, ctx, team_num: int):
         """Get information on an FTC team by number."""
-        team_data = await self.parser.req("team/" + str(team_num))
-        # TOA's rookie year listing is :b:roke, so we have to fix it ourselves
-        # This is a _nasty_ hack
-        data = self._teams.get(team_num, {
-            'rookie_year': 2017,
-            'seasons': [{
-                'website': 'n/a',
-            }]
-        })
-        last_season = data['seasons'][0]
-        team_data.rookie_year = data['rookie_year']
+        res = await self.parser.req("team/" + str(team_num))
 
-        if team_data.error:
+        if len(json.loads(res)) == 0 :
             if team_num not in self._teams:
-                # rip
                 await ctx.send("This team does not have any data on it yet, or it does not exist!")
                 return
-            team_data._update(last_season) # Pylint says this is bad, how should it be fixed?
-            team_data.team_name_short = last_season['name']
 
-        # many team entries lack a valid url
-        website = (team_data.website or last_season['website']).strip()
-        if website and not (website.startswith("http://") or website.startswith("https://")):
-            website = "http://" + website
+        team_data = json.loads(res)[0]
+
         e = discord.Embed(color=embed_color)
         e.set_author(name='FIRST® Tech Challenge Team {}'.format(team_num),
                      url='https://www.theorangealliance.org/teams/{}'.format(team_num),
-                     icon_url='https://cdn.discordapp.com/icons/342152047753166859/de4d258c0cab5bee0b04d406172ec585.jpg')
-        e.add_field(name='Name', value=team_data.team_name_short)
-        e.add_field(name='Rookie Year', value=team_data.rookie_year)
-        e.add_field(name='Location', value=', '.join((team_data.city, team_data.state_prov, team_data.country)))
-        e.add_field(name='Website', value=website or 'n/a')
-        e.add_field(name='Team Info Page', value='https://www.theorangealliance.org/teams/{}'.format(team_num))
+                     icon_url='https://pbs.twimg.com/profile_images/1049159734249623553/SZ34vdcC_400x400.jpg')
+        e.add_field(name='Name', value=team_data['team_name_short'])
+        e.add_field(name='Rookie Year', value=team_data['rookie_year'])
+        e.add_field(name='Location', value=', '.join((team_data['city'], team_data['state_prov'], team_data['country'])))
+        e.add_field(name='Website', value=team_data['website'] or 'n/a')
+        e.add_field(name='Team Info Page', value='https://www.theorangealliance.org/teams/{}'.format(team_data['team_key']))
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send('', embed=e)
 
@@ -79,3 +64,4 @@ class TOA(Cog):
 def setup(bot):
     """Adds the TOA cog to the bot."""
     bot.add_cog(TOA(bot))
+    
