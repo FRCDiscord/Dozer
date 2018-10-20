@@ -37,10 +37,9 @@ class TOA(Cog):
         """Get information on an FTC team by number."""
         res = await self.parser.req("team/" + str(team_num))
 
-        if len(json.loads(res)) == 0:
-            if team_num not in self._teams:
-                await ctx.send("This team does not have any data on it yet, or it does not exist!")
-                return
+        if len(json.loads(res))==0:
+            await ctx.send("This team does not have any data on it yet, or it does not exist!")
+            return
 
         team_data = json.loads(res)[0]
 
@@ -64,4 +63,3 @@ class TOA(Cog):
 def setup(bot):
     """Adds the TOA cog to the bot."""
     bot.add_cog(TOA(bot))
-    
