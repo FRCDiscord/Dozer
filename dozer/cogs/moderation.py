@@ -43,7 +43,10 @@ class Moderation(Cog):
         modlog_embed.add_field(name="Requested by", value=f"{actor.mention} ({actor} | {actor.id})", inline=False)
         modlog_embed.add_field(name="Reason", value=reason or "No reason specified", inline=False)
         modlog_embed.add_field(name="Timestamp", value=str(datetime.datetime.now()), inline=False)
-
+        try:
+            await target.send(embed=modlog_embed)
+        except discord.Forbidden:
+            await orig_channel.send("Attempted to send modlog to user, but they have blocked me.")
         with db.Session() as session:
             modlog_channel = session.query(GuildModLog).filter_by(id=actor.guild.id).one_or_none()
             if orig_channel is not None:
@@ -373,7 +376,7 @@ class Moderation(Cog):
     @has_permissions(kick_members=True)
     async def warn(self, ctx, member: discord.Member, *, reason):
         """Sends a message to the mod log specifying the member has been warned without punishment."""
-        await self.mod_log(actor=ctx.author, action="warned", target=member, reason=reason)
+        await self.mod_log(actor=ctx.author, action="warned", target=member, orig_channel=ctx.channel, reason=reason)
 
     warn.example_usage = """
     `{prefix}`warn @user reason - warns a user for "reason"
