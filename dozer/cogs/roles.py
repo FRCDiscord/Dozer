@@ -8,6 +8,7 @@ from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 from ._utils import *
 from .. import db
 
+blurple = discord.Color.blurple()
 
 class Roles(Cog):
     """Commands for role management."""
@@ -32,9 +33,8 @@ class Roles(Cog):
                 return  # New member - nothing to restore
 
             valid, cant_give, missing = set(), set(), set()
-            role_ids = {role.id: role for role in member.guild.roles}
             for missing_role in restore.missing_roles:
-                role = role_ids.get(missing_role.role_id)
+                role = member.guild.get_role(missing_role.role_id)
                 if role is None:  # Role with that ID does not exist
                     missing.add(missing_role.role_name)
                 elif role.position > top_restorable:
@@ -262,7 +262,7 @@ class Roles(Cog):
                 raise BadArgument('that role does not exist or is not giveable!')
             else:
                 session.delete(role)
-        role = discord.utils.get(ctx.guild.roles, id=role.id)  # Not null because we already checked for id in valid_ids
+        role = ctx.guild.get_role(role.id)  # Not null because we already checked for id in valid_ids
         await role.delete(reason='Giveable role deleted by {}'.format(ctx.author))
         await ctx.send('Role "{0}" deleted!'.format(role))
 
@@ -318,28 +318,34 @@ class Roles(Cog):
     """
 
     @command()
-    @bot_has_permissions(manage_roles=True)
+    @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
     async def give(self, ctx, member: discord.Member, *, role: discord.Role):
         """Gives a member a role. Not restricted to giveable roles."""
         if role > ctx.author.top_role:
             raise BadArgument('Cannot give roles higher than your top role!')
         await member.add_roles(role)
-        await ctx.send('Successfully gave {} {}!'.format(member, role))
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value='I Gave {} to {}!'.format(role, member))
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
 
     give.example_usage = """
     `{prefix}give cooldude#1234 Java` - gives cooldude any role, giveable or not, named Java
     """
 
     @command()
-    @bot_has_permissions(manage_roles=True)
+    @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
     async def take(self, ctx, member: discord.Member, *, role: discord.Role):
         """Takes a role from a member. Not restricted to giveable roles."""
         if role > ctx.author.top_role:
             raise BadArgument('Cannot take roles higher than your top role!')
         await member.remove_roles(role)
-        await ctx.send('Successfully removed "{}" from {}!'.format(role, member))
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value='I Took {} from {}!'.format(role, member))
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
 
     take.example_usage = """
     `{prefix}take cooldude#1234 Java` - takes any role named Java, giveable or not, from cooldude

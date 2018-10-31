@@ -1,11 +1,14 @@
 """Commands specific to development. Only approved developers can use these commands."""
 import copy
 import re
+import logging
 import discord
 
 from discord.ext.commands import NotOwner
 
 from ._utils import *
+
+logger = logging.getLogger("dozer")
 
 
 class Development(Cog):
@@ -46,6 +49,12 @@ class Development(Cog):
             code = code.strip('```').partition('\n')[2].strip()  # Remove multiline code blocks
         else:
             code = code.strip('`').strip()  # Remove single-line code blocks, if necessary
+
+        logger.info(f"Evaluating code at request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
+        logger.info("-"*32)
+        for line in code.splitlines():
+            logger.info(line)
+        logger.info("-"*32)
 
         e = discord.Embed(type='rich')
         e.add_field(name='Code', value='```py\n%s\n```' % code, inline=False)
