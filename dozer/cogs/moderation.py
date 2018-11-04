@@ -46,7 +46,7 @@ class Moderation(Cog):
         try:
             await target.send(embed=modlog_embed)
         except discord.Forbidden:
-            await orig_channel.send("Attempted to send modlog to user, but they have blocked me.")
+            await orig_channel.send("Failed to DM modlog to user")
         with db.Session() as session:
             modlog_channel = session.query(GuildModLog).filter_by(id=actor.guild.id).one_or_none()
             if orig_channel is not None:
@@ -213,9 +213,6 @@ class Moderation(Cog):
             if user is not None:
                 await self.perm_override(member=member, read_messages=None)
                 session.delete(user)
-                # if not user.self_inflicted:
-                #     await self.mod_log(member=ctx.author, action="undeafened", target=member_mentions, reason=reason,
-                #                        orig_channel=ctx.channel, embed_color=discord.Color.green())
                 return True
             else:
                 return False
@@ -454,8 +451,8 @@ class Moderation(Cog):
     @bot_has_permissions(ban_members=True)
     async def ban(self, ctx, user_mention: discord.User, *, reason="No reason provided"):
         """Bans the user mentioned."""
-        await ctx.guild.ban(user_mention, reason=reason)
         await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason, orig_channel=ctx.channel)
+        await ctx.guild.ban(user_mention, reason=reason)
     ban.example_usage = """
     `{prefix}ban @user reason - ban @user for a given (optional) reason
     """
@@ -476,8 +473,8 @@ class Moderation(Cog):
     @bot_has_permissions(kick_members=True)
     async def kick(self, ctx, user_mention: discord.User, *, reason="No reason provided"):
         """Kicks the user mentioned."""
-        await ctx.guild.kick(user_mention, reason=reason)
         await self.mod_log(actor=ctx.author, action="kicked", target=user_mention, reason=reason, orig_channel=ctx.channel)
+        await ctx.guild.kick(user_mention, reason=reason)
     kick.example_usage = """
     `{prefix}kick @user reason - kick @user for a given (optional) reason
     """
