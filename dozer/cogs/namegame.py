@@ -155,6 +155,7 @@ class NameGameSession():
         return ", ".join(map(str, sorted(self.picked))) or "No Picked Teams"
 
     def get_picked_num(self, index):
+        """Get the currently picked teams at a current index"""
         return ", ".join(map(str, sorted(self.picked)[index:index+170])) or "No Picked Teams"
 
 
@@ -660,7 +661,7 @@ class NameGame(Cog):
         info_embed.add_field(name="Time Left", value=game.time)
         for pick_list in range(round(self.picked / 170) or 1):  # 170 is the max num of 4 digit teams that can be displayed
             info_embed.add_field(name="Teams Picked {}".format(pick_list + 1),
-                                value=game.get_picked_num(pick_list * 170))
+                                 value=game.get_picked_num(pick_list * 170))
         await ctx.send(embed=info_embed)
 
     async def skip_player(self, ctx, game, player, msg=None):

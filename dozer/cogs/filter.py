@@ -1,7 +1,7 @@
-import discord
-import re
-from discord.ext.commands import guild_only, has_permissions
 import datetime
+import re
+import discord
+from discord.ext.commands import guild_only, has_permissions
 
 from ._utils import *
 from .. import db
@@ -18,6 +18,7 @@ class Filter(Cog):
     """Helper Functions"""
 
     async def check_dm_filter(self, ctx, embed):
+        """Send an embed, if the setting in the DB allows for it"""
         with db.Session() as session:
             results = session.query(WordFilterSetting).filter_by(guild_id=ctx.guild.id, setting_type="dm") \
                 .one_or_none()
@@ -34,6 +35,7 @@ class Filter(Cog):
                 await ctx.send(embed=embed)
 
     def load_filters(self, guild_id):
+        """Load all filters for a selected guild """
         with db.Session() as session:
             results = session.query(WordFilter).filter_by(guild_id=guild_id, enabled=True).all()
             self.filter_dict[guild_id] = {}
@@ -41,6 +43,7 @@ class Filter(Cog):
                 self.filter_dict[guild_id][filter.id] = re.compile(filter.pattern, re.IGNORECASE)
 
     async def check_filters(self, message):
+        """Check all the filters for a certain message (with it's guild)"""
         if message.author.id == self.bot.user.id:
             return
         with db.Session() as session:
@@ -70,9 +73,11 @@ class Filter(Cog):
     """Event Handlers"""
 
     async def on_message(self, message):
+        """Send the message handler out"""
         await self.check_filters(message)
 
     async def on_message_edit(self, before, after):
+        """Send the message handler out, but for edits"""
         await self.check_filters(after)
 
     """Commands"""
@@ -225,6 +230,7 @@ def setup(bot):
 
 
 class WordFilter(db.DatabaseObject):
+    """Object for each filter"""
     __tablename__ = "word_filters"
     id = db.Column(db.Integer, primary_key=True)
     enabled = db.Column(db.Boolean, default=True)
@@ -235,6 +241,7 @@ class WordFilter(db.DatabaseObject):
 
 
 class WordFilterSetting(db.DatabaseObject):
+    """Each filter-related setting (will be replaced soon)"""
     __tablename__ = "word_filter_settings"
     id = db.Column(db.Integer, primary_key=True)
     setting_type = db.Column(db.String)
@@ -243,12 +250,14 @@ class WordFilterSetting(db.DatabaseObject):
 
 
 class WordFilterRoleWhitelist(db.DatabaseObject):
+    """Object for each whitelisted role (guild-sepcific)"""
     __tablename__ = "word_filter_role_whitelist"
     guild_id = db.Column(db.Integer)
     role_id = db.Column(db.Integer, primary_key=True)
 
 
 class WordFilterInfraction(db.DatabaseObject):
+    """Object for each word filter infraction"""
     __tablename__ = "word_filter_infraction"
     id = db.Column(db.Integer, primary_key=True)
     member_id = db.Column(db.Integer)
