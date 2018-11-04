@@ -27,7 +27,7 @@ class Filter(Cog):
             else:
                 results = results.value
 
-            if results:
+            if results == "0":
                 await ctx.author.send(embed=embed)
                 await ctx.message.add_reaction("📬")
             else:
@@ -48,7 +48,6 @@ class Filter(Cog):
         whitelisted_ids = set(role.role_id for role in roles)
         if any(x.id in whitelisted_ids for x in message.author.roles):
             return
-        filters = {}
         try:
             filters = self.filter_dict[message.guild.id]
         except KeyError:
