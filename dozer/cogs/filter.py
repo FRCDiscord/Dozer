@@ -186,7 +186,7 @@ class Filter(Cog):
         """List all whitelisted roles for this server"""
         with db.Session() as session:
             results = session.query(WordFilterRoleWhitelist).filter_by(guild_id=ctx.guild.id).all()
-            role_objects = (ctx.guild.get_role(ctx.guild.roles, id=db_role.role_id) for db_role in results)
+            role_objects = (ctx.guild.get_role(db_role.role_id) for db_role in results)
             role_names = (role.name for role in role_objects if role is not None)
             roles_text = "\n".join(role_names)
             embed = discord.Embed()
