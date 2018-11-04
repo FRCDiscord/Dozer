@@ -31,7 +31,7 @@ class Filter(Cog):
             else:
                 results = results.value
 
-            if results == "0":
+            if results == "1":
                 await ctx.author.send(embed=embed)
                 await ctx.message.add_reaction("📬")
             else:
@@ -172,7 +172,8 @@ class Filter(Cog):
                 result = WordFilterSetting(guild_id=ctx.guild.id, setting_type="dm", value=config)
                 session.add(result)
             await ctx.send(
-                "The DM setting for this guild has been changed from {} to {}.".format(before_setting, result.value))
+                "The DM setting for this guild has been changed from {} to {}.".format(before_setting == "1",
+                                                                                       result.value))
 
     dm_config.example_usage = "`{prefix}filter dm_config True` - Makes all messages containining filter lists to be sent through DMs"
 
