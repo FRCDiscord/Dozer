@@ -154,7 +154,7 @@ class Filter(Cog):
                 await ctx.send("That Filter does not belong to this guild.")
                 return
             result.enabled = False
-            await ctx.send("Filter `{}` with name `{}` deleted.".format(result.id, result.friendly_name))
+        await ctx.send("Filter `{}` with name `{}` deleted.".format(result.id, result.friendly_name))
         self.load_filters(ctx.guild.id)
 
     remove.example_usage = "`{prefix}filter remove 7` - Disables filter with ID 7"
@@ -186,7 +186,7 @@ class Filter(Cog):
         """List all whitelisted roles for this server"""
         with db.Session() as session:
             results = session.query(WordFilterRoleWhitelist).filter_by(guild_id=ctx.guild.id).all()
-            role_objects = (discord.utils.get(ctx.guild.roles, id=db_role.role_id) for db_role in results)
+            role_objects = (ctx.guild.get_role(ctx.guild.roles, id=db_role.role_id) for db_role in results)
             role_names = (role.name for role in role_objects if role is not None)
             roles_text = "\n".join(role_names)
             embed = discord.Embed()
@@ -240,7 +240,7 @@ def setup(bot):
 class WordFilter(db.DatabaseObject):
     """Object for each filter"""
     __tablename__ = "word_filters"
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     enabled = db.Column(db.Boolean, default=True)
     guild_id = db.Column(db.BigInteger)
     friendly_name = db.Column(db.String, nullable=True)
@@ -251,7 +251,7 @@ class WordFilter(db.DatabaseObject):
 class WordFilterSetting(db.DatabaseObject):
     """Each filter-related setting (will be replaced soon)"""
     __tablename__ = "word_filter_settings"
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     setting_type = db.Column(db.String)
     guild_id = db.Column(db.BigInteger)
     value = db.Column(db.String)
@@ -267,7 +267,7 @@ class WordFilterRoleWhitelist(db.DatabaseObject):
 class WordFilterInfraction(db.DatabaseObject):
     """Object for each word filter infraction"""
     __tablename__ = "word_filter_infraction"
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     member_id = db.Column(db.BigInteger)
     filter_id = db.Column(db.Integer, db.ForeignKey('word_filters.id'))
     filter = db.relationship("WordFilter", back_populates="infractions")
