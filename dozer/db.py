@@ -5,7 +5,7 @@ from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, ForeignKeyC
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, Session, sessionmaker
 
-__all__ = ['engine', 'DatabaseObject', 'Session', 'Column', 'Integer', 'String', 'ForeignKey', 'relationship',
+__all__ = ['DatabaseObject', 'Session', 'Column', 'Integer', 'String', 'ForeignKey', 'relationship',
            'Boolean', 'DateTime', 'BigInteger']
 
 
