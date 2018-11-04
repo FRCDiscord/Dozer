@@ -1,3 +1,6 @@
+"""Establish a system of filters that allow run-time specified filters to applied to all messages in a guild,
+with whitelisted role exceptions."""
+
 import datetime
 import re
 import discord
@@ -39,15 +42,15 @@ class Filter(Cog):
         with db.Session() as session:
             results = session.query(WordFilter).filter_by(guild_id=guild_id, enabled=True).all()
             self.filter_dict[guild_id] = {}
-            for filter in results:
-                self.filter_dict[guild_id][filter.id] = re.compile(filter.pattern, re.IGNORECASE)
+            for wordfilter in results:
+                self.filter_dict[guild_id][wordfilter.id] = re.compile(wordfilter.pattern, re.IGNORECASE)
 
     async def check_filters(self, message):
         """Check all the filters for a certain message (with it's guild)"""
         if message.author.id == self.bot.user.id:
             return
         with db.Session() as session:
-            roles = session.query(WordFilterRoleWhitelist).filter_by(guild_id = message.guild.id).all()
+            roles = session.query(WordFilterRoleWhitelist).filter_by(guild_id=message.guild.id).all()
         whitelisted_ids = set(role.role_id for role in roles)
         if any(x.id in whitelisted_ids for x in message.author.roles):
             return
@@ -57,12 +60,12 @@ class Filter(Cog):
             self.load_filters(message.guild.id)
             filters = self.filter_dict[message.guild.id]
         deleted = False
-        for id, filter in filters.items():
-            if filter.search(message.content) is not None:
+        for wordid, wordfilter in filters.items():
+            if wordfilter.search(message.content) is not None:
                 await message.channel.send("{}, Banned word detected!".format(message.author.mention), delete_after=5.0)
                 time = datetime.datetime.utcnow()
                 with db.Session() as session:
-                    infraction = WordFilterInfraction(member_id=message.author.id, filter_id=id,
+                    infraction = WordFilterInfraction(member_id=message.author.id, filter_id=wordid,
                                                       timestamp=time,
                                                       message=message.content)
                     session.add(infraction)
@@ -84,7 +87,7 @@ class Filter(Cog):
 
     @group(invoke_without_command=True)
     @guild_only()
-    async def filter(self, ctx, advanced: bool=False):
+    async def filter(self, ctx, advanced: bool = False):
         """List and manage filtered words"""
         with db.Session() as session:
             results = session.query(WordFilter).filter_by(guild_id=ctx.guild.id, enabled=True).all()
@@ -118,7 +121,7 @@ class Filter(Cog):
     async def add(self, ctx, pattern, friendly_name=None):
         """Add a pattern to the filter using RegEx. Any word can be added and is tested case-insensitive."""
         try:
-           re.compile(pattern)
+            re.compile(pattern)
         except re.error as err:
             await ctx.send("Invalid ReGex! ```{}```".format(err.msg))
             return
@@ -137,12 +140,12 @@ class Filter(Cog):
     @guild_only()
     @has_permissions(manage_guild=True)
     @filter.command()
-    async def remove(self, ctx, id):
+    async def remove(self, ctx, filter_id):
         """Remove a pattern from the filter list."""
         with db.Session() as session:
-            result = session.query(WordFilter).filter_by(id = id).one_or_none()
+            result = session.query(WordFilter).filter_by(id=filter_id).one_or_none()
             if result is None:
-                await ctx.send("Filter ID {} not found!".format(id))
+                await ctx.send("Filter ID {} not found!".format(filter_id))
                 return
             if result.guild_id != ctx.guild.id:
                 await ctx.send("That Filter does not belong to this guild.")
@@ -223,6 +226,7 @@ class Filter(Cog):
 
 
 def setup(bot):
+    """Setup cog"""
     bot.add_cog(Filter(bot))
 
 
@@ -250,7 +254,7 @@ class WordFilterSetting(db.DatabaseObject):
 
 
 class WordFilterRoleWhitelist(db.DatabaseObject):
-    """Object for each whitelisted role (guild-sepcific)"""
+    """Object for each whitelisted role (guild-specific)"""
     __tablename__ = "word_filter_role_whitelist"
     guild_id = db.Column(db.Integer)
     role_id = db.Column(db.Integer, primary_key=True)
