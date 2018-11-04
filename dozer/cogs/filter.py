@@ -92,9 +92,11 @@ class Filter(Cog):
         with db.Session() as session:
             results = session.query(WordFilter).filter_by(guild_id=ctx.guild.id, enabled=True).all()
         if not results:
-            # TODO: Make this a embed
-            await ctx.send("No filters found for this server. Use `{}filter add <>` to add one.".format(
-                ctx.bot.command_prefix))
+            embed = discord.Embed(title="Filters for {}".format(ctx.guild.name))
+            embed.description = "No filters found for this guild! Add one using `{}whitelist add filter <>`".format(
+                ctx.bot.command_prefix)
+            embed.color = discord.Color.red()
+            await ctx.send(embed=embed)
             return
 
         fmt = 'ID {0.id}: `{0.friendly_name}`'
@@ -104,8 +106,9 @@ class Filter(Cog):
         filter_text = '\n'.join(map(fmt.format, results))
 
         embed = discord.Embed()
-        embed.title = title = "Filters for {}".format(ctx.guild.name)
+        embed.title = "Filters for {}".format(ctx.guild.name)
         embed.add_field(name="Filters", value=filter_text)
+        embed.color = discord.Color.dark_orange()
         await self.check_dm_filter(ctx, embed)
 
     filter.example_usage = """`{prefix}filter add test` - Adds test as a filter.
@@ -152,7 +155,7 @@ class Filter(Cog):
                 return
             result.enabled = False
             await ctx.send("Filter `{}` with name `{}` deleted.".format(result.id, result.friendly_name))
-            self.load_filters(ctx.guild.id)
+        self.load_filters(ctx.guild.id)
 
     remove.example_usage = "`{prefix}filter remove 7` - Disables filter with ID 7"
 
