@@ -242,7 +242,7 @@ class WordFilter(db.DatabaseObject):
     __tablename__ = "word_filters"
     id = db.Column(db.Integer, primary_key=True)
     enabled = db.Column(db.Boolean, default=True)
-    guild_id = db.Column(db.Integer)
+    guild_id = db.Column(db.BigInteger)
     friendly_name = db.Column(db.String, nullable=True)
     pattern = db.Column(db.String)
     infractions = db.relationship("WordFilterInfraction", back_populates="filter")
@@ -253,7 +253,7 @@ class WordFilterSetting(db.DatabaseObject):
     __tablename__ = "word_filter_settings"
     id = db.Column(db.Integer, primary_key=True)
     setting_type = db.Column(db.String)
-    guild_id = db.Column(db.Integer)
+    guild_id = db.Column(db.BigInteger)
     value = db.Column(db.String)
 
 
@@ -261,14 +261,14 @@ class WordFilterRoleWhitelist(db.DatabaseObject):
     """Object for each whitelisted role (guild-specific)"""
     __tablename__ = "word_filter_role_whitelist"
     guild_id = db.Column(db.Integer)
-    role_id = db.Column(db.Integer, primary_key=True)
+    role_id = db.Column(db.BigInteger, primary_key=True)
 
 
 class WordFilterInfraction(db.DatabaseObject):
     """Object for each word filter infraction"""
     __tablename__ = "word_filter_infraction"
     id = db.Column(db.Integer, primary_key=True)
-    member_id = db.Column(db.Integer)
+    member_id = db.Column(db.BigInteger)
     filter_id = db.Column(db.Integer, db.ForeignKey('word_filters.id'))
     filter = db.relationship("WordFilter", back_populates="infractions")
     timestamp = db.Column(db.DateTime)
