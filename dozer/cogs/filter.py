@@ -126,7 +126,7 @@ class Filter(Cog):
         try:
             re.compile(pattern)
         except re.error as err:
-            await ctx.send("Invalid ReGex! ```{}```".format(err.msg))
+            await ctx.send("Invalid RegEx! ```{}```".format(err.msg))
             return
         new_filter = WordFilter(guild_id=ctx.guild.id, pattern=pattern, friendly_name=friendly_name or pattern)
         with db.Session() as session:
