@@ -43,7 +43,10 @@ class Moderation(Cog):
         modlog_embed.add_field(name="Requested by", value=f"{actor.mention} ({actor} | {actor.id})", inline=False)
         modlog_embed.add_field(name="Reason", value=reason or "No reason specified", inline=False)
         modlog_embed.add_field(name="Timestamp", value=str(datetime.datetime.now()), inline=False)
-
+        try:
+            await target.send(embed=modlog_embed)
+        except discord.Forbidden:
+            await orig_channel.send("Failed to DM modlog to user")
         with db.Session() as session:
             modlog_channel = session.query(GuildModLog).filter_by(id=actor.guild.id).one_or_none()
             if orig_channel is not None:
@@ -132,7 +135,7 @@ class Moderation(Cog):
             config = session.query(GuildMessageLinks).filter_by(guild_id=msg.guild.id).one_or_none()
             if config is None:
                 return
-            role = discord.utils.get(msg.guild.roles, id=config.role_id)
+            role = msg.guild.get_role(config.role_id)
             if role is None:
                 return
             if role not in msg.author.roles and re.search("https?://", msg.content):
@@ -210,9 +213,6 @@ class Moderation(Cog):
             if user is not None:
                 await self.perm_override(member=member, read_messages=None)
                 session.delete(user)
-                # if not user.self_inflicted:
-                #     await self.mod_log(member=ctx.author, action="undeafened", target=member_mentions, reason=reason,
-                #                        orig_channel=ctx.channel, embed_color=discord.Color.green())
                 return True
             else:
                 return False
@@ -284,7 +284,7 @@ class Moderation(Cog):
                 role_id = config.role_id
                 if message.channel.id != channel:
                     return
-                await message.author.add_roles(discord.utils.get(message.guild.roles, id=role_id))
+                await message.author.add_roles(message.guild.get_role(role_id))
 
     async def on_message_delete(self, message):
         """When a message is deleted, log it."""
@@ -373,7 +373,7 @@ class Moderation(Cog):
     @has_permissions(kick_members=True)
     async def warn(self, ctx, member: discord.Member, *, reason):
         """Sends a message to the mod log specifying the member has been warned without punishment."""
-        await self.mod_log(actor=ctx.author, action="warned", target=member, reason=reason)
+        await self.mod_log(actor=ctx.author, action="warned", target=member, orig_channel=ctx.channel, reason=reason)
 
     warn.example_usage = """
     `{prefix}`warn @user reason - warns a user for "reason"
@@ -390,9 +390,8 @@ class Moderation(Cog):
                 settings = MemberRole(id=ctx.guild.id)
                 session.add(settings)
 
-            member_role = discord.utils.get(ctx.guild.roles,
-                                            id=settings.member_role)  # None-safe - nonexistent or non-configured role return None
-
+        # None-safe - nonexistent or non-configured role return None
+        member_role = ctx.guild.get_role(settings.member_role)
         if member_role is not None:
             targets = {member_role}
         else:
@@ -452,8 +451,8 @@ class Moderation(Cog):
     @bot_has_permissions(ban_members=True)
     async def ban(self, ctx, user_mention: discord.User, *, reason="No reason provided"):
         """Bans the user mentioned."""
-        await ctx.guild.ban(user_mention, reason=reason)
         await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason, orig_channel=ctx.channel)
+        await ctx.guild.ban(user_mention, reason=reason)
     ban.example_usage = """
     `{prefix}ban @user reason - ban @user for a given (optional) reason
     """
@@ -474,8 +473,8 @@ class Moderation(Cog):
     @bot_has_permissions(kick_members=True)
     async def kick(self, ctx, user_mention: discord.User, *, reason="No reason provided"):
         """Kicks the user mentioned."""
-        await ctx.guild.kick(user_mention, reason=reason)
         await self.mod_log(actor=ctx.author, action="kicked", target=user_mention, reason=reason, orig_channel=ctx.channel)
+        await ctx.guild.kick(user_mention, reason=reason)
     kick.example_usage = """
     `{prefix}kick @user reason - kick @user for a given (optional) reason
     """
