@@ -1,5 +1,5 @@
 
-with open('cilog.txt', 'r') as log:
+with open('./ci/cilog.txt', 'r') as log:
 	lines = log.readlines()
 	line_num = len(lines) - 2
 	line = lines[line_num]
