@@ -73,11 +73,11 @@ class TOA(Cog):
     @bot_has_permissions(embed_links=True)
     async def team(self, ctx, team_num: int):
         """Get information on an FTC team by number."""
-        res = await self.parser.req("team/" + str(team_num))
-        team_data = json.loads(res)[0]
-        if len(team_data) == 0:
+        res = json.loads(await self.parser.req("team/" + str(team_num)))
+        if len(res) == 0:
             await ctx.send("This team does not have any data on it yet, or it does not exist!")
             return
+        team_data = res[0]
 
         e = discord.Embed(color=embed_color)
         e.set_author(name='FIRST® Tech Challenge Team {}'.format(team_num),
