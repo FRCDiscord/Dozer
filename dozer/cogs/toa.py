@@ -82,7 +82,7 @@ class TOA(Cog):
         e = discord.Embed(color=embed_color)
         e.set_author(name='FIRST® Tech Challenge Team {}'.format(team_num),
                      url='https://www.theorangealliance.org/teams/{}'.format(team_num),
-                     icon_url='https://theorangealliance.org/favicon.ico')
+                     icon_url='https://theorangealliance.org/assets/imgs/favicon.png')
         e.add_field(name='Name', value=team_data['team_name_short'])
         e.add_field(name='Rookie Year', value=team_data['rookie_year'])
         e.add_field(name='Location', value=', '.join((team_data['city'], team_data['state_prov'], team_data['country'])))
