@@ -74,17 +74,15 @@ class TOA(Cog):
     async def team(self, ctx, team_num: int):
         """Get information on an FTC team by number."""
         res = await self.parser.req("team/" + str(team_num))
-
-        if len(json.loads(res)) == 0:
+        team_data = json.loads(res)[0]
+        if len(team_data) == 0:
             await ctx.send("This team does not have any data on it yet, or it does not exist!")
             return
-
-        team_data = json.loads(res)[0]
 
         e = discord.Embed(color=embed_color)
         e.set_author(name='FIRST® Tech Challenge Team {}'.format(team_num),
                      url='https://www.theorangealliance.org/teams/{}'.format(team_num),
-                     icon_url='https://pbs.twimg.com/profile_images/1049159734249623553/SZ34vdcC_400x400.jpg')
+                     icon_url='https://theorangealliance.org/favicon.ico')
         e.add_field(name='Name', value=team_data['team_name_short'])
         e.add_field(name='Rookie Year', value=team_data['rookie_year'])
         e.add_field(name='Location', value=', '.join((team_data['city'], team_data['state_prov'], team_data['country'])))
