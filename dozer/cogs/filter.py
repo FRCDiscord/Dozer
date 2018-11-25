@@ -159,7 +159,7 @@ class Filter(Cog):
             result.pattern = pattern
         self.load_filters(ctx.guild.id)
         embed = discord.Embed(title="Updated filter {}".format(result.friendly_name or result.pattern))
-        embed.description = "Filter ID {} on guild {} has been updated.".format(result.id,ctx.guild.name)
+        embed.description = "Filter ID {} on guild {} has been updated.".format(result.id, ctx.guild.name)
         embed.add_field(name="Old Pattern", value=old_pattern)
         embed.add_field(name="New Pattern", value=pattern)
         await ctx.send(embed=embed)
