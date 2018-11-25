@@ -9,7 +9,7 @@ from discord.ext import commands
 
 from . import utils
 
-DOZER_LOGGER = logging.Logger(name='dozer')
+DOZER_LOGGER = logging.getLogger('dozer')
 DOZER_LOGGER.level = logging.INFO
 DOZER_HANDLER = logging.StreamHandler(stream=sys.stdout)
 DOZER_HANDLER.level = logging.INFO

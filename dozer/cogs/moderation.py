@@ -32,7 +32,7 @@ class Moderation(Cog):
     """=== Helper functions ==="""
 
     async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member], reason, orig_channel=None,
-                      embed_color=discord.Color.red()):
+                      embed_color=discord.Color.red(), global_modlog=True):
         """Generates a modlog embed"""
         modlog_embed = discord.Embed(
             color=embed_color,
@@ -43,15 +43,19 @@ class Moderation(Cog):
         modlog_embed.add_field(name="Requested by", value=f"{actor.mention} ({actor} | {actor.id})", inline=False)
         modlog_embed.add_field(name="Reason", value=reason or "No reason specified", inline=False)
         modlog_embed.add_field(name="Timestamp", value=str(datetime.datetime.now()), inline=False)
-
+        try:
+            await target.send(embed=modlog_embed)
+        except discord.Forbidden:
+            await orig_channel.send("Failed to DM modlog to user")
         with db.Session() as session:
             modlog_channel = session.query(GuildModLog).filter_by(id=actor.guild.id).one_or_none()
             if orig_channel is not None:
                 await orig_channel.send(embed=modlog_embed)
             if modlog_channel is not None:
-                channel = actor.guild.get_channel(modlog_channel.modlog_channel)
-                if channel is not None and channel != orig_channel: # prevent duplicate embeds
-                    await channel.send(embed=modlog_embed)
+                if global_modlog:
+                    channel = actor.guild.get_channel(modlog_channel.modlog_channel)
+                    if channel is not None and channel != orig_channel: # prevent duplicate embeds
+                        await channel.send(embed=modlog_embed)
             else:
                 if orig_channel is not None:
                     await orig_channel.send("Please configure modlog channel to enable modlog functionality")
@@ -69,6 +73,7 @@ class Moderation(Cog):
         await asyncio.gather(*coros)
 
     hm_regex = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?((?P<seconds>\d+)s)?")
+
     def hm_to_seconds(self, hm_str):
         """Converts an hour-minute string to seconds. For example, '1h15m' returns 4500"""
         matches = re.match(self.hm_regex, hm_str).groupdict()
@@ -77,7 +82,8 @@ class Moderation(Cog):
         seconds = int(matches.get('seconds') or 0)
         return (hours * 3600) + (minutes * 60) + seconds
 
-    async def punishment_timer(self, seconds, target: discord.Member, punishment, reason, actor: discord.Member, orig_channel=None):
+    async def punishment_timer(self, seconds, target: discord.Member, punishment, reason, actor: discord.Member, orig_channel=None,
+                               global_modlog=True):
         """Asynchronous task that sleeps for a set time to unmute/undeafen a member for a set period of time."""
         if seconds == 0:
             return
@@ -102,7 +108,13 @@ class Moderation(Cog):
         with db.Session() as session:
             user = session.query(punishment).filter_by(id=target.id).one_or_none()
             if user is not None:
-                await self.mod_log(actor, "un" + punishment.past_participle, target, reason, orig_channel, embed_color=discord.Color.green())
+                await self.mod_log(actor,
+                                   "un" + punishment.past_participle,
+                                   target,
+                                   reason,
+                                   orig_channel,
+                                   embed_color=discord.Color.green(),
+                                   global_modlog=global_modlog)
                 self.bot.loop.create_task(coro=punishment.finished_callback(self, target))
 
             ent = session.query(PunishmentTimerRecord).filter_by(id=ent_id).one_or_none() # necessary to refresh the entry for the current session
@@ -123,7 +135,7 @@ class Moderation(Cog):
             config = session.query(GuildMessageLinks).filter_by(guild_id=msg.guild.id).one_or_none()
             if config is None:
                 return
-            role = discord.utils.get(msg.guild.roles, id=config.role_id)
+            role = msg.guild.get_role(config.role_id)
             if role is None:
                 return
             if role not in msg.author.roles and re.search("https?://", msg.content):
@@ -187,7 +199,11 @@ class Moderation(Cog):
                     seconds = 30 # prevent lockout in case of bad argument
                 self.bot.loop.create_task(
                     self.punishment_timer(seconds, member,
-                                          punishment=Deafen, reason=reason, actor=actor or member.guild.me, orig_channel=orig_channel))
+                                          punishment=Deafen,
+                                          reason=reason,
+                                          actor=actor or member.guild.me,
+                                          orig_channel=orig_channel,
+                                          global_modlog=not self_inflicted))
                 return True
 
     async def _undeafen(self, member: discord.Member):
@@ -197,9 +213,6 @@ class Moderation(Cog):
             if user is not None:
                 await self.perm_override(member=member, read_messages=None)
                 session.delete(user)
-                # if not user.self_inflicted:
-                #     await self.mod_log(member=ctx.author, action="undeafened", target=member_mentions, reason=reason,
-                #                        orig_channel=ctx.channel, embed_color=discord.Color.green())
                 return True
             else:
                 return False
@@ -271,7 +284,7 @@ class Moderation(Cog):
                 role_id = config.role_id
                 if message.channel.id != channel:
                     return
-                await message.author.add_roles(discord.utils.get(message.guild.roles, id=role_id))
+                await message.author.add_roles(message.guild.get_role(role_id))
 
     async def on_message_delete(self, message):
         """When a message is deleted, log it."""
@@ -360,7 +373,7 @@ class Moderation(Cog):
     @has_permissions(kick_members=True)
     async def warn(self, ctx, member: discord.Member, *, reason):
         """Sends a message to the mod log specifying the member has been warned without punishment."""
-        await self.mod_log(actor=ctx.author, action="warned", target=member, reason=reason)
+        await self.mod_log(actor=ctx.author, action="warned", target=member, orig_channel=ctx.channel, reason=reason)
 
     warn.example_usage = """
     `{prefix}`warn @user reason - warns a user for "reason"
@@ -377,9 +390,8 @@ class Moderation(Cog):
                 settings = MemberRole(id=ctx.guild.id)
                 session.add(settings)
 
-            member_role = discord.utils.get(ctx.guild.roles,
-                                            id=settings.member_role)  # None-safe - nonexistent or non-configured role return None
-
+        # None-safe - nonexistent or non-configured role return None
+        member_role = ctx.guild.get_role(settings.member_role)
         if member_role is not None:
             targets = {member_role}
         else:
@@ -439,8 +451,8 @@ class Moderation(Cog):
     @bot_has_permissions(ban_members=True)
     async def ban(self, ctx, user_mention: discord.User, *, reason="No reason provided"):
         """Bans the user mentioned."""
-        await ctx.guild.ban(user_mention, reason=reason)
         await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason, orig_channel=ctx.channel)
+        await ctx.guild.ban(user_mention, reason=reason)
     ban.example_usage = """
     `{prefix}ban @user reason - ban @user for a given (optional) reason
     """
@@ -461,8 +473,8 @@ class Moderation(Cog):
     @bot_has_permissions(kick_members=True)
     async def kick(self, ctx, user_mention: discord.User, *, reason="No reason provided"):
         """Kicks the user mentioned."""
-        await ctx.guild.kick(user_mention, reason=reason)
         await self.mod_log(actor=ctx.author, action="kicked", target=user_mention, reason=reason, orig_channel=ctx.channel)
+        await ctx.guild.kick(user_mention, reason=reason)
     kick.example_usage = """
     `{prefix}kick @user reason - kick @user for a given (optional) reason
     """
@@ -523,7 +535,7 @@ class Moderation(Cog):
             seconds = self.hm_to_seconds(reason)
             reason = self.hm_regex.sub(reason, "") or "No reason provided"
             if await self._deafen(ctx.author, reason, seconds=seconds, self_inflicted=True, actor=ctx.author, orig_channel=ctx.channel):
-                await self.mod_log(ctx.author, "deafened", ctx.author, reason, ctx.channel, discord.Color.red())
+                await self.mod_log(ctx.author, "deafened", ctx.author, reason, ctx.channel, discord.Color.red(), global_modlog=False)
             else:
                 await ctx.send("You are already deafened!")
 
