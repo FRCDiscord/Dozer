@@ -156,12 +156,18 @@ class Filter(Cog):
             if result is None:
                 await ctx.send("That filter ID does not exist or does not belong to this guild.")
                 return
+            if not result.enabled:
+                result.enabled = True
+                enabled_change = True
             result.pattern = pattern
         self.load_filters(ctx.guild.id)
         embed = discord.Embed(title="Updated filter {}".format(result.friendly_name or result.pattern))
-        embed.description = "Filter ID {} on guild {} has been updated.".format(result.id, ctx.guild.name)
+        embed.description = "Filter ID {} has been updated.".format(result.id)
         embed.add_field(name="Old Pattern", value=old_pattern)
         embed.add_field(name="New Pattern", value=pattern)
+        if enabled_change:
+            embed.add_field(name="Enabled Change", value="This filter was disabled prior to editing, so it has been "
+                                                         "re-enabled due to being edited.")
         await ctx.send(embed=embed)
 
     edit.example_usage = "`{prefix}filter edit 4 Swear` - Change filter 4 to filter out \"Swear\" instead of its " \
