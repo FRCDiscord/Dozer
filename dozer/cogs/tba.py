@@ -154,7 +154,7 @@ class TBA(Cog):
             raise BadArgument("Couldn't find data for team {}".format(team_num))
 
     media.example_usage = """
-    `{prefix}`tba media 971 2016` - show available media from team 971 Spartan Robotics in 2016
+    `{prefix}tba media 971 2016` - show available media from team 971 Spartan Robotics in 2016
     """
 
     @tba.command()
@@ -186,7 +186,7 @@ class TBA(Cog):
                            if year is not None else "This team hasn't won any awards...yet.")
 
     awards.example_usage = """
-    `{prefix}`tba awards 1114` - list all the awards team 1114 Simbotics has ever gotten.
+    `{prefix}tba awards 1114` - list all the awards team 1114 Simbotics has ever gotten.
     """
 
     @tba.command()
