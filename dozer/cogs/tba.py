@@ -237,7 +237,6 @@ class TBA(Cog):
             raise BadArgument('`team_program` should be one of [`frc`, `ftc`]')
 
         units = 'm'
-        # REEEEEEEEEEEE
         if td.country == "USA":
             td.country = "United States of America"
             units = 'u'
