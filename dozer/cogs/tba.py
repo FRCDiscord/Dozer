@@ -87,7 +87,6 @@ class TBA(Cog):
 
         if not events:
             raise BadArgument(f"Couldn't find matching data!")
-            return
 
         e = discord.Embed(color=discord.Color.blurple())
 
