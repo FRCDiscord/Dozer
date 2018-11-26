@@ -45,6 +45,9 @@ class TBA(Cog):
             team_data = await self.session.team(team_num)
         except aiotba.http.AioTBAError:
             raise BadArgument(f"Couldn't find data for team {team_num}.")
+        if team_data.city is None:
+            raise BadArgument("team {} exists, but has no information!".format(team_num))
+
         try:
             team_district_data = await self.session.team_districts(team_num)
             if team_district_data:
@@ -64,7 +67,6 @@ class TBA(Cog):
         if team_district_data:
             e.add_field(name='District', value=f"{team_district.display_name} [{team_district.abbreviation.upper()}]")
         e.add_field(name='Championship', value=team_data.home_championship[max(team_data.home_championship.keys())])
-        # e.add_field(name='TBA Link', value='https://www.thebluealliance.com/team/{}'.format(team_num))
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
@@ -81,10 +83,10 @@ class TBA(Cog):
             # will fall back to the current year
             year = year or (await self.session.status()).current_season
         except aiotba.http.AioTBAError:
-            raise BadArgument(f"Couldn't find data for team {team_num}")
+            raise BadArgument(f"Couldn't find matching data!")
 
         if not events:
-            await ctx.send(f"This team is not registered for any events in {year}!")
+            raise BadArgument(f"Couldn't find matching data!")
             return
 
         e = discord.Embed(color=discord.Color.blurple())
@@ -114,7 +116,6 @@ class TBA(Cog):
                     pages.append(f"**{base} YouTube** \nhttps://youtu.be/{media.foreign_key}")
                     continue
                 else:
-                    print(media.details)
                     name, url, img_url = {
                         "cdphotothread": (
                             "Chief Delphi",
@@ -148,7 +149,7 @@ class TBA(Cog):
             if len(pages):
                 await paginate(ctx, pages)
             else:
-                await ctx.send(f"Unfortunately, there doesn't seem to be any media for team {team_num} in {year}...")
+                await ctx.send(f"No media for team {team_num} found in {year}!")
 
         except aiotba.http.AioTBAError:
             raise BadArgument("Couldn't find data for team {}".format(team_num))
@@ -228,12 +229,12 @@ class TBA(Cog):
             except aiotba.http.AioTBAError:
                 raise BadArgument('Team {} does not exist.'.format(team_num))
         elif team_program.lower() == "ftc":
-            team_data_dict = await self.bot.cogs["TOA"].get_teamdata(team_num)
-            if not team_data_dict:
+            res = json.loads(await self.bot.cogs['TOA'].parser.req("team/" + str(team_num)))
+            if not res:
                 raise BadArgument('Team {} does not exist.'.format(team_num))
+            td_dict = res[0]
             td = self.TeamData()
-            td.__dict__.update(team_data_dict['seasons'][0])
-
+            td.__dict__.update(td_dict)
         else:
             raise BadArgument('`team_program` should be one of [`frc`, `ftc`]')
 
@@ -247,7 +248,8 @@ class TBA(Cog):
         await ctx.send(embed=e)
 
     weather.example_usage = """
-    `{prefix}timezone frc 3572` - show the current weather for FRC team 3132, Thunder Down Under
+    `{prefix}weather 5052` - show the current weather for FRC team 5052, The RoboLobos
+    `{prefix}weather 15470 ftc` - show the current weather for FTC team 15470 
     """
 
     @command()
@@ -261,6 +263,9 @@ class TBA(Cog):
                 team_data = await self.session.team(team_num)
             except aiotba.http.AioTBAError:
                 raise BadArgument('Team {} does not exist.'.format(team_num))
+            if team_data.city is None:
+                raise BadArgument("team {} exists, but does not have sufficient information!".format(team_num))
+
         elif team_program.lower() == "ftc":
             res = json.loads(await self.bot.cogs['TOA'].parser.req("team/" + str(team_num)))
             if not res:
@@ -273,7 +278,7 @@ class TBA(Cog):
 
         location = '{0.city}, {0.state_prov} {0.country}'.format(team_data)
         gmaps = googlemaps.Client(key=self.gmaps_key)
-        geolocator = Nominatim(user_agent="FIRST Dozer-compatible Discord Bot")
+        geolocator = Nominatim(user_agent="Dozer Discord Bot")
         geolocation = geolocator.geocode(location)
 
         if self.gmaps_key and not self.bot.config['tz_url']:
@@ -297,7 +302,8 @@ class TBA(Cog):
                        current_time.strftime("Current Time: %I:%M:%S %p (%H:%M:%S)"))
 
     timezone.example_usage = """
-    `{prefix}timezone frc 3572` - show the local time of FRC team 3572, Wavelength
+    `{prefix}timezone 5052` - show the local time of FRC team 5052, The RoboLobos
+    `{prefix}timezone 15470 ftc` - show the local time of FTC team 15470
     """
 
 
