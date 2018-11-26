@@ -250,7 +250,7 @@ class TBA(Cog):
     """
 
     @command()
-    async def timezone(self, ctx, team_program: str, team_num: int):
+    async def timezone(self, ctx, team_num: int, team_program="frc"):
         """
         Get the timezone of a team based on the team number.
         """
