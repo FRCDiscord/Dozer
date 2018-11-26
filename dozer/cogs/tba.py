@@ -1,6 +1,7 @@
 """A series of commands that talk to The Blue Alliance."""
 import datetime
 import itertools
+import json
 
 from pprint import pformat
 from urllib.parse import quote as urlquote, urljoin
@@ -21,7 +22,7 @@ class TBA(Cog):
         super().__init__(bot)
         tba_config = bot.config['tba']
         self.gmaps_key = bot.config['gmaps_key']
-        self.session = aiotba.TBASession(tba_config['key'], self.bot.http_session)
+        self.session = aiotba.TBASession(tba_config['key'], self.bot.http._session)
         # self.parser = tbapi.TBAParser(tba_config['key'], cache=False)
 
     @group(invoke_without_command=True)
@@ -218,7 +219,7 @@ class TBA(Cog):
 
     @command()
     @bot_has_permissions(embed_links=True)
-    async def weather(self, ctx, team_program: str, team_num: int):
+    async def weather(self, ctx, team_num: int, team_program="frc"):
         """Finds the current weather for a given team."""
 
         if team_program.lower() == "frc":
@@ -261,11 +262,12 @@ class TBA(Cog):
             except aiotba.http.AioTBAError:
                 raise BadArgument('Team {} does not exist.'.format(team_num))
         elif team_program.lower() == "ftc":
-            team_data_dict = await self.bot.cogs["TOA"].get_teamdata(team_num)
-            if not team_data_dict:
+            res = json.loads(await self.bot.cogs['TOA'].parser.req("team/" + str(team_num)))
+            if not res:
                 raise BadArgument('Team {} does not exist.'.format(team_num))
+            team_data_dict = res[0]
             team_data = self.TeamData()
-            team_data.__dict__.update(team_data_dict['seasons'][0])
+            team_data.__dict__.update(team_data_dict)
         else:
             raise BadArgument('`team_program` should be one of [`frc`, `ftc`]')
 
