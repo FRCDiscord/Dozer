@@ -79,7 +79,7 @@ class Filter(Cog):
         """Send the message handler out"""
         await self.check_filters(message)
 
-    async def on_message_edit(self, before, after):
+    async def on_message_edit(self, _, after):
         """Send the message handler out, but for edits"""
         await self.check_filters(after)
 

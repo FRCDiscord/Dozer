@@ -42,7 +42,7 @@ class Teams(Cog):
                 await ctx.send("Couldn't find any associations with that team!")
 
     removeteam.example_usage = """
-    `{prefix}removeteam type team_number` - Removes your associations with a specified team 
+    `{prefix}removeteam type team_number` - Removes your associations with a specified team
     """
 
     @command()
@@ -54,7 +54,7 @@ class Teams(Cog):
         with db.Session() as session:
             teams = session.query(TeamNumbers).filter_by(user_id=user.id).order_by("team_type desc",
                                                                                    "team_number asc").all()
-            if len(teams) is 0:
+            if len(teams) == 0:
                 raise BadArgument("Couldn't find any team associations for that user!")
             else:
                 e = discord.Embed(type='rich')
