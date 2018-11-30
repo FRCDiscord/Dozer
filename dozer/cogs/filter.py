@@ -79,7 +79,7 @@ class Filter(Cog):
         """Send the message handler out"""
         await self.check_filters(message)
 
-    async def on_message_edit(self, before, after):
+    async def on_message_edit(self, _, after):
         """Send the message handler out, but for edits"""
         await self.check_filters(after)
 
@@ -138,7 +138,40 @@ class Filter(Cog):
         await ctx.send(embed=embed)
         self.load_filters(ctx.guild.id)
 
-    add.example_usage = "`{prefix}filter whitelist add Swear` - Makes it so that \"Swear\" will be filtered"
+    add.example_usage = "`{prefix}filter add Swear` - Makes it so that \"Swear\" will be filtered"
+
+    @guild_only()
+    @has_permissions(manage_guild=True)
+    @filter.command()
+    async def edit(self, ctx, filter_id, pattern):
+        """Edit an already existing filter using a new pattern. A filter's friendly name cannot be edited."""
+        try:
+            re.compile(pattern)
+        except re.error as err:
+            await ctx.send("Invalid RegEx! ```{}```".format(err.msg))
+            return
+        with db.Session() as session:
+            result = session.query(WordFilter).filter_by(id=filter_id, guild_id=ctx.guild.id).one_or_none()
+            old_pattern = result.pattern
+            if result is None:
+                await ctx.send("That filter ID does not exist or does not belong to this guild.")
+                return
+            if not result.enabled:
+                result.enabled = True
+                enabled_change = True
+            result.pattern = pattern
+        self.load_filters(ctx.guild.id)
+        embed = discord.Embed(title="Updated filter {}".format(result.friendly_name or result.pattern))
+        embed.description = "Filter ID {} has been updated.".format(result.id)
+        embed.add_field(name="Old Pattern", value=old_pattern)
+        embed.add_field(name="New Pattern", value=pattern)
+        if enabled_change:
+            embed.add_field(name="Enabled Change", value="This filter was disabled prior to editing, so it has been "
+                                                         "re-enabled due to being edited.")
+        await ctx.send(embed=embed)
+
+    edit.example_usage = "`{prefix}filter edit 4 Swear` - Change filter 4 to filter out \"Swear\" instead of its " \
+                         "previous pattern"
 
     @guild_only()
     @has_permissions(manage_guild=True)
