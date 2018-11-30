@@ -42,7 +42,6 @@ class CommandMixin:
 
 class Command(CommandMixin, commands.Command):
     """Represents a command"""
-    pass
 
 
 class Group(CommandMixin, commands.Group):
