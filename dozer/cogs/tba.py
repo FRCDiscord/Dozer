@@ -41,6 +41,7 @@ class TBA(Cog):
     @bot_has_permissions(embed_links=True)
     async def team(self, ctx, team_num: int):
         """Get information on an FRC team by number."""
+        # only teams with a null city are those that have only a number and a "Team {team number}" name
         try:
             team_data = await self.session.team(team_num)
         except aiotba.http.AioTBAError:
@@ -54,8 +55,8 @@ class TBA(Cog):
                 team_district = max(team_district_data, key=lambda d: d.year)
         except aiotba.http.AioTBAError:
             team_district_data = None
-
-        e = discord.Embed(color=discord.Color.blurple(),
+        col = discord.Color.from_rgb(63, 81, 181)
+        e = discord.Embed(color=col,
                           title='FIRST® Robotics Competition Team {}'.format(team_num),
                           url='https://www.thebluealliance.com/team/{}'.format(team_num))
         e.set_thumbnail(url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
@@ -66,7 +67,10 @@ class TBA(Cog):
         e.add_field(name='Website', value=team_data.website)
         if team_district_data:
             e.add_field(name='District', value=f"{team_district.display_name} [{team_district.abbreviation.upper()}]")
-        e.add_field(name='Championship', value=team_data.home_championship[max(team_data.home_championship.keys())])
+        try:
+            e.add_field(name='Championship', value=team_data.home_championship[max(team_data.home_championship.keys())])
+        except AttributeError:
+            e.add_field(name='Championship', value="Unknown")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
@@ -78,6 +82,8 @@ class TBA(Cog):
     @bot_has_permissions(embed_links=True)
     async def eventsfor(self, ctx, team_num: int, year: int = None):
         """Get the events a team is registered for a given year. Defaults to current (or upcoming) year."""
+        if year is None:
+            year = datetime.datetime.now().year
         try:
             events = await self.session.team_events(team_num, year=year)
             # will fall back to the current year
@@ -89,9 +95,14 @@ class TBA(Cog):
             raise BadArgument(f"Couldn't find matching data!")
 
         e = discord.Embed(color=discord.Color.blurple())
-
-        e.add_field(name=f"Registered events for FRC Team {team_num} in {year}:",
-                    value="\n".join(i.name for i in events))
+        events = "\n".join(i.name for i in events)
+        eventslists = []
+        listsnum = int(len(events) / 1024)
+        for x in range(listsnum):
+            eventslists.append(events[x*1023:(x+1)*1024])
+        for x in eventslists:
+            e.add_field(name=f"Registered events for FRC Team {team_num} in {year}:",
+                        value=x)
         await ctx.send(embed=e)
 
     eventsfor.example_usage = """
@@ -137,9 +148,6 @@ class TBA(Cog):
                             "{model_image}"
                         )
                     }.get(media.type, (None, None, None))
-                    if name is None:
-                        # print("Whack media", media.__dict__, "unprocessed")
-                        continue
                     media.details['foreign_key'] = media.foreign_key
                     page = discord.Embed(title=base + name, url=url.format(**media.details))
                     page.set_image(url=img_url.format(**media.details))
@@ -161,29 +169,30 @@ class TBA(Cog):
     @bot_has_permissions(embed_links=True)
     async def awards(self, ctx, team_num: int, year: int = None):
         """Gets a list of awards the specified team has won during a year. """
-        try:
-            awards_data = await self.session.team_awards(team_num, year=year)
-            events_data = await self.session.team_events(team_num, year=year)
-            event_key_map = {event.key: event for event in events_data}
-        except aiotba.http.AioTBAError:
-            raise BadArgument("Couldn't find data for team {}".format(team_num))
+        with ctx.typing():
+            try:
+                awards_data = await self.session.team_awards(team_num, year=year)
+                events_data = await self.session.team_events(team_num, year=year)
+                event_key_map = {event.key: event for event in events_data}
+            except aiotba.http.AioTBAError:
+                raise BadArgument("Couldn't find data for team {}".format(team_num))
 
-        pages = []
-        for award_year, awards in itertools.groupby(awards_data, lambda a: a.year):
-            e = discord.Embed(title=f"Awards for FRC Team {team_num} in {award_year}:", color=discord.Color.blurple())
-            for event_key, event_awards in itertools.groupby(list(awards), lambda a: a.event_key):
-                event = event_key_map[event_key]
-                e.add_field(name=f"{event.name} [{event_key}]",
-                            value="\n".join(map(lambda a: a.name, event_awards)), inline=False)
+            pages = []
+            for award_year, awards in itertools.groupby(awards_data, lambda a: a.year):
+                e = discord.Embed(title=f"Awards for FRC Team {team_num} in {award_year}:", color=discord.Color.blurple())
+                for event_key, event_awards in itertools.groupby(list(awards), lambda a: a.event_key):
+                    event = event_key_map[event_key]
+                    e.add_field(name=f"{event.name} [{event_key}]",
+                                value="\n".join(map(lambda a: a.name, event_awards)), inline=False)
 
-            pages.append(e)
-        if len(pages) > 1:
-            await paginate(ctx, pages, start=-1)
-        elif len(pages) == 1:
-            await ctx.send(embed=pages[0])
-        else:
-            await ctx.send(f"This team hasn't won any awards in {year}"
-                           if year is not None else "This team hasn't won any awards...yet.")
+                pages.append(e)
+            if len(pages) > 1:
+                await paginate(ctx, pages, start=-1)
+            elif len(pages) == 1:
+                await ctx.send(embed=pages[0])
+            else:
+                await ctx.send(f"This team hasn't won any awards in {year}"
+                               if year is not None else "This team hasn't won any awards...yet.")
 
     awards.example_usage = """
     `{prefix}tba awards 1114` - list all the awards team 1114 Simbotics has ever gotten.
@@ -297,8 +306,7 @@ class TBA(Cog):
 
         current_time = datetime.datetime.utcnow() + datetime.timedelta(hours=utc_offset)
 
-        await ctx.send(f"Timezone: {tzname} UTC{utc_offset:+g}\n"+
-                       current_time.strftime("Current Time: %I:%M:%S %p (%H:%M:%S)"))
+        await ctx.send("Timezone: {} UTC{}\n{}".format(tzname, utc_offset, current_time.strftime("Current Time: %I:%M:%S %p (%H:%M:%S)")))
 
     timezone.example_usage = """
     `{prefix}timezone 5052` - show the local time of FRC team 5052, The RoboLobos
