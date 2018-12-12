@@ -83,7 +83,7 @@ class TBA(Cog):
     async def eventsfor(self, ctx, team_num: int, year: int = None):
         """Get the events a team is registered for a given year. Defaults to current (or upcoming) year."""
         if year is None:
-            year = datetime.datetime.now().year
+            year = (await self.session.status()).current_season
         try:
             events = await self.session.team_events(team_num, year=year)
             # will fall back to the current year
@@ -116,34 +116,35 @@ class TBA(Cog):
             pages = []
             base = f"FRC Team {team_num} {year} Media: "
             for media in team_media:
-
-                if media.type == "youtube":
-                    pages.append(f"**{base} YouTube** \nhttps://youtu.be/{media.foreign_key}")
-                    continue
-                else:
-                    name, url, img_url = {
-                        "cdphotothread": (
-                            "Chief Delphi",
-                            "https://www.chiefdelphi.com/media/photos/{foreign_key}",
-                            "https://www.chiefdelphi.com/media/img/{image_partial}"
-                        ),
-                        "imgur": (
-                            "Imgur",
-                            "https://imgur.com/{foreign_key}",
-                            "https://i.imgur.com/{foreign_key}.png"
-                        ),
-                        "instagram-image": (
-                            "instagram",
-                            "https://www.instagram.com/p/{foreign_key}",
-                            "https://www.instagram.com/p/{foreign_key}/media"
-                        ),
-                        "grabcad": (
-                            "GrabCAD",
-                            "https://grabcad.com/library/{foreign_key}",
-                            "{model_image}"
-                        )
-                    }.get(media.type, (None, None, None))
-                    media.details['foreign_key'] = media.foreign_key
+                name, url, img_url = {
+                    "cdphotothread": (
+                        "Chief Delphi",
+                        "https://www.chiefdelphi.com/media/photos/{foreign_key}",
+                        "https://www.chiefdelphi.com/media/img/{image_partial}"
+                    ),
+                    "imgur": (
+                        "Imgur",
+                        "https://imgur.com/{foreign_key}",
+                        "https://i.imgur.com/{foreign_key}.png"
+                    ),
+                    "instagram-image": (
+                        "instagram",
+                        "https://www.instagram.com/p/{foreign_key}",
+                        "https://www.instagram.com/p/{foreign_key}/media"
+                    ),
+                    "youtube": (
+                        "YouTube",
+                        "https://youtu.be/{foreign_key}",
+                        "https://img.youtube.com/vi/{foreign_key}/hqdefault.jpg"
+                    ),
+                    "grabcad": (
+                        "GrabCAD",
+                        "https://grabcad.com/library/{foreign_key}",
+                        "{model_image}"
+                    )
+                }.get(media.type, (None, None, None))
+                media.details['foreign_key'] = media.foreign_key
+                if name is not None:
                     page = discord.Embed(title=base + name, url=url.format(**media.details))
                     page.set_image(url=img_url.format(**media.details))
                     pages.append(page)
@@ -164,7 +165,7 @@ class TBA(Cog):
     @bot_has_permissions(embed_links=True)
     async def awards(self, ctx, team_num: int, year: int = None):
         """Gets a list of awards the specified team has won during a year. """
-        with ctx.typing():
+        async with ctx.typing():
             try:
                 awards_data = await self.session.team_awards(team_num, year=year)
                 events_data = await self.session.team_events(team_num, year=year)
@@ -173,21 +174,21 @@ class TBA(Cog):
                 raise BadArgument("Couldn't find data for team {}".format(team_num))
 
             pages = []
-            for award_year, awards in itertools.groupby(awards_data, lambda a: a.year):
-                e = discord.Embed(title=f"Awards for FRC Team {team_num} in {award_year}:", color=discord.Color.blurple())
-                for event_key, event_awards in itertools.groupby(list(awards), lambda a: a.event_key):
-                    event = event_key_map[event_key]
-                    e.add_field(name=f"{event.name} [{event_key}]",
-                                value="\n".join(map(lambda a: a.name, event_awards)), inline=False)
+        for award_year, awards in itertools.groupby(awards_data, lambda a: a.year):
+            e = discord.Embed(title=f"Awards for FRC Team {team_num} in {award_year}:", color=discord.Color.blurple())
+            for event_key, event_awards in itertools.groupby(list(awards), lambda a: a.event_key):
+                event = event_key_map[event_key]
+                e.add_field(name=f"{event.name} [{event_key}]",
+                            value="\n".join(map(lambda a: a.name, event_awards)), inline=False)
 
-                pages.append(e)
-            if len(pages) > 1:
-                await paginate(ctx, pages, start=-1)
-            elif len(pages) == 1:
-                await ctx.send(embed=pages[0])
-            else:
-                await ctx.send(f"This team hasn't won any awards in {year}"
-                               if year is not None else "This team hasn't won any awards...yet.")
+            pages.append(e)
+        if len(pages) > 1:
+            await paginate(ctx, pages, start=-1)
+        elif len(pages) == 1:
+            await ctx.send(embed=pages[0])
+        else:
+            await ctx.send(f"This team hasn't won any awards in {year}"
+                           if year is not None else "This team hasn't won any awards...yet.")
 
     awards.example_usage = """
     `{prefix}tba awards 1114` - list all the awards team 1114 Simbotics has ever gotten.
@@ -205,7 +206,7 @@ class TBA(Cog):
             e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num),
                          url='https://www.thebluealliance.com/team/{}'.format(team_num),
                          icon_url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
-            e.add_field(name='Raw Data', value=pformat(team_data.__dict__))
+            e.add_field(name='Raw Data', value="``` \n {}```".format(pformat(team_data.__dict__)))
             e.set_footer(text='Triggered by ' + ctx.author.display_name)
             await ctx.send(embed=e)
         except aiotba.http.AioTBAError:
