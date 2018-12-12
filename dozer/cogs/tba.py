@@ -96,13 +96,8 @@ class TBA(Cog):
 
         e = discord.Embed(color=discord.Color.blurple())
         events = "\n".join(i.name for i in events)
-        eventslists = []
-        listsnum = int(len(events) / 1024)
-        for x in range(listsnum):
-            eventslists.append(events[x*1023:(x+1)*1024])
-        for x in eventslists:
-            e.add_field(name=f"Registered events for FRC Team {team_num} in {year}:",
-                        value=x)
+        e.title = f"Registered events for FRC Team {team_num} in {year}:"
+        e.description = events
         await ctx.send(embed=e)
 
     eventsfor.example_usage = """
