@@ -86,8 +86,6 @@ class TBA(Cog):
             year = (await self.session.status()).current_season
         try:
             events = await self.session.team_events(team_num, year=year)
-            # will fall back to the current year
-            year = year or (await self.session.status()).current_season
         except aiotba.http.AioTBAError:
             raise BadArgument(f"Couldn't find matching data!")
 
