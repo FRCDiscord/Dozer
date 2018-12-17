@@ -205,7 +205,7 @@ class TBA(Cog):
             e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num),
                          url='https://www.thebluealliance.com/team/{}'.format(team_num),
                          icon_url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
-            e.add_field(name='Raw Data', value="``` \n {}```".format(pformat(team_data.__dict__)))
+            e.add_field(name='Raw Data', value="```py\n {}```".format(pformat(team_data.__dict__)))
             e.set_footer(text='Triggered by {}'.format(ctx.author.display_name))
             await ctx.send(embed=e)
         except aiotba.http.AioTBAError:
@@ -292,7 +292,7 @@ class TBA(Cog):
                 utc_offset += 1
             tzname = timezone["timeZoneName"]
         else:
-            async with async_timeout.timeout(5) as _, self.bot.http_session.get(urljoin(
+            async with async_timeout.timeout(5), self.bot.http_session.get(urljoin(
                     "{}{}/{}".format(self.bot.config['tz_url'], str(geolocation.latitude), str(geolocation.longitude)))) as r:
                 r.raise_for_status()
                 data = await r.json()
