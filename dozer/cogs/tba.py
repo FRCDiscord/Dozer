@@ -292,7 +292,7 @@ class TBA(Cog):
                 utc_offset += 1
             tzname = timezone["timeZoneName"]
         else:
-            async with async_timeout.timeout(5), self.bot.http_session.get(urljoin(base= self.bot.config['tz_url'],
+            async with async_timeout.timeout(5), self.bot.http_session.get(urljoin(base=self.bot.config['tz_url'],
                                                                                    url="{}/{}".format(
                                                                                        str(geolocation.latitude),
                                                                                        str(geolocation.longitude)))) as r:
