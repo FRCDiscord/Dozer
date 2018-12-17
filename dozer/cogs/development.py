@@ -1,10 +1,14 @@
+"""Commands specific to development. Only approved developers can use these commands."""
 import copy
 import re
+import logging
 import discord
 
 from discord.ext.commands import NotOwner
 
 from ._utils import *
+
+logger = logging.getLogger("dozer")
 
 
 class Development(Cog):
@@ -46,6 +50,12 @@ class Development(Cog):
         else:
             code = code.strip('`').strip()  # Remove single-line code blocks, if necessary
 
+        logger.info(f"Evaluating code at request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
+        logger.info("-"*32)
+        for line in code.splitlines():
+            logger.info(line)
+        logger.info("-"*32)
+
         e = discord.Embed(type='rich')
         e.add_field(name='Code', value='```py\n%s\n```' % code, inline=False)
         try:
@@ -60,7 +70,7 @@ class Development(Cog):
             e.title = 'Python Evaluation - Error'
             e.color = 0xFF0000
             e.add_field(name='Error', value='```\n%s\n```' % repr(err))
-        await ctx.send(embed=e)
+        await ctx.send('', embed=e)
 
     evaluate.example_usage = """
     `{prefix}eval 0.1 + 0.2` - calculates 0.1 + 0.2
@@ -82,6 +92,7 @@ class Development(Cog):
 
 
 def load_function(code, globals_, locals_):
+    """Loads the user-evaluted code as a function so it can be executed."""
     function_header = 'async def evaluated_function(ctx):'
 
     lines = code.splitlines()
@@ -98,12 +109,13 @@ def load_function(code, globals_, locals_):
         try:
             exec(function_header + '\n\treturn ' + lines[0], globals_, locals_)
         except SyntaxError as err:  # Either adding the 'return' caused an error, or it's user error
-            if err.text[err.offset - 1] == '=' or err.text[err.offset - 3:err.offset] == 'del' or err.text[
-                                                                                                  err.offset - 6:err.offset] == 'return':  # return-caused error
+            if err.text[err.offset - 1] == '=' or err.text[err.offset - 3:err.offset] == 'del' \
+                    or err.text[err.offset - 6:err.offset] == 'return':  # return-caused error
                 exec(function_header + '\n\t' + lines[0], globals_, locals_)
             else:  # user error
                 raise err
 
 
 def setup(bot):
+    """Adds the development cog to the bot."""
     bot.add_cog(Development(bot))

@@ -1,3 +1,4 @@
+"""Provides commands for voice, currently only voice and text channel access bindings."""
 import discord
 from discord.ext.commands import has_permissions
 
@@ -6,7 +7,9 @@ from .. import db
 
 
 class Voice(Cog):
+    """Commands interacting with voice."""
     async def on_voice_state_update(self, member, before, after):
+        """Handles voicebinds when members join/leave voice channels"""
         # skip this if we have no perms, or if it's something like a mute/deafen
         if member.guild.me.guild_permissions.manage_roles and before.channel != after.channel:
             # determine if it's a join/leave event as well.
@@ -16,14 +19,14 @@ class Voice(Cog):
                 with db.Session() as session:
                     config = session.query(Voicebinds).filter_by(channel_id=after.channel.id).one_or_none()
                     if config is not None:
-                        await member.add_roles(discord.utils.get(member.guild.roles, id=config.role_id))
+                        await member.add_roles(member.guild.get_role(config.role_id))
 
             if before.channel is not None:
                 # leave event, take role
                 with db.Session() as session:
                     config = session.query(Voicebinds).filter_by(channel_id=before.channel.id).one_or_none()
                     if config is not None:
-                        await member.remove_roles(discord.utils.get(member.guild.roles, id=config.role_id))
+                        await member.remove_roles(member.guild.get_role(config.role_id))
 
     @command()
     @bot_has_permissions(manage_roles=True)
@@ -56,7 +59,7 @@ class Voice(Cog):
         with db.Session() as session:
             config = session.query(Voicebinds).filter_by(channel_id=voice_channel.id).one_or_none()
             if config is not None:
-                role = discord.utils.get(ctx.guild.roles, id=config.role_id)
+                role = ctx.guild.get_role(config.role_id)
                 session.delete(config)
                 await ctx.send(
                     "Role `{role}` will no longer be given to users in voice channel `{voice_channel}`!".format(
@@ -77,7 +80,7 @@ class Voice(Cog):
         with db.Session() as session:
             for config in session.query(Voicebinds).filter_by(guild_id=ctx.guild.id).all():
                 channel = discord.utils.get(ctx.guild.voice_channels, id=config.channel_id)
-                role = discord.utils.get(ctx.guild.roles, id=config.role_id)
+                role = ctx.guild.get_role(config.role_id)
                 embed.add_field(name=channel, value="`{}`".format(role))
         await ctx.send(embed=embed)
 
@@ -87,6 +90,7 @@ class Voice(Cog):
 
 
 class Voicebinds(db.DatabaseObject):
+    """DB object to keep track of voice to text channel access bindings."""
     __tablename__ = 'voicebinds'
     id = db.Column(db.Integer, primary_key=True)
     guild_id = db.Column(db.Integer)
@@ -95,4 +99,5 @@ class Voicebinds(db.DatabaseObject):
 
 
 def setup(bot):
+    """Add this cog to the main bot."""
     bot.add_cog(Voice(bot))

@@ -1,3 +1,4 @@
+"""Provides commands for pulling certain information."""
 import discord
 from discord.ext.commands import cooldown, BucketType, guild_only
 
@@ -42,7 +43,7 @@ class Info(Cog):
 
             e.add_field(name='Status and Game', value=f'{member.status}, '.title() + (
                 f'{activity_name}' + f' {member.activity.name}' if member.activity else 'no game playing'), inline=False)
-            roles = sorted(member.roles, reverse=True)[:-1]  # Remove @everyone
+            roles = reversed(member.roles[1:])  # Remove @everyone
             e.add_field(name='Roles', value=', '.join(role.name for role in roles) or "No roles", inline=False)
             e.add_field(name='Icon URL', value=icon_url, inline=False)
         await ctx.send(embed=e)
@@ -66,7 +67,7 @@ class Info(Cog):
         e.add_field(name='Owner', value=guild.owner)
         e.add_field(name='Members', value=guild.member_count)
         e.add_field(name='Channels', value=len(guild.channels))
-        e.add_field(name='Roles', value=len(guild.role_hierarchy) - 1)  # Remove @everyone
+        e.add_field(name='Roles', value=len(guild.roles) - 1)  # Remove @everyone
         e.add_field(name='Emoji', value=len(guild.emojis))
         e.add_field(name='Region', value=guild.region.name)
         e.add_field(name='Icon URL', value=guild.icon_url or 'This guild has no icon.')
@@ -78,4 +79,5 @@ class Info(Cog):
 
 
 def setup(bot):
+    """Adds the info cog to the bot"""
     bot.add_cog(Info(bot))

@@ -5,4 +5,4 @@ cache:
 install:
   - pip install pylint
   - pip install -r requirements.txt
-script: (pylint dozer/__main__.py) || exit 0
+script: ./ci/ci.sh
