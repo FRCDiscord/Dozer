@@ -25,6 +25,8 @@ class TBA(Cog):
         self.session = aiotba.TBASession(tba_config['key'], self.bot.http._session)
         # self.parser = tbapi.TBAParser(tba_config['key'], cache=False)
 
+    col = discord.Color.from_rgb(63, 81, 181)
+
     @group(invoke_without_command=True)
     async def tba(self, ctx, team_num: int):
         """
@@ -55,8 +57,7 @@ class TBA(Cog):
                 team_district = max(team_district_data, key=lambda d: d.year)
         except aiotba.http.AioTBAError:
             team_district_data = None
-        col = discord.Color.from_rgb(63, 81, 181)
-        e = discord.Embed(color=col,
+        e = discord.Embed(color=self.col,
                           title='FIRST® Robotics Competition Team {}'.format(team_num),
                           url='https://www.thebluealliance.com/team/{}'.format(team_num))
         e.set_thumbnail(url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
@@ -71,7 +72,7 @@ class TBA(Cog):
             e.add_field(name='Championship', value=team_data.home_championship[max(team_data.home_championship.keys())])
         except AttributeError:
             e.add_field(name='Championship', value="Unknown")
-        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        e.set_footer(text='Triggered by {}'.format(ctx.author.display_name))
         await ctx.send(embed=e)
 
     team.example_usage = """
@@ -94,7 +95,7 @@ class TBA(Cog):
         if not events:
             raise BadArgument(f"Couldn't find matching data!")
 
-        e = discord.Embed(color=discord.Color.blurple())
+        e = discord.Embed(color=self.col)
         events = "\n".join(i.name for i in events)
         e.title = f"Registered events for FRC Team {team_num} in {year}:"
         e.description = events
@@ -145,7 +146,7 @@ class TBA(Cog):
                 }.get(media.type, (None, None, None))
                 media.details['foreign_key'] = media.foreign_key
                 if name is not None:
-                    page = discord.Embed(title=base + name, url=url.format(**media.details))
+                    page = discord.Embed(title="{}{}".format(base, name), url=url.format(**media.details))
                     page.set_image(url=img_url.format(**media.details))
                     pages.append(page)
 
@@ -175,7 +176,7 @@ class TBA(Cog):
 
             pages = []
         for award_year, awards in itertools.groupby(awards_data, lambda a: a.year):
-            e = discord.Embed(title=f"Awards for FRC Team {team_num} in {award_year}:", color=discord.Color.blurple())
+            e = discord.Embed(title=f"Awards for FRC Team {team_num} in {award_year}:", color=self.col)
             for event_key, event_awards in itertools.groupby(list(awards), lambda a: a.event_key):
                 event = event_key_map[event_key]
                 e.add_field(name=f"{event.name} [{event_key}]",
@@ -202,12 +203,12 @@ class TBA(Cog):
         """
         try:
             team_data = await self.session.team(team_num)
-            e = discord.Embed(color=discord.Color.blurple())
+            e = discord.Embed(color=self.col)
             e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num),
                          url='https://www.thebluealliance.com/team/{}'.format(team_num),
                          icon_url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
             e.add_field(name='Raw Data', value="``` \n {}```".format(pformat(team_data.__dict__)))
-            e.set_footer(text='Triggered by ' + ctx.author.display_name)
+            e.set_footer(text='Triggered by {}'.format(ctx.author.display_name))
             await ctx.send(embed=e)
         except aiotba.http.AioTBAError:
             raise BadArgument('Team {} does not exist.'.format(team_num))
@@ -247,7 +248,7 @@ class TBA(Cog):
             td.country = "United States of America"
             units = 'u'
         e = discord.Embed(title=f"Current weather for {team_program.upper()} Team {team_num}:")
-        e.set_image(url="https://wttr.in/" + urlquote(f"{td.city}+{td.state_prov}+{td.country}_0_{units}.png"))
+        e.set_image(url="https://wttr.in/{}".format(urlquote("{}+{}+{}_0_{}.png".format(td.city, td.state_prov, td.country, units))))
         e.set_footer(text="Powered by wttr.in and sometimes TBA")
         await ctx.send(embed=e)
 
@@ -271,7 +272,7 @@ class TBA(Cog):
                 raise BadArgument("team {} exists, but does not have sufficient information!".format(team_num))
 
         elif team_program.lower() == "ftc":
-            res = json.loads(await self.bot.cogs['TOA'].parser.req("team/" + str(team_num)))
+            res = json.loads(await self.bot.cogs['TOA'].parser.req("team/{}".format(str(team_num))))
             if not res:
                 raise BadArgument('Team {} does not exist.'.format(team_num))
             team_data_dict = res[0]
@@ -294,11 +295,11 @@ class TBA(Cog):
             tzname = timezone["timeZoneName"]
         else:
             async with async_timeout.timeout(5) as _, self.bot.http_session.get(urljoin(
-                    self.bot.config['tz_url'], str(geolocation.latitude) + "/" + str(geolocation.longitude))) as r:
+                    "{}{}/{}".format(self.bot.config['tz_url'], str(geolocation.latitude), str(geolocation.longitude)))) as r:
                 r.raise_for_status()
                 data = await r.json()
                 utc_offset = data["utc_offset"]
-                tzname = '`' + data["tz"] + '`'
+                tzname = '`{}`'.format(data["tz"])
 
         current_time = datetime.datetime.utcnow() + datetime.timedelta(hours=utc_offset)
 
