@@ -4,8 +4,9 @@ import sqlalchemy
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, ForeignKeyConstraint, DateTime, BigInteger
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, Session, sessionmaker
+import asyncpg
 
-__all__ = ['DatabaseObject', 'Session', 'Column', 'Integer', 'String', 'ForeignKey', 'relationship',
+__all__ = ['Session', 'Column', 'Integer', 'String', 'ForeignKey', 'relationship',
            'Boolean', 'DateTime', 'BigInteger']
 
 
@@ -28,14 +29,13 @@ class CtxSession(Session):
         return self.__exit__(err_type, err, tb)
 
 
-DatabaseObject = None
-
-
-def db_init(db_url):
+async def db_init(db_url):
     """Initializes the database connection"""
-    global Session
-    global DatabaseObject
-    engine = sqlalchemy.create_engine(db_url)
-    DatabaseObject = declarative_base(bind=engine, name='DatabaseObject')
-    DatabaseObject.__table_args__ = {'extend_existing': True}  # allow use of the reload command with db cogs
-    Session = sessionmaker(bind=engine, class_=CtxSession)
+    # global Session
+    # global DatabaseObject
+    # engine = sqlalchemy.create_engine(db_url)
+    # DatabaseObject = declarative_base(bind=engine, name='DatabaseObject')
+    # DatabaseObject.__table_args__ = {'extend_existing': True}  # allow use of the reload command with db cogs
+    # Session = sessionmaker(bind=engine, class_=CtxSession)
+    global Pool
+    Pool = await asyncpg.create_pool(dsn=db_url, command_timeout=5)
