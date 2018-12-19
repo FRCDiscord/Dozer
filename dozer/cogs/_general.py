@@ -226,8 +226,12 @@ def setup(bot):
     bot.add_cog(General(bot))
 
 
-class WelcomeChannel(db.DatabaseObject):
-    """Maintains a list of channels for welcome messages"""
+# class WelcomeChannel(db.DatabaseObject):
+#     """Maintains a list of channels for welcome messages"""
+#     __tablename__ = 'welcome_channel'
+#     id = db.Column(db.BigInteger, primary_key=True)
+#     channel_id = db.Column(db.BigInteger, nullable=True)
+
+
+class WelcomeChannel(db.DatabaseTable):
     __tablename__ = 'welcome_channel'
-    id = db.Column(db.BigInteger, primary_key=True)
-    channel_id = db.Column(db.BigInteger, nullable=True)
