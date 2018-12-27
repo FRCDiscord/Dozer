@@ -4,7 +4,7 @@ import json
 import os
 import sys
 import asyncio
-from .db import db_init
+from .db import db_init, db_migrate
 
 from . import db
 
@@ -46,6 +46,8 @@ bot = Dozer(config)
 for ext in os.listdir('dozer/cogs'):
     if not ext.startswith(('_', '.')):
         bot.load_extension('dozer.cogs.' + ext[:-3])  # Remove '.py'
+
+asyncio.get_event_loop().run_until_complete(db_migrate())
 
 bot.run()
 
