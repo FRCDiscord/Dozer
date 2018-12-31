@@ -232,7 +232,7 @@ class TBA(Cog):
             except aiotba.http.AioTBAError:
                 raise BadArgument('Team {} does not exist.'.format(team_num))
         elif team_program.lower() == "ftc":
-            res = json.loads(await self.bot.cogs['TOA'].parser.req("team/{}".format(str(team_num))))
+            res = json.loads(await self.bot.cogs['TOA'].parser.req("team/{}".format(team_num)))
             if not res:
                 raise BadArgument('Team {} does not exist.'.format(team_num))
             td_dict = res[0]
@@ -294,8 +294,8 @@ class TBA(Cog):
         else:
             async with async_timeout.timeout(5), self.bot.http_session.get(urljoin(base=self.bot.config['tz_url'],
                                                                                    url="{}/{}".format(
-                                                                                       str(geolocation.latitude),
-                                                                                       str(geolocation.longitude)))) as r:
+                                                                                       geolocation.latitude,
+                                                                                       geolocation.longitude))) as r:
                 r.raise_for_status()
                 data = await r.json()
                 utc_offset = data["utc_offset"]
