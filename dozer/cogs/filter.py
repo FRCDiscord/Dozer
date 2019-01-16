@@ -34,7 +34,7 @@ class Filter(Cog):
         else:
             results = results.value
 
-        if results == "1":
+        if results:
             await ctx.author.send(embed=embed)
             await ctx.message.add_reaction("📬")
         else:
@@ -95,7 +95,7 @@ class Filter(Cog):
             results = session.query(WordFilter).filter_by(guild_id=ctx.guild.id, enabled=True).all()
         if not results:
             embed = discord.Embed(title="Filters for {}".format(ctx.guild.name))
-            embed.description = "No filters found for this guild! Add one using `{}whitelist add filter <>`".format(
+            embed.description = "No filters found for this guild! Add one using `{}filter add <regex> [name]`".format(
                 ctx.bot.command_prefix)
             embed.color = discord.Color.red()
             await ctx.send(embed=embed)
@@ -296,7 +296,7 @@ class WordFilterSetting(db.DatabaseObject):
 class WordFilterRoleWhitelist(db.DatabaseObject):
     """Object for each whitelisted role (guild-specific)"""
     __tablename__ = "word_filter_role_whitelist"
-    guild_id = db.Column(db.Integer)
+    guild_id = db.Column(db.BigInteger)
     role_id = db.Column(db.BigInteger, primary_key=True)
 
 
