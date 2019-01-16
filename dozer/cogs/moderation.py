@@ -136,7 +136,7 @@ class Moderation(Cog):
         """Checks messages for the links role if necessary, then checks if the author is allowed to send links in the server"""
         if msg.guild is None or not isinstance(msg.author, discord.Member) or not msg.guild.me.guild_permissions.manage_messages:
             return
-        config = self.links_config.query(guild_id=msg.guild.id)
+        config = self.links_config.query_one(guild_id=msg.guild.id)
         if config is None:
             return
         role = msg.guild.get_role(config.role_id)
@@ -314,7 +314,7 @@ class Moderation(Cog):
                 e.add_field(name="Footer", value=i.footer)
         if message.attachments:
             e.add_field(name="Attachments", value=", ".join([i.url for i in message.attachments]))
-        messagelogchannel = self.edit_delete_config.query(id=message.guild.id)
+        messagelogchannel = self.edit_delete_config.query_one(id=message.guild.id)
         if messagelogchannel is not None:
             channel = message.guild.get_channel(messagelogchannel.messagelog_channel)
             if channel is not None:
@@ -363,7 +363,7 @@ class Moderation(Cog):
                         e.add_field(name=x.name, value=x.value)
             if after.attachments:
                 e.add_field(name="Attachments", value=", ".join([i.url for i in before.attachments]))
-            messagelogchannel = self.edit_delete_config.query(id=before.guild.id)
+            messagelogchannel = self.edit_delete_config.query_one(id=before.guild.id)
             if messagelogchannel is not None:
                 channel = before.guild.get_channel(messagelogchannel.messagelog_channel)
                 if channel is not None:

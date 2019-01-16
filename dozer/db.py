@@ -42,12 +42,20 @@ class ConfigCache:
             values.append((k, dic[k]))
         return tuple(values)
 
-    def query(self, **kwargs):
+    def query_one(self, **kwargs):
         """Query the cache for an entry matching the kwargs, then try again using the database."""
         query_hash = self._hash_dict(kwargs)
         if query_hash not in self.cache:
             with Session() as session:
                 self.cache[query_hash] = session.query(self.table).filter_by(**kwargs).one_or_none()
+        return self.cache[query_hash]
+
+    def query_all(self, **kwargs):
+        """Query the cache for all entries matching the kwargs, then try again using the database."""
+        query_hash = self._hash_dict(kwargs)
+        if query_hash not in self.cache:
+            with Session() as session:
+                self.cache[query_hash] = session.query(self.table).filter_by(**kwargs).all()
         return self.cache[query_hash]
 
     def invalidate_entry(self, **kwargs):
