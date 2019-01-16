@@ -13,51 +13,63 @@ async def db_init(db_url):
 async def db_migrate():
     """Gets all subclasses and checks their migrations."""
     async with Pool.acquire() as conn:
-        conn.execute("""CREATE TABLE IF NOT EXISTS versions (
+        await conn.execute("""CREATE TABLE IF NOT EXISTS versions (
         table_name text PRIMARY KEY,
         version_num int NOT NULL
         )""")
     for cls in DatabaseTable.__subclasses__():
-        result = Pool.fetchrow("""SELECT version_num FROM versions WHERE table_name = ?""", cls.__name__)
-        version_num = int(result["version_num"])
-        if len(result) == 0:
-            # Migration/creation required, go to the function in the subclass for it
-            await cls.initial_migrate()
-        elif version_num < len(cls.__versions__):
-            # the version in the DB is less than the version in the bot, run all the migrate scripts necessary
-            for i in range(version_num + 1, len(cls.__versions__)-2):
-                # Run the update script for this version!
-                cls.__versions__[i]()
+        exists = await Pool.fetchrow(f"""SELECT EXISTS(
+        SELECT 1
+        FROM information_schema.tables
+        WHERE
+        table_name = $1)""", cls.__tablename__)
+        if exists['exists']:
+            version = await Pool.fetchrow("""SELECT version_num FROM versions WHERE table_name = $1""", cls.__tablename__)
+            if version is None:
+                # Migration/creation required, go to the function in the subclass for it
+                await cls.initial_migrate()
+            elif int(version["version_num"]) < len(cls.__versions__):
+                # the version in the DB is less than the version in the bot, run all the migrate scripts necessary
+                for i in range(int(version["version_num"]) + 1, len(cls.__versions__)-2):
+                    # Run the update script for this version!
+                    cls.__versions__[i]()
+        else:
+            await cls.initial_create()
 
 
 class DatabaseTable:
     __tablename__ = None
 
     # Declare the migrate/create functions
-    async def initial_create(self):
+    @classmethod
+    async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
         full schema. Make sure your DB rows have the exact same name as the python variable names."""
         async with Pool.acquire() as conn:
             await conn.execute(f"""
-            CREATE TABLE {self.__tablename__} (
+            CREATE TABLE {cls.__tablename__} (
             id serial PRIMARY KEY
             )""")
-            await Pool.execute("""INSERT INTO versions (table_name, version_num) 
-                                  VALUES (?,?)""", self.__tablename__, 0)
+            await cls.set_initial_version()
 
-    async def initial_migrate(self):
+    @classmethod
+    async def initial_migrate(cls):
         """Migrate the table from the SQLalchemy based system to the asyncpg system. Define this yourself, or leave it
         blank if no migration is necessary."""
-        await Pool.execute("""INSERT INTO versions (table_name, version_num) VALUES (?,?)""", self.__tablename__, 0)
+        await cls.set_initial_version()
 
-    __versions__ = {initial_create}
+    @classmethod
+    async def set_initial_version(cls):
+        await Pool.execute("""INSERT INTO versions (table_name, version_num) 
+                                          VALUES (?,?)""", cls.__tablename__, 0)
 
-    __uniques__ = ["id"]
+    __versions__ = {}
 
-    def __init__(self, passed_id=None):
-        """Overwrite this method if you don't want a basic primary key, and would rather, for example, use a guild or
-        channel ID for your object. Also make sure your __uniques__ property is overridden."""
-        self.id = passed_id
+    __uniques__ = []
+
+    def __init__(self):
+        """Blank constructor, fill with your database roles exactly like the variable names. Also make sure your
+         __uniques__ property is overridden."""
 
     async def update_or_add(self):
         """Assign the attribute to this object, then call this method to either insert the object if it doesn't exist in
@@ -87,7 +99,14 @@ class DatabaseTable:
             """, values)
 
     def __repr__(self):
-        return f"{self.__tablename__}: <Id: {self.id}>"
+        values = ""
+        first = True
+        for key, value in self.__dict__.items():
+            if not first:
+                values += ", "
+                first = False
+            values += f"{key}: {value}"
+        return f"{self.__tablename__}: < {', '.join(self.__dict__.items())}>"
 
     # Class Methods
 

@@ -206,8 +206,7 @@ class General(Cog):
         if welcome_channel.guild != ctx.guild:
             await ctx.send("That channel is not in this guild.")
             return
-        settings = WelcomeChannel()
-        settings.channel_id = ctx.guild.id
+        settings = WelcomeChannel(ctx.guild.id, welcome_channel)
         await settings.update_or_add()
         await ctx.send("Welcome channel set to {}".format(welcome_channel.mention))
 
@@ -232,16 +231,25 @@ def setup(bot):
 class WelcomeChannel(db.DatabaseTable):
     __tablename__ = 'welcome_channel'
 
-    async def initial_create(self):
+    @classmethod
+    async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
         full schema. Make sure your DB rows have the exact same name as the python variable names."""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
-            CREATE TABLE {self.__tablename__} (
-            id bigint PRIMARY KEY,
+            CREATE TABLE {cls.__tablename__} (
+            guild_id bigint PRIMARY KEY,
             channel_id bigint null
             )""")
+        await cls.set_initial_version()
 
-    def __init__(self, id, channel_id):
-        super().__init__(id)
+    @classmethod
+    async def initial_migrate(cls):
+        async with db.Pool.acquire() as conn:
+            await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
+        await cls.set_initial_version()
+
+    def __init__(self, guild_id, channel_id):
+        super().__init__()
+        self._guild_id = guild_id
         self.channel_id = channel_id
