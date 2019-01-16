@@ -34,7 +34,7 @@ class Filter(Cog):
         else:
             results = results.value
 
-        if results:
+        if results == "1":
             await ctx.author.send(embed=embed)
             await ctx.message.add_reaction("📬")
         else:
@@ -199,6 +199,7 @@ class Filter(Cog):
     @filter.command(name="dm")
     async def dm_config(self, ctx, config: bool):
         """Set whether filter words should be DMed when used in bot messages"""
+        config = str(int(config)) # turns into "1" or "0" idk man
         with db.Session() as session:
             result = session.query(WordFilterSetting).filter_by(guild_id=ctx.guild.id, setting_type="dm") \
                 .one_or_none()
@@ -211,7 +212,7 @@ class Filter(Cog):
                 session.add(result)
         self.word_filter_setting.invalidate_entry(guild_id=ctx.guild.id, setting_type="dm")
         await ctx.send(
-            "The DM setting for this guild has been changed from {} to {}.".format(before_setting == "1", result.value))
+            "The DM setting for this guild has been changed from {} to {}.".format(before_setting == "1", result.value == "1"))
 
     dm_config.example_usage = "`{prefix}filter dm_config True` - Makes all messages containining filter lists to be sent through DMs"
 
