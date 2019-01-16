@@ -27,6 +27,30 @@ class CtxSession(Session):
     async def __aexit__(self, err_type, err, tb):
         return self.__exit__(err_type, err, tb)
 
+class ConfigCache:
+    def __init__(self, table):
+        self.cache = {}
+        self.table = table
+
+    @staticmethod
+    def _hash_dict(dic):
+        # sort the keys to make this repeatable
+        values = []
+        for k in sorted(dic):
+            values.append((k, dic[k]))
+        return tuple(values)
+
+    def query(self, **kwargs):
+        query_hash = self._hash_dict(kwargs)
+        if not query_hash in self.cache:
+            with Session() as session:
+                self.cache[query_hash] = session.query(self.table).filter_by(**kwargs).one_or_none()
+        return self.cache[query_hash]
+
+    def invalidate_entry(self, **kwargs):
+        query_hash = self._hash_dict(kwargs)
+        if query_hash in self.cache:
+            del self.cache[query_hash]
 
 DatabaseObject = None
 
