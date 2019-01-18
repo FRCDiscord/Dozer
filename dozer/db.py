@@ -36,11 +36,8 @@ class ConfigCache:
     @staticmethod
     def _hash_dict(dic):
         """Makes a dict hashable by turning it into a tuple of tuples"""
-        values = []
         # sort the keys to make this repeatable; this allows consistency even when insertion order is different
-        for k in sorted(dic):
-            values.append((k, dic[k]))
-        return tuple(values)
+        return tuple((k, dic[k]) for k in sorted(dic))
 
     def query_one(self, **kwargs):
         """Query the cache for an entry matching the kwargs, then try again using the database."""
