@@ -558,6 +558,23 @@ class Moderation(Cog):
     `{prefix}undeafen @user reason - undeafen @user for a given (optional) reason
     """
 
+    @has_permissions(move_members=True)
+    @bot_has_permissions(manage_channels=True, move_members=True)
+    @command()
+    async def voicekick(self, ctx, member: discord.Member, reason="No reason provided"):
+        """Kick a user from voice chat. This is most useful if their perms to rejoin have already been removed."""
+        async with ctx.typing():
+            if not member.voice.channel:
+                await ctx.send("User is not in a voice channel!")
+                return
+            vc = await ctx.guild.create_voice_channel("_dozer_voicekick", reason=reason)
+            await member.move_to(vc, reason=reason)
+            await vc.delete(reason=reason)
+            await ctx.send(f"{member} has been kicked from voice chat.")
+    voicekick.example_usage = """
+    `{prefix}voicekick @user reason` - kick @user out of voice
+    """
+
     """=== Configuration commands ==="""
 
     @command()
