@@ -29,6 +29,11 @@ class SafeRoleConverter(RoleConverter):
 class Moderation(Cog):
     """A cog to handle moderation tasks."""
 
+    def __init__(self, bot):
+        super().__init__(bot)
+        self.edit_delete_config = db.ConfigCache(GuildMessageLog)
+        self.links_config = db.ConfigCache(GuildMessageLinks)
+
     """=== Helper functions ==="""
 
     async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member], reason, orig_channel=None,
@@ -131,17 +136,16 @@ class Moderation(Cog):
         """Checks messages for the links role if necessary, then checks if the author is allowed to send links in the server"""
         if msg.guild is None or not isinstance(msg.author, discord.Member) or not msg.guild.me.guild_permissions.manage_messages:
             return
-        with db.Session() as session:
-            config = session.query(GuildMessageLinks).filter_by(guild_id=msg.guild.id).one_or_none()
-            if config is None:
-                return
-            role = msg.guild.get_role(config.role_id)
-            if role is None:
-                return
-            if role not in msg.author.roles and re.search("https?://", msg.content):
-                await msg.delete()
-                self.bot.loop.create_task(coro=self._check_links_warn(msg, role))
-                return True
+        config = self.links_config.query_one(guild_id=msg.guild.id)
+        if config is None:
+            return
+        role = msg.guild.get_role(config.role_id)
+        if role is None:
+            return
+        if role not in msg.author.roles and re.search("https?://", msg.content):
+            await msg.delete()
+            self.bot.loop.create_task(self._check_links_warn(msg, role))
+            return True
         return False
 
     """=== context-free backend functions ==="""
@@ -310,12 +314,11 @@ class Moderation(Cog):
                 e.add_field(name="Footer", value=i.footer)
         if message.attachments:
             e.add_field(name="Attachments", value=", ".join([i.url for i in message.attachments]))
-        with db.Session() as session:
-            messagelogchannel = session.query(GuildMessageLog).filter_by(id=message.guild.id).one_or_none()
-            if messagelogchannel is not None:
-                channel = message.guild.get_channel(messagelogchannel.messagelog_channel)
-                if channel is not None:
-                    await channel.send(embed=e)
+        messagelogchannel = self.edit_delete_config.query_one(id=message.guild.id)
+        if messagelogchannel is not None:
+            channel = message.guild.get_channel(messagelogchannel.messagelog_channel)
+            if channel is not None:
+                await channel.send(embed=e)
 
     async def on_message_edit(self, before, after):
         """Logs message edits."""
@@ -360,12 +363,11 @@ class Moderation(Cog):
                         e.add_field(name=x.name, value=x.value)
             if after.attachments:
                 e.add_field(name="Attachments", value=", ".join([i.url for i in before.attachments]))
-            with db.Session() as session:
-                messagelogchannel = session.query(GuildMessageLog).filter_by(id=before.guild.id).one_or_none()
-                if messagelogchannel is not None:
-                    channel = before.guild.get_channel(messagelogchannel.messagelog_channel)
-                    if channel is not None:
-                        await channel.send(embed=e)
+            messagelogchannel = self.edit_delete_config.query_one(id=before.guild.id)
+            if messagelogchannel is not None:
+                channel = before.guild.get_channel(messagelogchannel.messagelog_channel)
+                if channel is not None:
+                    await channel.send(embed=e)
 
     """=== Direct moderation commands ==="""
 
@@ -662,6 +664,7 @@ class Moderation(Cog):
                 session.add(settings)
             else:
                 settings.role_id = link_role.id
+        self.links_config.invalidate_entry(guild_id=ctx.guild.id)
         await ctx.send(f'Link role set as `{link_role.name}`.')
     linkscrubconfig.example_usage = """
     `{prefix}linkscrubconfig Links` - set a role called "Links" as the link role
@@ -694,14 +697,15 @@ class Moderation(Cog):
     async def messagelogconfig(self, ctx, channel_mentions: discord.TextChannel):
         """Set the modlog channel for a server by passing the channel id"""
         with db.Session() as session:
-            config = session.query(GuildMessageLog).filter_by(id=str(ctx.guild.id)).one_or_none()
+            config = session.query(GuildMessageLog).filter_by(id=ctx.guild.id).one_or_none()
             if config is not None:
                 config.name = ctx.guild.name
-                config.messagelog_channel = str(channel_mentions.id)
+                config.messagelog_channel = channel_mentions.id
             else:
                 config = GuildMessageLog(id=ctx.guild.id, messagelog_channel=channel_mentions.id, name=ctx.guild.name)
                 session.add(config)
-            await ctx.send(ctx.message.author.mention + ', messagelog settings configured!')
+        self.edit_delete_config.invalidate_entry(id=ctx.guild.id)
+        await ctx.send(ctx.message.author.mention + ', messagelog settings configured!')
     messagelogconfig.example_usage = """
     `{prefix}messagelogconfig #orwellian-dystopia` - set a channel named #orwellian-dystopia to log message edits/deletions
     """

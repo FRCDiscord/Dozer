@@ -18,24 +18,27 @@ class Filter(Cog):
     """
     filter_dict = {}
 
+    def __init__(self, bot):
+        super().__init__(bot)
+        self.word_filter_setting = db.ConfigCache(WordFilterSetting)
+        self.word_filter_role_whitelist = db.ConfigCache(WordFilterRoleWhitelist)
+
     """Helper Functions"""
 
     async def check_dm_filter(self, ctx, embed):
         """Send an embed, if the setting in the DB allows for it"""
-        with db.Session() as session:
-            results = session.query(WordFilterSetting).filter_by(guild_id=ctx.guild.id, setting_type="dm") \
-                .one_or_none()
+        results = self.word_filter_setting.query_one(guild_id=ctx.guild.id, setting_type="dm")
 
-            if results is None:
-                results = True
-            else:
-                results = results.value
+        if results is None:
+            results = True
+        else:
+            results = results.value
 
-            if results == "1":
-                await ctx.author.send(embed=embed)
-                await ctx.message.add_reaction("📬")
-            else:
-                await ctx.send(embed=embed)
+        if results == "1":
+            await ctx.author.send(embed=embed)
+            await ctx.message.add_reaction("📬")
+        else:
+            await ctx.send(embed=embed)
 
     def load_filters(self, guild_id):
         """Load all filters for a selected guild """
@@ -49,8 +52,7 @@ class Filter(Cog):
         """Check all the filters for a certain message (with it's guild)"""
         if message.author.id == self.bot.user.id:
             return
-        with db.Session() as session:
-            roles = session.query(WordFilterRoleWhitelist).filter_by(guild_id=message.guild.id).all()
+        roles = self.word_filter_role_whitelist.query_all(guild_id=message.guild.id)
         whitelisted_ids = set(role.role_id for role in roles)
         if any(x.id in whitelisted_ids for x in message.author.roles):
             return
@@ -93,7 +95,7 @@ class Filter(Cog):
             results = session.query(WordFilter).filter_by(guild_id=ctx.guild.id, enabled=True).all()
         if not results:
             embed = discord.Embed(title="Filters for {}".format(ctx.guild.name))
-            embed.description = "No filters found for this guild! Add one using `{}whitelist add filter <>`".format(
+            embed.description = "No filters found for this guild! Add one using `{}filter add <regex> [name]`".format(
                 ctx.bot.command_prefix)
             embed.color = discord.Color.red()
             await ctx.send(embed=embed)
@@ -197,6 +199,7 @@ class Filter(Cog):
     @filter.command(name="dm")
     async def dm_config(self, ctx, config: bool):
         """Set whether filter words should be DMed when used in bot messages"""
+        config = str(int(config)) # turns into "1" or "0" idk man
         with db.Session() as session:
             result = session.query(WordFilterSetting).filter_by(guild_id=ctx.guild.id, setting_type="dm") \
                 .one_or_none()
@@ -207,9 +210,9 @@ class Filter(Cog):
                 before_setting = None
                 result = WordFilterSetting(guild_id=ctx.guild.id, setting_type="dm", value=config)
                 session.add(result)
-            await ctx.send(
-                "The DM setting for this guild has been changed from {} to {}.".format(before_setting == "1",
-                                                                                       result.value))
+        self.word_filter_setting.invalidate_entry(guild_id=ctx.guild.id, setting_type="dm")
+        await ctx.send(
+            "The DM setting for this guild has been changed from {} to {}.".format(before_setting == "1", result.value == "1"))
 
     dm_config.example_usage = "`{prefix}filter dm_config True` - Makes all messages containining filter lists to be sent through DMs"
 
@@ -217,16 +220,15 @@ class Filter(Cog):
     @filter.group(invoke_without_command=True)
     async def whitelist(self, ctx):
         """List all whitelisted roles for this server"""
-        with db.Session() as session:
-            results = session.query(WordFilterRoleWhitelist).filter_by(guild_id=ctx.guild.id).all()
-            role_objects = (ctx.guild.get_role(db_role.role_id) for db_role in results)
-            role_names = (role.name for role in role_objects if role is not None)
-            roles_text = "\n".join(role_names)
-            embed = discord.Embed()
-            embed.title = "Whitelisted roles for {}".format(ctx.guild.name)
-            embed.description = "Anybody with any of the roles below will not have their messages filtered."
-            embed.add_field(name="Roles", value=roles_text or "No roles")
-            await ctx.send(embed=embed)
+        results = self.word_filter_role_whitelist.query_all(guild_id=ctx.guild.id)
+        role_objects = (ctx.guild.get_role(db_role.role_id) for db_role in results)
+        role_names = (role.name for role in role_objects if role is not None)
+        roles_text = "\n".join(role_names)
+        embed = discord.Embed()
+        embed.title = "Whitelisted roles for {}".format(ctx.guild.name)
+        embed.description = "Anybody with any of the roles below will not have their messages filtered."
+        embed.add_field(name="Roles", value=roles_text or "No roles")
+        await ctx.send(embed=embed)
 
     whitelist.example_usage = "`{prefix}filter whitelist` - Lists all the whitelisted roles"
 
@@ -242,6 +244,7 @@ class Filter(Cog):
                 return
             whitelist_entry = WordFilterRoleWhitelist(guild_id=ctx.guild.id, role_id=role.id)
             session.add(whitelist_entry)
+        self.word_filter_role_whitelist.invalidate_entry(guild_id=ctx.guild.id)
         await ctx.send("Whitelisted `{}` for this guild.".format(role.name))
 
     whitelist_add.example_usage = "`{prefix}filter whitelist add Moderators` - Makes it so that Moderators will not be caught by the filter."
@@ -257,6 +260,7 @@ class Filter(Cog):
                 await ctx.send("That role is not whitelisted.")
                 return
             session.delete(result)
+        self.word_filter_role_whitelist.invalidate_entry(guild_id=ctx.guild.id)
         await ctx.send("The role `{}` is no longer whitelisted.".format(role.name))
 
     whitelist_remove.example_usage = "`{prefix}filter whitelist remove Admins` - Makes it so that Admins are caught by the filter again."
@@ -293,7 +297,7 @@ class WordFilterSetting(db.DatabaseObject):
 class WordFilterRoleWhitelist(db.DatabaseObject):
     """Object for each whitelisted role (guild-specific)"""
     __tablename__ = "word_filter_role_whitelist"
-    guild_id = db.Column(db.Integer)
+    guild_id = db.Column(db.BigInteger)
     role_id = db.Column(db.BigInteger, primary_key=True)
 
 
