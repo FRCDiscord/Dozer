@@ -1,5 +1,6 @@
 """A series of commands that talk to The Blue Alliance."""
 import datetime
+import io
 import itertools
 import json
 
@@ -245,10 +246,16 @@ class TBA(Cog):
         if td.country == "USA":
             td.country = "United States of America"
             units = 'u'
-        e = discord.Embed(title=f"Current weather for {team_program.upper()} Team {team_num}:")
-        e.set_image(url="https://wttr.in/{}".format(urlquote("{}+{}+{}_0_{}.png".format(td.city, td.state_prov, td.country, units))))
+        url = "https://wttr.in/{}".format(urlquote("{}+{}+{}_0_{}.png".format(td.city, td.state_prov, td.country, units)))
+
+        async with ctx.typing(), ctx.bot.http._session.get(url) as resp:
+            image_data = io.BytesIO(await resp.read())
+
+        file_name = f"weather_{team_program.lower()}{team_num}.png"
+        e = discord.Embed(title=f"Current weather for {team_program.upper()} Team {team_num}:", url=url)
+        e.set_image(url=f"attachment://{file_name}")
         e.set_footer(text="Powered by wttr.in and sometimes TBA")
-        await ctx.send(embed=e)
+        await ctx.send(embed=e, file=discord.File(image_data, file_name))
 
     weather.example_usage = """
     `{prefix}weather 5052` - show the current weather for FRC team 5052, The RoboLobos
