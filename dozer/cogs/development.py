@@ -83,7 +83,8 @@ class Development(Cog):
         msg.author = user
         msg.content = command
         context = await self.bot.get_context(msg)
-        return await self.bot.invoke(context)
+        context.is_pseudo = True # adds new flag to bypass ratelimit
+        await self.bot.invoke(context)
 
     pseudo.example_usage = """
     `{prefix}su cooldude#1234 {prefix}ping` - simulate cooldude sending `{prefix}ping`
