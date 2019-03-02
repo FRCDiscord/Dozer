@@ -77,10 +77,12 @@ class Filter(Cog):
 
     """Event Handlers"""
 
+    @Cog.listener('on_message')
     async def on_message(self, message):
         """Send the message handler out"""
         await self.check_filters(message)
 
+    @Cog.listener('on_message_edit')
     async def on_message_edit(self, _, after):
         """Send the message handler out, but for edits"""
         await self.check_filters(after)
