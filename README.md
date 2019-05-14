@@ -1,5 +1,3 @@
-
-
 # Dozer
 ![travis](https://www.travis-ci.org/FRCDiscord/Dozer.svg?branch=master)
 
@@ -24,7 +22,7 @@ Table of Contents
 
 run `python -V` to find what version of python you are running. If you are running version 3.6 or newer, feel free to skip this section
 
- #### Manually
+#### Manually
 
 [Unix](https://docs.python.org/3/using/unix.html?highlight=install)
 
@@ -66,6 +64,8 @@ Through the rest of this README, we will assume that you have found the correct 
    ![creating a new project](static/gmaps.png)
 3. Copy the API key - We'll need this too!
 
+**Currently, getting an API token requires a credit card. If you do not wish to make such a heavy commitment to your bot right now, entering nothing or keeping the default value for your API token will not cause the bot any troubles unless you attempt to call a command that utilizes it.**
+
 ### Setting up the bot
 
 1. Install dependencies with `python -m pip install -Ur requirements.txt`
@@ -73,6 +73,7 @@ Through the rest of this README, we will assume that you have found the correct 
    1. Dozer uses [json](http://www.json.org/) for its config file
 3. Add the Discord bot account's token to `discord_token` in `config.json`
 4. Add your Google Maps API key to `gmaps_key` in `config.json`
+  1. If you do not have an API key, don't touch this setting, but your bot will not have access to commands that use the GMAPI.
 5. Add information about your team and your bot to `tba` in `config.json`
 6. Add your ID, and anyone else's ID who should be able to use the developer commands, to the list `developers` in `config.json`
    1. Be careful giving this out. Developers can control everything your bot does and potentially get your [bot user token!](#getting-your-discord-bot-token)
