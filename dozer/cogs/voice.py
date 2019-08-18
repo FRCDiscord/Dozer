@@ -8,6 +8,8 @@ from .. import db
 
 class Voice(Cog):
     """Commands interacting with voice."""
+
+    @Cog.listener('on_voice_state_update')
     async def on_voice_state_update(self, member, before, after):
         """Handles voicebinds when members join/leave voice channels"""
         # skip this if we have no perms, or if it's something like a mute/deafen

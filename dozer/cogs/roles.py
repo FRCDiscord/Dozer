@@ -22,6 +22,7 @@ class Roles(Cog):
                 if await self.ctx_purge(ctx):
                     await ctx.send("Purged missing roles")
 
+    @Cog.listener('on_member_join')
     async def on_member_join(self, member):
         """Restores a member's roles when they join if they have joined before."""
         me = member.guild.me
@@ -65,6 +66,7 @@ class Roles(Cog):
 
         await dest.send(embed=e)
 
+    @Cog.listener('on_member_remove')
     async def on_member_remove(self, member):
         """Saves a member's roles when they leave in case they rejoin."""
         guild_id = member.guild.id
