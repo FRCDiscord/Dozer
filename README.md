@@ -40,9 +40,19 @@ Instructions for installing are located [here](https://github.com/pyenv/pyenv-in
 2. `pyenv global 3.6.3` sets 3.6.3 as the primary version for the current user
 3. run `python -V` to ensure that version 3.6 or newer is installed. 
 
-
+If you are on macOS, there may be more steps to complete involving SSL certificates to connect to Discord correctly. Please see [this thread](https://github.com/Rapptz/discord.py/issues/423) for more info.
 
 Through the rest of this README, we will assume that you have found the correct `python` executable for your setup and are using it accordingly.
+
+### Installing PostgreSQL
+
+As of `[insert date]`, Dozer no longer supports database types other than PostgreSQL. This means installations using SQLite
+(as was default), will need to migrated, as well as new installations will have to have PostgreSQL installed on the 
+machine for development or production. You can install PostgreSQL for your platform [here](https://www.postgresql.org/download/)
+
+#### Migrating old Databases
+
+    Insert info here when it's completed
 
 ### Getting your Discord Bot Token
 
@@ -75,10 +85,16 @@ Through the rest of this README, we will assume that you have found the correct 
 4. Add your Google Maps API key to `gmaps_key` in `config.json`
   1. If you do not have an API key, don't touch this setting, but your bot will not have access to commands that use the GMAPI.
 5. Add information about your team and your bot to `tba` in `config.json`
-6. Add your ID, and anyone else's ID who should be able to use the developer commands, to the list `developers` in `config.json`
+6. Add your database connection info to `db_url` in `config.json` using the following format:
+    
+    ```postgres://user:password@host:port```
+    
+    Replace `host` with your database IP, or `localhost` if it's on the same PC. `port` is by default 5432. If the user has no
+    password, you can remove the colon and password. The default user for the above installation is `postgres`.
+7. Add your ID, and anyone else's ID who should be able to use the developer commands, to the list `developers` in `config.json`
    1. Be careful giving this out. Developers can control everything your bot does and potentially get your [bot user token!](#getting-your-discord-bot-token)
-7. The default command prefix is &. If this is already in use on your server or you would like another prefix, you can change the `prefix` value in `config.json`.
-8. Run the bot again, you should see `Signed in as username#discrim (id)` after a few seconds.
+8. The default command prefix is &. If this is already in use on your server or you would like another prefix, you can change the `prefix` value in `config.json`.
+9. Run the bot again, you should see `Signed in as username#discrim (id)` after a few seconds.
 
 ### Adding the bot to your server
 

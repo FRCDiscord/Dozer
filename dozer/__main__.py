@@ -3,7 +3,8 @@
 import json
 import os
 import sys
-from .db import db_init
+import asyncio
+from .db import db_init, db_migrate
 
 from . import db
 
@@ -27,7 +28,7 @@ if os.path.isfile(config_file):
     with open(config_file) as f:
         config.update(json.load(f))
 
-db_init(config['db_url'])
+asyncio.get_event_loop().run_until_complete(db_init(config['db_url']))
 
 with open('config.json', 'w') as f:
     json.dump(config, f, indent='\t')
@@ -46,7 +47,8 @@ for ext in os.listdir('dozer/cogs'):
     if not ext.startswith(('_', '.')):
         bot.load_extension('dozer.cogs.' + ext[:-3])  # Remove '.py'
 
-db.DatabaseObject.metadata.create_all()
+asyncio.get_event_loop().run_until_complete(db_migrate())
+
 bot.run()
 
 # restart the bot if the bot flagged itself to do so
