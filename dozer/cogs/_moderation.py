@@ -223,6 +223,7 @@ class Moderation(Cog):
 
     """=== Event handlers ==="""
 
+    @Cog.listener('on_ready')
     async def on_ready(self):
         """Restore punishment timers on bot startup"""
         with db.Session() as session:
@@ -240,6 +241,7 @@ class Moderation(Cog):
                                                                 orig_channel))
                 getLogger('dozer').info(f"Restarted {PunishmentTimerRecord.type_map[punishment_type].__name__} of {target} in {guild}")
 
+    @Cog.listener('on_member_join')
     async def on_member_join(self, member):
         """Logs that a member joined."""
         join = discord.Embed(type='rich', color=0x00FF00)
@@ -258,6 +260,7 @@ class Moderation(Cog):
             if user is not None:
                 await self.perm_override(member, read_messages=False)
 
+    @Cog.listener('on_member_remove')
     async def on_member_remove(self, member):
         """Logs that a member left."""
         leave = discord.Embed(type='rich', color=0xFF0000)
@@ -270,6 +273,7 @@ class Moderation(Cog):
                 channel = member.guild.get_channel(memberlogchannel.memberlog_channel)
                 await channel.send(embed=leave)
 
+    @Cog.listener('on_message')
     async def on_message(self, message):
         """Check things when messages come in."""
         if message.author.bot or message.guild is None or not message.guild.me.guild_permissions.manage_roles:
@@ -290,6 +294,7 @@ class Moderation(Cog):
                     return
                 await message.author.add_roles(message.guild.get_role(role_id))
 
+    @Cog.listener('on_message_delete')
     async def on_message_delete(self, message):
         """When a message is deleted, log it."""
         e = discord.Embed(type='rich')
@@ -320,6 +325,7 @@ class Moderation(Cog):
             if channel is not None:
                 await channel.send(embed=e)
 
+    @Cog.listener('on_message_edit')
     async def on_message_edit(self, before, after):
         """Logs message edits."""
         await self.check_links(after)
