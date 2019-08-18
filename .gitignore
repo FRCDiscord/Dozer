@@ -5,6 +5,8 @@ config.json
 dozer.db
 cilog.txt
 
+venv/
+
 # IDEA
 .idea/
 
