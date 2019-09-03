@@ -50,13 +50,12 @@ class DatabaseTable:
             CREATE TABLE {cls.__tablename__} (
             id serial PRIMARY KEY
             )""")
-            await cls.set_initial_version()
 
     @classmethod
     async def initial_migrate(cls):
         """Migrate the table from the SQLalchemy based system to the asyncpg system. Define this yourself, or leave it
         blank if no migration is necessary."""
-        await cls.set_initial_version()
+
 
 class ConfigCache:
     """Class that will reduce calls to sqlalchemy as much as possible. Has no growth limit (yet)"""

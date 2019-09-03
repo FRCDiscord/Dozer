@@ -172,10 +172,10 @@ class General(Cog):
         Generates a set number of single use invites.
         """
 
-        settings = WelcomeChannel.get_by_channel(ctx.guild.id)
+        settings = await WelcomeChannel.get_by_channel(ctx.guild.id)
         if len(settings) != 1:
             await ctx.send(
-                "There is no welcome channel set. Please set one using `{0}welcomeconifg channel` and try again.".format(
+                "There is no welcome channel set. Please set one using `{0}welcomeconfig channel` and try again.".format(
                     ctx.prefix))
             return
         else:
@@ -241,15 +241,26 @@ class WelcomeChannel(db.DatabaseTable):
             guild_id bigint PRIMARY KEY,
             channel_id bigint null
             )""")
-        await cls.set_initial_version()
 
-    @classmethod
-    async def initial_migrate(cls):
-        async with db.Pool.acquire() as conn:
-            await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
-        await cls.set_initial_version()
+    # @classmethod
+    # async def initial_migrate(cls):
+    #     async with db.Pool.acquire() as conn:
+    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
     def __init__(self, guild_id, channel_id):
         super().__init__()
         self._guild_id = guild_id
         self.channel_id = channel_id
+
+    @classmethod
+    async def get_by_channel(cls, guild_id):
+        async with db.Pool.acquire() as conn:
+            cursor = await conn.cursor(query=f"""
+            SELECT guild_id FROM {cls.__tablename__} WHERE guild_id = {guild_id};
+            """)
+            return cursor.fetchall()
+
+    async def update_or_add(self):
+        async with db.Pool.acquire() as conn:
+            current_result = await self.get_by_channel(guild_id=self._guild_id)
+            print(type(current_result))

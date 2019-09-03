@@ -54,7 +54,7 @@ class TOA(Cog):
     """TOA commands"""
     def __init__(self, bot):
         super().__init__(bot)
-        self.parser = TOAParser(bot.config['toa']['key'], bot.http._session, app_name=bot.config['toa']['app_name'])
+        self.parser = TOAParser(bot.config['toa']['key'], bot.http._HTTPClient__session, app_name=bot.config['toa']['app_name'])
         # The line above has an error (bot.http._session is a protected class)
 
     @group(invoke_without_command=True)

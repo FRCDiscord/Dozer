@@ -23,7 +23,7 @@ class TBA(Cog):
         super().__init__(bot)
         tba_config = bot.config['tba']
         self.gmaps_key = bot.config['gmaps_key']
-        self.session = aiotba.TBASession(tba_config['key'], self.bot.http._session)
+        self.session = aiotba.TBASession(tba_config['key'], self.bot.http._HTTPClient__session)
         # self.parser = tbapi.TBAParser(tba_config['key'], cache=False)
 
     col = discord.Color.from_rgb(63, 81, 181)
