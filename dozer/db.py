@@ -1,7 +1,6 @@
 """Provides database storage for the Dozer Discord bot"""
 
 import asyncpg
-import discord
 
 
 async def db_init(db_url):
@@ -39,6 +38,7 @@ async def db_migrate():
 
 class DatabaseTable:
     __tablename__ = None
+    __uniques__ = []
 
     # Declare the migrate/create functions
     @classmethod
@@ -56,65 +56,18 @@ class DatabaseTable:
         """Migrate the table from the SQLalchemy based system to the asyncpg system. Define this yourself, or leave it
         blank if no migration is necessary."""
 
-
-class ConfigCache:
-    """Class that will reduce calls to sqlalchemy as much as possible. Has no growth limit (yet)"""
-    def __init__(self, table):
-        self.cache = {}
-        self.table = table
-
-    @staticmethod
-    def _hash_dict(dic):
-        """Makes a dict hashable by turning it into a tuple of tuples"""
-        # sort the keys to make this repeatable; this allows consistency even when insertion order is different
-        return tuple((k, dic[k]) for k in sorted(dic))
-
-    def query_one(self, **kwargs):
-        """Query the cache for an entry matching the kwargs, then try again using the database."""
-        query_hash = self._hash_dict(kwargs)
-        if query_hash not in self.cache:
-            with Session() as session:
-                self.cache[query_hash] = session.query(self.table).filter_by(**kwargs).one_or_none()
-        return self.cache[query_hash]
-
-    def query_all(self, **kwargs):
-        """Query the cache for all entries matching the kwargs, then try again using the database."""
-        query_hash = self._hash_dict(kwargs)
-        if query_hash not in self.cache:
-            with Session() as session:
-                self.cache[query_hash] = session.query(self.table).filter_by(**kwargs).all()
-        return self.cache[query_hash]
-
-    def invalidate_entry(self, **kwargs):
-        """Removes an entry from the cache if it exists - used to mark changed data."""
-        query_hash = self._hash_dict(kwargs)
-        if query_hash in self.cache:
-            del self.cache[query_hash]
-    @classmethod
-    async def set_initial_version(cls):
-        await Pool.execute("""INSERT INTO versions (table_name, version_num) 
-                                          VALUES (?,?)""", cls.__tablename__, 0)
-
-    __versions__ = {}
-
-    __uniques__ = []
-
-    def __init__(self):
-        """Blank constructor, fill with your database roles exactly like the variable names. Also make sure your
-         __uniques__ property is overridden."""
-
-    async def update_or_add(self):
+    async def update_or_add(cls):
         """Assign the attribute to this object, then call this method to either insert the object if it doesn't exist in
         the DB or update it if it does exist. It will update every column not specified in __uniques__."""
         keys = []
         values = []
-        for var, value in self.__dict__.items():
+        for var, value in cls.__dict__.items():
             # Done so that the two are guaranteed to be in the same order, which isn't true of keys() and values()
             keys.append(var)
             values.append(value)
         updates = ""
         for key in keys:
-            if key in self.__uniques__:
+            if key in cls.__uniques__:
                 # Skip updating anything that has a unique constraint on it
                 continue
             updates += f"{key} = EXCLUDED.{key}"
@@ -123,12 +76,14 @@ class ConfigCache:
             else:
                 updates += ", \n"
         async with Pool.acquire() as conn:
-            conn.execute(f"""
-            INSERT INTO {self.__tablename__} ({", ".join(keys)})
-            VALUES($1)
-            ON CONFLICT ({", ".join(self.__uniques__)}) DO UPDATE
-            SET {updates}
-            """, values)
+            statement = f"""
+            INSERT INTO {cls.__tablename__} ({", ".join(keys)})
+            VALUES($1)"""
+            #--ON CONFLICT ({", ".join(cls.__uniques__)}) DO UPDATE
+            #--SET {updates}
+            #"""
+            print(statement)
+            await conn.execute(statement, values)
 
     def __repr__(self):
         values = ""
@@ -178,4 +133,51 @@ class ConfigCache:
     @classmethod
     async def get_by_role(cls, role_id, role_column_name="role_id"):
         await cls.get_by_attribute(role_id, role_column_name)
+
+
+class ConfigCache:
+    """Class that will reduce calls to sqlalchemy as much as possible. Has no growth limit (yet)"""
+    def __init__(self, table):
+        self.cache = {}
+        self.table = table
+
+    @staticmethod
+    def _hash_dict(dic):
+        """Makes a dict hashable by turning it into a tuple of tuples"""
+        # sort the keys to make this repeatable; this allows consistency even when insertion order is different
+        return tuple((k, dic[k]) for k in sorted(dic))
+
+    def query_one(self, **kwargs):
+        """Query the cache for an entry matching the kwargs, then try again using the database."""
+        query_hash = self._hash_dict(kwargs)
+        if query_hash not in self.cache:
+            with Session() as session:
+                self.cache[query_hash] = session.query(self.table).filter_by(**kwargs).one_or_none()
+        return self.cache[query_hash]
+
+    def query_all(self, **kwargs):
+        """Query the cache for all entries matching the kwargs, then try again using the database."""
+        query_hash = self._hash_dict(kwargs)
+        if query_hash not in self.cache:
+            with Session() as session:
+                self.cache[query_hash] = session.query(self.table).filter_by(**kwargs).all()
+        return self.cache[query_hash]
+
+    def invalidate_entry(self, **kwargs):
+        """Removes an entry from the cache if it exists - used to mark changed data."""
+        query_hash = self._hash_dict(kwargs)
+        if query_hash in self.cache:
+            del self.cache[query_hash]
+    @classmethod
+    async def set_initial_version(cls):
+        await Pool.execute("""INSERT INTO versions (table_name, version_num) 
+                                          VALUES (?,?)""", cls.__tablename__, 0)
+
+    __versions__ = {}
+
+    __uniques__ = []
+
+    def __init__(self):
+        """Blank constructor, fill with your database roles exactly like the variable names. Also make sure your
+         __uniques__ property is overridden."""
 

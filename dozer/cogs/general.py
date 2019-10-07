@@ -252,15 +252,3 @@ class WelcomeChannel(db.DatabaseTable):
         self._guild_id = guild_id
         self.channel_id = channel_id
 
-    @classmethod
-    async def get_by_channel(cls, guild_id):
-        async with db.Pool.acquire() as conn:
-            cursor = await conn.cursor(query=f"""
-            SELECT guild_id FROM {cls.__tablename__} WHERE guild_id = {guild_id};
-            """)
-            return cursor.fetchall()
-
-    async def update_or_add(self):
-        async with db.Pool.acquire() as conn:
-            current_result = await self.get_by_channel(guild_id=self._guild_id)
-            print(type(current_result))
