@@ -80,27 +80,28 @@ class General(Cog):
 
     async def _help_command(self, ctx, command):
         """Gets the help message for one command."""
-        info = discord.Embed(title='Command: {}{}'.format(ctx.prefix, command.signature), description=command.help or (
-            None if command.example_usage else 'No information provided.'), color=discord.Color.blue())
+        info = discord.Embed(title='Command: {}{} {}'.format(ctx.prefix, command.qualified_name, command.signature),
+                             description=command.help or (None if command.example_usage else 'No information provided.'),
+                             color=discord.Color.blue())
         usage = command.example_usage
         if usage is not None:
             info.add_field(name='Usage', value=usage.format(prefix=ctx.prefix, name=ctx.invoked_with), inline=False)
         info.set_footer(text='Dozer Help | {!r} command | Info'.format(command.qualified_name))
-        await self._show_help(ctx, info, 'Subcommands: {prefix}{signature}', '', '{command.qualified_name!r} command',
-                              command.commands if isinstance(command, Group) else set(), command=command, signature=command.signature)
+        await self._show_help(ctx, info, 'Subcommands: {prefix}{name} {signature}', '', '{name!r} command',
+                              command.commands if isinstance(command, Group) else set(),
+                              name=command.qualified_name, signature=command.signature)
 
     async def _help_cog(self, ctx, cog):
         """Gets the help message for one cog."""
         await self._show_help(ctx, None, 'Category: {cog_name}', inspect.cleandoc(cog.__doc__ or ''),
                               '{cog_name!r} category',
-                              (command for command in ctx.bot.commands if command.instance is cog),
+                              (command for command in ctx.bot.commands if command.cog is cog),
                               cog_name=type(cog).__name__)
 
     async def _show_help(self, ctx, start_page, title, description, footer, commands, **format_args):
         """Creates and sends a template help message, with arguments filled in."""
         format_args['prefix'] = ctx.prefix
-        footer = 'Dozer Help | {} | Page {}'.format(footer,
-                                                    '{page_num} of {len_pages}')
+        footer = 'Dozer Help | {} | Page {}'.format(footer, '{page_num} of {len_pages}')
         # Page info is inserted as a parameter so page_num and len_pages aren't evaluated now
         if commands:
             command_chunks = list(chunk(sorted(commands, key=lambda cmd: cmd.name), 4))
@@ -117,7 +118,7 @@ class General(Cog):
                             ctx, command)
                     else:
                         embed_value = 'No information provided.'
-                    page.add_field(name=ctx.prefix + command.signature, value=embed_value, inline=False)
+                    page.add_field(name='{}{} {}'.format(ctx.prefix, command.qualified_name, command.signature), value=embed_value, inline=False)
                 page.set_footer(text=footer.format(**format_args))
                 pages.append(page)
 
