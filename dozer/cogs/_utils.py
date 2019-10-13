@@ -15,12 +15,12 @@ class CommandMixin:
     _example_usage = None
     _required_permissions = None
 
-    def __init__(self, name, callback, **kwargs):
+    def __init__(self, func, **kwargs):
         self.message = None
         self.reactor = None
-        super().__init__(name=name, callback=callback, **kwargs)  # All must be named for commands.Group.__init__
-        if hasattr(callback, '__required_permissions__'):
-            self._required_permissions = callback.__required_permissions__
+        super().__init__(func, **kwargs)
+        if hasattr(func, '__required_permissions__'):
+            self._required_permissions = func.__required_permissions__
 
     @property
     def required_permissions(self):
@@ -69,7 +69,7 @@ def group(**kwargs):
     return commands.command(**kwargs)
 
 
-class Cog:
+class Cog(commands.Cog):
     """Initiates cogs."""
     def __init__(self, bot):
         self.bot = bot
