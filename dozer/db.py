@@ -121,8 +121,8 @@ class DatabaseTable:
         await cls.get_by_attribute(obj_id, "id")
 
     @classmethod
-    async def get_by_guild(cls, guild_id, guild_column_name = "guild_id"):
-        await cls.get_by_attribute(guild_id, guild_column_name)
+    async def get_by_guild(cls, guild_id, guild_column_name="guild_id"):
+        return await cls.get_by_attribute(self=cls, obj_id=guild_id, column_name=guild_column_name)
 
     @classmethod
     async def get_by_channel(cls, channel_id, channel_column_name="channel_id"):
@@ -135,6 +135,16 @@ class DatabaseTable:
     @classmethod
     async def get_by_role(cls, role_id, role_column_name="role_id"):
         await cls.get_by_attribute(role_id, role_column_name)
+
+    @classmethod
+    async def delete(cls, data_column, data):
+        async with Pool.acquire() as conn:
+            statement = f"""
+            DELETE FROM  {cls.__tablename__}
+            WHERE {data_column} = {data};
+            """
+            print(statement)
+            await conn.execute(statement)
 
 
 class ConfigCache:
