@@ -173,13 +173,13 @@ class General(Cog):
         """
 
         settings = await WelcomeChannel.get_by_channel(ctx.guild.id)
-        if len(settings) != 1:
+        if settings is None:
             await ctx.send(
                 "There is no welcome channel set. Please set one using `{0}welcomeconfig channel` and try again.".format(
                     ctx.prefix))
             return
         else:
-            invitechannel = ctx.bot.get_channel(settings.channel_id)
+            invitechannel = ctx.bot.get_channel(settings[0].channel_id)
             if invitechannel is None:
                 await ctx.send(
                     "There was an issue getting your welcome channel. Please set it again using `{0} welcomeconfig channel`.".format(
@@ -244,4 +244,17 @@ class WelcomeChannel(db.DatabaseTable):
         super().__init__()
         self.guild_id = guild_id
         self.channel_id = channel_id
+
+    async def get_by_attribute(self, obj_id, column_name):
+        """Gets a list of all objects with a given attribute"""
+        async with db.Pool.acquire() as conn:  # Use transaction here?
+            stmt = await conn.prepare(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
+            results = await stmt.fetch()
+            list = []
+            for result in results:
+                obj = WelcomeChannel(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"))
+                # for var in obj.__dict__:
+                #     setattr(obj, var, result.get(var))
+                list.append(obj)
+            return list
 

@@ -2,6 +2,8 @@
 
 import asyncpg
 
+Pool = None
+
 
 async def db_init(db_url):
     """Initializes the database connection"""
@@ -102,12 +104,12 @@ class DatabaseTable:
         """Gets a list of all objects with a given attribute. This will grab all attributes, it's more efficient to
         write your own SQL queries than use this one, but for a simple query this is fine."""
         async with Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.prepare(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = ?""")
-            results = stmt.fetch(obj_id)
+            stmt = await conn.prepare(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            results = await stmt.fetch()
             list = []
             for result in results:
                 obj = cls()
-                for var in cls().__dict__:
+                for var in obj.__dict__:
                     setattr(obj, var, result.get(var))
                 list.append(obj)
             return list
@@ -123,8 +125,8 @@ class DatabaseTable:
         await cls.get_by_attribute(guild_id, guild_column_name)
 
     @classmethod
-    async def get_by_channel(cls, channel_id, channel_column_name = "channel_id"):
-        await cls.get_by_attribute(channel_id, channel_column_name)
+    async def get_by_channel(cls, channel_id, channel_column_name="channel_id"):
+        return await cls.get_by_attribute(self=cls, obj_id=channel_id, column_name=channel_column_name)
 
     @classmethod
     async def get_by_user(cls, user_id, user_column_name="user_id"):
