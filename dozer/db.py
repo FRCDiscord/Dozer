@@ -64,7 +64,7 @@ class DatabaseTable:
         for var, value in cls.__dict__.items():
             # Done so that the two are guaranteed to be in the same order, which isn't true of keys() and values()
             keys.append(var)
-            values.append(value)
+            values.append(str(value))
         updates = ""
         for key in keys:
             if key in cls.__uniques__:
@@ -78,12 +78,12 @@ class DatabaseTable:
         async with Pool.acquire() as conn:
             statement = f"""
             INSERT INTO {cls.__tablename__} ({", ".join(keys)})
-            VALUES($1)"""
-            #--ON CONFLICT ({", ".join(cls.__uniques__)}) DO UPDATE
-            #--SET {updates}
-            #"""
+            VALUES({", ".join(values)}) 
+            ON CONFLICT ({cls.__uniques__}) DO UPDATE
+            SET {updates}
+            """
             print(statement)
-            await conn.execute(statement, values)
+            await conn.execute(statement)
 
     def __repr__(self):
         values = ""

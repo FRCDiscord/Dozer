@@ -206,7 +206,7 @@ class General(Cog):
         if welcome_channel.guild != ctx.guild:
             await ctx.send("That channel is not in this guild.")
             return
-        settings = WelcomeChannel(ctx.guild.id, welcome_channel)
+        settings = WelcomeChannel(ctx.guild.id, welcome_channel.id)
         await settings.update_or_add()
         await ctx.send("Welcome channel set to {}".format(welcome_channel.mention))
 
@@ -221,16 +221,9 @@ def setup(bot):
     bot.add_cog(General(bot))
 
 
-# class WelcomeChannel(db.DatabaseObject):
-#     """Maintains a list of channels for welcome messages"""
-#     __tablename__ = 'welcome_channel'
-#     id = db.Column(db.BigInteger, primary_key=True)
-#     channel_id = db.Column(db.BigInteger, nullable=True)
-
-
 class WelcomeChannel(db.DatabaseTable):
     __tablename__ = 'welcome_channel'
-
+    __uniques__ = 'guild_id'
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -249,6 +242,6 @@ class WelcomeChannel(db.DatabaseTable):
 
     def __init__(self, guild_id, channel_id):
         super().__init__()
-        self._guild_id = guild_id
+        self.guild_id = guild_id
         self.channel_id = channel_id
 
