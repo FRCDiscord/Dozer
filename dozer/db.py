@@ -130,11 +130,17 @@ class DatabaseTable:
 
     @classmethod
     async def get_by_user(cls, user_id, user_column_name="user_id"):
-        await cls.get_by_attribute(user_id, user_column_name)
+        return await cls.get_by_attribute(self=cls, obj_id=user_id, column_name=user_column_name)
 
     @classmethod
     async def get_by_role(cls, role_id, role_column_name="role_id"):
         await cls.get_by_attribute(role_id, role_column_name)
+
+    @classmethod
+    async def get_all(cls):
+        async with Pool.acquire() as conn:  # Use transaction here?
+            stmt = await conn.prepare(f"""SELECT * FROM {cls.__tablename__};""")
+            return await stmt.fetch()
 
     @classmethod
     async def delete(cls, data_column, data):
@@ -180,6 +186,7 @@ class ConfigCache:
         query_hash = self._hash_dict(kwargs)
         if query_hash in self.cache:
             del self.cache[query_hash]
+
     @classmethod
     async def set_initial_version(cls):
         await Pool.execute("""INSERT INTO versions (table_name, version_num) 
