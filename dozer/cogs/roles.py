@@ -355,46 +355,129 @@ class Roles(Cog):
     """
 
 
-class GuildSettings(db.DatabaseObject):
-    """Represents a guild's settings in the DB"""
-    __tablename__ = 'guilds'
-    id = db.Column(db.Integer, primary_key=True)
-    giveable_roles = db.relationship('GiveableRole', back_populates='guild_settings')
+# class GuildSettings(db.DatabaseObject):
+#     """Represents a guild's settings in the DB"""
+#     __tablename__ = 'guilds'
+#     id = db.Column(db.Integer, primary_key=True)
+#     giveable_roles = db.relationship('GiveableRole', back_populates='guild_settings')
+# obsolete
 
 
-class GiveableRole(db.DatabaseObject):
+# class GiveableRole(db.DatabaseObject):
+#     """Database object for maintaining a list of giveable roles."""
+#     __tablename__ = 'giveable_roles'
+#     id = db.Column(db.Integer, primary_key=True)
+#     name = db.Column(db.String(100), nullable=False)
+#     norm_name = db.Column(db.String(100), nullable=False)
+#     guild_id = db.Column(db.Integer, db.ForeignKey('guilds.id'))
+#    NO guild_settings = db.relationship('GuildSettings', back_populates='giveable_roles') NO
+#
+#     @classmethod
+#     def from_role(cls, role):
+#         """Creates a GiveableRole record from a discord.Role."""
+#         return cls(id=role.id, name=role.name, norm_name=Roles.normalize(role.name))
+
+class GiveableRole(db.DatabaseTable):
     """Database object for maintaining a list of giveable roles."""
     __tablename__ = 'giveable_roles'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(100), nullable=False)
-    norm_name = db.Column(db.String(100), nullable=False)
-    guild_id = db.Column(db.Integer, db.ForeignKey('guilds.id'))
-    guild_settings = db.relationship('GuildSettings', back_populates='giveable_roles')
-
+    __uniques__ = ''
     @classmethod
-    def from_role(cls, role):
-        """Creates a GiveableRole record from a discord.Role."""
-        return cls(id=role.id, name=role.name, norm_name=Roles.normalize(role.name))
+    async def initial_create(cls):
+        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
+        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            guild_id bigint PRIMARY KEY,
+            id bigint,
+            name varchar,
+            norm_name varchar
+            )""")
+
+    # @classmethod
+    # async def initial_migrate(cls):
+    #     async with db.Pool.acquire() as conn:
+    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
+
+    def __init__(self, guild_id, channel_id):
+        super().__init__()
+        self.guild_id = guild_id
+        self.channel_id = channel_id
+
+    async def get_by_attribute(self, obj_id, column_name):
+        """Gets a list of all objects with a given attribute"""
+        async with db.Pool.acquire() as conn:  # Use transaction here?
+            stmt = await conn.prepare(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
+            results = await stmt.fetch()
+            list = []
+            for result in results:
+                obj = MissingRole(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"))
+                # for var in obj.__dict__:
+                #     setattr(obj, var, result.get(var))
+                list.append(obj)
+            return list
 
 
-class MissingMember(db.DatabaseObject):
-    """Required for the relationship with the MissingRole class and table."""
-    __tablename__ = 'missing_members'
-    guild_id = db.Column(db.Integer, primary_key=True)
-    member_id = db.Column(db.Integer, primary_key=True)
-    missing_roles = db.relationship('MissingRole', back_populates='member', cascade='all, delete, delete-orphan')
+# class MissingMember(db.DatabaseObject):
+#    """Required for the relationship with the MissingRole class and table."""
+#    __tablename__ = 'missing_members'
+#    guild_id = db.Column(db.Integer, primary_key=True)
+#    member_id = db.Column(db.Integer, primary_key=True)
+#    missing_roles = db.relationship('MissingRole', back_populates='member', cascade='all, delete, delete-orphan')
+# obsolete
 
 
-class MissingRole(db.DatabaseObject):
-    """Holds what roles a given member had when they last left the guild."""
+class MissingRole(db.DatabaseTable):
     __tablename__ = 'missing_roles'
-    __table_args__ = (
-        db.ForeignKeyConstraint(['guild_id', 'member_id'], ['missing_members.guild_id', 'missing_members.member_id']),)
-    role_id = db.Column(db.Integer, primary_key=True)
-    guild_id = db.Column(db.Integer)  # Guild ID doesn't have to be primary because role IDs are unique across guilds
-    member_id = db.Column(db.Integer, primary_key=True)
-    role_name = db.Column(db.String(100), nullable=False)
-    member = db.relationship('MissingMember', back_populates='missing_roles')
+    __uniques__ = 'guild_id, member_id'
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
+        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            guild_id bigint,
+            member_id bigint,
+            role_id bigint,
+            role_name varchar,
+            PRIMARY KEY (role_id, member_id)
+            )""")
+
+    # @classmethod
+    # async def initial_migrate(cls):
+    #     async with db.Pool.acquire() as conn:
+    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
+
+    def __init__(self, guild_id, channel_id):
+        super().__init__()
+        self.guild_id = guild_id
+        self.channel_id = channel_id
+
+    async def get_by_attribute(self, obj_id, column_name):
+        """Gets a list of all objects with a given attribute"""
+        async with db.Pool.acquire() as conn:  # Use transaction here?
+            stmt = await conn.prepare(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
+            results = await stmt.fetch()
+            list = []
+            for result in results:
+                obj = MissingRole(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"))
+                # for var in obj.__dict__:
+                #     setattr(obj, var, result.get(var))
+                list.append(obj)
+            return list
+
+
+# class MissingRole(db.DatabaseObject):
+#     """Holds what roles a given member had when they last left the guild."""
+#     __tablename__ = 'missing_roles'
+#     __table_args__ = (
+#         db.ForeignKeyConstraint(['guild_id', 'member_id'], ['missing_members.guild_id', 'missing_members.member_id']),)
+#     role_id = db.Column(db.Integer, primary_key=True)
+#     guild_id = db.Column(db.Integer)  # Guild ID doesn't have to be primary because role IDs are unique across guilds
+#     member_id = db.Column(db.Integer, primary_key=True)
+#     role_name = db.Column(db.String(100), nullable=False)
+#     member = db.relationship('MissingMember', back_populates='missing_roles')
 
 
 def setup(bot):
