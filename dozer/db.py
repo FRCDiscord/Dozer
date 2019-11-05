@@ -134,7 +134,7 @@ class DatabaseTable:
 
     @classmethod
     async def get_by_role(cls, role_id, role_column_name="role_id"):
-        await cls.get_by_attribute(role_id, role_column_name)
+        return await cls.get_by_attribute(self=cls, obj_id=role_id, column_name=role_column_name)
 
     @classmethod
     async def get_all(cls):
