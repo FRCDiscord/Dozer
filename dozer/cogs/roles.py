@@ -29,15 +29,15 @@ class Roles(Cog):
         me = member.guild.me
         top_restorable = me.top_role.position if me.guild_permissions.manage_roles else 0
         restoreables = (await MissingRole.get_by_guild(guild_id=member.guild.id))
-        restore = None
+        restore = []
         for restorable in restoreables:
             if restorable.member_id == member.id:
-                restore = restorable
-        if restore is None:
+                restore.append(restorable)
+        if len(restore) == 0:
             return  # New member - nothing to restore
 
         valid, cant_give, missing = set(), set(), set()
-        for missing_role in restore.missing_roles:
+        for missing_role in restore:
             role = member.guild.get_role(missing_role.role_id)
             if role is None:  # Role with that ID does not exist
                 missing.add(missing_role.role_name)
@@ -45,8 +45,11 @@ class Roles(Cog):
                 cant_give.add(role.name)
             else:
                 valid.add(role)
-
-        await restore.delete()  # Not missing anymore - remove the record to free up the primary key
+        for entry in restore:
+            await MissingRole.dual_criteria_delete(data_column="role_id",
+                                                    data=entry.role_id,
+                                                    data_column_two="member_id",
+                                                    data_two=entry.member_id)  # Not missing anymore - remove the record to free up the primary key
 
         await member.add_roles(*valid)
         if not missing and not cant_give:
@@ -75,7 +78,7 @@ class Roles(Cog):
         guild_id = member.guild.id
         member_id = member.id
         for role in member.roles[1:]:  # Exclude the @everyone role
-            db_member = MissingRole(role_id=role.id, role_name=role.name, guild_id=guild_id, member_id=member_id)
+            db_member = MissingRole(role_id=role.id, role_name=f"'{role.name}'", guild_id=guild_id, member_id=member_id)
             await db_member.update_or_add()
 
     async def giveme_purge(self, rolelist):
@@ -428,7 +431,7 @@ class GiveableRole(db.DatabaseTable):
 
 class MissingRole(db.DatabaseTable):
     __tablename__ = 'missing_roles'
-    __uniques__ = 'guild_id, member_id'
+    __uniques__ = 'role_id, member_id'
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your

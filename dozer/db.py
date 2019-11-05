@@ -150,6 +150,16 @@ class DatabaseTable:
             WHERE {data_column} = {data};
             """
             print(statement)
+            await conn.execute(statement)@classmethod
+
+    @classmethod
+    async def dual_criteria_delete(cls, data_column, data, data_column_two, data_two):
+        async with Pool.acquire() as conn:
+            statement = f"""
+            DELETE FROM  {cls.__tablename__}
+            WHERE {data_column} = {data} AND {data_column_two} = {data_two};
+            """
+            print(statement)
             await conn.execute(statement)
 
 
