@@ -179,16 +179,18 @@ class ConfigCache:
         """Query the cache for an entry matching the kwargs, then try again using the database."""
         query_hash = self._hash_dict(kwargs)
         if query_hash not in self.cache:
-            with Session() as session:
-                self.cache[query_hash] = session.query(self.table).filter_by(**kwargs).one_or_none()
+            self.cache[query_hash] = self.table.get_by_attribute(**kwargs)
+            if len(self.cache[query_hash]) == 0:
+                self.cache[query_hash] = None
+            else:
+                self.cache[query_hash] = self.cache[query_hash][0]
         return self.cache[query_hash]
 
     def query_all(self, **kwargs):
         """Query the cache for all entries matching the kwargs, then try again using the database."""
         query_hash = self._hash_dict(kwargs)
         if query_hash not in self.cache:
-            with Session() as session:
-                self.cache[query_hash] = session.query(self.table).filter_by(**kwargs).all()
+            self.cache[query_hash] = self.table.get_all() # TODO: Actually fix but this is really annoying aaaa
         return self.cache[query_hash]
 
     def invalidate_entry(self, **kwargs):
@@ -205,8 +207,4 @@ class ConfigCache:
     __versions__ = {}
 
     __uniques__ = []
-
-    def __init__(self):
-        """Blank constructor, fill with your database roles exactly like the variable names. Also make sure your
-         __uniques__ property is overridden."""
 

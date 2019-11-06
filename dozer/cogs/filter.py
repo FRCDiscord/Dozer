@@ -101,7 +101,7 @@ class Filter(Cog):
             await ctx.send(embed=embed)
             return
 
-        fmt = 'ID {0.id}: `{0.friendly_name}`'
+        fmt = '`{0.friendly_name}`'
         if advanced:
             fmt += ': Pattern: `{0.pattern}`'
 
@@ -130,7 +130,7 @@ class Filter(Cog):
         except re.error as err:
             await ctx.send("Invalid RegEx! ```{}```".format(err.msg))
             return
-        new_filter = WordFilter(guild_id=ctx.guild.id, pattern=pattern, friendly_name=friendly_name or pattern)
+        new_filter = WordFilter(guild_id=ctx.guild.id, pattern=f"'{pattern}'", friendly_name=f"'{friendly_name or pattern}'")
         await new_filter.update_or_add()
         embed = discord.Embed()
         embed.title = "Filter added!"
@@ -303,7 +303,7 @@ class WordFilter(db.DatabaseTable):
             enabled boolean default true,
             guild_id bigint,
             friendly_name varchar null,
-            pattern varchar,
+            pattern varchar
             )""")
 
     # @classmethod
@@ -343,7 +343,7 @@ class WordFilter(db.DatabaseTable):
 
 
 class WordFilterSetting(db.DatabaseTable):
-    __tablename__ = 'welcome_channel'
+    __tablename__ = 'word_filter_settings'
     __uniques__ = 'id'
     @classmethod
     async def initial_create(cls):
