@@ -104,8 +104,8 @@ class DatabaseTable:
         """Gets a list of all objects with a given attribute. This will grab all attributes, it's more efficient to
         write your own SQL queries than use this one, but for a simple query this is fine."""
         async with Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.prepare(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
-            results = await stmt.fetch()
+            stmt = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            results = stmt
             list = []
             for result in results:
                 obj = cls()
@@ -139,7 +139,7 @@ class DatabaseTable:
     @classmethod
     async def get_all(cls):
         async with Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.prepare(f"""SELECT * FROM {cls.__tablename__};""")
+            stmt = await conn.fetch(f"""SELECT * FROM {cls.__tablename__};""")
             return await stmt.fetch()
 
     @classmethod
@@ -179,14 +179,14 @@ class ConfigCache:
         """Query the cache for an entry matching the kwargs, then try again using the database."""
         query_hash = self._hash_dict(kwargs)
         if query_hash not in self.cache:
-            self.cache[query_hash] = self.table.get_by_attribute(**kwargs)
+            self.cache[query_hash] # is equal to something that I can't figure out
             if len(self.cache[query_hash]) == 0:
                 self.cache[query_hash] = None
             else:
                 self.cache[query_hash] = self.cache[query_hash][0]
         return self.cache[query_hash]
 
-    def query_all(self, **kwargs):
+    def query_all(self, *args, **kwargs):
         """Query the cache for all entries matching the kwargs, then try again using the database."""
         query_hash = self._hash_dict(kwargs)
         if query_hash not in self.cache:

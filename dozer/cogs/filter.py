@@ -321,7 +321,7 @@ class WordFilter(db.DatabaseTable):
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.prepare(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
+            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             results = await stmt.fetch()
             list = []
             for result in results:
@@ -372,7 +372,7 @@ class WordFilterSetting(db.DatabaseTable):
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.prepare(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
+            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             results = await stmt.fetch()
             list = []
             for result in results:
@@ -417,7 +417,7 @@ class WordFilterRoleWhitelist(db.DatabaseTable):
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.prepare(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
+            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             results = await stmt.fetch()
             list = []
             for result in results:
@@ -470,7 +470,7 @@ class WordFilterInfraction(db.DatabaseTable):
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.prepare(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
+            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             results = await stmt.fetch()
             list = []
             for result in results:
