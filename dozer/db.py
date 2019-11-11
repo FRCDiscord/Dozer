@@ -65,8 +65,9 @@ class DatabaseTable:
         values = []
         for var, value in cls.__dict__.items():
             # Done so that the two are guaranteed to be in the same order, which isn't true of keys() and values()
-            keys.append(var)
-            values.append(str(value))
+            if value is not None:
+                keys.append(var)
+                values.append(value)
         updates = ""
         for key in keys:
             if key in cls.__uniques__:
@@ -80,12 +81,14 @@ class DatabaseTable:
         async with Pool.acquire() as conn:
             statement = f"""
             INSERT INTO {cls.__tablename__} ({", ".join(keys)})
-            VALUES({", ".join(values)}) 
+            VALUES({','.join(f'${i+1}' for i in range(len(values)))}) 
             ON CONFLICT ({cls.__uniques__}) DO UPDATE
             SET {updates}
             """
             print(statement)
-            await conn.execute(statement)
+            for value in values:
+                print(value, type(value))
+            await conn.execute(statement, *values)
 
     def __repr__(self):
         values = ""
@@ -139,8 +142,7 @@ class DatabaseTable:
     @classmethod
     async def get_all(cls):
         async with Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {cls.__tablename__};""")
-            return await stmt.fetch()
+            return await conn.fetch(f"""SELECT * FROM {cls.__tablename__};""")
 
     @classmethod
     async def delete(cls, data_column, data):
@@ -150,7 +152,7 @@ class DatabaseTable:
             WHERE {data_column} = {data};
             """
             print(statement)
-            await conn.execute(statement)@classmethod
+            await conn.execute(statement)
 
     @classmethod
     async def dual_criteria_delete(cls, data_column, data, data_column_two, data_two):
@@ -175,22 +177,22 @@ class ConfigCache:
         # sort the keys to make this repeatable; this allows consistency even when insertion order is different
         return tuple((k, dic[k]) for k in sorted(dic))
 
-    def query_one(self, **kwargs):
+    async def query_one(self, *args, **kwargs):
         """Query the cache for an entry matching the kwargs, then try again using the database."""
-        query_hash = self._hash_dict(kwargs)
+        query_hash = args
         if query_hash not in self.cache:
-            self.cache[query_hash] # is equal to something that I can't figure out
+            self.cache[query_hash] = self.table.get_by_attribute(*args)
             if len(self.cache[query_hash]) == 0:
                 self.cache[query_hash] = None
             else:
                 self.cache[query_hash] = self.cache[query_hash][0]
-        return self.cache[query_hash]
+            return self.cache[query_hash]
 
-    def query_all(self, *args, **kwargs):
+    async def query_all(self, *args, **kwargs):
         """Query the cache for all entries matching the kwargs, then try again using the database."""
-        query_hash = self._hash_dict(kwargs)
+        query_hash = args
         if query_hash not in self.cache:
-            self.cache[query_hash] = self.table.get_all() # TODO: Actually fix but this is really annoying aaaa
+            self.cache[query_hash] = await self.table.get_all()
         return self.cache[query_hash]
 
     def invalidate_entry(self, **kwargs):
