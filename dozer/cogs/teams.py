@@ -94,18 +94,11 @@ class Teams(Cog):
     @guild_only()
     async def top(self, ctx):
         """Show the top 10 teams by number of members in this guild."""
-        team_keys_raw = await TeamNumbers.get_all()
-        team_keys = []
-
-        for team_entry in team_keys_raw:
-            if ctx.guild.get_member(team_entry.get('user_id')) is not None:
-                team_keys += TeamNumbers(user_id=team_entry.get('user_id'), team_type=team_entry.get('team_type'), team_number=team_entry.get("team_number"))
-
-        print(team_keys)
-        counts = sorted(collections.Counter(team_keys).most_common(10), key=lambda tup: tup[0])
+        users = [mem.id for mem in ctx.guild.members]
+        counts = await TeamNumbers.top10(TeamNumbers, users)
         embed = discord.Embed(title=f'Top teams in {ctx.guild.name}', color=discord.Color.blue())
         embed.description = '\n'.join(
-            f'{type_.upper()} team {num} ({count} member{"s" if count > 1 else ""})' for (type_, num), count in counts)
+            f'{type_.upper()} team {num} ({count} member{"s" if count > 1 else ""})' for (type_, num, count) in counts)
         await ctx.send(embed=embed)
 
     top.example_usage = """
@@ -179,8 +172,7 @@ class TeamNumbers(db.DatabaseTable):
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            results = await stmt.fetch()
+            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             list = []
             for result in results:
                 obj = TeamNumbers(user_id=result.get("user_id"),
@@ -190,6 +182,17 @@ class TeamNumbers(db.DatabaseTable):
                 #     setattr(obj, var, result.get(var))
                 list.append(obj)
             return list
+
+    async def top10(self, user_ids):
+        """Returns the top 10 team entries"""
+        query = """SELECT team_type, team_number, count(*)
+                FROM team_numbers
+                WHERE user_id = ANY($1) --first param: list of user IDs
+                GROUP BY team_type, team_number
+                ORDER BY count DESC, team_type, team_number
+                LIMIT 10"""
+        async with db.Pool.acquire() as conn:
+            return await conn.fetch(query, user_ids)
 
 
 def setup(bot):

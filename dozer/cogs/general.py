@@ -248,8 +248,7 @@ class WelcomeChannel(db.DatabaseTable):
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            results = await stmt.fetch()
+            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             list = []
             for result in results:
                 obj = WelcomeChannel(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"))

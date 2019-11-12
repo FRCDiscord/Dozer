@@ -57,8 +57,6 @@ class TOA(Cog):
         super().__init__(bot)
         self.parser = TOAParser(bot.config['toa']['key'], aiohttp.ClientSession(), app_name=bot.config['toa']['app_name'])
 
-        # The line above has an error (bot.http._session is a protected class)
-
     @group(invoke_without_command=True)
     async def toa(self, ctx, team_num: int):
         """

@@ -404,8 +404,7 @@ class GiveableRole(db.DatabaseTable):
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            results = await stmt.fetch()
+            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             list = []
             for result in results:
                 obj = GiveableRole(guild_id=result.get("guild_id"), role_id=result.get("role_id"), name=result.get('role_name'), norm_name=result.get("norm_name"))
@@ -461,8 +460,7 @@ class MissingRole(db.DatabaseTable):
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            results = await stmt.fetch()
+            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             list = []
             for result in results:
                 obj = MissingRole(guild_id=result.get("guild_id"), role_id=result.get("role_id"), member_id=result.get("member_id"), role_name=result.get("role_name"))
