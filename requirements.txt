@@ -6,3 +6,4 @@ googlemaps
 datetime
 geopy
 fuzzywuzzy
+python-Levenshtein

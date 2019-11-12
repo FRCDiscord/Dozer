@@ -41,6 +41,7 @@ class TOAParser:
         tries = 0
         while True:
             try:
+                print(type(self.http))
                 async with async_timeout.timeout(5) as _, self.http.get(urljoin(self.base, endpoint),
                                                                         headers=self.headers) as response:
                     return await response.text()
@@ -54,7 +55,8 @@ class TOA(Cog):
     """TOA commands"""
     def __init__(self, bot):
         super().__init__(bot)
-        self.parser = TOAParser(bot.config['toa']['key'], bot.http._HTTPClient__session, app_name=bot.config['toa']['app_name'])
+        self.parser = TOAParser(bot.config['toa']['key'], aiohttp.ClientSession(), app_name=bot.config['toa']['app_name'])
+
         # The line above has an error (bot.http._session is a protected class)
 
     @group(invoke_without_command=True)
@@ -73,6 +75,7 @@ class TOA(Cog):
     @bot_has_permissions(embed_links=True)
     async def team(self, ctx, team_num: int):
         """Get information on an FTC team by number."""
+        print(type(self.parser))
         res = json.loads(await self.parser.req("team/" + str(team_num)))
         if len(res) == 0:
             await ctx.send("This team does not have any data on it yet, or it does not exist!")

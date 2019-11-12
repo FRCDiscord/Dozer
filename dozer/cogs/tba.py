@@ -7,6 +7,7 @@ import json
 from pprint import pformat
 from urllib.parse import quote as urlquote, urljoin
 
+import aiohttp
 import discord
 from discord.ext.commands import BadArgument
 import googlemaps
@@ -248,7 +249,7 @@ class TBA(Cog):
             units = 'u'
         url = "https://wttr.in/{}".format(urlquote("{}+{}+{}_0_{}.png".format(td.city, td.state_prov, td.country, units)))
 
-        async with ctx.typing(), ctx.bot.http._session.get(url) as resp:
+        async with ctx.typing(), aiohttp.ClientSession().get(url) as resp:
             image_data = io.BytesIO(await resp.read())
 
         file_name = f"weather_{team_program.lower()}{team_num}.png"
