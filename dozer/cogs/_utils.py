@@ -62,11 +62,13 @@ class Group(CommandMixin, commands.Group):
 
 def command(**kwargs):
     """Represents bot commands"""
+    kwargs.setdefault('cls', Command)
     return commands.command(**kwargs)
 
 
 def group(**kwargs):
     """Links command groups"""
+    kwargs.setdefault('cls', Group)
     return commands.group(**kwargs)
 
 
