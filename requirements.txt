@@ -1,6 +1,5 @@
 asyncpg
-discord.py>=1.1.0
-sqlalchemy
+discord.py>=1.2.5
 tbapi==1.3.1b4
 aiotba
 googlemaps
