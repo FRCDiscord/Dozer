@@ -52,12 +52,12 @@ class Moderation(Cog):
             await target.send(embed=modlog_embed)
         except discord.Forbidden:
             await orig_channel.send("Failed to DM modlog to user")
-        modlog_channel = await GuildModLog.get_by_user(user_id=actor.guild.id)
+        modlog_channel = await GuildModLog.get_by_guild(guild_id=actor.guild.id)
         if orig_channel is not None:
             await orig_channel.send(embed=modlog_embed)
         if len(modlog_channel) != 0:
             if global_modlog:
-                channel = actor.guild.get_channel(modlog_channel.modlog_channel)
+                channel = actor.guild.get_channel(modlog_channel[0].modlog_channel)
                 if channel is not None and channel != orig_channel: # prevent duplicate embeds
                     await channel.send(embed=modlog_embed)
         else:
@@ -106,7 +106,7 @@ class Moderation(Cog):
 
         await asyncio.sleep(seconds)
 
-        user = await punishment.get_by_user(user_id=target.id)
+        user = await punishment.get_by_user(user_id=target.id, user_column_name="target_id")
         if len(user) != 0:
             await self.mod_log(actor,
                                "un" + punishment.past_participle,
@@ -118,7 +118,8 @@ class Moderation(Cog):
             self.bot.loop.create_task(coro=punishment.finished_callback(self, target))
 
         if ent:
-            await ent.delete()
+            await ent.dual_criteria_delete(data_column="guild_id", data=target.guild.id,
+                                           data_column_two="target_id", data_two=target.id)
 
     async def _check_links_warn(self, msg, role):
         """Warns a user that they can't send links."""
@@ -179,7 +180,8 @@ class Moderation(Cog):
                 user = result
                 break
         if user is not None:
-            await user.delete()
+            await user.dual_criteria_delete(data_column="member_id", data=member.id,
+                                            data_column_two="guild_id", data_two=member.guild.id)
             await self.perm_override(member, send_messages=None, add_reactions=None)
             return True
         else:
@@ -216,7 +218,7 @@ class Moderation(Cog):
                                       global_modlog=not self_inflicted))
             return True
 
-    async def _undeafen(self, member: discord.Member):
+    async def _undeafen(self, member: discord.Member, reason, ctx):
         """Undeafens a user."""
         users = await Deafen.get_by_guild(guild_id=member.guild.id)
         user = None
@@ -226,10 +228,12 @@ class Moderation(Cog):
                 break
         if user is not None:
             await self.perm_override(member=member, read_messages=None)
-            await user.delete()
-            return True
+            await user.dual_criteria_delete(data_column="guild_id", data=member.guild.id, data_column_two="member_id",
+                                            data_two=member.id)
+            await self.mod_log(actor=ctx.author, action="undeafened", target=member, reason=reason,
+                               orig_channel=ctx.channel, embed_color=discord.Color.green(), global_modlog=not user.self_inflicted)
         else:
-            return False
+            await ctx.send("Member is not deafened!")
 
     """=== Event handlers ==="""
 
@@ -279,6 +283,7 @@ class Moderation(Cog):
         leave.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
         memberlogchannel = await GuildMemberLog.get_by_guild(guild_id=member.guild.id)
         if len(memberlogchannel) != 0:
+            print(type(memberlogchannel[0].memberlog_channel))
             channel = member.guild.get_channel(memberlogchannel[0].memberlog_channel)
             await channel.send(embed=leave)
 
@@ -565,27 +570,25 @@ class Moderation(Cog):
     async def undeafen(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
         """Undeafen a user to allow them to see message and send message again."""
         async with ctx.typing():
-            if await self._undeafen(member_mentions):
-                await self.mod_log(actor=ctx.author, action="undeafened", target=member_mentions, reason=reason,
-                                   orig_channel=ctx.channel, embed_color=discord.Color.green())
-            else:
-                await ctx.send("Member is not deafened!")
+            await self._undeafen(member_mentions, reason, ctx)
     undeafen.example_usage = """
     `{prefix}undeafen @user reason - undeafen @user for a given (optional) reason
     """
 
-    @has_permissions(move_members=True)
-    @bot_has_permissions(manage_channels=True, move_members=True)
     @command()
     async def voicekick(self, ctx, member: discord.Member, reason="No reason provided"):
         """Kick a user from voice chat. This is most useful if their perms to rejoin have already been removed."""
         async with ctx.typing():
-            if not member.voice.channel:
+            if member.voice is None:
                 await ctx.send("User is not in a voice channel!")
                 return
-            vc = await ctx.guild.create_voice_channel("_dozer_voicekick", reason=reason)
-            await member.move_to(vc, reason=reason)
-            await vc.delete(reason=reason)
+            if not member.voice.channel.permissions_for(ctx.author).move_members:
+                await ctx.send("You do not have permission to do this!")
+                return
+            if not member.voice.channel.permissions_for(ctx.me).move_members:
+                await ctx.send("I do not have permission to do this!")
+                return
+            await member.edit(voice_channel=None, reason=reason)
             await ctx.send(f"{member} has been kicked from voice chat.")
     voicekick.example_usage = """
     `{prefix}voicekick @user reason` - kick @user out of voice
@@ -598,7 +601,7 @@ class Moderation(Cog):
     async def modlogconfig(self, ctx, channel_mentions: discord.TextChannel):
         """Set the modlog channel for a server by passing the channel id"""
         config = await GuildModLog.get_by_guild(guild_id=ctx.guild.id)
-        if config is not None:
+        if len(config) != 0:
             config = config[0]
             config.name = ctx.guild.name
             config.modlog_channel = channel_mentions.id
@@ -615,7 +618,7 @@ class Moderation(Cog):
     async def nmconfig(self, ctx, channel_mention: discord.TextChannel, role: discord.Role, *, message):
         """Sets the config for the new members channel"""
         config = await GuildNewMember.get_by_guild(guild_id=ctx.guild.id)
-        if config is not None:
+        if len(config) != 0:
             config = config[0]
             config.channel_id = channel_mention.id
             config.role_id = role.id
@@ -630,7 +633,8 @@ class Moderation(Cog):
             "New Member Channel configured as: {channel}. Role configured as: {role}. Message: {message}".format(
                 channel=channel_mention.name, role=role_name, message=message))
     nmconfig.example_usage = """
-    `{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel so if someone types "I have read the rules and regulations" it assigns them the Member role. 
+    `{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel 
+    so if someone types "I have read the rules and regulations" it assigns them the Member role. 
     """
 
     @command()
@@ -718,7 +722,7 @@ class Moderation(Cog):
         else:
             config = GuildMessageLog(guild_id=ctx.guild.id, messagelog_channel=channel_mentions.id, name=ctx.guild.name)
         await config.update_or_add()
-        self.edit_delete_config.invalidate_entry(id=ctx.guild.id)
+        # self.edit_delete_config.invalidate_entry(id=ctx.guild.id)
         await ctx.send(ctx.message.author.mention + ', messagelog settings configured!')
     messagelogconfig.example_usage = """
     `{prefix}messagelogconfig #orwellian-dystopia` - set a channel named #orwellian-dystopia to log message edits/deletions
@@ -735,8 +739,11 @@ class Moderation(Cog):
 #     type = 1
 
 class Mute(db.DatabaseTable):
-    __tablename__ = 'word_filter_infraction'
-    __uniques__ = 'id'
+    type = 1
+    past_participle = "muted"
+    finished_callback = Moderation._unmute
+    __tablename__ = 'mutes'
+    __uniques__ = 'guild_id, member_id'
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -744,8 +751,8 @@ class Mute(db.DatabaseTable):
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            member_id bigint null,
-            guild_id bigint
+            member_id bigint,
+            guild_id bigint,
             PRIMARY KEY (member_id, guild_id)
             )""")
 
@@ -758,15 +765,11 @@ class Mute(db.DatabaseTable):
         super().__init__()
         self.member_id = member_id
         self.guild_id = guild_id
-        self.past_participle = "muted"
-        self.finished_callback = Moderation._unmute
-        self.type = 1
 
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            results = await stmt.fetch()
+            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             list = []
             for result in results:
                 obj = Mute(member_id=result.get("member_id"), guild_id=result.get("guild_id"))
@@ -774,6 +777,19 @@ class Mute(db.DatabaseTable):
                 #     setattr(obj, var, result.get(var))
                 list.append(obj)
             return list
+
+    async def update_or_add(cls):
+        values = [cls.member_id, cls.guild_id]
+        keys = ["member_id", "guild_id"]
+        async with db.Pool.acquire() as conn:
+            statement = f"""
+            INSERT INTO {cls.__tablename__} ({", ".join(keys)})
+            VALUES({','.join(f'${i+1}' for i in range(len(values)))}) 
+            """
+            print(statement)
+            for value in values:
+                print(value, type(value))
+            await conn.execute(statement, *values)
 
 
 # class Deafen(db.DatabaseObject):
@@ -787,8 +803,11 @@ class Mute(db.DatabaseTable):
 #     type = 2
 
 class Deafen(db.DatabaseTable):
+    type = 2
     __tablename__ = 'deafens'
     __uniques__ = 'member_id, guild_id'
+    past_participle = "deafened"
+    finished_callback = Moderation._undeafen
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -798,8 +817,8 @@ class Deafen(db.DatabaseTable):
             CREATE TABLE {cls.__tablename__} (
             member_id bigint,
             guild_id bigint,
-            self_inflicted boolean
-            PRIMARY KEY(member_id, guild_id)
+            self_inflicted boolean,
+            PRIMARY KEY (member_id, guild_id)
             )""")
 
     # @classmethod
@@ -812,15 +831,11 @@ class Deafen(db.DatabaseTable):
         self.member_id = member_id
         self.guild_id = guild_id
         self.self_inflicted = self_inflicted
-        self.past_participle = "deafened"
-        self.finished_callback = Moderation._undeafen
-        self.type = 2
 
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            results = await stmt.fetch()
+            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             list = []
             for result in results:
                 obj = Deafen(member_id=result.get("member_id"), guild_id=result.get("guild_id"),
@@ -867,8 +882,7 @@ class GuildModLog(db.DatabaseTable):
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            results = await stmt.fetch()
+            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             list = []
             for result in results:
                 obj = GuildModLog(guild_id=result.get("guild_id"), modlog_channel=result.get("modlog_channel"),
@@ -912,8 +926,7 @@ class MemberRole(db.DatabaseTable):
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            results = await stmt.fetch()
+            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             list = []
             for result in results:
                 obj = MemberRole(member_role=result.get("member_role"), guild_id=result.get("guild_id"))
@@ -921,6 +934,21 @@ class MemberRole(db.DatabaseTable):
                 #     setattr(obj, var, result.get(var))
                 list.append(obj)
             return list
+
+    async def update_or_add(cls):
+        values = [cls.member_role, cls.guild_id]
+        keys = ["member_role", "guild_id"]
+        async with db.Pool.acquire() as conn:
+            statement = f"""
+            INSERT INTO {cls.__tablename__} ({", ".join(keys)})
+            VALUES({','.join(f'${i+1}' for i in range(len(values)))}) 
+            ON CONFLICT (guild_id) DO UPDATE
+            SET member_role = excluded.member_role;
+            """
+            print(statement)
+            for value in values:
+                print(value, type(value))
+            await conn.execute(statement, *values)
 
 
 # class GuildNewMember(db.DatabaseObject):
@@ -962,8 +990,7 @@ class GuildNewMember(db.DatabaseTable):
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            results = await stmt.fetch()
+            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             list = []
             for result in results:
                 obj = GuildNewMember(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
@@ -1010,8 +1037,7 @@ class GuildMemberLog(db.DatabaseTable):
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            results = await stmt.fetch()
+            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             list = []
             for result in results:
                 obj = GuildMemberLog(guild_id=result.get("guild_id"), memberlog_channel=result.get("messagelog_channel"),
@@ -1052,14 +1078,13 @@ class GuildMessageLog(db.DatabaseTable):
     def __init__(self, guild_id, name, messagelog_channel):
         super().__init__()
         self.guild_id = guild_id
-        self.game = name
+        self.name = name
         self.messagelog_channel = messagelog_channel
 
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            results = await stmt.fetch()
+            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             list = []
             for result in results:
                 obj = GuildMessageLog(guild_id=result.get("guild_id"), name=result.get("name"),
@@ -1103,8 +1128,7 @@ class GuildMessageLinks(db.DatabaseTable):
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            results = await stmt.fetch()
+            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             list = []
             for result in results:
                 obj = GuildMessageLinks(guild_id=result.get("guild_id"), role_id=result.get("role_id"))
@@ -1167,8 +1191,7 @@ class PunishmentTimerRecord(db.DatabaseTable):
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            results = await stmt.fetch()
+            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             list = []
             for result in results:
                 obj = PunishmentTimerRecord(guild_id=result.get("guild_id"), actor_id=result.get("actor_id"),
