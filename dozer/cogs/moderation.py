@@ -283,7 +283,6 @@ class Moderation(Cog):
         leave.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
         memberlogchannel = await GuildMemberLog.get_by_guild(guild_id=member.guild.id)
         if len(memberlogchannel) != 0:
-            print(type(memberlogchannel[0].memberlog_channel))
             channel = member.guild.get_channel(memberlogchannel[0].memberlog_channel)
             await channel.send(embed=leave)
 
@@ -293,8 +292,8 @@ class Moderation(Cog):
         if message.author.bot or message.guild is None or not message.guild.me.guild_permissions.manage_roles:
             return
 
-        if await self.check_links(message):
-            return
+        #if await self.check_links(message):
+        #    return
         config = await GuildNewMember.get_by_guild(guild_id=message.guild.id)
         if len(config) != 0:
             config = config[0]
@@ -1040,7 +1039,7 @@ class GuildMemberLog(db.DatabaseTable):
             results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
             list = []
             for result in results:
-                obj = GuildMemberLog(guild_id=result.get("guild_id"), memberlog_channel=result.get("messagelog_channel"),
+                obj = GuildMemberLog(guild_id=result.get("guild_id"), memberlog_channel=result.get("memberlog_channel"),
                                      name=result.get("name"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
