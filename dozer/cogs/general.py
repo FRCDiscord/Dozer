@@ -173,8 +173,8 @@ class General(Cog):
         Generates a set number of single use invites.
         """
 
-        settings = await WelcomeChannel.get_by_channel(ctx.guild.id)
-        if settings is None:
+        settings = await WelcomeChannel.get_by_guild(ctx.guild.id)
+        if len(settings) == 0:
             await ctx.send(
                 "There is no welcome channel set. Please set one using `{0}welcomeconfig channel` and try again.".format(
                     ctx.prefix))

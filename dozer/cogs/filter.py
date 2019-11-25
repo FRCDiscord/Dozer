@@ -133,7 +133,7 @@ class Filter(Cog):
         except re.error as err:
             await ctx.send("Invalid RegEx! ```{}```".format(err.msg))
             return
-        new_filter = WordFilter(guild_id=ctx.guild.id, pattern={pattern}, friendly_name={friendly_name or pattern})
+        new_filter = WordFilter(guild_id=ctx.guild.id, pattern=pattern, friendly_name=friendly_name or pattern)
         await new_filter.update_or_add()
         embed = discord.Embed()
         embed.title = "Filter added!"
