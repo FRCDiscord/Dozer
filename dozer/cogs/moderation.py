@@ -728,16 +728,8 @@ class Moderation(Cog):
     """
 
 
-# class Mute(db.DatabaseObject):
-#     """Provides a DB config to track mutes."""
-#     __tablename__ = 'mutes'
-#     id = db.Column(db.BigInteger, primary_key=True)
-#     guild = db.Column(db.BigInteger, primary_key=True)
-#     past_participle = "muted"
-#     finished_callback = Moderation._unmute
-#     type = 1
-
 class Mute(db.DatabaseTable):
+    """Holds mute info"""
     type = 1
     past_participle = "muted"
     finished_callback = Moderation._unmute
@@ -766,24 +758,24 @@ class Mute(db.DatabaseTable):
         self.guild_id = guild_id
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
                 obj = Mute(member_id=result.get("member_id"), guild_id=result.get("guild_id"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
-    async def update_or_add(cls):
-        values = [cls.member_id, cls.guild_id]
+    async def update_or_add(self):
+        values = [self.member_id, self.guild_id]
         keys = ["member_id", "guild_id"]
         async with db.Pool.acquire() as conn:
             statement = f"""
-            INSERT INTO {cls.__tablename__} ({", ".join(keys)})
+            INSERT INTO {self.__tablename__} ({", ".join(keys)})
             VALUES({','.join(f'${i+1}' for i in range(len(values)))}) 
             """
             print(statement)
@@ -792,17 +784,8 @@ class Mute(db.DatabaseTable):
             await conn.execute(statement, *values)
 
 
-# class Deafen(db.DatabaseObject):
-#     """Provides a DB config to track deafens."""
-#     __tablename__ = 'deafens'
-#     id = db.Column(db.BigInteger, primary_key=True)
-#     guild = db.Column(db.BigInteger, primary_key=True)
-#     self_inflicted = db.Column(db.Boolean)
-#     past_participle = "deafened"
-#     finished_callback = Moderation._undeafen
-#     type = 2
-
 class Deafen(db.DatabaseTable):
+    """Holds deafens"""
     type = 2
     __tablename__ = 'deafens'
     __uniques__ = 'member_id, guild_id'
@@ -833,28 +816,22 @@ class Deafen(db.DatabaseTable):
         self.self_inflicted = self_inflicted
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
                 obj = Deafen(member_id=result.get("member_id"), guild_id=result.get("guild_id"),
                              self_inflicted=result.get("self_inflicted"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
-
-# class GuildModLog(db.DatabaseObject):
-#     """Provides a DB config to track which channel a guild uses for modlogs."""
-#     __tablename__ = 'modlogconfig'
-#     id = db.Column(db.BigInteger, primary_key=True)
-#     name = db.Column(db.String)
-#     modlog_channel = db.Column(db.BigInteger, nullable=True)
 
 class GuildModLog(db.DatabaseTable):
+    """Holds modlog info"""
     __tablename__ = 'modlogconfig'
     __uniques__ = 'guild_id'
     @classmethod
@@ -881,27 +858,22 @@ class GuildModLog(db.DatabaseTable):
         self.name = name
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
                 obj = GuildModLog(guild_id=result.get("guild_id"), modlog_channel=result.get("modlog_channel"),
                                   name=result.get("name"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
-
-# class MemberRole(db.DatabaseObject):
-#     """Keeps track of member roles."""
-#     __tablename__ = 'member_roles'
-#     id = db.Column(db.BigInteger, primary_key=True)
-#     member_role = db.Column(db.BigInteger, nullable=True)
 
 class MemberRole(db.DatabaseTable):
+    """Holds info on member roles"""
     __tablename__ = 'member_roles'
     __uniques__ = 'guild_id'
     @classmethod
@@ -926,24 +898,25 @@ class MemberRole(db.DatabaseTable):
         self.member_role = member_role
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
                 obj = MemberRole(member_role=result.get("member_role"), guild_id=result.get("guild_id"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
-    async def update_or_add(cls):
-        values = [cls.member_role, cls.guild_id]
+    async def update_or_add(self):
+        values = [self.member_role, self.guild_id]
         keys = ["member_role", "guild_id"]
         async with db.Pool.acquire() as conn:
+            # noinspection SqlResolve
             statement = f"""
-            INSERT INTO {cls.__tablename__} ({", ".join(keys)})
+            INSERT INTO {self.__tablename__} ({", ".join(keys)})
             VALUES({','.join(f'${i+1}' for i in range(len(values)))}) 
             ON CONFLICT (guild_id) DO UPDATE
             SET member_role = excluded.member_role;
@@ -954,15 +927,8 @@ class MemberRole(db.DatabaseTable):
             await conn.execute(statement, *values)
 
 
-# class GuildNewMember(db.DatabaseObject):
-#     """Keeps track of things for onboarding new server members."""
-#     __tablename__ = 'new_members'
-#     guild_id = db.Column(db.BigInteger, primary_key=True)
-#     channel_id = db.Column(db.BigInteger)
-#     role_id = db.Column(db.BigInteger)
-#     message = db.Column(db.String)
-
 class GuildNewMember(db.DatabaseTable):
+    """Holds new member info"""
     __tablename__ = 'new_members'
     __uniques__ = 'guild_id'
     @classmethod
@@ -991,28 +957,22 @@ class GuildNewMember(db.DatabaseTable):
         self.message = message
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
                 obj = GuildNewMember(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
                                      role_id=result.get("role_id"), message=result.get("message"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
-
-# class GuildMemberLog(db.DatabaseObject):
-#     """Keeps track of which channels guilds use for member logs."""
-#     __tablename__ = 'memberlogconfig'
-#     id = db.Column(db.BigInteger, primary_key=True)
-#     name = db.Column(db.String)
-#     memberlog_channel = db.Column(db.BigInteger)
 
 class GuildMemberLog(db.DatabaseTable):
+    """Holds information for member logs"""
     __tablename__ = 'memberlogconfig'
     __uniques__ = 'guild_id'
     @classmethod
@@ -1039,28 +999,22 @@ class GuildMemberLog(db.DatabaseTable):
         self.name = name
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
                 obj = GuildMemberLog(guild_id=result.get("guild_id"), memberlog_channel=result.get("memberlog_channel"),
                                      name=result.get("name"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
-
-# class GuildMessageLog(db.DatabaseObject):
-#     """Keeps track of which channels use for message edit/deletion logs."""
-#     __tablename__ = 'messagelogconfig'
-#     id = db.Column(db.BigInteger, primary_key=True)
-#     name = db.Column(db.String)
-#     messagelog_channel = db.Column(db.BigInteger)
 
 class GuildMessageLog(db.DatabaseTable):
+    """Holds config info for message logs"""
     __tablename__ = 'messagelogconfig'
     __uniques__ = 'guild_id'
     @classmethod
@@ -1087,27 +1041,22 @@ class GuildMessageLog(db.DatabaseTable):
         self.messagelog_channel = messagelog_channel
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
                 obj = GuildMessageLog(guild_id=result.get("guild_id"), name=result.get("name"),
                                       messagelog_channel=result.get("messagelog_channel"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
-
-# class GuildMessageLinks(db.DatabaseObject):
-#     """Keeps track of message links settings in guilds."""
-#     __tablename__ = 'guild_msg_links'
-#     guild_id = db.Column(db.BigInteger, primary_key=True)
-#     role_id = db.Column(db.BigInteger, nullable=True)
 
 class GuildMessageLinks(db.DatabaseTable):
+    """Contains information for link scrubbing"""
     __tablename__ = 'guild_msg_links'
     __uniques__ = 'guild_id'
     @classmethod
@@ -1121,45 +1070,27 @@ class GuildMessageLinks(db.DatabaseTable):
             role_id bigint null
             )""")
 
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
-
     def __init__(self, guild_id, role_id=None):
         super().__init__()
         self.guild_id = guild_id
         self.role_id = role_id
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
                 obj = GuildMessageLinks(guild_id=result.get("guild_id"), role_id=result.get("role_id"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
-
-# class PunishmentTimerRecord(db.DatabaseObject):
-#     """Keeps track of current punishment timers in case the bot is restarted."""
-#     __tablename__ = "punishment_timers"
-#     id = db.Column(db.BigInteger, primary_key=True)
-#     guild_id = db.Column(db.BigInteger)
-#     actor_id = db.Column(db.BigInteger)
-#     target_id = db.Column(db.BigInteger)
-#     orig_channel_id = db.Column(db.BigInteger, nullable=True)
-#     type = db.Column(db.BigInteger)
-#     reason = db.Column(db.String, nullable=True)
-#     target_ts = db.Column(db.BigInteger)
-#
-#     type_map = {p.type: p for p in (Mute, Deafen)}
 
 class PunishmentTimerRecord(db.DatabaseTable):
+    """Punishment Timer Recods"""
     type_map = {p.type: p for p in (Mute, Deafen)}
     __tablename__ = 'punishment_timers'
     __uniques__ = 'id'
@@ -1180,11 +1111,6 @@ class PunishmentTimerRecord(db.DatabaseTable):
             target_ts bigint
             )""")
 
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
-
     def __init__(self, guild_id, actor_id, target_id, type_of_punishment, target_ts, orig_channel_id=None, reason=None, input_id=None):
         super().__init__()
         self.id = input_id
@@ -1197,11 +1123,11 @@ class PunishmentTimerRecord(db.DatabaseTable):
         self.reason = reason
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
                 obj = PunishmentTimerRecord(guild_id=result.get("guild_id"), actor_id=result.get("actor_id"),
                                             target_id=result.get("target_id"),
@@ -1211,13 +1137,13 @@ class PunishmentTimerRecord(db.DatabaseTable):
                                             input_id=result.get('id'))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
     async def get_all(self):
         async with db.Pool.acquire() as conn:  # Use transaction here?
             results = await conn.fetch(f"""SELECT * FROM {self.__tablename__}""")
-            list = []
+            result_list = []
             for result in results:
                 obj = PunishmentTimerRecord(guild_id=result.get("guild_id"), actor_id=result.get("actor_id"),
                                             target_id=result.get("target_id"),
@@ -1227,8 +1153,8 @@ class PunishmentTimerRecord(db.DatabaseTable):
                                             input_id=result.get('id'))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
 
 def setup(bot):

@@ -223,6 +223,7 @@ def setup(bot):
 
 
 class WelcomeChannel(db.DatabaseTable):
+    """Welcome channel object class"""
     __tablename__ = 'welcome_channel'
     __uniques__ = 'guild_id'
     @classmethod
@@ -247,15 +248,14 @@ class WelcomeChannel(db.DatabaseTable):
         self.channel_id = channel_id
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
                 obj = WelcomeChannel(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
-
+                result_list.append(obj)
+            return result_list

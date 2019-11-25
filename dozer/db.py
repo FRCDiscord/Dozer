@@ -39,6 +39,7 @@ async def db_migrate():
 
 
 class DatabaseTable:
+    """Defines a database table"""
     __tablename__ = None
     __uniques__ = []
 
@@ -58,19 +59,19 @@ class DatabaseTable:
         """Migrate the table from the SQLalchemy based system to the asyncpg system. Define this yourself, or leave it
         blank if no migration is necessary."""
 
-    async def update_or_add(cls):
+    async def update_or_add(self):
         """Assign the attribute to this object, then call this method to either insert the object if it doesn't exist in
         the DB or update it if it does exist. It will update every column not specified in __uniques__."""
         keys = []
         values = []
-        for var, value in cls.__dict__.items():
+        for var, value in self.__dict__.items():
             # Done so that the two are guaranteed to be in the same order, which isn't true of keys() and values()
             if value is not None:
                 keys.append(var)
                 values.append(value)
         updates = ""
         for key in keys:
-            if key in cls.__uniques__:
+            if key in self.__uniques__:
                 # Skip updating anything that has a unique constraint on it
                 continue
             updates += f"{key} = EXCLUDED.{key}"
@@ -80,9 +81,9 @@ class DatabaseTable:
                 updates += ", \n"
         async with Pool.acquire() as conn:
             statement = f"""
-            INSERT INTO {cls.__tablename__} ({", ".join(keys)})
+            INSERT INTO {self.__tablename__} ({", ".join(keys)})
             VALUES({','.join(f'${i+1}' for i in range(len(values)))}) 
-            ON CONFLICT ({cls.__uniques__}) DO UPDATE
+            ON CONFLICT ({self.__uniques__}) DO UPDATE
             SET {updates}
             """
             print(statement)
@@ -109,13 +110,13 @@ class DatabaseTable:
         async with Pool.acquire() as conn:  # Use transaction here?
             stmt = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
             results = stmt
-            list = []
+            result_list = []
             for result in results:
                 obj = cls()
                 for var in obj.__dict__:
                     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
     @classmethod
     async def get_by_id(cls, obj_id):
@@ -125,27 +126,33 @@ class DatabaseTable:
 
     @classmethod
     async def get_by_guild(cls, guild_id, guild_column_name="guild_id"):
+        """Get by guild ID"""
         return await cls.get_by_attribute(obj_id=guild_id, column_name=guild_column_name)
 
     @classmethod
     async def get_by_channel(cls, channel_id, channel_column_name="channel_id"):
+        """Get by channel ID"""
         return await cls.get_by_attribute(obj_id=channel_id, column_name=channel_column_name)
 
     @classmethod
     async def get_by_user(cls, user_id, user_column_name="user_id"):
+        """Get by user ID"""
         return await cls.get_by_attribute(obj_id=user_id, column_name=user_column_name)
 
     @classmethod
     async def get_by_role(cls, role_id, role_column_name="role_id"):
+        """Get by role ID"""
         return await cls.get_by_attribute(obj_id=role_id, column_name=role_column_name)
 
     @classmethod
     async def get_all(cls):
+        """Obtain all the things"""
         async with Pool.acquire() as conn:  # Use transaction here?
             return await conn.fetch(f"""SELECT * FROM {cls.__tablename__};""")
 
     @classmethod
     async def delete(cls, data_column, data):
+        """Deletes by one criteria"""
         async with Pool.acquire() as conn:
             statement = f"""
             DELETE FROM  {cls.__tablename__}
@@ -156,6 +163,7 @@ class DatabaseTable:
 
     @classmethod
     async def dual_criteria_delete(cls, data_column, data, data_column_two, data_two):
+        """Deletes by two criteria"""
         async with Pool.acquire() as conn:
             statement = f"""
             DELETE FROM  {cls.__tablename__}
@@ -188,7 +196,7 @@ class ConfigCache:
                 self.cache[query_hash] = self.cache[query_hash][0]
             return self.cache[query_hash]
 
-    async def query_all(self, *args, **kwargs):
+    async def query_all(self, *args):
         """Query the cache for all entries matching the kwargs, then try again using the database."""
         query_hash = args
         if query_hash not in self.cache:
@@ -203,10 +211,9 @@ class ConfigCache:
 
     @classmethod
     async def set_initial_version(cls):
-        await Pool.execute("""INSERT INTO versions (table_name, version_num) 
-                                          VALUES (?,?)""", cls.__tablename__, 0)
+        """Sets initial version"""
+        await Pool.execute("""INSERT INTO versions (table_name, version_num) VALUES (?,?)""", cls.__tablename__, 0)
 
     __versions__ = {}
 
     __uniques__ = []
-

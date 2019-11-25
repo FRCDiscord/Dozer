@@ -33,7 +33,7 @@ class Teams(Cog):
         removed = False
         if len(results) != 0:
             for result in results:
-                if result.team_number == team_number and team_type == team_type:
+                if result.team_number == team_number and result.team_type == team_type:
                     await result.delete()
                     await ctx.send("Removed association with {} team {}".format(team_type, team_number))
                     removed = True
@@ -70,7 +70,7 @@ class Teams(Cog):
     async def onteam(self, ctx, team_type, team_number):
         """Allows you to see who has associated themselves with a particular team."""
         team_type = team_type.casefold()
-        users = await TeamNumbers.get_by_attribute(self=TeamNumbers, obj_id=team_number, column_name="team_number")
+        users = await TeamNumbers.get_by_attribute(obj_id=team_number, column_name="team_number")
         for user in users:
             if user.team_type != team_type:
                 users.remove(user)
@@ -152,37 +152,37 @@ class TeamNumbers(db.DatabaseTable):
         self.team_number = team_number
         self.team_type = team_type
 
-    async def update_or_add(cls):
+    async def update_or_add(self):
         """Assign the attribute to this object, then call this method to either insert the object if it doesn't exist in
         the DB or update it if it does exist. It will update every column not specified in __uniques__."""
         keys = []
         values = []
-        for var, value in cls.__dict__.items():
+        for var, value in self.__dict__.items():
             # Done so that the two are guaranteed to be in the same order, which isn't true of keys() and values()
             keys.append(var)
             values.append(str(value))
         async with db.Pool.acquire() as conn:
             statement = f"""
-                INSERT INTO {cls.__tablename__} ({", ".join(keys)})
+                INSERT INTO {self.__tablename__} ({", ".join(keys)})
                 VALUES({", ".join(values)}) 
                 """
             print(statement)
             await conn.execute(statement)
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
                 obj = TeamNumbers(user_id=result.get("user_id"),
                                   team_number=result.get("team_number"),
                                   team_type=result.get("team_type"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
     async def top10(self, user_ids):
         """Returns the top 10 team entries"""

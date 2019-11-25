@@ -54,7 +54,7 @@ class Filter(Cog):
         """Check all the filters for a certain message (with it's guild)"""
         if message.author.id == self.bot.user.id:
             return
-        roles = await self.word_filter_role_whitelist.query_all(guild_id=message.guild.id)
+        roles = await self.word_filter_role_whitelist.query_all(message.guild.id)
         whitelisted_ids = set(role.get("role_id") for role in roles)
         if any(x.id in whitelisted_ids for x in message.author.roles):
             return
@@ -147,7 +147,7 @@ class Filter(Cog):
     @guild_only()
     @has_permissions(manage_guild=True)
     @filter.command()
-    async def edit(self, ctx, filter_id:int, pattern):
+    async def edit(self, ctx, filter_id: int, pattern):
         """Edit an already existing filter using a new pattern. A filter's friendly name cannot be edited."""
         try:
             re.compile(pattern)
@@ -156,6 +156,7 @@ class Filter(Cog):
             return
         results = await WordFilter.get_by_guild(guild_id=ctx.guild.id)
         found = False
+        result = None
         for result in results:
             if result.filter_id == filter_id:
                 found = True
@@ -188,7 +189,7 @@ class Filter(Cog):
     @filter.command()
     async def remove(self, ctx, filter_id):
         """Remove a pattern from the filter list."""
-        result = await WordFilter.get_by_attribute(self=WordFilter, obj_id=filter_id, column_name="filter_id")
+        result = await WordFilter.get_by_attribute(obj_id=filter_id, column_name="filter_id")
         if len(result) == 0:
             await ctx.send("Filter ID {} not found!".format(filter_id))
             return
@@ -295,6 +296,7 @@ def setup(bot):
 #     infractions = db.relationship("WordFilterInfraction", back_populates="filter")
 
 class WordFilter(db.DatabaseTable):
+    """Object for each filter"""
     __tablename__ = 'word_filters'
     __uniques__ = 'filter_id'
     @classmethod
@@ -325,18 +327,18 @@ class WordFilter(db.DatabaseTable):
         self.pattern = pattern
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
                 obj = WordFilter(guild_id=result.get("guild_id"), friendly_name=result.get("friendly_name"),
                                  pattern=result.get("pattern"), enabled=result.get("enabled"), filter_id=result.get("filter_id"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
 
 # class WordFilterSetting(db.DatabaseObject):
@@ -349,6 +351,7 @@ class WordFilter(db.DatabaseTable):
 
 
 class WordFilterSetting(db.DatabaseTable):
+    """Each filter-related setting"""
     __tablename__ = 'word_filter_settings'
     __uniques__ = 'id'
     @classmethod
@@ -376,18 +379,18 @@ class WordFilterSetting(db.DatabaseTable):
         self.value = value
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
                 obj = WordFilterSetting(guild_id=result.get("guild_id"), setting_type=result.get("setting_type"),
                                         value=result.get('value'))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
 
 # class WordFilterRoleWhitelist(db.DatabaseObject):
@@ -397,6 +400,7 @@ class WordFilterSetting(db.DatabaseTable):
 #     role_id = db.Column(db.BigInteger, primary_key=True)
 
 class WordFilterRoleWhitelist(db.DatabaseTable):
+    """Object for each whitelisted role"""
     __tablename__ = 'word_filter_role_whitelist'
     __uniques__ = 'role_id'
     @classmethod
@@ -421,17 +425,17 @@ class WordFilterRoleWhitelist(db.DatabaseTable):
         self.guild_id = guild_id
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
                 obj = WordFilterRoleWhitelist(guild_id=result.get("guild_id"), role_id=result.get("role_id"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
 
 # class WordFilterInfraction(db.DatabaseObject):
@@ -445,6 +449,7 @@ class WordFilterRoleWhitelist(db.DatabaseTable):
 #     message = db.Column(db.String)
 
 class WordFilterInfraction(db.DatabaseTable):
+    """Object for each word filter infraction"""
     __tablename__ = 'word_filter_infraction'
     __uniques__ = 'id'
     @classmethod
@@ -474,18 +479,16 @@ class WordFilterInfraction(db.DatabaseTable):
         self.message = message
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
+            stmt = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
             results = await stmt.fetch()
-            list = []
+            result_list = []
             for result in results:
                 obj = WordFilterInfraction(member_id=result.get("member_id"), filter_id=result.get("filter_id"),
                                            timestamp=result.get("timestamp"), message=result.get("message"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
-
-
+                result_list.append(obj)
+            return result_list

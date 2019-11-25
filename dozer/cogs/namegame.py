@@ -243,8 +243,8 @@ class NameGame(Cog):
         query = await NameGameConfig.get_by_guild(guild_id=ctx.guild.id)
         config = query[0] if len(query) == 1 else None
         if mode is None:
-                mode = SUPPORTED_MODES[0] if config is None else config.mode
-                await ctx.send(f"The current default game mode for this server is `{mode}`")
+            mode = SUPPORTED_MODES[0] if config is None else config.mode
+            await ctx.send(f"The current default game mode for this server is `{mode}`")
         else:
             if mode not in SUPPORTED_MODES:
                 await ctx.send(
@@ -609,8 +609,7 @@ class NameGame(Cog):
             await ctx.send(
                 f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
             return
-        leaderboard = sorted(await NameGameLeaderboard.get_by_attribute(self=NameGameLeaderboard,
-                                                                        obj_id=f"'{mode}'", column_name="game_mode"),
+        leaderboard = sorted(await NameGameLeaderboard.get_by_attribute(obj_id=f"'{mode}'", column_name="game_mode"),
                              key=lambda i: i.wins, reverse=True)[:10]
         embed = discord.Embed(color=discord.Color.gold(), title=f"{mode.upper()} Name Game Leaderboard")
         for idx, entry in enumerate(leaderboard, 1):
@@ -802,6 +801,7 @@ class NameGame(Cog):
 #     pings_enabled = db.Column(db.BigInteger)
 
 class NameGameConfig(db.DatabaseTable):
+    """Configuration storage object"""
     __tablename__ = 'namegame_config'
     __uniques__ = 'guild_id'
     @classmethod
@@ -830,18 +830,18 @@ class NameGameConfig(db.DatabaseTable):
         self.pings_enabled = pings_enabled
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
                 obj = NameGameConfig(guild_id=result.get("guild_id"), mode=result.get("mode"),
                                      pings_enabled=result.get("pings_enabled"), channel_id=result.get("channel_id"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
 # class NameGameLeaderboard(db.DatabaseObject):
 #     """Leaderboard storage object"""
@@ -852,6 +852,7 @@ class NameGameConfig(db.DatabaseTable):
 
 
 class NameGameLeaderboard(db.DatabaseTable):
+    """Leaderboard storage object"""
     __tablename__ = 'namegame_leaderboard'
     __uniques__ = 'user_id'
     @classmethod
@@ -878,17 +879,17 @@ class NameGameLeaderboard(db.DatabaseTable):
         self.wins = wins
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
                 obj = NameGameLeaderboard(user_id=result.get("user_id"), game_mode=result.get("game_mode"),
                                           wins=result.get("wins"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
+                result_list.append(obj)
             return list
 
 

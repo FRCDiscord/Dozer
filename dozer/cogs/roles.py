@@ -47,9 +47,9 @@ class Roles(Cog):
                 valid.add(role)
         for entry in restore:
             await MissingRole.dual_criteria_delete(data_column="role_id",
-                                                    data=entry.role_id,
-                                                    data_column_two="member_id",
-                                                    data_two=entry.member_id)  # Not missing anymore - remove the record to free up the primary key
+                                                   data=entry.role_id,
+                                                   data_column_two="member_id",
+                                                   data_two=entry.member_id)  # Not missing anymore - remove the record to free up the primary key
 
         await member.add_roles(*valid)
         if not missing and not cant_give:
@@ -402,17 +402,18 @@ class GiveableRole(db.DatabaseTable):
         self.norm_name = norm_name
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
-                obj = GiveableRole(guild_id=result.get("guild_id"), role_id=result.get("role_id"), name=result.get('role_name'), norm_name=result.get("norm_name"))
+                obj = GiveableRole(guild_id=result.get("guild_id"), role_id=result.get("role_id"),
+                                   name=result.get('role_name'), norm_name=result.get("norm_name"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
     @classmethod
     def from_role(cls, role):
@@ -430,6 +431,7 @@ class GiveableRole(db.DatabaseTable):
 
 
 class MissingRole(db.DatabaseTable):
+    """Holds the roles of those who leave"""
     __tablename__ = 'missing_roles'
     __uniques__ = 'role_id, member_id'
     @classmethod
@@ -459,17 +461,18 @@ class MissingRole(db.DatabaseTable):
         self.role_name = role_name
 
     @classmethod
-    async def get_by_attribute(self, obj_id, column_name):
+    async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__} WHERE {column_name} = {obj_id}""")
-            list = []
+            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            result_list = []
             for result in results:
-                obj = MissingRole(guild_id=result.get("guild_id"), role_id=result.get("role_id"), member_id=result.get("member_id"), role_name=result.get("role_name"))
+                obj = MissingRole(guild_id=result.get("guild_id"), role_id=result.get("role_id"),
+                                  member_id=result.get("member_id"), role_name=result.get("role_name"))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+                result_list.append(obj)
+            return result_list
 
 
 # class MissingRole(db.DatabaseObject):
