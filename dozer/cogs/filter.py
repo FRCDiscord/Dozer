@@ -324,6 +324,7 @@ class WordFilter(db.DatabaseTable):
         self.friendly_name = friendly_name
         self.pattern = pattern
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
@@ -374,6 +375,7 @@ class WordFilterSetting(db.DatabaseTable):
         self.setting_type = setting_type
         self.value = value
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
@@ -418,6 +420,7 @@ class WordFilterRoleWhitelist(db.DatabaseTable):
         self.role_id = role_id
         self.guild_id = guild_id
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
@@ -470,6 +473,7 @@ class WordFilterInfraction(db.DatabaseTable):
         self.timestamp = timestamp
         self.message = message
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?

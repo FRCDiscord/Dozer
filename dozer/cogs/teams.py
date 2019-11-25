@@ -169,6 +169,7 @@ class TeamNumbers(db.DatabaseTable):
             print(statement)
             await conn.execute(statement)
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?

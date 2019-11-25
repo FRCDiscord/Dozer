@@ -125,19 +125,19 @@ class DatabaseTable:
 
     @classmethod
     async def get_by_guild(cls, guild_id, guild_column_name="guild_id"):
-        return await cls.get_by_attribute(self=cls, obj_id=guild_id, column_name=guild_column_name)
+        return await cls.get_by_attribute(obj_id=guild_id, column_name=guild_column_name)
 
     @classmethod
     async def get_by_channel(cls, channel_id, channel_column_name="channel_id"):
-        return await cls.get_by_attribute(self=cls, obj_id=channel_id, column_name=channel_column_name)
+        return await cls.get_by_attribute(obj_id=channel_id, column_name=channel_column_name)
 
     @classmethod
     async def get_by_user(cls, user_id, user_column_name="user_id"):
-        return await cls.get_by_attribute(self=cls, obj_id=user_id, column_name=user_column_name)
+        return await cls.get_by_attribute(obj_id=user_id, column_name=user_column_name)
 
     @classmethod
     async def get_by_role(cls, role_id, role_column_name="role_id"):
-        return await cls.get_by_attribute(self=cls, obj_id=role_id, column_name=role_column_name)
+        return await cls.get_by_attribute(obj_id=role_id, column_name=role_column_name)
 
     @classmethod
     async def get_all(cls):
@@ -177,11 +177,11 @@ class ConfigCache:
         # sort the keys to make this repeatable; this allows consistency even when insertion order is different
         return tuple((k, dic[k]) for k in sorted(dic))
 
-    async def query_one(self, *args, **kwargs):
+    async def query_one(self, *args, obj_id, column_name):
         """Query the cache for an entry matching the kwargs, then try again using the database."""
         query_hash = args
         if query_hash not in self.cache:
-            self.cache[query_hash] = self.table.get_by_attribute(*args)
+            self.cache[query_hash] = await self.table.get_by_attribute(obj_id=obj_id, column_name=column_name)
             if len(self.cache[query_hash]) == 0:
                 self.cache[query_hash] = None
             else:

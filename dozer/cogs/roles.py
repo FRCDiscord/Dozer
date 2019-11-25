@@ -401,6 +401,7 @@ class GiveableRole(db.DatabaseTable):
         self.name = name
         self.norm_name = norm_name
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
@@ -457,6 +458,7 @@ class MissingRole(db.DatabaseTable):
         self.role_id = role_id
         self.role_name = role_name
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?

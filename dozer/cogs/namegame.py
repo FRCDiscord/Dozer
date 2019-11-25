@@ -829,6 +829,7 @@ class NameGameConfig(db.DatabaseTable):
         self.guild_id = guild_id
         self.pings_enabled = pings_enabled
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
@@ -876,6 +877,7 @@ class NameGameLeaderboard(db.DatabaseTable):
         self.user_id = user_id
         self.wins = wins
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?

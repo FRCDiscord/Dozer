@@ -106,7 +106,7 @@ class Moderation(Cog):
 
         await asyncio.sleep(seconds)
 
-        user = await punishment.get_by_user(user_id=target.id, user_column_name="target_id")
+        user = await punishment.get_by_user(user_id=target.id, user_column_name="member_id")
         if len(user) != 0:
             await self.mod_log(actor,
                                "un" + punishment.past_participle,
@@ -131,7 +131,7 @@ class Moderation(Cog):
         """Checks messages for the links role if necessary, then checks if the author is allowed to send links in the server"""
         if msg.guild is None or not isinstance(msg.author, discord.Member) or not msg.guild.me.guild_permissions.manage_messages:
             return
-        config = await self.links_config.query_one(guild_id=msg.guild.id)
+        config = await self.links_config.query_one(obj_id=msg.guild.id, column_name="guild_id")
         if config is None:
             return
         role = msg.guild.get_role(config.role_id)
@@ -240,16 +240,16 @@ class Moderation(Cog):
     @Cog.listener('on_ready')
     async def on_ready(self):
         """Restore punishment timers on bot startup"""
-        q = await PunishmentTimerRecord.get_all()
+        q = await PunishmentTimerRecord.get_all(PunishmentTimerRecord)
         for r in q:
             guild = self.bot.get_guild(r.guild_id)
             actor = guild.get_member(r.actor_id)
             target = guild.get_member(r.target_id)
             orig_channel = self.bot.get_channel(r.orig_channel_id)
-            punishment_type = r.type
+            punishment_type = r.type_of_punishment
             reason = r.reason or ""
             seconds = max(int(r.target_ts - time.time()), 0.01)
-            await r.delete()
+            await r.delete(data=r.id, data_column="id")
             self.bot.loop.create_task(self.punishment_timer(seconds, target, PunishmentTimerRecord.type_map[punishment_type], reason, actor,
                                                             orig_channel))
             getLogger('dozer').info(f"Restarted {PunishmentTimerRecord.type_map[punishment_type].__name__} of {target} in {guild}")
@@ -292,8 +292,8 @@ class Moderation(Cog):
         if message.author.bot or message.guild is None or not message.guild.me.guild_permissions.manage_roles:
             return
 
-        #if await self.check_links(message):
-        #    return
+        if await self.check_links(message):
+            return
         config = await GuildNewMember.get_by_guild(guild_id=message.guild.id)
         if len(config) != 0:
             config = config[0]
@@ -332,7 +332,7 @@ class Moderation(Cog):
                 e.add_field(name="Footer", value=i.footer)
         if message.attachments:
             e.add_field(name="Attachments", value=", ".join([i.url for i in message.attachments]))
-        messagelogchannel = self.edit_delete_config.query_one(id=message.guild.id)
+        messagelogchannel = await self.edit_delete_config.query_one(obj_id=message.guild.id, column_name="guild_id")
         if messagelogchannel is not None:
             channel = message.guild.get_channel(messagelogchannel.messagelog_channel)
             if channel is not None:
@@ -382,7 +382,7 @@ class Moderation(Cog):
                         e.add_field(name=x.name, value=x.value)
             if after.attachments:
                 e.add_field(name="Attachments", value=", ".join([i.url for i in before.attachments]))
-            messagelogchannel = self.edit_delete_config.query_one(id=before.guild.id)
+            messagelogchannel = await self.edit_delete_config.query_one(obj_id=before.guild.id, column_name="guild_id")
             if messagelogchannel is not None:
                 channel = before.guild.get_channel(messagelogchannel.messagelog_channel)
                 if channel is not None:
@@ -765,6 +765,7 @@ class Mute(db.DatabaseTable):
         self.member_id = member_id
         self.guild_id = guild_id
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
@@ -831,6 +832,7 @@ class Deafen(db.DatabaseTable):
         self.guild_id = guild_id
         self.self_inflicted = self_inflicted
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
@@ -878,6 +880,7 @@ class GuildModLog(db.DatabaseTable):
         self.modlog_channel = modlog_channel
         self.name = name
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
@@ -922,6 +925,7 @@ class MemberRole(db.DatabaseTable):
         self.guild_id = guild_id
         self.member_role = member_role
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
@@ -986,6 +990,7 @@ class GuildNewMember(db.DatabaseTable):
         self.role_id = role_id
         self.message = message
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
@@ -1033,6 +1038,7 @@ class GuildMemberLog(db.DatabaseTable):
         self.memberlog_channel = memberlog_channel
         self.name = name
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
@@ -1080,6 +1086,7 @@ class GuildMessageLog(db.DatabaseTable):
         self.name = name
         self.messagelog_channel = messagelog_channel
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
@@ -1124,6 +1131,7 @@ class GuildMessageLinks(db.DatabaseTable):
         self.guild_id = guild_id
         self.role_id = role_id
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
@@ -1177,8 +1185,9 @@ class PunishmentTimerRecord(db.DatabaseTable):
     #     async with db.Pool.acquire() as conn:
     #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
-    def __init__(self, guild_id, actor_id, target_id, type_of_punishment, target_ts, orig_channel_id=None, reason=None):
+    def __init__(self, guild_id, actor_id, target_id, type_of_punishment, target_ts, orig_channel_id=None, reason=None, input_id=None):
         super().__init__()
+        self.id = input_id
         self.guild_id = guild_id
         self.actor_id = actor_id
         self.target_id = target_id
@@ -1187,6 +1196,7 @@ class PunishmentTimerRecord(db.DatabaseTable):
         self.orig_channel_id = orig_channel_id
         self.reason = reason
 
+    @classmethod
     async def get_by_attribute(self, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
         async with db.Pool.acquire() as conn:  # Use transaction here?
@@ -1197,7 +1207,24 @@ class PunishmentTimerRecord(db.DatabaseTable):
                                             target_id=result.get("target_id"),
                                             type_of_punishment=result.get("type_of_punishment"),
                                             target_ts=result.get("target_ts"),
-                                            orig_channel_id=result.get("orig_channel_id"), reason=result.get("reason"))
+                                            orig_channel_id=result.get("orig_channel_id"), reason=result.get("reason"),
+                                            input_id=result.get('id'))
+                # for var in obj.__dict__:
+                #     setattr(obj, var, result.get(var))
+                list.append(obj)
+            return list
+
+    async def get_all(self):
+        async with db.Pool.acquire() as conn:  # Use transaction here?
+            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__}""")
+            list = []
+            for result in results:
+                obj = PunishmentTimerRecord(guild_id=result.get("guild_id"), actor_id=result.get("actor_id"),
+                                            target_id=result.get("target_id"),
+                                            type_of_punishment=result.get("type_of_punishment"),
+                                            target_ts=result.get("target_ts"),
+                                            orig_channel_id=result.get("orig_channel_id"), reason=result.get("reason"),
+                                            input_id=result.get('id'))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
                 list.append(obj)
