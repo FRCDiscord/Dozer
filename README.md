@@ -36,8 +36,8 @@ Many distributions do not have python 3.6 in their repositories yet. If this is 
 
 Instructions for installing are located [here](https://github.com/pyenv/pyenv-installer).
 
-1. `pyenv install 3.6.3` downloads and builds a newer version of python
-2. `pyenv global 3.6.3` sets 3.6.3 as the primary version for the current user
+1. `pyenv install 3.7.6` downloads and builds a newer version of python
+2. `pyenv global 3.7.6` sets 3.6.3 as the primary version for the current user
 3. run `python -V` to ensure that version 3.6 or newer is installed. 
 
 If you are on macOS, there may be more steps to complete involving SSL certificates to connect to Discord correctly. Please see [this thread](https://github.com/Rapptz/discord.py/issues/423) for more info.
@@ -46,7 +46,7 @@ Through the rest of this README, we will assume that you have found the correct 
 
 ### Installing PostgreSQL
 
-As of `[insert date]`, Dozer no longer supports database types other than PostgreSQL. This means installations using SQLite
+As of January 1, 2020, Dozer no longer supports database types other than PostgreSQL. This means installations using SQLite
 (as was default), will need to migrated, as well as new installations will have to have PostgreSQL installed on the 
 machine for development or production. You can install PostgreSQL for your platform [here](https://www.postgresql.org/download/)
 

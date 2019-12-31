@@ -104,7 +104,7 @@ class Filter(Cog):
             await ctx.send(embed=embed)
             return
 
-        fmt = '`{0.friendly_name}`'
+        fmt = 'ID {0.id}: `{0.friendly_name}`'
         if advanced:
             fmt += ': Pattern: `{0.pattern}`'
 

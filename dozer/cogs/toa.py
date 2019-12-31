@@ -41,7 +41,6 @@ class TOAParser:
         tries = 0
         while True:
             try:
-                print(type(self.http))
                 async with async_timeout.timeout(5) as _, self.http.get(urljoin(self.base, endpoint),
                                                                         headers=self.headers) as response:
                     return await response.text()
