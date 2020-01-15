@@ -123,14 +123,13 @@ class TeamNumbers(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            user_id bigint,
-            team_number bigint,
-            team_type VARCHAR,
+            user_id bigint NOT NULL,
+            team_number bigint NOT NULL,
+            team_type VARCHAR NOT NULL,
             PRIMARY KEY (user_id, team_number, team_type)
             )""")
 

@@ -356,15 +356,14 @@ class GiveableRole(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            guild_id bigint,
-            role_id bigint PRIMARY KEY,
-            name varchar,
-            norm_name varchar
+            guild_id bigint NOT NULL,
+            role_id bigint PRIMARY KEY NOT NULL,
+            name varchar NOT NULL,
+            norm_name varchar NOT NULL
             )""")
 
     def __init__(self, guild_id, role_id, norm_name, name):
@@ -401,15 +400,14 @@ class MissingRole(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            guild_id bigint,
-            member_id bigint,
-            role_id bigint,
-            role_name varchar,
+            guild_id bigint NOT NULL,
+            member_id bigint NOT NULL,
+            role_id bigint NOT NULL,
+            role_name varchar NOT NULL,
             PRIMARY KEY (role_id, member_id)
             )""")
 

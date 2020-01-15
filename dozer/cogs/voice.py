@@ -94,13 +94,12 @@ class Voicebinds(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            id SERIAL PRIMARY KEY,
-            guild_id bigint,
+            id SERIAL PRIMARY KEY NOT NULL,
+            guild_id bigint NOT NULL,
             channel_id bigint null,
             role_id bigint null
             )""")

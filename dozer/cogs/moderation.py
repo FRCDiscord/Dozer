@@ -739,13 +739,12 @@ class Mute(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            member_id bigint,
-            guild_id bigint,
+            member_id bigint NOT NULL,
+            guild_id bigint NOT NULL,
             PRIMARY KEY (member_id, guild_id)
             )""")
 
@@ -788,14 +787,13 @@ class Deafen(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            member_id bigint,
-            guild_id bigint,
-            self_inflicted boolean,
+            member_id bigint NOT NULL,
+            guild_id bigint NOT NULL,
+            self_inflicted boolean NOT NULL,
             PRIMARY KEY (member_id, guild_id)
             )""")
 
@@ -827,14 +825,13 @@ class GuildModLog(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            guild_id bigint PRIMARY KEY,
+            guild_id bigint PRIMARY KEY NOT NULL,
             modlog_channel bigint null,
-            name varchar
+            name varchar NOT NULL
             )""")
 
     def __init__(self, guild_id, modlog_channel, name):
@@ -865,12 +862,11 @@ class MemberRole(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            guild_id bigint PRIMARY KEY,
+            guild_id bigint PRIMARY KEY NOT NULL,
             member_role bigint null
             )""")
 
@@ -916,15 +912,14 @@ class GuildNewMember(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
             guild_id bigint PRIMARY KEY,
-            channel_id bigint,
-            role_id bigint,
-            message varchar
+            channel_id bigint NOT NULL,
+            role_id bigint NOT NULL,
+            message varchar NOT NULL
             )""")
 
     def __init__(self, guild_id, channel_id, role_id, message):
@@ -956,14 +951,13 @@ class GuildMemberLog(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            guild_id bigint PRIMARY KEY,
-            memberlog_channel bigint,
-            name varchar
+            guild_id bigint PRIMARY KEY NOT NULL,
+            memberlog_channel bigint NOT NULL,
+            name varchar NOT NULL
             )""")
 
     def __init__(self, guild_id, memberlog_channel, name):
@@ -994,14 +988,13 @@ class GuildMessageLog(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            guild_id bigint PRIMARY KEY,
-            name varchar,
-            messagelog_channel bigint
+            guild_id bigint PRIMARY KEY NOT NULL,
+            name varchar NOT NULL,
+            messagelog_channel bigint NOT NULL
             )""")
 
     def __init__(self, guild_id, name, messagelog_channel):
@@ -1032,12 +1025,11 @@ class GuildMessageLinks(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            guild_id bigint PRIMARY KEY,
+            guild_id bigint PRIMARY KEY NOT NULL,
             role_id bigint null
             )""")
 
@@ -1068,19 +1060,18 @@ class PunishmentTimerRecords(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            id serial PRIMARY KEY,
-            guild_id bigint,
-            actor_id bigint,
-            target_id bigint,
+            id serial PRIMARY KEY NOT NULL,
+            guild_id bigint NOT NULL,
+            actor_id bigint NOT NULL,
+            target_id bigint NOT NULL,
             orig_channel_id bigint null,
-            type_of_punishment bigint,
+            type_of_punishment bigint NOT NULL,
             reason varchar null,
-            target_ts bigint
+            target_ts bigint NOT NULL
             )""")
 
     def __init__(self, guild_id, actor_id, target_id, type_of_punishment, target_ts, orig_channel_id=None, reason=None, input_id=None):

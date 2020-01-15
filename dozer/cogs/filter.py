@@ -292,16 +292,15 @@ class WordFilter(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            filter_id serial PRIMARY KEY,
-            enabled boolean default true,
-            guild_id bigint,
+            filter_id serial PRIMARY KEY NOT NULL,
+            enabled boolean default true NOT NULL,
+            guild_id bigint NOT NULL,
             friendly_name varchar null,
-            pattern varchar
+            pattern varchar NOT NULL
             )""")
 
     def __init__(self, guild_id, friendly_name, pattern, enabled=True, filter_id=None):
@@ -334,15 +333,14 @@ class WordFilterSetting(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            id serial PRIMARY KEY,
-            setting_type varchar,
-            guild_id bigint,
-            value varchar
+            id serial PRIMARY KEY NOT NULL,
+            setting_type varchar NOT NULL,
+            guild_id bigint NOT NULL,
+            value varchar NOT NULL
             )""")
 
     def __init__(self, guild_id, setting_type, value):
@@ -373,13 +371,12 @@ class WordFilterRoleWhitelist(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            guild_id bigint,
-            role_id bigint PRIMARY KEY 
+            guild_id bigint NOT NULL,
+            role_id bigint PRIMARY KEY NOT NULL 
             )""")
 
     def __init__(self, guild_id, role_id):
@@ -408,16 +405,15 @@ class WordFilterInfraction(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            id serial PRIMARY KEY,
+            id serial PRIMARY KEY NOT NULL,
             member_id bigint NOT NULL,
             filter_id bigint references word_filters(filter_id),
-            timestamp timestamp,
-            message varchar
+            timestamp timestamp NOT NULL,
+            message varchar NOT NULL
             )""")
 
     def __init__(self, member_id, filter_id, timestamp, message):

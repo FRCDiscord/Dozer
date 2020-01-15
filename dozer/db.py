@@ -46,8 +46,7 @@ class DatabaseTable:
     # Declare the migrate/create functions
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         raise NotImplementedError("Database schema not implemented!")
 
     @classmethod

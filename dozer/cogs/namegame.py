@@ -799,15 +799,14 @@ class NameGameConfig(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            guild_id bigint PRIMARY KEY,
+            guild_id bigint PRIMARY KEY NOT NULL,
             channel_id bigint null,
-            mode varchar,
-            pings_enabled bigint
+            mode varchar NOT NULL,
+            pings_enabled bigint NOT NULL
             )""")
 
     def __init__(self, guild_id, mode, pings_enabled, channel_id=None):
@@ -839,14 +838,13 @@ class NameGameLeaderboard(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            user_id bigint PRIMARY KEY,
-            wins bigint,
-            game_mode varchar
+            user_id bigint PRIMARY KEY NOT NULL,
+            wins bigint NOT NULL,
+            game_mode varchar NOT NULL
             )""")
 
     def __init__(self, user_id, game_mode, wins):

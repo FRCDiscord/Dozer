@@ -229,12 +229,11 @@ class WelcomeChannel(db.DatabaseTable):
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            guild_id bigint PRIMARY KEY,
+            guild_id bigint PRIMARY KEY NOT NULL,
             channel_id bigint null
             )""")
 
