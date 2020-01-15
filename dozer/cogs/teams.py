@@ -159,17 +159,14 @@ class TeamNumbers(db.DatabaseTable):
     @classmethod
     async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
-        async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
-            result_list = []
-            for result in results:
-                obj = TeamNumbers(user_id=result.get("user_id"),
-                                  team_number=result.get("team_number"),
-                                  team_type=result.get("team_type"))
-                # for var in obj.__dict__:
-                #     setattr(obj, var, result.get(var))
-                result_list.append(obj)
-            return result_list
+        results = await super().get_by_attribute(obj_id, column_name)
+        result_list = []
+        for result in results:
+            obj = TeamNumbers(user_id=result.get("user_id"),
+                              team_number=result.get("team_number"),
+                              team_type=result.get("team_type"))
+            result_list.append(obj)
+        return result_list
 
     async def top10(self, user_ids):
         """Returns the top 10 team entries"""

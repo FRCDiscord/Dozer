@@ -314,16 +314,13 @@ class WordFilter(db.DatabaseTable):
     @classmethod
     async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
-        async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
-            result_list = []
-            for result in results:
-                obj = WordFilter(guild_id=result.get("guild_id"), friendly_name=result.get("friendly_name"),
-                                 pattern=result.get("pattern"), enabled=result.get("enabled"), filter_id=result.get("filter_id"))
-                # for var in obj.__dict__:
-                #     setattr(obj, var, result.get(var))
-                result_list.append(obj)
-            return result_list
+        results = await super().get_by_attribute(obj_id, column_name)
+        result_list = []
+        for result in results:
+            obj = WordFilter(guild_id=result.get("guild_id"), friendly_name=result.get("friendly_name"),
+                             pattern=result.get("pattern"), enabled=result.get("enabled"), filter_id=result.get("filter_id"))
+            result_list.append(obj)
+        return result_list
 
 
 class WordFilterSetting(db.DatabaseTable):
@@ -352,16 +349,13 @@ class WordFilterSetting(db.DatabaseTable):
     @classmethod
     async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
-        async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
-            result_list = []
-            for result in results:
-                obj = WordFilterSetting(guild_id=result.get("guild_id"), setting_type=result.get("setting_type"),
-                                        value=result.get('value'))
-                # for var in obj.__dict__:
-                #     setattr(obj, var, result.get(var))
-                result_list.append(obj)
-            return result_list
+        results = await super().get_by_attribute(obj_id, column_name)
+        result_list = []
+        for result in results:
+            obj = WordFilterSetting(guild_id=result.get("guild_id"), setting_type=result.get("setting_type"),
+                                    value=result.get('value'))
+            result_list.append(obj)
+        return result_list
 
 
 class WordFilterRoleWhitelist(db.DatabaseTable):
@@ -387,15 +381,12 @@ class WordFilterRoleWhitelist(db.DatabaseTable):
     @classmethod
     async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
-        async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
-            result_list = []
-            for result in results:
-                obj = WordFilterRoleWhitelist(guild_id=result.get("guild_id"), role_id=result.get("role_id"))
-                # for var in obj.__dict__:
-                #     setattr(obj, var, result.get(var))
-                result_list.append(obj)
-            return result_list
+        results = await super().get_by_attribute(obj_id, column_name)
+        result_list = []
+        for result in results:
+            obj = WordFilterRoleWhitelist(guild_id=result.get("guild_id"), role_id=result.get("role_id"))
+            result_list.append(obj)
+        return result_list
 
 
 class WordFilterInfraction(db.DatabaseTable):
@@ -426,14 +417,10 @@ class WordFilterInfraction(db.DatabaseTable):
     @classmethod
     async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
-        async with db.Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
-            results = await stmt.fetch()
-            result_list = []
-            for result in results:
-                obj = WordFilterInfraction(member_id=result.get("member_id"), filter_id=result.get("filter_id"),
-                                           timestamp=result.get("timestamp"), message=result.get("message"))
-                # for var in obj.__dict__:
-                #     setattr(obj, var, result.get(var))
-                result_list.append(obj)
-            return result_list
+        results = await super().get_by_attribute(obj_id, column_name)
+        result_list = []
+        for result in results:
+            obj = WordFilterInfraction(member_id=result.get("member_id"), filter_id=result.get("filter_id"),
+                                       timestamp=result.get("timestamp"), message=result.get("message"))
+            result_list.append(obj)
+        return result_list

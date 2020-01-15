@@ -101,14 +101,7 @@ class DatabaseTable:
         write your own SQL queries than use this one, but for a simple query this is fine."""
         async with Pool.acquire() as conn:  # Use transaction here?
             stmt = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE $1 = $2""", column_name, obj_id)
-            results = stmt
-            result_list = []
-            for result in results:
-                obj = cls()
-                for var in obj.__dict__:
-                    setattr(obj, var, result.get(var))
-                result_list.append(obj)
-            return result_list
+            return stmt
 
     @classmethod
     async def get_by_id(cls, obj_id):

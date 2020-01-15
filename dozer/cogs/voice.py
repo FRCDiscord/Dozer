@@ -115,18 +115,15 @@ class Voicebinds(db.DatabaseTable):
     @classmethod
     async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
-        async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
-            result_list = []
-            for result in results:
-                obj = Voicebinds(row_id=result.get("id"),
-                                 guild_id=result.get("guild_id"),
-                                 channel_id=result.get("channel_id"),
-                                 role_id=result.get("role_id"))
-                # for var in obj.__dict__:
-                #     setattr(obj, var, result.get(var))
-                result_list.append(obj)
-            return result_list
+        results = await super().get_by_attribute(obj_id, column_name)
+        result_list = []
+        for result in results:
+            obj = Voicebinds(row_id=result.get("id"),
+                             guild_id=result.get("guild_id"),
+                             channel_id=result.get("channel_id"),
+                             role_id=result.get("role_id"))
+            result_list.append(obj)
+        return result_list
 
 
 def setup(bot):

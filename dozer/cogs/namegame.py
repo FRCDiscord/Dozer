@@ -819,16 +819,13 @@ class NameGameConfig(db.DatabaseTable):
     @classmethod
     async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
-        async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
-            result_list = []
-            for result in results:
-                obj = NameGameConfig(guild_id=result.get("guild_id"), mode=result.get("mode"),
-                                     pings_enabled=result.get("pings_enabled"), channel_id=result.get("channel_id"))
-                # for var in obj.__dict__:
-                #     setattr(obj, var, result.get(var))
-                result_list.append(obj)
-            return result_list
+        results = await super().get_by_attribute(obj_id, column_name)
+        result_list = []
+        for result in results:
+            obj = NameGameConfig(guild_id=result.get("guild_id"), mode=result.get("mode"),
+                                 pings_enabled=result.get("pings_enabled"), channel_id=result.get("channel_id"))
+            result_list.append(obj)
+        return result_list
 
 
 class NameGameLeaderboard(db.DatabaseTable):
@@ -856,16 +853,13 @@ class NameGameLeaderboard(db.DatabaseTable):
     @classmethod
     async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
-        async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
-            result_list = []
-            for result in results:
-                obj = NameGameLeaderboard(user_id=result.get("user_id"), game_mode=result.get("game_mode"),
-                                          wins=result.get("wins"))
-                # for var in obj.__dict__:
-                #     setattr(obj, var, result.get(var))
-                result_list.append(obj)
-            return list
+        results = await super().get_by_attribute(obj_id, column_name)
+        result_list = []
+        for result in results:
+            obj = NameGameLeaderboard(user_id=result.get("user_id"), game_mode=result.get("game_mode"),
+                                      wins=result.get("wins"))
+            result_list.append(obj)
+        return result_list
 
 
 def setup(bot):

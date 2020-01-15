@@ -376,16 +376,13 @@ class GiveableRole(db.DatabaseTable):
     @classmethod
     async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
-        async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
-            result_list = []
-            for result in results:
-                obj = GiveableRole(guild_id=result.get("guild_id"), role_id=result.get("role_id"),
-                                   name=result.get('role_name'), norm_name=result.get("norm_name"))
-                # for var in obj.__dict__:
-                #     setattr(obj, var, result.get(var))
-                result_list.append(obj)
-            return result_list
+        results = await super().get_by_attribute(obj_id, column_name)
+        result_list = []
+        for result in results:
+            obj = GiveableRole(guild_id=result.get("guild_id"), role_id=result.get("role_id"),
+                               name=result.get('role_name'), norm_name=result.get("norm_name"))
+            result_list.append(obj)
+        return result_list
 
     @classmethod
     def from_role(cls, role):
@@ -421,16 +418,13 @@ class MissingRole(db.DatabaseTable):
     @classmethod
     async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""
-        async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
-            result_list = []
-            for result in results:
-                obj = MissingRole(guild_id=result.get("guild_id"), role_id=result.get("role_id"),
-                                  member_id=result.get("member_id"), role_name=result.get("role_name"))
-                # for var in obj.__dict__:
-                #     setattr(obj, var, result.get(var))
-                result_list.append(obj)
-            return result_list
+        results = await super().get_by_attribute(obj_id, column_name)
+        result_list = []
+        for result in results:
+            obj = MissingRole(guild_id=result.get("guild_id"), role_id=result.get("role_id"),
+                              member_id=result.get("member_id"), role_name=result.get("role_name"))
+            result_list.append(obj)
+        return result_list
 
 
 def setup(bot):
