@@ -220,7 +220,7 @@ class Filter(Cog):
                 break
         if not found:
             before_setting = None
-        result = WordFilterSetting(guild_id=ctx.guild.id, setting_type="dm", value=config)
+        result = WordFilterSetting(guild_id=ctx.guild.id, setting_type="dm", value=str(int(config)))
         await result.update_or_add()
         self.word_filter_setting.invalidate_entry(guild_id=ctx.guild.id, setting_type="dm")
         await ctx.send(
