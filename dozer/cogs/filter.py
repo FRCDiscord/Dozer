@@ -289,6 +289,7 @@ class WordFilter(db.DatabaseTable):
     """Object for each filter"""
     __tablename__ = 'word_filters'
     __uniques__ = 'filter_id'
+
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -302,11 +303,6 @@ class WordFilter(db.DatabaseTable):
             friendly_name varchar null,
             pattern varchar
             )""")
-
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
     def __init__(self, guild_id, friendly_name, pattern, enabled=True, filter_id=None):
         super().__init__()
@@ -331,19 +327,11 @@ class WordFilter(db.DatabaseTable):
             return result_list
 
 
-# class WordFilterSetting(db.DatabaseObject):
-#     """Each filter-related setting (will be replaced soon)"""
-#     __tablename__ = "word_filter_settings"
-#     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-#     setting_type = db.Column(db.String)
-#     guild_id = db.Column(db.BigInteger)
-#     value = db.Column(db.String)
-
-
 class WordFilterSetting(db.DatabaseTable):
     """Each filter-related setting"""
     __tablename__ = 'word_filter_settings'
     __uniques__ = 'id'
+
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -356,11 +344,6 @@ class WordFilterSetting(db.DatabaseTable):
             guild_id bigint,
             value varchar
             )""")
-
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
     def __init__(self, guild_id, setting_type, value):
         super().__init__()
@@ -383,16 +366,11 @@ class WordFilterSetting(db.DatabaseTable):
             return result_list
 
 
-# class WordFilterRoleWhitelist(db.DatabaseObject):
-#     """Object for each whitelisted role (guild-specific)"""
-#     __tablename__ = "word_filter_role_whitelist"
-#     guild_id = db.Column(db.BigInteger)
-#     role_id = db.Column(db.BigInteger, primary_key=True)
-
 class WordFilterRoleWhitelist(db.DatabaseTable):
     """Object for each whitelisted role"""
     __tablename__ = 'word_filter_role_whitelist'
     __uniques__ = 'role_id'
+
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -403,11 +381,6 @@ class WordFilterRoleWhitelist(db.DatabaseTable):
             guild_id bigint,
             role_id bigint PRIMARY KEY 
             )""")
-
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
     def __init__(self, guild_id, role_id):
         super().__init__()
@@ -428,20 +401,11 @@ class WordFilterRoleWhitelist(db.DatabaseTable):
             return result_list
 
 
-# class WordFilterInfraction(db.DatabaseObject):
-#     """Object for each word filter infraction"""
-#     __tablename__ = "word_filter_infraction"
-#     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-#     member_id = db.Column(db.BigInteger)
-#     filter_id = db.Column(db.Integer, db.ForeignKey('word_filters.id'))
-#     filter = db.relationship("WordFilter", back_populates="infractions")
-#     timestamp = db.Column(db.DateTime)
-#     message = db.Column(db.String)
-
 class WordFilterInfraction(db.DatabaseTable):
     """Object for each word filter infraction"""
     __tablename__ = 'word_filter_infraction'
     __uniques__ = 'id'
+
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -455,11 +419,6 @@ class WordFilterInfraction(db.DatabaseTable):
             timestamp timestamp,
             message varchar
             )""")
-
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
     def __init__(self, member_id, filter_id, timestamp, message):
         super().__init__()

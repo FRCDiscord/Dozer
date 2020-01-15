@@ -736,6 +736,7 @@ class Mute(db.DatabaseTable):
     finished_callback = Moderation._unmute
     __tablename__ = 'mutes'
     __uniques__ = 'guild_id, member_id'
+
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -747,11 +748,6 @@ class Mute(db.DatabaseTable):
             guild_id bigint,
             PRIMARY KEY (member_id, guild_id)
             )""")
-
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
     def __init__(self, member_id, guild_id):
         super().__init__()
@@ -789,6 +785,7 @@ class Deafen(db.DatabaseTable):
     __uniques__ = 'member_id, guild_id'
     past_participle = "deafened"
     finished_callback = Moderation._undeafen
+
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -801,11 +798,6 @@ class Deafen(db.DatabaseTable):
             self_inflicted boolean,
             PRIMARY KEY (member_id, guild_id)
             )""")
-
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
     def __init__(self, member_id, guild_id, self_inflicted):
         super().__init__()
@@ -832,6 +824,7 @@ class GuildModLog(db.DatabaseTable):
     """Holds modlog info"""
     __tablename__ = 'modlogconfig'
     __uniques__ = 'guild_id'
+
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -843,11 +836,6 @@ class GuildModLog(db.DatabaseTable):
             modlog_channel bigint null,
             name varchar
             )""")
-
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
     def __init__(self, guild_id, modlog_channel, name):
         super().__init__()
@@ -874,6 +862,7 @@ class MemberRole(db.DatabaseTable):
     """Holds info on member roles used for timeouts"""
     __tablename__ = 'member_roles'
     __uniques__ = 'guild_id'
+
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -884,11 +873,6 @@ class MemberRole(db.DatabaseTable):
             guild_id bigint PRIMARY KEY,
             member_role bigint null
             )""")
-
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
     def __init__(self, guild_id, member_role=None):
         super().__init__()
@@ -929,6 +913,7 @@ class GuildNewMember(db.DatabaseTable):
     """Holds new member info"""
     __tablename__ = 'new_members'
     __uniques__ = 'guild_id'
+
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -941,11 +926,6 @@ class GuildNewMember(db.DatabaseTable):
             role_id bigint,
             message varchar
             )""")
-
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
     def __init__(self, guild_id, channel_id, role_id, message):
         super().__init__()
@@ -973,6 +953,7 @@ class GuildMemberLog(db.DatabaseTable):
     """Holds information for member logs"""
     __tablename__ = 'memberlogconfig'
     __uniques__ = 'guild_id'
+
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -984,11 +965,6 @@ class GuildMemberLog(db.DatabaseTable):
             memberlog_channel bigint,
             name varchar
             )""")
-
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
     def __init__(self, guild_id, memberlog_channel, name):
         super().__init__()
@@ -1015,6 +991,7 @@ class GuildMessageLog(db.DatabaseTable):
     """Holds config info for message logs"""
     __tablename__ = 'messagelogconfig'
     __uniques__ = 'guild_id'
+
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -1026,11 +1003,6 @@ class GuildMessageLog(db.DatabaseTable):
             name varchar,
             messagelog_channel bigint
             )""")
-
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
     def __init__(self, guild_id, name, messagelog_channel):
         super().__init__()
@@ -1057,6 +1029,7 @@ class GuildMessageLinks(db.DatabaseTable):
     """Contains information for link scrubbing"""
     __tablename__ = 'guild_msg_links'
     __uniques__ = 'guild_id'
+
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -1092,6 +1065,7 @@ class PunishmentTimerRecords(db.DatabaseTable):
     type_map = {p.type: p for p in (Mute, Deafen)}
     __tablename__ = 'punishment_timers'
     __uniques__ = 'id'
+
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your

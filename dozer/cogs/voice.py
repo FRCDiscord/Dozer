@@ -86,15 +86,6 @@ class Voice(Cog):
     """
 
 
-# class Voicebinds(db.DatabaseObject):
-#     """DB object to keep track of voice to text channel access bindings."""
-#     __tablename__ = 'voicebinds'
-#     id = db.Column(db.Integer, primary_key=True)
-#     guild_id = db.Column(db.Integer)
-#     channel_id = db.Column(db.Integer)
-#     role_id = db.Column(db.Integer)
-
-
 class Voicebinds(db.DatabaseTable):
     """DB object to keep track of voice to text channel access bindings."""
     __tablename__ = 'voicebinds'
@@ -113,11 +104,6 @@ class Voicebinds(db.DatabaseTable):
             channel_id bigint null,
             role_id bigint null
             )""")
-
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
     def __init__(self, guild_id, channel_id, role_id, row_id=None):
         super().__init__()

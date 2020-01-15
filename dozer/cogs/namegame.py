@@ -792,18 +792,11 @@ class NameGame(Cog):
             game.vote_task = self.bot.loop.create_task(self.game_vote_countdown(ctx, game))
 
 
-# class NameGameConfig(db.DatabaseObject):
-#     """Configuration storage object"""
-#     __tablename__ = "namegame_config"
-#     guild_id = db.Column(db.BigInteger, primary_key=True)
-#     channel_id = db.Column(db.BigInteger, nullable=True)
-#     mode = db.Column(db.String)
-#     pings_enabled = db.Column(db.BigInteger)
-
 class NameGameConfig(db.DatabaseTable):
     """Configuration storage object"""
     __tablename__ = 'namegame_config'
     __uniques__ = 'guild_id'
+
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -816,11 +809,6 @@ class NameGameConfig(db.DatabaseTable):
             mode varchar,
             pings_enabled bigint
             )""")
-
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
     def __init__(self, guild_id, mode, pings_enabled, channel_id=None):
         super().__init__()
@@ -843,18 +831,12 @@ class NameGameConfig(db.DatabaseTable):
                 result_list.append(obj)
             return result_list
 
-# class NameGameLeaderboard(db.DatabaseObject):
-#     """Leaderboard storage object"""
-#     __tablename__ = "namegame_leaderboard"
-#     user_id = db.Column(db.BigInteger, primary_key=True)
-#     wins = db.Column(db.BigInteger)
-#     game_mode = db.Column(db.String)
-
 
 class NameGameLeaderboard(db.DatabaseTable):
     """Leaderboard storage object"""
     __tablename__ = 'namegame_leaderboard'
     __uniques__ = 'user_id'
+
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -866,11 +848,6 @@ class NameGameLeaderboard(db.DatabaseTable):
             wins bigint,
             game_mode varchar
             )""")
-
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
     def __init__(self, user_id, game_mode, wins):
         super().__init__()

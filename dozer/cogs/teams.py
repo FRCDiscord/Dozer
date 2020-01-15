@@ -116,18 +116,11 @@ class Teams(Cog):
                     await member.edit(nick=nick)
 
 
-# class TeamNumbers(db.DatabaseObject):
-#    """DB object for tracking team associations."""
-#    __tablename__ = 'team_numbers'
-#    user_id = db.Column(db.BigInteger, primary_key=True)
-#    team_number = db.Column(db.BigInteger, primary_key=True)
-#    team_type = db.Column(db.String, primary_key=True)
-
-
 class TeamNumbers(db.DatabaseTable):
     """Database operations for tracking team associations."""
     __tablename__ = 'team_numbers'
     __uniques__ = 'user_id'
+
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -140,11 +133,6 @@ class TeamNumbers(db.DatabaseTable):
             team_type VARCHAR,
             PRIMARY KEY (user_id, team_number, team_type)
             )""")
-
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
     def __init__(self, user_id, team_number, team_type):
         super().__init__()

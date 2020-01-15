@@ -226,6 +226,7 @@ class WelcomeChannel(db.DatabaseTable):
     """Welcome channel object class"""
     __tablename__ = 'welcome_channel'
     __uniques__ = 'guild_id'
+
     @classmethod
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
@@ -236,11 +237,6 @@ class WelcomeChannel(db.DatabaseTable):
             guild_id bigint PRIMARY KEY,
             channel_id bigint null
             )""")
-
-    # @classmethod
-    # async def initial_migrate(cls):
-    #     async with db.Pool.acquire() as conn:
-    #         await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
 
     def __init__(self, guild_id, channel_id):
         super().__init__()
