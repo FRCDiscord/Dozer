@@ -93,7 +93,7 @@ class Moderation(Cog):
             return
 
         # register the timer
-        ent = PunishmentTimerRecord(
+        ent = PunishmentTimerRecords(
             guild_id=target.guild.id,
             actor_id=actor.id,
             target_id=target.id,
@@ -240,7 +240,7 @@ class Moderation(Cog):
     @Cog.listener('on_ready')
     async def on_ready(self):
         """Restore punishment timers on bot startup"""
-        q = await PunishmentTimerRecord.get_all(PunishmentTimerRecord)
+        q = await PunishmentTimerRecords.get_all(PunishmentTimerRecords)
         for r in q:
             guild = self.bot.get_guild(r.guild_id)
             actor = guild.get_member(r.actor_id)
@@ -250,9 +250,9 @@ class Moderation(Cog):
             reason = r.reason or ""
             seconds = max(int(r.target_ts - time.time()), 0.01)
             await r.delete(data=r.id, data_column="id")
-            self.bot.loop.create_task(self.punishment_timer(seconds, target, PunishmentTimerRecord.type_map[punishment_type], reason, actor,
+            self.bot.loop.create_task(self.punishment_timer(seconds, target, PunishmentTimerRecords.type_map[punishment_type], reason, actor,
                                                             orig_channel))
-            getLogger('dozer').info(f"Restarted {PunishmentTimerRecord.type_map[punishment_type].__name__} of {target} in {guild}")
+            getLogger('dozer').info(f"Restarted {PunishmentTimerRecords.type_map[punishment_type].__name__} of {target} in {guild}")
 
     @Cog.listener('on_member_join')
     async def on_member_join(self, member):
@@ -409,7 +409,8 @@ class Moderation(Cog):
         if len(settings) == 0:
             settings = MemberRole(guild_id=ctx.guild.id)
             await settings.update_or_add()
-
+        else:
+            settings = settings[0]
         # None-safe - nonexistent or non-configured role return None
         member_role = ctx.guild.get_role(settings.member_role)
         if member_role is not None:
@@ -778,9 +779,6 @@ class Mute(db.DatabaseTable):
             INSERT INTO {self.__tablename__} ({", ".join(keys)})
             VALUES({','.join(f'${i+1}' for i in range(len(values)))}) 
             """
-            print(statement)
-            for value in values:
-                print(value, type(value))
             await conn.execute(statement, *values)
 
 
@@ -873,7 +871,7 @@ class GuildModLog(db.DatabaseTable):
 
 
 class MemberRole(db.DatabaseTable):
-    """Holds info on member roles"""
+    """Holds info on member roles used for timeouts"""
     __tablename__ = 'member_roles'
     __uniques__ = 'guild_id'
     @classmethod
@@ -1089,8 +1087,8 @@ class GuildMessageLinks(db.DatabaseTable):
             return result_list
 
 
-class PunishmentTimerRecord(db.DatabaseTable):
-    """Punishment Timer Recods"""
+class PunishmentTimerRecords(db.DatabaseTable):
+    """Punishment Timer Records"""
     type_map = {p.type: p for p in (Mute, Deafen)}
     __tablename__ = 'punishment_timers'
     __uniques__ = 'id'
@@ -1129,12 +1127,12 @@ class PunishmentTimerRecord(db.DatabaseTable):
             results = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
             result_list = []
             for result in results:
-                obj = PunishmentTimerRecord(guild_id=result.get("guild_id"), actor_id=result.get("actor_id"),
-                                            target_id=result.get("target_id"),
-                                            type_of_punishment=result.get("type_of_punishment"),
-                                            target_ts=result.get("target_ts"),
-                                            orig_channel_id=result.get("orig_channel_id"), reason=result.get("reason"),
-                                            input_id=result.get('id'))
+                obj = PunishmentTimerRecords(guild_id=result.get("guild_id"), actor_id=result.get("actor_id"),
+                                             target_id=result.get("target_id"),
+                                             type_of_punishment=result.get("type_of_punishment"),
+                                             target_ts=result.get("target_ts"),
+                                             orig_channel_id=result.get("orig_channel_id"), reason=result.get("reason"),
+                                             input_id=result.get('id'))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
                 result_list.append(obj)
@@ -1145,12 +1143,12 @@ class PunishmentTimerRecord(db.DatabaseTable):
             results = await conn.fetch(f"""SELECT * FROM {self.__tablename__}""")
             result_list = []
             for result in results:
-                obj = PunishmentTimerRecord(guild_id=result.get("guild_id"), actor_id=result.get("actor_id"),
-                                            target_id=result.get("target_id"),
-                                            type_of_punishment=result.get("type_of_punishment"),
-                                            target_ts=result.get("target_ts"),
-                                            orig_channel_id=result.get("orig_channel_id"), reason=result.get("reason"),
-                                            input_id=result.get('id'))
+                obj = PunishmentTimerRecords(guild_id=result.get("guild_id"), actor_id=result.get("actor_id"),
+                                             target_id=result.get("target_id"),
+                                             type_of_punishment=result.get("type_of_punishment"),
+                                             target_ts=result.get("target_ts"),
+                                             orig_channel_id=result.get("orig_channel_id"), reason=result.get("reason"),
+                                             input_id=result.get('id'))
                 # for var in obj.__dict__:
                 #     setattr(obj, var, result.get(var))
                 result_list.append(obj)

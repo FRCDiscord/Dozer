@@ -86,7 +86,6 @@ class Roles(Cog):
         for role in rolelist:
             dbrole = await GiveableRole.get_by_role(role_id=role.role_id)
             if dbrole is not None:
-                print("Running delete")
                 await GiveableRole.delete("role_id", role.role_id)
 
     async def ctx_purge(self, ctx):

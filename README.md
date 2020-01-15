@@ -90,7 +90,8 @@ machine for development or production. You can install PostgreSQL for your platf
     ```postgres://user:password@host:port```
     
     Replace `host` with your database IP, or `localhost` if it's on the same PC. `port` is by default 5432. If the user has no
-    password, you can remove the colon and password. The default user for the above installation is `postgres`.
+    password, you can remove the colon and password. The default user for the above installation is `postgres`, however we strongly 
+    suggest making a `dozer` user for security reasons using [this guide](https://www.postgresql.org/docs/current/app-createuser.html).
 7. Add your ID, and anyone else's ID who should be able to use the developer commands, to the list `developers` in `config.json`
    1. Be careful giving this out. Developers can control everything your bot does and potentially get your [bot user token!](#getting-your-discord-bot-token)
 8. The default command prefix is &. If this is already in use on your server or you would like another prefix, you can change the `prefix` value in `config.json`.

@@ -48,11 +48,7 @@ class DatabaseTable:
     async def initial_create(cls):
         """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
         full schema. Make sure your DB rows have the exact same name as the python variable names."""
-        async with Pool.acquire() as conn:
-            await conn.execute(f"""
-            CREATE TABLE {cls.__tablename__} (
-            id serial PRIMARY KEY
-            )""")
+        raise NotImplementedError("Database schema not implemented!")
 
     @classmethod
     async def initial_migrate(cls):
@@ -86,9 +82,6 @@ class DatabaseTable:
             ON CONFLICT ({self.__uniques__}) DO UPDATE
             SET {updates}
             """
-            print(statement)
-            for value in values:
-                print(value, type(value))
             await conn.execute(statement, *values)
 
     def __repr__(self):
@@ -108,7 +101,7 @@ class DatabaseTable:
         """Gets a list of all objects with a given attribute. This will grab all attributes, it's more efficient to
         write your own SQL queries than use this one, but for a simple query this is fine."""
         async with Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = {obj_id}""")
+            stmt = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE $1 = $2""", column_name, obj_id)
             results = stmt
             result_list = []
             for result in results:
@@ -212,7 +205,7 @@ class ConfigCache:
     @classmethod
     async def set_initial_version(cls):
         """Sets initial version"""
-        await Pool.execute("""INSERT INTO versions (table_name, version_num) VALUES (?,?)""", cls.__tablename__, 0)
+        await Pool.execute("""INSERT INTO versions (table_name, version_num) VALUES ($1,$2)""", cls.__tablename__, 0)
 
     __versions__ = {}
 

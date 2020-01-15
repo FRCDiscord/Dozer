@@ -183,7 +183,7 @@ class General(Cog):
             invitechannel = ctx.bot.get_channel(settings[0].channel_id)
             if invitechannel is None:
                 await ctx.send(
-                    "There was an issue getting your welcome channel. Please set it again using `{0} welcomeconfig channel`.".format(
+                    "There was an issue getting your welcome channel. Please set it again using `{0}welcomeconfig channel`.".format(
                         ctx.prefix))
                 return
             text = ""

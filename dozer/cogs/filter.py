@@ -285,16 +285,6 @@ def setup(bot):
 """Database Tables"""
 
 
-# class WordFilter(db.DatabaseObject):
-#     """Object for each filter"""
-#     __tablename__ = "word_filters"
-#     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-#     enabled = db.Column(db.Boolean, default=True)
-#     guild_id = db.Column(db.BigInteger)
-#     friendly_name = db.Column(db.String, nullable=True)
-#     pattern = db.Column(db.String)
-#     infractions = db.relationship("WordFilterInfraction", back_populates="filter")
-
 class WordFilter(db.DatabaseTable):
     """Object for each filter"""
     __tablename__ = 'word_filters'
@@ -411,7 +401,7 @@ class WordFilterRoleWhitelist(db.DatabaseTable):
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
             guild_id bigint,
-            role_id bigint null PRIMARY KEY 
+            role_id bigint PRIMARY KEY 
             )""")
 
     # @classmethod
@@ -460,7 +450,7 @@ class WordFilterInfraction(db.DatabaseTable):
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
             id serial PRIMARY KEY,
-            member_id bigint null,
+            member_id bigint NOT NULL,
             filter_id bigint references word_filters(filter_id),
             timestamp timestamp,
             message varchar
