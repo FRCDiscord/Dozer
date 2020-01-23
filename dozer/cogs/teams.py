@@ -139,23 +139,6 @@ class TeamNumbers(db.DatabaseTable):
         self.team_number = team_number
         self.team_type = team_type
 
-    async def update_or_add(self):
-        """Assign the attribute to this object, then call this method to either insert the object if it doesn't exist in
-        the DB or update it if it does exist. It will update every column not specified in __uniques__."""
-        keys = []
-        values = []
-        for var, value in self.__dict__.items():
-            # Done so that the two are guaranteed to be in the same order, which isn't true of keys() and values()
-            keys.append(var)
-            values.append(str(value))
-        async with db.Pool.acquire() as conn:
-            statement = f"""
-                INSERT INTO {self.__tablename__} ({", ".join(keys)})
-                VALUES({", ".join(values)}) 
-                """
-            print(statement)
-            await conn.execute(statement)
-
     @classmethod
     async def get_by_attribute(cls, obj_id, column_name):
         """Gets a list of all objects with a given attribute"""

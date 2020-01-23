@@ -77,7 +77,7 @@ class DatabaseTable:
         async with Pool.acquire() as conn:
             statement = f"""
             INSERT INTO {self.__tablename__} ({", ".join(keys)})
-            VALUES({','.join(f'${i+1}' for i in range(len(values)))}) 
+            VALUES({','.join(f'${i+1}' for i in range(len(values)))})
             ON CONFLICT ({self.__uniques__}) DO UPDATE
             SET {updates}
             """
@@ -100,7 +100,7 @@ class DatabaseTable:
         """Gets a list of all objects with a given attribute. This will grab all attributes, it's more efficient to
         write your own SQL queries than use this one, but for a simple query this is fine."""
         async with Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE $1 = $2""", column_name, obj_id)
+            stmt = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = $1""", obj_id)
             return stmt
 
     @classmethod
@@ -141,10 +141,10 @@ class DatabaseTable:
         async with Pool.acquire() as conn:
             statement = f"""
             DELETE FROM  {cls.__tablename__}
-            WHERE {data_column} = {data};
+            WHERE {data_column} = $1;
             """
             print(statement)
-            await conn.execute(statement)
+            await conn.execute(statement, data)
 
     @classmethod
     async def dual_criteria_delete(cls, data_column, data, data_column_two, data_two):
@@ -152,10 +152,10 @@ class DatabaseTable:
         async with Pool.acquire() as conn:
             statement = f"""
             DELETE FROM  {cls.__tablename__}
-            WHERE {data_column} = {data} AND {data_column_two} = {data_two};
+            WHERE {data_column} = $1 AND {data_column_two} = $2;
             """
             print(statement)
-            await conn.execute(statement)
+            await conn.execute(statement, data, data_two)
 
 
 class ConfigCache:
