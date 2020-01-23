@@ -143,7 +143,6 @@ class DatabaseTable:
             DELETE FROM  {cls.__tablename__}
             WHERE {data_column} = $1;
             """
-            print(statement)
             await conn.execute(statement, data)
 
     @classmethod
@@ -154,7 +153,6 @@ class DatabaseTable:
             DELETE FROM  {cls.__tablename__}
             WHERE {data_column} = $1 AND {data_column_two} = $2;
             """
-            print(statement)
             await conn.execute(statement, data, data_two)
 
 

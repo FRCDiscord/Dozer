@@ -887,9 +887,6 @@ class MemberRole(db.DatabaseTable):
             ON CONFLICT (guild_id) DO UPDATE
             SET member_role = excluded.member_role;
             """
-            print(statement)
-            for value in values:
-                print(value, type(value))
             await conn.execute(statement, *values)
 
 
