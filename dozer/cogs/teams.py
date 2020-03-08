@@ -26,7 +26,7 @@ class Teams(Cog):
     """
 
     @command()
-    async def removeteam(self, ctx, team_type, team_number):
+    async def removeteam(self, ctx, team_type, team_number: int):
         """Removes an association with a team in the database."""
         team_type = team_type.casefold()
         results = await TeamNumbers.get_by_user(user_id=ctx.author.id)
@@ -67,7 +67,7 @@ class Teams(Cog):
 
     @group(invoke_without_command=True)
     @guild_only()
-    async def onteam(self, ctx, team_type, team_number):
+    async def onteam(self, ctx, team_type, team_number: int):
         """Allows you to see who has associated themselves with a particular team."""
         team_type = team_type.casefold()
         users = await TeamNumbers.get_by_attribute(obj_id=team_number, column_name="team_number")
