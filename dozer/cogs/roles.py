@@ -46,10 +46,8 @@ class Roles(Cog):
             else:
                 valid.add(role)
         for entry in restore:
-            await MissingRole.dual_criteria_delete(data_column="role_id",
-                                                   data=entry.role_id,
-                                                   data_column_two="member_id",
-                                                   data_two=entry.member_id)  # Not missing anymore - remove the record to free up the primary key
+            await MissingRole.delete(data_tuple_list=[("role_id", entry.role_id),
+                                                      ("member_id", entry.member_id)])  # Not missing anymore - remove the record to free up the primary key
 
         await member.add_roles(*valid)
         if not missing and not cant_give:
@@ -86,7 +84,7 @@ class Roles(Cog):
         for role in rolelist:
             dbrole = await GiveableRole.get_by_role(role_id=role.role_id)
             if dbrole is not None:
-                await GiveableRole.delete("role_id", role.role_id)
+                await GiveableRole.delete(data_tuple_list=[("role_id", role.role_id)])
 
     async def ctx_purge(self, ctx):
         """Purges all giveme roles that no longer exist in a guild"""
@@ -260,7 +258,7 @@ class Roles(Cog):
             raise BadArgument('multiple giveable roles with that name exist!')
         else:
             role = ctx.guild.get_role(valid_roles[0].role_id)
-            await GiveableRole.delete("norm_name", f"'{valid_roles[0].norm_name}'")
+            await GiveableRole.delete(data_tuple_list=[("norm_name", f"'{valid_roles[0].norm_name}'")])
             await role.delete(reason='Giveable role deleted by {}'.format(ctx.author))
             await ctx.send('Role "{0}" deleted!'.format(role))
 
@@ -307,7 +305,7 @@ class Roles(Cog):
         elif len(valid_roles) > 1:
             raise BadArgument('multiple giveable roles with that name exist!')
         else:
-            await GiveableRole.delete("norm_name", f"'{valid_roles[0].norm_name}'")
+            await GiveableRole.delete(data_tuple_list=[("norm_name", f"'{valid_roles[0].norm_name}'")])
             await ctx.send('Role "{0}" deleted from list!'.format(name))
 
     delete.example_usage = """

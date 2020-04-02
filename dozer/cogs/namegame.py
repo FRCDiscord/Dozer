@@ -292,7 +292,7 @@ class NameGame(Cog):
             config.channel_id = None
             new_namegame_config = NameGameConfig(channel_id=None, guild_id=ctx.guild.id, pings_enabled=config.pings_enabled,
                                                  mode=config.mode)
-            await config.delete(data_column="guild_id", data=ctx.guild.id)
+            await config.delete(data_tuple_list=[("guild_id", ctx.guild.id)])
             await new_namegame_config.update_or_add()
         await ctx.send("Namegame channel cleared!")
 
@@ -338,7 +338,7 @@ class NameGame(Cog):
             await ctx.send(
                 f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
             return
-        await NameGameLeaderboard.delete(data_column="game_mode", data=f"'{mode}'")
+        await NameGameLeaderboard.delete(data_tuple_list=[("game_mode", f"'{mode}'")])
         await ctx.send(f"Cleared leaderboard for mode {mode}")
 
     # TODO: configurable time limits, ping on event, etc

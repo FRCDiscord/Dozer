@@ -58,7 +58,7 @@ class Voice(Cog):
         config = await Voicebinds.get_by_channel(voice_channel.id)
         if len(config) != 0:
             role = ctx.guild.get_role(config[0].role_id)
-            await config[0].delete('id', config[0].id)
+            await config[0].delete(data_tuple_list=[('id', config[0].id)])
             await ctx.send(
                 "Role `{role}` will no longer be given to users in voice channel `{voice_channel}`!".format(
                     role=role, voice_channel=voice_channel))
