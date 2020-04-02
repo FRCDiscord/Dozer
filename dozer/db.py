@@ -137,12 +137,12 @@ class DatabaseTable:
 
     @classmethod
     async def delete(cls, data_tuple_list):
-        """Deletes by any amount of criteria specified as a list of (data_column, data) tuples"""
+        """Deletes by any number of criteria specified as a list of (data_column, data) tuples"""
         async with Pool.acquire() as conn:
             statement = f"""
             DELETE FROM  {cls.__tablename__}
             WHERE {data_tuple_list[0][0]} = {data_tuple_list[0][1]}"""
-            if len(data_tuple_list):
+            if len(data_tuple_list) > 1:
                 for i in range(1, len(data_tuple_list)):
                     statement += f" AND {data_tuple_list[i][0]} = {data_tuple_list[i][1]}"
             statement += ";"
