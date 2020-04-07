@@ -141,13 +141,13 @@ class DatabaseTable:
         async with Pool.acquire() as conn:
             statement = f"""
             DELETE FROM  {cls.__tablename__}
-            WHERE {data_tuple_list[0][0]} = {data_tuple_list[0][1]}"""
+            WHERE $1 = $2"""
             if len(data_tuple_list) > 1:
                 for i in range(1, len(data_tuple_list)):
-                    statement += f" AND {data_tuple_list[i][0]} = {data_tuple_list[i][1]}"
+                    statement += f" AND ${2 * i + 1} = ${2 * i + 2}"
             statement += ";"
-            print(statement)
-            await conn.execute(statement)
+            params = [i for sub in data_tuple_list for i in sub]
+            await conn.execute(statement, *params)
 
 
 class ConfigCache:
