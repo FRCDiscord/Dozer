@@ -269,7 +269,7 @@ class Filter(Cog):
         if len(result) == 0:
             await ctx.send("That role is not whitelisted.")
             return
-        await WordFilterRoleWhitelist.delete(data_column="role_id", data=role.id)
+        await WordFilterRoleWhitelist.delete(data_tuple_list=[("role_id", role.id)])
         self.word_filter_role_whitelist.invalidate_entry(guild_id=ctx.guild.id)
         await ctx.send("The role `{}` is no longer whitelisted.".format(role.name))
 

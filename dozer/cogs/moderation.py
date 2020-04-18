@@ -118,8 +118,7 @@ class Moderation(Cog):
             self.bot.loop.create_task(coro=punishment.finished_callback(self, target))
 
         if ent:
-            await ent.dual_criteria_delete(data_column="guild_id", data=target.guild.id,
-                                           data_column_two="target_id", data_two=target.id)
+            await ent.delete(data_tuple_list=[("guild_id", target.guild.id), ("target_id", target.id)])
 
     async def _check_links_warn(self, msg, role):
         """Warns a user that they can't send links."""
@@ -180,8 +179,7 @@ class Moderation(Cog):
                 user = result
                 break
         if user is not None:
-            await user.dual_criteria_delete(data_column="member_id", data=member.id,
-                                            data_column_two="guild_id", data_two=member.guild.id)
+            await user.delete(data_tuple_list=[("member_id", member.id), ("guild_id", member.guild.id)])
             await self.perm_override(member, send_messages=None, add_reactions=None)
             return True
         else:
@@ -228,8 +226,7 @@ class Moderation(Cog):
                 break
         if user is not None:
             await self.perm_override(member=member, read_messages=None)
-            await user.dual_criteria_delete(data_column="guild_id", data=member.guild.id, data_column_two="member_id",
-                                            data_two=member.id)
+            await user.delete(data_tuple_list=[("member_id", member.id), ("guild_id", member.guild.id)])
             await self.mod_log(actor=ctx.author, action="undeafened", target=member, reason=reason,
                                orig_channel=ctx.channel, embed_color=discord.Color.green(), global_modlog=not user.self_inflicted)
         else:
@@ -249,7 +246,7 @@ class Moderation(Cog):
             punishment_type = r.type_of_punishment
             reason = r.reason or ""
             seconds = max(int(r.target_ts - time.time()), 0.01)
-            await r.delete(data=r.id, data_column="id")
+            await r.delete(data_tuple_list=[(r.id, "id")])
             self.bot.loop.create_task(self.punishment_timer(seconds, target, PunishmentTimerRecords.type_map[punishment_type], reason, actor,
                                                             orig_channel))
             getLogger('dozer').info(f"Restarted {PunishmentTimerRecords.type_map[punishment_type].__name__} of {target} in {guild}")
