@@ -32,11 +32,9 @@ class Teams(Cog):
         results = await TeamNumbers.get_by_user(user_id=ctx.author.id)
         removed = False
         if len(results) != 0:
-            for result in results:
-                if result.team_number == team_number and result.team_type == team_type:
-                    await result.delete()
-                    await ctx.send("Removed association with {} team {}".format(team_type, team_number))
-                    removed = True
+            await TeamNumbers.delete([("team_number", team_number), ("team_type", team_type)])
+            await ctx.send("Removed association with {} team {}".format(team_type, team_number))
+            removed = True
         if not removed:
             await ctx.send("Couldn't find any associations with that team!")
 

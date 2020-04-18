@@ -100,7 +100,7 @@ class DatabaseTable:
         """Gets a list of all objects with a given attribute. This will grab all attributes, it's more efficient to
         write your own SQL queries than use this one, but for a simple query this is fine."""
         async with Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE $1 = $2""", column_name, obj_id)
+            stmt = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = $1""", obj_id)
             return stmt
 
     @classmethod
@@ -139,14 +139,10 @@ class DatabaseTable:
     async def delete(cls, data_tuple_list):
         """Deletes by any number of criteria specified as a list of (data_column, data) tuples"""
         async with Pool.acquire() as conn:
-            statement = f"""
-            DELETE FROM  {cls.__tablename__}
-            WHERE $1 = $2"""
             if len(data_tuple_list) > 1:
-                for i in range(1, len(data_tuple_list)):
-                    statement += f" AND ${2 * i + 1} = ${2 * i + 2}"
-            statement += ";"
-            params = [i for sub in data_tuple_list for i in sub]
+                conditions = " AND ".join(f"{column_name} = ${i + 1}" for (i, (column_name, _)) in enumerate(data_tuple_list))
+            statement = f"DELETE FROM {cls.__tablename__} WHERE {conditions};"
+            params = [value for (key, value) in data_tuple_list]
             await conn.execute(statement, *params)
 
 
