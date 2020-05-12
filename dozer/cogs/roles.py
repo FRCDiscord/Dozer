@@ -47,7 +47,8 @@ class Roles(Cog):
                 valid.add(role)
         for entry in restore:
             await MissingRole.delete(data_tuple_list=[("role_id", entry.role_id),
-                                                      ("member_id", entry.member_id)])  # Not missing anymore - remove the record to free up the primary key
+                                                      ("member_id", entry.member_id)])
+            # Not missing anymore - remove the record to free up the primary key
 
         await member.add_roles(*valid)
         if not missing and not cant_give:
