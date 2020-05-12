@@ -1,5 +1,5 @@
 asyncpg
-discord.py[voice]==1.2.5
+discord.py[voice]
 tbapi==1.3.1b4
 aiotba
 googlemaps

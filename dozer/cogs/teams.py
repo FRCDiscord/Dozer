@@ -13,7 +13,7 @@ class Teams(Cog):
     @command()
     async def setteam(self, ctx, team_type, team_number: int):
         """Sets an association with your team in the database."""
-        team_type = f"'{team_type.casefold()}'"
+        team_type = team_type.casefold()
         dbcheck = await TeamNumbers.get_by_user(user_id=ctx.author.id)
         if len(dbcheck) == 0 or (dbcheck[0].team_number != team_number and dbcheck[0].team_type != team_type):
             await TeamNumbers(user_id=ctx.author.id, team_number=team_number, team_type=team_type).update_or_add()
@@ -117,7 +117,7 @@ class Teams(Cog):
 class TeamNumbers(db.DatabaseTable):
     """Database operations for tracking team associations."""
     __tablename__ = 'team_numbers'
-    __uniques__ = 'user_id'
+    __uniques__ = 'user_id, team_number, team_type'
 
     @classmethod
     async def initial_create(cls):
@@ -140,19 +140,20 @@ class TeamNumbers(db.DatabaseTable):
     async def update_or_add(self):
         """Assign the attribute to this object, then call this method to either insert the object if it doesn't exist in
         the DB or update it if it does exist. It will update every column not specified in __uniques__."""
+        # This is its own functions because all columns must be unique, which breaks the syntax of the other one
         keys = []
         values = []
         for var, value in self.__dict__.items():
             # Done so that the two are guaranteed to be in the same order, which isn't true of keys() and values()
-            keys.append(var)
-            values.append(str(value))
+            if value is not None:
+                keys.append(var)
+                values.append(value)
         async with db.Pool.acquire() as conn:
             statement = f"""
-                INSERT INTO {self.__tablename__} ({", ".join(keys)})
-                VALUES({", ".join(values)}) 
-                """
-            print(statement)
-            await conn.execute(statement)
+            INSERT INTO {self.__tablename__} ({", ".join(keys)})
+            VALUES({','.join(f'${i+1}' for i in range(len(values)))}) 
+            """
+            await conn.execute(statement, *values)
 
     @classmethod
     async def get_by_attribute(cls, obj_id, column_name):

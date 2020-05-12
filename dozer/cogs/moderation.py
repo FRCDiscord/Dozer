@@ -645,7 +645,7 @@ class Moderation(Cog):
             raise BadArgument('member role cannot be higher than your top role!')
 
         settings = await MemberRole.get_by_guild(guild_id=ctx.guild.id)
-        if settings is None:
+        if len(settings) == 0:
             settings = MemberRole(guild_id=ctx.guild.id, member_role=member_role.id)
         else:
             settings = settings[0]
@@ -761,8 +761,16 @@ class Mute(db.DatabaseTable):
         return result_list
 
     async def update_or_add(self):
-        values = [self.member_id, self.guild_id]
-        keys = ["member_id", "guild_id"]
+        """Assign the attribute to this object, then call this method to either insert the object if it doesn't exist in
+        the DB or update it if it does exist. It will update every column not specified in __uniques__."""
+        # This is its own functions because all columns must be unique, which breaks the syntax of the other one
+        keys = []
+        values = []
+        for var, value in self.__dict__.items():
+            # Done so that the two are guaranteed to be in the same order, which isn't true of keys() and values()
+            if value is not None:
+                keys.append(var)
+                values.append(value)
         async with db.Pool.acquire() as conn:
             statement = f"""
             INSERT INTO {self.__tablename__} ({", ".join(keys)})
@@ -873,21 +881,21 @@ class MemberRole(db.DatabaseTable):
             result_list.append(obj)
         return result_list
 
-    async def update_or_add(self):
-        values = [self.member_role, self.guild_id]
-        keys = ["member_role", "guild_id"]
-        async with db.Pool.acquire() as conn:
-            # noinspection SqlResolve
-            statement = f"""
-            INSERT INTO {self.__tablename__} ({", ".join(keys)})
-            VALUES({','.join(f'${i+1}' for i in range(len(values)))}) 
-            ON CONFLICT (guild_id) DO UPDATE
-            SET member_role = excluded.member_role;
-            """
-            print(statement)
-            for value in values:
-                print(value, type(value))
-            await conn.execute(statement, *values)
+    # async def update_or_add(self):
+    #     values = [self.member_role, self.guild_id]
+    #     keys = ["member_role", "guild_id"]
+    #     async with db.Pool.acquire() as conn:
+    #         # noinspection SqlResolve
+    #         statement = f"""
+    #         INSERT INTO {self.__tablename__} ({", ".join(keys)})
+    #         VALUES({','.join(f'${i+1}' for i in range(len(values)))})
+    #         ON CONFLICT (guild_id) DO UPDATE
+    #         SET member_role = excluded.member_role;
+    #         """
+    #         print(statement)
+    #         for value in values:
+    #             print(value, type(value))
+    #         await conn.execute(statement, *values)
 
 
 class GuildNewMember(db.DatabaseTable):

@@ -609,7 +609,7 @@ class NameGame(Cog):
             await ctx.send(
                 f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
             return
-        leaderboard = sorted(await NameGameLeaderboard.get_by_attribute(obj_id=f"'{mode}'", column_name="game_mode"),
+        leaderboard = sorted(await NameGameLeaderboard.get_by_attribute(obj_id=f"{mode}", column_name="game_mode"),
                              key=lambda i: i.wins, reverse=True)[:10]
         embed = discord.Embed(color=discord.Color.gold(), title=f"{mode.upper()} Name Game Leaderboard")
         for idx, entry in enumerate(leaderboard, 1):
