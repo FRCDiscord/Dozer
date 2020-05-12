@@ -84,7 +84,7 @@ class General(Cog):
                              description=command.help or (None if command.example_usage else 'No information provided.'),
                              color=discord.Color.blue())
         usage = command.example_usage
-        if usage is not None:
+        if usage:
             info.add_field(name='Usage', value=usage.format(prefix=ctx.prefix, name=ctx.invoked_with), inline=False)
         info.set_footer(text='Dozer Help | {!r} command | Info'.format(command.qualified_name))
         await self._show_help(ctx, info, 'Subcommands: {prefix}{name} {signature}', '', '{name!r} command',
@@ -173,7 +173,7 @@ class General(Cog):
         Generates a set number of single use invites.
         """
 
-        settings = await WelcomeChannel.get_by_guild(ctx.guild.id)
+        settings = await WelcomeChannel.get_by(guild_id=ctx.guild.id)
         if len(settings) == 0:
             await ctx.send(
                 "There is no welcome channel set. Please set one using `{0}welcomeconfig channel` and try again.".format(
@@ -243,9 +243,8 @@ class WelcomeChannel(db.DatabaseTable):
         self.channel_id = channel_id
 
     @classmethod
-    async def get_by_attribute(cls, obj_id, column_name):
-        """Gets a list of all objects with a given attribute"""
-        results = await super().get_by_attribute(obj_id, column_name)
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
             obj = WelcomeChannel(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"))
