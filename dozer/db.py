@@ -136,24 +136,15 @@ class DatabaseTable:
             return await conn.fetch(f"""SELECT * FROM {cls.__tablename__};""")
 
     @classmethod
-    async def delete(cls, data_column, data):
-        """Deletes by one criteria"""
+    async def delete(cls, data_tuple_list):
+        """Deletes by any number of criteria specified as a list of (data_column, data) tuples"""
         async with Pool.acquire() as conn:
-            statement = f"""
-            DELETE FROM  {cls.__tablename__}
-            WHERE {data_column} = $1;
-            """
-            await conn.execute(statement, data)
 
-    @classmethod
-    async def dual_criteria_delete(cls, data_column, data, data_column_two, data_two):
-        """Deletes by two criteria"""
-        async with Pool.acquire() as conn:
-            statement = f"""
-            DELETE FROM  {cls.__tablename__}
-            WHERE {data_column} = $1 AND {data_column_two} = $2;
-            """
-            await conn.execute(statement, data, data_two)
+            if len(data_tuple_list) > 1:
+                conditions = " AND ".join(f"{column_name} = ${i + 1}" for (i, (column_name, _)) in enumerate(data_tuple_list))
+            statement = f"DELETE FROM {cls.__tablename__} WHERE {conditions};"
+            params = [value for (key, value) in data_tuple_list]
+            await conn.execute(statement, *params)
 
 
 class ConfigCache:

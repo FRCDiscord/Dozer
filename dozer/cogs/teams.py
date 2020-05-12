@@ -13,7 +13,7 @@ class Teams(Cog):
     @command()
     async def setteam(self, ctx, team_type, team_number: int):
         """Sets an association with your team in the database."""
-        team_type = f"'{team_type.casefold()}'"
+        team_type = team_type.casefold()
         dbcheck = await TeamNumbers.get_by_user(user_id=ctx.author.id)
         if len(dbcheck) == 0 or (dbcheck[0].team_number != team_number and dbcheck[0].team_type != team_type):
             await TeamNumbers(user_id=ctx.author.id, team_number=team_number, team_type=team_type).update_or_add()
@@ -26,17 +26,15 @@ class Teams(Cog):
     """
 
     @command()
-    async def removeteam(self, ctx, team_type, team_number):
+    async def removeteam(self, ctx, team_type, team_number: int):
         """Removes an association with a team in the database."""
         team_type = team_type.casefold()
         results = await TeamNumbers.get_by_user(user_id=ctx.author.id)
         removed = False
         if len(results) != 0:
-            for result in results:
-                if result.team_number == team_number and result.team_type == team_type:
-                    await result.delete()
-                    await ctx.send("Removed association with {} team {}".format(team_type, team_number))
-                    removed = True
+            await TeamNumbers.delete([("team_number", team_number), ("team_type", team_type)])
+            await ctx.send("Removed association with {} team {}".format(team_type, team_number))
+            removed = True
         if not removed:
             await ctx.send("Couldn't find any associations with that team!")
 
@@ -67,7 +65,7 @@ class Teams(Cog):
 
     @group(invoke_without_command=True)
     @guild_only()
-    async def onteam(self, ctx, team_type, team_number):
+    async def onteam(self, ctx, team_type, team_number: int):
         """Allows you to see who has associated themselves with a particular team."""
         team_type = team_type.casefold()
         users = await TeamNumbers.get_by_attribute(obj_id=team_number, column_name="team_number")
@@ -119,7 +117,7 @@ class Teams(Cog):
 class TeamNumbers(db.DatabaseTable):
     """Database operations for tracking team associations."""
     __tablename__ = 'team_numbers'
-    __uniques__ = 'user_id'
+    __uniques__ = 'user_id, team_number, team_type'
 
     @classmethod
     async def initial_create(cls):
@@ -138,6 +136,24 @@ class TeamNumbers(db.DatabaseTable):
         self.user_id = user_id
         self.team_number = team_number
         self.team_type = team_type
+
+    async def update_or_add(self):
+        """Assign the attribute to this object, then call this method to either insert the object if it doesn't exist in
+        the DB or update it if it does exist. It will update every column not specified in __uniques__."""
+        # This is its own functions because all columns must be unique, which breaks the syntax of the other one
+        keys = []
+        values = []
+        for var, value in self.__dict__.items():
+            # Done so that the two are guaranteed to be in the same order, which isn't true of keys() and values()
+            if value is not None:
+                keys.append(var)
+                values.append(value)
+        async with db.Pool.acquire() as conn:
+            statement = f"""
+            INSERT INTO {self.__tablename__} ({", ".join(keys)})
+            VALUES({','.join(f'${i+1}' for i in range(len(values)))}) 
+            """
+            await conn.execute(statement, *values)
 
     @classmethod
     async def get_by_attribute(cls, obj_id, column_name):

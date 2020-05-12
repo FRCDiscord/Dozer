@@ -118,8 +118,7 @@ class Moderation(Cog):
             self.bot.loop.create_task(coro=punishment.finished_callback(self, target))
 
         if ent:
-            await ent.dual_criteria_delete(data_column="guild_id", data=target.guild.id,
-                                           data_column_two="target_id", data_two=target.id)
+            await ent.delete(data_tuple_list=[("guild_id", target.guild.id), ("target_id", target.id)])
 
     async def _check_links_warn(self, msg, role):
         """Warns a user that they can't send links."""
@@ -180,8 +179,7 @@ class Moderation(Cog):
                 user = result
                 break
         if user is not None:
-            await user.dual_criteria_delete(data_column="member_id", data=member.id,
-                                            data_column_two="guild_id", data_two=member.guild.id)
+            await user.delete(data_tuple_list=[("member_id", member.id), ("guild_id", member.guild.id)])
             await self.perm_override(member, send_messages=None, add_reactions=None)
             return True
         else:
@@ -228,8 +226,7 @@ class Moderation(Cog):
                 break
         if user is not None:
             await self.perm_override(member=member, read_messages=None)
-            await user.dual_criteria_delete(data_column="guild_id", data=member.guild.id, data_column_two="member_id",
-                                            data_two=member.id)
+            await user.delete(data_tuple_list=[("member_id", member.id), ("guild_id", member.guild.id)])
             await self.mod_log(actor=ctx.author, action="undeafened", target=member, reason=reason,
                                orig_channel=ctx.channel, embed_color=discord.Color.green(), global_modlog=not user.self_inflicted)
         else:
@@ -249,7 +246,7 @@ class Moderation(Cog):
             punishment_type = r.type_of_punishment
             reason = r.reason or ""
             seconds = max(int(r.target_ts - time.time()), 0.01)
-            await r.delete(data=r.id, data_column="id")
+            await r.delete(data_tuple_list=[(r.id, "id")])
             self.bot.loop.create_task(self.punishment_timer(seconds, target, PunishmentTimerRecords.type_map[punishment_type], reason, actor,
                                                             orig_channel))
             getLogger('dozer').info(f"Restarted {PunishmentTimerRecords.type_map[punishment_type].__name__} of {target} in {guild}")
@@ -648,7 +645,7 @@ class Moderation(Cog):
             raise BadArgument('member role cannot be higher than your top role!')
 
         settings = await MemberRole.get_by_guild(guild_id=ctx.guild.id)
-        if settings is None:
+        if len(settings) == 0:
             settings = MemberRole(guild_id=ctx.guild.id, member_role=member_role.id)
         else:
             settings = settings[0]
@@ -764,8 +761,16 @@ class Mute(db.DatabaseTable):
         return result_list
 
     async def update_or_add(self):
-        values = [self.member_id, self.guild_id]
-        keys = ["member_id", "guild_id"]
+        """Assign the attribute to this object, then call this method to either insert the object if it doesn't exist in
+        the DB or update it if it does exist. It will update every column not specified in __uniques__."""
+        # This is its own functions because all columns must be unique, which breaks the syntax of the other one
+        keys = []
+        values = []
+        for var, value in self.__dict__.items():
+            # Done so that the two are guaranteed to be in the same order, which isn't true of keys() and values()
+            if value is not None:
+                keys.append(var)
+                values.append(value)
         async with db.Pool.acquire() as conn:
             statement = f"""
             INSERT INTO {self.__tablename__} ({", ".join(keys)})
@@ -875,19 +880,6 @@ class MemberRole(db.DatabaseTable):
             obj = MemberRole(member_role=result.get("member_role"), guild_id=result.get("guild_id"))
             result_list.append(obj)
         return result_list
-
-    async def update_or_add(self):
-        values = [self.member_role, self.guild_id]
-        keys = ["member_role", "guild_id"]
-        async with db.Pool.acquire() as conn:
-            # noinspection SqlResolve
-            statement = f"""
-            INSERT INTO {self.__tablename__} ({", ".join(keys)})
-            VALUES({','.join(f'${i+1}' for i in range(len(values)))}) 
-            ON CONFLICT (guild_id) DO UPDATE
-            SET member_role = excluded.member_role;
-            """
-            await conn.execute(statement, *values)
 
 
 class GuildNewMember(db.DatabaseTable):
