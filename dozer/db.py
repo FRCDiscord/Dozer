@@ -19,7 +19,7 @@ async def db_migrate():
         version_num int NOT NULL
         )""")
     for cls in DatabaseTable.__subclasses__():
-        exists = await Pool.fetchrow(f"""SELECT EXISTS(
+        exists = await Pool.fetchrow("""SELECT EXISTS(
         SELECT 1
         FROM information_schema.tables
         WHERE

@@ -42,7 +42,8 @@ class Roles(Cog):
             else:
                 valid.add(role)
         for entry in restore:
-            await MissingRole.delete(role_id=entry.role_id, member_id=entry.member_id)  # Not missing anymore - remove the record to free up the primary key
+            # Not missing anymore - remove the record to free up the primary key
+            await MissingRole.delete(role_id=entry.role_id, member_id=entry.member_id)
 
         await member.add_roles(*valid)
         if not missing and not cant_give:

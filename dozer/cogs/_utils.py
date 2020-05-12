@@ -203,9 +203,9 @@ class Paginator(Reactor):
                 if ind == 0:
                     self.go_to_page(0)
                 elif ind == 1:
-                    self.prev()
+                    self.prev() # pylint: disable=not-callable
                 elif ind == 2:
-                    self.next()
+                    self.next() # pylint: disable=not-callable
                 elif ind == 3:
                     self.go_to_page(-1)
                 else:  # Only valid option left is 4

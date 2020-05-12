@@ -91,10 +91,10 @@ class TBA(Cog):
         try:
             events = await self.session.team_events(team_num, year=year)
         except aiotba.http.AioTBAError:
-            raise BadArgument(f"Couldn't find matching data!")
+            raise BadArgument("Couldn't find matching data!")
 
         if not events:
-            raise BadArgument(f"Couldn't find matching data!")
+            raise BadArgument("Couldn't find matching data!")
 
         e = discord.Embed(color=self.col)
         events = "\n".join(i.name for i in events)
