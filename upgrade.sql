@@ -13,6 +13,8 @@ DROP TABLE guilds;
 
 -- FILTER
 ALTER TABLE dozer.public.word_filters RENAME COLUMN id TO filter_id;
+ALTER TABLE word_filter_infraction ALTER timestamp type timestamp USING "timestamp"::timestamp without time zone;
+
 
 -- GENERAL
 ALTER TABLE dozer.public.welcome_channel RENAME COLUMN id TO guild_id;
