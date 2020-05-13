@@ -151,7 +151,8 @@ disable=print-statement,
         logging-format-interpolation,
         logging-fstring-interpolation,
         global-statement,
-        no-else-raise
+        no-else-raise,
+        no-else-break
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -323,7 +324,7 @@ indent-string='    '
 max-line-length=150
 
 # Maximum number of lines in a module
-max-module-lines=1000
+max-module-lines=1300
 
 # List of optional constructs for which whitespace checking is disabled. `dict-
 # separator` is used to allow tabulation in dicts, etc.: {1  : 1,\n222: 2}.

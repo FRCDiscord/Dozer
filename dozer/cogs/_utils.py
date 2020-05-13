@@ -1,7 +1,7 @@
 """Utilities for Dozer."""
 import asyncio
 import inspect
-
+import typing
 from collections.abc import Mapping
 
 import discord
@@ -12,15 +12,18 @@ __all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginat
 
 class CommandMixin:
     """Example usage processing"""
-    _example_usage = None
+
+    # Keyword-arg dictionary passed to __init__ when copying/updating commands when Cog instances are created
+    # inherited from discord.ext.command.Command
+    __original_kwargs__: typing.Dict[str, typing.Any]
     _required_permissions = None
 
-    def __init__(self, name, callback, **kwargs):
-        self.message = None
-        self.reactor = None
-        super().__init__(name=name, callback=callback, **kwargs)  # All must be named for commands.Group.__init__
-        if hasattr(callback, '__required_permissions__'):
-            self._required_permissions = callback.__required_permissions__
+    def __init__(self, func, **kwargs):
+        super().__init__(func, **kwargs)
+        self.example_usage = kwargs.pop('example_usage', '')
+        if hasattr(func, '__required_permissions__'):
+            # This doesn't need to go into __original_kwargs__ because it'll be read from func each time
+            self._required_permissions = func.__required_permissions__
 
     @property
     def required_permissions(self):
@@ -37,7 +40,7 @@ class CommandMixin:
     @example_usage.setter
     def example_usage(self, usage):
         """Sets example usage"""
-        self._example_usage = inspect.cleandoc(usage)
+        self._example_usage = self.__original_kwargs__['example_usage'] = inspect.cleandoc(usage)
 
 
 class Command(CommandMixin, commands.Command):
@@ -66,12 +69,13 @@ def command(**kwargs):
 def group(**kwargs):
     """Links command groups"""
     kwargs.setdefault('cls', Group)
-    return commands.command(**kwargs)
+    return commands.group(**kwargs)
 
 
-class Cog:
+class Cog(commands.Cog):
     """Initiates cogs."""
     def __init__(self, bot):
+        super().__init__()
         self.bot = bot
 
 
@@ -199,9 +203,9 @@ class Paginator(Reactor):
                 if ind == 0:
                     self.go_to_page(0)
                 elif ind == 1:
-                    self.prev()
+                    self.prev() # pylint: disable=not-callable
                 elif ind == 2:
-                    self.next()
+                    self.next() # pylint: disable=not-callable
                 elif ind == 3:
                     self.go_to_page(-1)
                 else:  # Only valid option left is 4

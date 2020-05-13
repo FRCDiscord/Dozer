@@ -27,60 +27,59 @@ class Filter(Cog):
 
     async def check_dm_filter(self, ctx, embed):
         """Send an embed, if the setting in the DB allows for it"""
-        results = self.word_filter_setting.query_one(guild_id=ctx.guild.id, setting_type="dm")
-
-        if results is None:
-            results = True
+        results = await WordFilterSetting.get_by(guild_id=ctx.guild.id, setting_type="dm")
+        if results:
+            result = results[0].value
         else:
-            results = results.value
+            result = "1"
 
-        if results == "1":
+        if result == "1":
             await ctx.author.send(embed=embed)
             await ctx.message.add_reaction("📬")
         else:
             await ctx.send(embed=embed)
 
-    def load_filters(self, guild_id):
+    async def load_filters(self, guild_id):
         """Load all filters for a selected guild """
-        with db.Session() as session:
-            results = session.query(WordFilter).filter_by(guild_id=guild_id, enabled=True).all()
-            self.filter_dict[guild_id] = {}
-            for wordfilter in results:
-                self.filter_dict[guild_id][wordfilter.id] = re.compile(wordfilter.pattern, re.IGNORECASE)
+        results = await WordFilter.get_by(guild_id=guild_id, enabled=True)
+        self.filter_dict[guild_id] = {}
+        for wordfilter in results:
+            self.filter_dict[guild_id][wordfilter.filter_id] = re.compile(wordfilter.pattern, re.IGNORECASE)
 
     async def check_filters(self, message):
         """Check all the filters for a certain message (with it's guild)"""
         if message.author.id == self.bot.user.id:
             return
-        roles = self.word_filter_role_whitelist.query_all(guild_id=message.guild.id)
+        roles = await self.word_filter_role_whitelist.query_all(guild_id=message.guild.id)
         whitelisted_ids = set(role.role_id for role in roles)
         if any(x.id in whitelisted_ids for x in message.author.roles):
             return
         try:
             filters = self.filter_dict[message.guild.id]
         except KeyError:
-            self.load_filters(message.guild.id)
+            await self.load_filters(message.guild.id)
             filters = self.filter_dict[message.guild.id]
         deleted = False
         for wordid, wordfilter in filters.items():
             if wordfilter.search(message.content) is not None:
                 await message.channel.send("{}, Banned word detected!".format(message.author.mention), delete_after=5.0)
                 time = datetime.datetime.utcnow()
-                with db.Session() as session:
-                    infraction = WordFilterInfraction(member_id=message.author.id, filter_id=wordid,
-                                                      timestamp=time,
-                                                      message=message.content)
-                    session.add(infraction)
+                infraction = WordFilterInfraction(member_id=message.author.id, filter_id=wordid,
+                                                  timestamp=time,
+                                                  message=message.content)
+                await infraction.update_or_add()
                 if not deleted:
                     await message.delete()
                     deleted = True
 
     """Event Handlers"""
 
+    @Cog.listener('on_message')
     async def on_message(self, message):
         """Send the message handler out"""
         await self.check_filters(message)
 
+    @Cog.listener('on_message_edit')
     async def on_message_edit(self, _, after):
         """Send the message handler out, but for edits"""
         await self.check_filters(after)
@@ -91,8 +90,8 @@ class Filter(Cog):
     @guild_only()
     async def filter(self, ctx, advanced: bool = False):
         """List and manage filtered words"""
-        with db.Session() as session:
-            results = session.query(WordFilter).filter_by(guild_id=ctx.guild.id, enabled=True).all()
+        results = await WordFilter.get_by(guild_id=ctx.guild.id, enabled=True)
+
         if not results:
             embed = discord.Embed(title="Filters for {}".format(ctx.guild.name))
             embed.description = "No filters found for this guild! Add one using `{}filter add <regex> [name]`".format(
@@ -101,7 +100,7 @@ class Filter(Cog):
             await ctx.send(embed=embed)
             return
 
-        fmt = 'ID {0.id}: `{0.friendly_name}`'
+        fmt = 'ID {0.filter_id}: `{0.friendly_name}`'
         if advanced:
             fmt += ': Pattern: `{0.pattern}`'
 
@@ -131,40 +130,46 @@ class Filter(Cog):
             await ctx.send("Invalid RegEx! ```{}```".format(err.msg))
             return
         new_filter = WordFilter(guild_id=ctx.guild.id, pattern=pattern, friendly_name=friendly_name or pattern)
-        with db.Session() as session:
-            session.add(new_filter)
+        await new_filter.update_or_add()
         embed = discord.Embed()
-        embed.title = "Filter {} added".format(new_filter.id)
+        embed.title = "Filter added!"
         embed.description = "A new filter with the name `{}` was added.".format(friendly_name or pattern)
         embed.add_field(name="Pattern", value="`{}`".format(pattern))
         await ctx.send(embed=embed)
-        self.load_filters(ctx.guild.id)
+        await self.load_filters(ctx.guild.id)
 
     add.example_usage = "`{prefix}filter add Swear` - Makes it so that \"Swear\" will be filtered"
 
     @guild_only()
     @has_permissions(manage_guild=True)
     @filter.command()
-    async def edit(self, ctx, filter_id, pattern):
+    async def edit(self, ctx, filter_id: int, pattern):
         """Edit an already existing filter using a new pattern. A filter's friendly name cannot be edited."""
         try:
             re.compile(pattern)
         except re.error as err:
             await ctx.send("Invalid RegEx! ```{}```".format(err.msg))
             return
-        with db.Session() as session:
-            result = session.query(WordFilter).filter_by(id=filter_id, guild_id=ctx.guild.id).one_or_none()
-            old_pattern = result.pattern
-            if result is None:
-                await ctx.send("That filter ID does not exist or does not belong to this guild.")
-                return
-            if not result.enabled:
-                result.enabled = True
-                enabled_change = True
-            result.pattern = pattern
-        self.load_filters(ctx.guild.id)
+        results = await WordFilter.get_by(guild_id=ctx.guild.id)
+        found = False
+        result = None
+        for result in results:
+            if result.filter_id == filter_id:
+                found = True
+                break
+        if not found:
+            await ctx.send("That filter ID does not exist or does not belong to this guild.")
+            return
+        old_pattern = result.pattern
+        enabled_change = False
+        if not result.enabled:
+            result.enabled = True
+            enabled_change = True
+        result.pattern = pattern
+        await result.update_or_add()
+        await self.load_filters(ctx.guild.id)
         embed = discord.Embed(title="Updated filter {}".format(result.friendly_name or result.pattern))
-        embed.description = "Filter ID {} has been updated.".format(result.id)
+        embed.description = "Filter ID {} has been updated.".format(result.filter_id)
         embed.add_field(name="Old Pattern", value=old_pattern)
         embed.add_field(name="New Pattern", value=pattern)
         if enabled_change:
@@ -178,19 +183,21 @@ class Filter(Cog):
     @guild_only()
     @has_permissions(manage_guild=True)
     @filter.command()
-    async def remove(self, ctx, filter_id):
+    async def remove(self, ctx, filter_id: int):
         """Remove a pattern from the filter list."""
-        with db.Session() as session:
-            result = session.query(WordFilter).filter_by(id=filter_id).one_or_none()
-            if result is None:
-                await ctx.send("Filter ID {} not found!".format(filter_id))
-                return
-            if result.guild_id != ctx.guild.id:
-                await ctx.send("That Filter does not belong to this guild.")
-                return
-            result.enabled = False
-        await ctx.send("Filter `{}` with name `{}` deleted.".format(result.id, result.friendly_name))
-        self.load_filters(ctx.guild.id)
+        result = await WordFilter.get_by(filter_id=filter_id)
+        if len(result) == 0:
+            await ctx.send("Filter ID {} not found!".format(filter_id))
+            return
+        else:
+            result = result[0]
+        if result.guild_id != ctx.guild.id:
+            await ctx.send("That Filter does not belong to this guild.")
+            return
+        result.enabled = False
+        await result.update_or_add()
+        await ctx.send("Filter with name `{}` deleted.".format(result.friendly_name))
+        await self.load_filters(ctx.guild.id)
 
     remove.example_usage = "`{prefix}filter remove 7` - Disables filter with ID 7"
 
@@ -200,16 +207,16 @@ class Filter(Cog):
     async def dm_config(self, ctx, config: bool):
         """Set whether filter words should be DMed when used in bot messages"""
         config = str(int(config)) # turns into "1" or "0" idk man
-        with db.Session() as session:
-            result = session.query(WordFilterSetting).filter_by(guild_id=ctx.guild.id, setting_type="dm") \
-                .one_or_none()
-            try:
-                before_setting = result.value
-                result.value = config
-            except AttributeError:
-                before_setting = None
-                result = WordFilterSetting(guild_id=ctx.guild.id, setting_type="dm", value=config)
-                session.add(result)
+        results = await WordFilterSetting.get_by(guild_id=ctx.guild.id, setting_type="dm")
+        if results:
+            before_setting = results[0].value
+            # Due to the settings table having a serial ID, inserts always succeed, so update_or_add can't be used to
+            # update in place. Instead we have to delete and reinsert the record.
+            await WordFilterSetting.delete(guild_id=results[0].guild_id, setting_type=results[0].setting_type)
+        else:
+            before_setting = None
+        result = WordFilterSetting(guild_id=ctx.guild.id, setting_type="dm", value=config)
+        await result.update_or_add()
         self.word_filter_setting.invalidate_entry(guild_id=ctx.guild.id, setting_type="dm")
         await ctx.send(
             "The DM setting for this guild has been changed from {} to {}.".format(before_setting == "1", result.value == "1"))
@@ -220,8 +227,8 @@ class Filter(Cog):
     @filter.group(invoke_without_command=True)
     async def whitelist(self, ctx):
         """List all whitelisted roles for this server"""
-        results = self.word_filter_role_whitelist.query_all(guild_id=ctx.guild.id)
-        role_objects = (ctx.guild.get_role(db_role.role_id) for db_role in results)
+        results = await WordFilterRoleWhitelist.get_by(guild_id=ctx.guild.id)
+        role_objects = [ctx.guild.get_role(db_role.role_id) for db_role in results]
         role_names = (role.name for role in role_objects if role is not None)
         roles_text = "\n".join(role_names)
         embed = discord.Embed()
@@ -237,13 +244,12 @@ class Filter(Cog):
     @whitelist.command(name="add")
     async def whitelist_add(self, ctx, *, role: discord.Role):
         """Add a role to the whitelist"""
-        with db.Session() as session:
-            result = session.query(WordFilterRoleWhitelist).filter_by(role_id=role.id).one_or_none()
-            if result is not None:
-                await ctx.send("That role is already whitelisted.")
-                return
-            whitelist_entry = WordFilterRoleWhitelist(guild_id=ctx.guild.id, role_id=role.id)
-            session.add(whitelist_entry)
+        result = await WordFilterRoleWhitelist.get_by(role_id=role.id)
+        if len(result) != 0:
+            await ctx.send("That role is already whitelisted.")
+            return
+        whitelist_entry = WordFilterRoleWhitelist(role_id=role.id, guild_id=ctx.guild.id)
+        await whitelist_entry.update_or_add()
         self.word_filter_role_whitelist.invalidate_entry(guild_id=ctx.guild.id)
         await ctx.send("Whitelisted `{}` for this guild.".format(role.name))
 
@@ -254,12 +260,11 @@ class Filter(Cog):
     @whitelist.command(name="remove")
     async def whitelist_remove(self, ctx, *, role: discord.Role):
         """Remove a role from the whitelist"""
-        with db.Session() as session:
-            result = session.query(WordFilterRoleWhitelist).filter_by(role_id=role.id).one_or_none()
-            if result is None:
-                await ctx.send("That role is not whitelisted.")
-                return
-            session.delete(result)
+        result = await WordFilterRoleWhitelist.get_by(role_id=role.id)
+        if len(result) == 0:
+            await ctx.send("That role is not whitelisted.")
+            return
+        await WordFilterRoleWhitelist.delete(role_id=role.id)
         self.word_filter_role_whitelist.invalidate_entry(guild_id=ctx.guild.id)
         await ctx.send("The role `{}` is no longer whitelisted.".format(role.name))
 
@@ -268,45 +273,145 @@ class Filter(Cog):
 
 def setup(bot):
     """Setup cog"""
+
     bot.add_cog(Filter(bot))
 
 
 """Database Tables"""
 
 
-class WordFilter(db.DatabaseObject):
+class WordFilter(db.DatabaseTable):
     """Object for each filter"""
-    __tablename__ = "word_filters"
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    enabled = db.Column(db.Boolean, default=True)
-    guild_id = db.Column(db.BigInteger)
-    friendly_name = db.Column(db.String, nullable=True)
-    pattern = db.Column(db.String)
-    infractions = db.relationship("WordFilterInfraction", back_populates="filter")
+    __tablename__ = 'word_filters'
+    __uniques__ = 'filter_id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            filter_id serial PRIMARY KEY NOT NULL,
+            enabled boolean default true NOT NULL,
+            guild_id bigint NOT NULL,
+            friendly_name varchar null,
+            pattern varchar NOT NULL
+            )""")
+
+    def __init__(self, guild_id, friendly_name, pattern, enabled=True, filter_id=None):
+        super().__init__()
+        self.filter_id = filter_id
+        self.guild_id = guild_id
+        self.enabled = enabled
+        self.friendly_name = friendly_name
+        self.pattern = pattern
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = WordFilter(guild_id=result.get("guild_id"), friendly_name=result.get("friendly_name"),
+                             pattern=result.get("pattern"), enabled=result.get("enabled"), filter_id=result.get("filter_id"))
+            result_list.append(obj)
+        return result_list
 
 
-class WordFilterSetting(db.DatabaseObject):
-    """Each filter-related setting (will be replaced soon)"""
-    __tablename__ = "word_filter_settings"
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    setting_type = db.Column(db.String)
-    guild_id = db.Column(db.BigInteger)
-    value = db.Column(db.String)
+class WordFilterSetting(db.DatabaseTable):
+    """Each filter-related setting"""
+    __tablename__ = 'word_filter_settings'
+    __uniques__ = 'id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            id serial PRIMARY KEY NOT NULL,
+            setting_type varchar NOT NULL,
+            guild_id bigint NOT NULL,
+            value varchar NOT NULL
+            )""")
+
+    def __init__(self, guild_id, setting_type, value):
+        super().__init__()
+        self.guild_id = guild_id
+        self.setting_type = setting_type
+        self.value = value
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = WordFilterSetting(guild_id=result.get("guild_id"), setting_type=result.get("setting_type"),
+                                    value=result.get('value'))
+            result_list.append(obj)
+        return result_list
 
 
-class WordFilterRoleWhitelist(db.DatabaseObject):
-    """Object for each whitelisted role (guild-specific)"""
-    __tablename__ = "word_filter_role_whitelist"
-    guild_id = db.Column(db.BigInteger)
-    role_id = db.Column(db.BigInteger, primary_key=True)
+class WordFilterRoleWhitelist(db.DatabaseTable):
+    """Object for each whitelisted role"""
+    __tablename__ = 'word_filter_role_whitelist'
+    __uniques__ = 'role_id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            guild_id bigint NOT NULL,
+            role_id bigint PRIMARY KEY NOT NULL 
+            )""")
+
+    def __init__(self, guild_id, role_id):
+        super().__init__()
+        self.role_id = role_id
+        self.guild_id = guild_id
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = WordFilterRoleWhitelist(guild_id=result.get("guild_id"), role_id=result.get("role_id"))
+            result_list.append(obj)
+        return result_list
 
 
-class WordFilterInfraction(db.DatabaseObject):
+class WordFilterInfraction(db.DatabaseTable):
     """Object for each word filter infraction"""
-    __tablename__ = "word_filter_infraction"
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    member_id = db.Column(db.BigInteger)
-    filter_id = db.Column(db.Integer, db.ForeignKey('word_filters.id'))
-    filter = db.relationship("WordFilter", back_populates="infractions")
-    timestamp = db.Column(db.DateTime)
-    message = db.Column(db.String)
+    __tablename__ = 'word_filter_infraction'
+    __uniques__ = 'id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            id serial PRIMARY KEY NOT NULL,
+            member_id bigint NOT NULL,
+            filter_id bigint references word_filters(filter_id),
+            timestamp timestamp NOT NULL,
+            message varchar NOT NULL
+            )""")
+
+    def __init__(self, member_id, filter_id, timestamp, message):
+        super().__init__()
+        self.member_id = member_id
+        self.filter_id = filter_id
+        self.timestamp = timestamp
+        self.message = message
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = WordFilterInfraction(member_id=result.get("member_id"), filter_id=result.get("filter_id"),
+                                       timestamp=result.get("timestamp"), message=result.get("message"))
+            result_list.append(obj)
+        return result_list
