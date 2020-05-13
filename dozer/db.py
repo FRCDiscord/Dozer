@@ -150,7 +150,7 @@ class ConfigCache:
                 self.cache[query_hash] = None
             else:
                 self.cache[query_hash] = self.cache[query_hash][0]
-            return self.cache[query_hash]
+        return self.cache[query_hash]
 
     async def query_all(self, **kwargs):
         """Query the cache for all entries matching the kwargs, then try again using the database."""
