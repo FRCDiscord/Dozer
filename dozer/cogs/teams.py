@@ -78,10 +78,17 @@ class Teams(Cog):
             e = discord.Embed(type='rich')
             e.title = 'Users on team {}'.format(team_number)
             e.description = "Users: \n"
+            extra_mems = ""
             for i in users:
                 user = ctx.guild.get_member(i.user_id)
                 if user is not None:
-                    e.description = "{}{} {} \n".format(e.description, user.display_name, user.mention)
+                    memstr = "{} {} \n".format(user.display_name, user.mention)
+                    if len(e.description + memstr) > 2047:
+                        extra_mems += memstr
+                    else:
+                        e.description = e.description + memstr
+            if len(extra_mems) != 0:
+                e.add_field(name="Users on team {}".format(team_number), value=extra_mems)
             await ctx.send(embed=e)
 
     onteam.example_usage = """
