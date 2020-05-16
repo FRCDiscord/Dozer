@@ -35,7 +35,7 @@ class Info(Cog):
 
         status = 'DND' if member.status is discord.Status.dnd else member.status.name.title()
         if member.status is not discord.Status.offline:
-            platforms = format.pluralize([platform for platform in ('web', 'desktop', 'mobile') if
+            platforms = self.pluralize([platform for platform in ('web', 'desktop', 'mobile') if
                                           getattr(member, f'{platform}_status') is not discord.Status.offline])
             status = f'{status} on {platforms}'
         activities = '\n'.join(self._format_activities(member.activities))
@@ -79,6 +79,19 @@ class Info(Cog):
                     break
 
         return [format_activity(activity) for activity in filtered]
+
+    def pluralize(self, values: typing.List[str]) -> str:
+        if len(values) == 0:
+            return ''
+        elif len(values) == 1:
+            return values[0]
+        elif len(values) == 2:
+            return f'{values[0]} and {values[1]}'
+        else:
+            return f'{", ".join(values[:-1])}, and {values[-1]}'
+
+
+
 
     @guild_only()
     @cooldown(1, 10, BucketType.channel)
