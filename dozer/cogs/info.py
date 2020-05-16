@@ -82,6 +82,7 @@ class Info(Cog):
 
     @staticmethod
     def pluralize(values: typing.List[str]) -> str:
+        """Pluralizes things"""
         if len(values) == 0:
             return ''
         elif len(values) == 1:
