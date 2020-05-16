@@ -36,7 +36,7 @@ class Info(Cog):
         status = 'DND' if member.status is discord.Status.dnd else member.status.name.title()
         if member.status is not discord.Status.offline:
             platforms = self.pluralize([platform for platform in ('web', 'desktop', 'mobile') if
-                                          getattr(member, f'{platform}_status') is not discord.Status.offline])
+                                        getattr(member, f'{platform}_status') is not discord.Status.offline])
             status = f'{status} on {platforms}'
         activities = '\n'.join(self._format_activities(member.activities))
         embed.add_field(name='Status and Activity', value=f'{status}\n{activities}', inline=True)
@@ -80,7 +80,8 @@ class Info(Cog):
 
         return [format_activity(activity) for activity in filtered]
 
-    def pluralize(self, values: typing.List[str]) -> str:
+    @staticmethod
+    def pluralize(values: typing.List[str]) -> str:
         if len(values) == 0:
             return ''
         elif len(values) == 1:
@@ -89,9 +90,6 @@ class Info(Cog):
             return f'{values[0]} and {values[1]}'
         else:
             return f'{", ".join(values[:-1])}, and {values[-1]}'
-
-
-
 
     @guild_only()
     @cooldown(1, 10, BucketType.channel)
@@ -112,9 +110,9 @@ class Info(Cog):
         e.add_field(name='Region', value=guild.region.name)
         e.add_field(name='Icon URL', value=guild.icon_url or 'This guild has no icon.')
         e.add_field(name='Nitro Boost', value=f'Level {ctx.guild.premium_tier}, '
-                                                  f'{ctx.guild.premium_subscription_count} booster(s)\n'
-                                                  f'{ctx.guild.filesize_limit // 1024**2}MiB files, '
-                                                  f'{ctx.guild.bitrate_limit / 1000:0.1f}kbps voice')
+                                              f'{ctx.guild.premium_subscription_count} booster(s)\n'
+                                              f'{ctx.guild.filesize_limit // 1024**2}MiB files, '
+                                              f'{ctx.guild.bitrate_limit / 1000:0.1f}kbps voice')
 
         await ctx.send(embed=e)
 
