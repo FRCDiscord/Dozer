@@ -240,7 +240,7 @@ class NameGame(Cog):
     @has_permissions(manage_guild=True)
     async def defaultmode(self, ctx, mode: str = None):
         """Configuration of the default game mode (FRC, FTC, etc.)"""
-        query = await NameGameConfig.get_by_guild(guild_id=ctx.guild.id)
+        query = await NameGameConfig.get_by(guild_id=ctx.guild.id)
         config = query[0] if len(query) == 1 else None
         if mode is None:
             mode = SUPPORTED_MODES[0] if config is None else config.mode
@@ -262,7 +262,7 @@ class NameGame(Cog):
     @has_permissions(manage_guild=True)
     async def setchannel(self, ctx, channel: discord.TextChannel = None):
         """Sets the namegame channel"""
-        query = await NameGameConfig.get_by_guild(guild_id=ctx.guild.id)
+        query = await NameGameConfig.get_by(guild_id=ctx.guild.id)
         config = query[0] if len(query) == 1 else None
         if channel is None:
             if config is None or config.channel_id is None:
@@ -286,13 +286,14 @@ class NameGame(Cog):
     @has_permissions(manage_guild=True)
     async def clearsetchannel(self, ctx):
         """Clears the set namegame channel"""
-        query = await NameGameConfig.get_by_guild(guild_id=ctx.guild.id)
+        query = await NameGameConfig.get_by(guild_id=ctx.guild.id)
         config = query[0] if len(query) == 1 else None
         if config is not None:
-            config.channel_id = None
+            # update_or_add ignores attributes set to None. To set the column to None, we delete the record and insert
+            # a new one with channel set to None.
             new_namegame_config = NameGameConfig(channel_id=None, guild_id=ctx.guild.id, pings_enabled=config.pings_enabled,
                                                  mode=config.mode)
-            await config.delete(data_tuple_list=[("guild_id", ctx.guild.id)])
+            await NameGameConfig.delete(guild_id=ctx.guild.id)
             await new_namegame_config.update_or_add()
         await ctx.send("Namegame channel cleared!")
 
@@ -300,7 +301,7 @@ class NameGame(Cog):
     @has_permissions(manage_guild=True)
     async def setpings(self, ctx, enabled: bool):
         """Sets whether or not pings are enabled"""
-        query = await NameGameConfig.get_by_guild(guild_id=ctx.guild.id)
+        query = await NameGameConfig.get_by(guild_id=ctx.guild.id)
         config = query[0] if len(query) == 1 else None
         if config is None:
             config = NameGameConfig(guild_id=ctx.guild.id, channel_id=None, mode=SUPPORTED_MODES[0],
@@ -318,14 +319,11 @@ class NameGame(Cog):
             await ctx.send(
                 f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
             return
-        query = await NameGameLeaderboard.get_by_user(user_id=user.id)
-        record = None
-        for result in query:
-            if result.game_mode == mode:
-                record = result
-        if record is None:
+        query = await NameGameLeaderboard.get_by(user_id=user.id, game_mode=mode)
+        if not query:
             await ctx.send("User not on leaderboard!")
             return
+        record = query[0]
         record.wins = wins
         await record.update_or_add()
         await ctx.send(f"{user.display_name}'s wins now set to: **{wins}**")
@@ -338,7 +336,7 @@ class NameGame(Cog):
             await ctx.send(
                 f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
             return
-        await NameGameLeaderboard.delete(data_tuple_list=[("game_mode", f"'{mode}'")])
+        await NameGameLeaderboard.delete(game_mode=mode)
         await ctx.send(f"Cleared leaderboard for mode {mode}")
 
     # TODO: configurable time limits, ping on event, etc
@@ -384,14 +382,14 @@ class NameGame(Cog):
         One can select the robotics program by specifying one of "FRC" or "FTC".
         """
         if mode is None or mode.lower() not in SUPPORTED_MODES:
-            config = await NameGameConfig.get_by_guild(guild_id=ctx.guild.id)
+            config = await NameGameConfig.get_by(guild_id=ctx.guild.id)
             mode = SUPPORTED_MODES[0] if len(config) == 0 else config[0].mode
             await ctx.send(
                 f"Unspecified or invalid game mode,  assuming game mode `{mode}`. For a full list of game modes, run "
                 f"`{ctx.prefix}ng modes`")
 
         pings_enabled = False
-        config_query = await NameGameConfig.get_by_guild(guild_id=ctx.guild.id)
+        config_query = await NameGameConfig.get_by(guild_id=ctx.guild.id)
         if len(config_query) == 0:
             config = None
         else:
@@ -603,13 +601,13 @@ class NameGame(Cog):
     async def leaderboard(self, ctx, mode: str = None):
         """Display top numbers of wins for the specified game mode"""
         if mode is None:
-            config = await NameGameConfig.get_by_guild(guild_id=ctx.guild.id)
+            config = await NameGameConfig.get_by(guild_id=ctx.guild.id)
             mode = SUPPORTED_MODES[0] if len(config) == 0 else config[0].mode
         if mode not in SUPPORTED_MODES:
             await ctx.send(
                 f"Game mode `{mode}` not supported! Please pick a mode that is one of: `{', '.join(SUPPORTED_MODES)}`")
             return
-        leaderboard = sorted(await NameGameLeaderboard.get_by_attribute(obj_id=f"{mode}", column_name="game_mode"),
+        leaderboard = sorted(await NameGameLeaderboard.get_by(game_mode=mode),
                              key=lambda i: i.wins, reverse=True)[:10]
         embed = discord.Embed(color=discord.Color.gold(), title=f"{mode.upper()} Name Game Leaderboard")
         for idx, entry in enumerate(leaderboard, 1):
@@ -631,16 +629,13 @@ class NameGame(Cog):
             # winning condition
             winner = list(game.players.keys())[0]
 
-            query = await NameGameLeaderboard.get_by_user(user_id=winner.id)
-            record = None
-            for result in query:
-                if result.game_mode == game.mode:
-                    record = result
-            if record is None:
-                record = NameGameLeaderboard(user_id=winner.id, wins=1, game_mode=game.mode)
-                await record.update_or_add()
-            else:
+            query = await NameGameLeaderboard.get_by(user_id=winner.id, mode=game.mode)
+            if query:
+                record = query[0]
                 record.wins += 1
+            else:
+                record = NameGameLeaderboard(user_id=winner.id, wins=1, game_mode=game.mode)
+            await record.update_or_add()
             win_embed = discord.Embed()
             win_embed.color = discord.Color.gold()
             win_embed.title = "We have a winner!"
@@ -817,9 +812,8 @@ class NameGameConfig(db.DatabaseTable):
         self.pings_enabled = pings_enabled
 
     @classmethod
-    async def get_by_attribute(cls, obj_id, column_name):
-        """Gets a list of all objects with a given attribute"""
-        results = await super().get_by_attribute(obj_id, column_name)
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
             obj = NameGameConfig(guild_id=result.get("guild_id"), mode=result.get("mode"),
@@ -839,9 +833,10 @@ class NameGameLeaderboard(db.DatabaseTable):
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            user_id bigint PRIMARY KEY NOT NULL,
+            user_id bigint NOT NULL,
             wins bigint NOT NULL,
-            game_mode varchar NOT NULL
+            game_mode varchar NOT NULL,
+            PRIMARY KEY (user_id, game_mode)
             )""")
 
     def __init__(self, user_id, game_mode, wins):
@@ -851,9 +846,8 @@ class NameGameLeaderboard(db.DatabaseTable):
         self.wins = wins
 
     @classmethod
-    async def get_by_attribute(cls, obj_id, column_name):
-        """Gets a list of all objects with a given attribute"""
-        results = await super().get_by_attribute(obj_id, column_name)
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
             obj = NameGameLeaderboard(user_id=result.get("user_id"), game_mode=result.get("game_mode"),

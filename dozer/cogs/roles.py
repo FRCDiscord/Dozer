@@ -28,11 +28,7 @@ class Roles(Cog):
         """Restores a member's roles when they join if they have joined before."""
         me = member.guild.me
         top_restorable = me.top_role.position if me.guild_permissions.manage_roles else 0
-        restoreables = (await MissingRole.get_by_guild(guild_id=member.guild.id))
-        restore = []
-        for restorable in restoreables:
-            if restorable.member_id == member.id:
-                restore.append(restorable)
+        restore = await MissingRole.get_by(guild_id=member.guild.id, member_id=member.id)
         if len(restore) == 0:
             return  # New member - nothing to restore
 
@@ -46,9 +42,8 @@ class Roles(Cog):
             else:
                 valid.add(role)
         for entry in restore:
-            await MissingRole.delete(data_tuple_list=[("role_id", entry.role_id),
-                                                      ("member_id", entry.member_id)])
             # Not missing anymore - remove the record to free up the primary key
+            await MissingRole.delete(role_id=entry.role_id, member_id=entry.member_id)
 
         await member.add_roles(*valid)
         if not missing and not cant_give:
@@ -77,20 +72,20 @@ class Roles(Cog):
         guild_id = member.guild.id
         member_id = member.id
         for role in member.roles[1:]:  # Exclude the @everyone role
-            db_member = MissingRole(role_id=role.id, role_name=f"'{role.name}'", guild_id=guild_id, member_id=member_id)
+            db_member = MissingRole(role_id=role.id, role_name=role.name, guild_id=guild_id, member_id=member_id)
             await db_member.update_or_add()
 
     async def giveme_purge(self, rolelist):
-        """Purges roles in the giveme database that no longer exist"""
+        """Purges roles in the giveme database that no longer exist. The argument is a list of GiveableRole objects."""
         for role in rolelist:
-            dbrole = await GiveableRole.get_by_role(role_id=role.role_id)
-            if dbrole is not None:
-                await GiveableRole.delete(data_tuple_list=[("role_id", role.role_id)])
+            dbrole = await GiveableRole.get_by(role_id=role.role_id)
+            if dbrole:
+                await GiveableRole.delete(role_id=role.role_id)
 
     async def ctx_purge(self, ctx):
         """Purges all giveme roles that no longer exist in a guild"""
         counter = 0
-        roles = await GiveableRole.get_by_guild(guild_id=ctx.guild.id)
+        roles = await GiveableRole.get_by(guild_id=ctx.guild.id)
         guildroles = []
         rolelist = []
         for i in ctx.guild.roles:
@@ -112,7 +107,7 @@ class Roles(Cog):
     async def giveme(self, ctx, *, roles):
         """Give you one or more giveable roles, separated by commas."""
         norm_names = [self.normalize(name) for name in roles.split(',')]
-        giveable_ids = [tup.role_id for tup in await GiveableRole.get_by_guild(guild_id=ctx.guild.id) if tup.norm_name in norm_names]
+        giveable_ids = [tup.role_id for tup in await GiveableRole.get_by(guild_id=ctx.guild.id) if tup.norm_name in norm_names]
         valid = set(role for role in ctx.guild.roles if role.id in giveable_ids)
 
         already_have = valid & set(ctx.author.roles)
@@ -156,8 +151,8 @@ class Roles(Cog):
         if ',' in name:
             raise BadArgument('giveable role names must not contain commas!')
         norm_name = self.normalize(name)
-        settings = await GiveableRole.get_by_guild(guild_id=ctx.guild.id)
-        if norm_name in (giveable.norm_name for giveable in settings):
+        settings = await GiveableRole.get_by(guild_id=ctx.guild.id, norm_name=norm_name)
+        if settings:
             raise BadArgument('that role already exists and is giveable!')
         candidates = [role for role in ctx.guild.roles if self.normalize(role.name) == norm_name]
 
@@ -185,9 +180,8 @@ class Roles(Cog):
         if ',' in name:
             raise BadArgument('giveable role names must not contain commas!')
         norm_name = self.normalize(name)
-        settings = await GiveableRole.get_by_guild(guild_id=ctx.guild.id)
-        role = [role for role in settings if role.name == name]
-        if len(role) == 0:
+        settings = await GiveableRole.get_by(guild_id=ctx.guild.id, norm_name=norm_name)
+        if not settings:
             role = await ctx.guild.create_role(name=name, reason='Giveable role created by {}'.format(ctx.author))
             settings = GiveableRole.from_role(role)
             await settings.update_or_add()
@@ -207,7 +201,7 @@ class Roles(Cog):
     async def remove(self, ctx, *, roles):
         """Removes multiple giveable roles from you. Names must be separated by commas."""
         norm_names = [self.normalize(name) for name in roles.split(',')]
-        query = await GiveableRole.get_by_guild(ctx.guild.id)
+        query = await GiveableRole.get_by(guild_id=ctx.guild.id)
         roles_to_remove = []
         for role in query:
             if role.norm_name in norm_names:
@@ -248,10 +242,10 @@ class Roles(Cog):
             raise BadArgument('this command only works with single roles!')
         norm_name = self.normalize(name)
         valid_ids = set(role.id for role in ctx.guild.roles)
-        roles = await GiveableRole.get_by_guild(ctx.guild.id)
+        roles = await GiveableRole.get_by(guild_id=ctx.guild.id, norm_name=norm_name)
         valid_roles = []
         for role_option in roles:
-            if role_option.norm_name == norm_name and role_option.role_id in valid_ids:
+            if role_option.role_id in valid_ids:
                 valid_roles.append(role_option)
         if len(valid_roles) == 0:
             raise BadArgument('that role does not exist or is not giveable!')
@@ -259,7 +253,7 @@ class Roles(Cog):
             raise BadArgument('multiple giveable roles with that name exist!')
         else:
             role = ctx.guild.get_role(valid_roles[0].role_id)
-            await GiveableRole.delete(data_tuple_list=[("norm_name", f"'{valid_roles[0].norm_name}'")])
+            await GiveableRole.delete(guild_id=ctx.guild.id, norm_name=valid_roles[0].norm_name)
             await role.delete(reason='Giveable role deleted by {}'.format(ctx.author))
             await ctx.send('Role "{0}" deleted!'.format(role))
 
@@ -272,7 +266,7 @@ class Roles(Cog):
     @bot_has_permissions(manage_roles=True)
     async def list_roles(self, ctx):
         """Lists all giveable roles for this server."""
-        names = [tup.norm_name for tup in await GiveableRole.get_by_guild(ctx.guild.id)]
+        names = [tup.name for tup in await GiveableRole.get_by(guild_id=ctx.guild.id)]
         e = discord.Embed(title='Roles available to self-assign', color=discord.Color.blue())
         e.description = '\n'.join(sorted(names, key=str.casefold))
         await ctx.send(embed=e)
@@ -296,7 +290,7 @@ class Roles(Cog):
             raise BadArgument('this command only works with single roles!')
         norm_name = self.normalize(name)
         valid_ids = set(role.id for role in ctx.guild.roles)
-        roles = await GiveableRole.get_by_guild(ctx.guild.id)
+        roles = await GiveableRole.get_by(guild_id=ctx.guild.id)
         valid_roles = []
         for role_option in roles:
             if role_option.norm_name == norm_name and role_option.role_id in valid_ids:
@@ -306,7 +300,7 @@ class Roles(Cog):
         elif len(valid_roles) > 1:
             raise BadArgument('multiple giveable roles with that name exist!')
         else:
-            await GiveableRole.delete(data_tuple_list=[("norm_name", f"'{valid_roles[0].norm_name}'")])
+            await GiveableRole.delete(guild_id=ctx.guild.id, norm_name=valid_roles[0].norm_name)
             await ctx.send('Role "{0}" deleted from list!'.format(name))
 
     delete.example_usage = """
@@ -373,20 +367,19 @@ class GiveableRole(db.DatabaseTable):
         self.norm_name = norm_name
 
     @classmethod
-    async def get_by_attribute(cls, obj_id, column_name):
-        """Gets a list of all objects with a given attribute"""
-        results = await super().get_by_attribute(obj_id, column_name)
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
             obj = GiveableRole(guild_id=result.get("guild_id"), role_id=result.get("role_id"),
-                               name=result.get('role_name'), norm_name=result.get("norm_name"))
+                               name=result.get("name"), norm_name=result.get("norm_name"))
             result_list.append(obj)
         return result_list
 
     @classmethod
     def from_role(cls, role):
         """Creates a GiveableRole record from a discord.Role."""
-        return cls(role_id=role.id, name=f"'{role.name}'", norm_name=f"'{Roles.normalize(role.name)}'", guild_id=role.guild.id)
+        return cls(role_id=role.id, name=role.name, norm_name=Roles.normalize(role.name), guild_id=role.guild.id)
 
 
 class MissingRole(db.DatabaseTable):
@@ -415,9 +408,8 @@ class MissingRole(db.DatabaseTable):
         self.role_name = role_name
 
     @classmethod
-    async def get_by_attribute(cls, obj_id, column_name):
-        """Gets a list of all objects with a given attribute"""
-        results = await super().get_by_attribute(obj_id, column_name)
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
             obj = MissingRole(guild_id=result.get("guild_id"), role_id=result.get("role_id"),

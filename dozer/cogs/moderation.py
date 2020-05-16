@@ -52,7 +52,7 @@ class Moderation(Cog):
             await target.send(embed=modlog_embed)
         except discord.Forbidden:
             await orig_channel.send("Failed to DM modlog to user")
-        modlog_channel = await GuildModLog.get_by_guild(guild_id=actor.guild.id)
+        modlog_channel = await GuildModLog.get_by(guild_id=actor.guild.id)
         if orig_channel is not None:
             await orig_channel.send(embed=modlog_embed)
         if len(modlog_channel) != 0:
@@ -106,7 +106,7 @@ class Moderation(Cog):
 
         await asyncio.sleep(seconds)
 
-        user = await punishment.get_by_user(user_id=target.id, user_column_name="member_id")
+        user = await punishment.get_by(member_id=target.id)
         if len(user) != 0:
             await self.mod_log(actor,
                                "un" + punishment.past_participle,
@@ -118,7 +118,7 @@ class Moderation(Cog):
             self.bot.loop.create_task(coro=punishment.finished_callback(self, target))
 
         if ent:
-            await ent.delete(data_tuple_list=[("guild_id", target.guild.id), ("target_id", target.id)])
+            await PunishmentTimerRecords.delete(guild_id=target.guild.id, target_id=target.id, type_of_punishment=punishment.type)
 
     async def _check_links_warn(self, msg, role):
         """Warns a user that they can't send links."""
@@ -130,7 +130,7 @@ class Moderation(Cog):
         """Checks messages for the links role if necessary, then checks if the author is allowed to send links in the server"""
         if msg.guild is None or not isinstance(msg.author, discord.Member) or not msg.guild.me.guild_permissions.manage_messages:
             return
-        config = await self.links_config.query_one(obj_id=msg.guild.id, column_name="guild_id")
+        config = await self.links_config.query_one(guild_id=msg.guild.id)
         if config is None:
             return
         role = msg.guild.get_role(config.role_id)
@@ -152,14 +152,8 @@ class Moderation(Cog):
         actor: the acting user who requested the mute
         orig_channel: the channel of the request origin
         """
-        user = None
-        results = await Mute.get_by_guild(guild_id=member.guild.id)
-        for result in results:
-            if result.member_id == member.id:
-                user = result
-                break
-
-        if user is not None:
+        results = await Mute.get_by(guild_id=member.guild.id, member_id=member.id)
+        if results:
             return False # member already muted
         else:
             user = Mute(member_id=member.id, guild_id=member.guild.id)
@@ -172,14 +166,9 @@ class Moderation(Cog):
 
     async def _unmute(self, member: discord.Member):
         """Unmutes a user."""
-        results = await Mute.get_by_guild(guild_id=member.guild.id)
-        user = None
-        for result in results:
-            if result.member_id == member.id:
-                user = result
-                break
-        if user is not None:
-            await user.delete(data_tuple_list=[("member_id", member.id), ("guild_id", member.guild.id)])
+        results = await Mute.get_by(guild_id=member.guild.id, member_id=member.id)
+        if results:
+            await Mute.delete(member_id=member.id, guild_id=member.guild.id)
             await self.perm_override(member, send_messages=None, add_reactions=None)
             return True
         else:
@@ -195,11 +184,9 @@ class Moderation(Cog):
         actor: the acting user who requested the mute
         orig_channel: the channel of the request origin
         """
-        results = await Deafen.get_by_guild(guild_id=member.guild.id)
-        if len(results) != 0:
-            for result in results:
-                if result.member_id == member.id:
-                    return False
+        results = await Deafen.get_by(guild_id=member.guild.id, member_id=member.id)
+        if results:
+            return False
         else:
             user = Deafen(member_id=member.id, guild_id=member.guild.id, self_inflicted=self_inflicted)
             await user.update_or_add()
@@ -218,17 +205,12 @@ class Moderation(Cog):
 
     async def _undeafen(self, member: discord.Member, reason, ctx):
         """Undeafens a user."""
-        users = await Deafen.get_by_guild(guild_id=member.guild.id)
-        user = None
-        for user_to_check in users:
-            if user_to_check.member_id == member.id:
-                user = user_to_check
-                break
-        if user is not None:
+        results = await Deafen.get_by(guild_id=member.guild.id, member_id=member.id)
+        if results:
             await self.perm_override(member=member, read_messages=None)
-            await user.delete(data_tuple_list=[("member_id", member.id), ("guild_id", member.guild.id)])
+            await Deafen.delete(member_id=member.id, guild_id=member.guild.id)
             await self.mod_log(actor=ctx.author, action="undeafened", target=member, reason=reason,
-                               orig_channel=ctx.channel, embed_color=discord.Color.green(), global_modlog=not user.self_inflicted)
+                               orig_channel=ctx.channel, embed_color=discord.Color.green(), global_modlog=not results[0].self_inflicted)
         else:
             await ctx.send("Member is not deafened!")
 
@@ -237,7 +219,7 @@ class Moderation(Cog):
     @Cog.listener('on_ready')
     async def on_ready(self):
         """Restore punishment timers on bot startup"""
-        q = await PunishmentTimerRecords.get_all(PunishmentTimerRecords)
+        q = await PunishmentTimerRecords.get_by()  # no filters: all
         for r in q:
             guild = self.bot.get_guild(r.guild_id)
             actor = guild.get_member(r.actor_id)
@@ -246,7 +228,7 @@ class Moderation(Cog):
             punishment_type = r.type_of_punishment
             reason = r.reason or ""
             seconds = max(int(r.target_ts - time.time()), 0.01)
-            await r.delete(data_tuple_list=[(r.id, "id")])
+            await PunishmentTimerRecords.delete(id=r.id)
             self.bot.loop.create_task(self.punishment_timer(seconds, target, PunishmentTimerRecords.type_map[punishment_type], reason, actor,
                                                             orig_channel))
             getLogger('dozer').info(f"Restarted {PunishmentTimerRecords.type_map[punishment_type].__name__} of {target} in {guild}")
@@ -258,18 +240,16 @@ class Moderation(Cog):
         join.set_author(name='Member Joined', icon_url=member.avatar_url_as(format='png', size=32))
         join.description = "{0.mention}\n{0} ({0.id})".format(member)
         join.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
-        memberlogchannel = await GuildMemberLog.get_by_guild(guild_id=member.guild.id)
+        memberlogchannel = await GuildMemberLog.get_by(guild_id=member.guild.id)
         if len(memberlogchannel) != 0:
             channel = member.guild.get_channel(memberlogchannel[0].memberlog_channel)
             await channel.send(embed=join)
-        users = await Mute.get_by_guild(guild_id=member.guild.id)
-        for user in users:
-            if user.member_id == member.id:
-                await self.perm_override(member, add_reactions=False, send_messages=False)
-        users = await Deafen.get_by_guild(guild_id=member.guild.id)
-        for user in users:
-            if user.member_id == member.id:
-                await self.perm_override(member, read_messages=False)
+        users = await Mute.get_by(guild_id=member.guild.id, member_id=member.id)
+        if users:
+            await self.perm_override(member, add_reactions=False, send_messages=False)
+        users = await Deafen.get_by(guild_id=member.guild.id, member_id=member.id)
+        if users:
+            await self.perm_override(member, read_messages=False)
 
     @Cog.listener('on_member_remove')
     async def on_member_remove(self, member):
@@ -278,7 +258,7 @@ class Moderation(Cog):
         leave.set_author(name='Member Left', icon_url=member.avatar_url_as(format='png', size=32))
         leave.description = "{0.mention}\n{0} ({0.id})".format(member)
         leave.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
-        memberlogchannel = await GuildMemberLog.get_by_guild(guild_id=member.guild.id)
+        memberlogchannel = await GuildMemberLog.get_by(guild_id=member.guild.id)
         if len(memberlogchannel) != 0:
             channel = member.guild.get_channel(memberlogchannel[0].memberlog_channel)
             await channel.send(embed=leave)
@@ -291,7 +271,7 @@ class Moderation(Cog):
 
         if await self.check_links(message):
             return
-        config = await GuildNewMember.get_by_guild(guild_id=message.guild.id)
+        config = await GuildNewMember.get_by(guild_id=message.guild.id)
         if len(config) != 0:
             config = config[0]
             string = config.message
@@ -329,7 +309,7 @@ class Moderation(Cog):
                 e.add_field(name="Footer", value=i.footer)
         if message.attachments:
             e.add_field(name="Attachments", value=", ".join([i.url for i in message.attachments]))
-        messagelogchannel = await self.edit_delete_config.query_one(obj_id=message.guild.id, column_name="guild_id")
+        messagelogchannel = await self.edit_delete_config.query_one(guild_id=message.guild.id)
         if messagelogchannel is not None:
             channel = message.guild.get_channel(messagelogchannel.messagelog_channel)
             if channel is not None:
@@ -379,7 +359,7 @@ class Moderation(Cog):
                         e.add_field(name=x.name, value=x.value)
             if after.attachments:
                 e.add_field(name="Attachments", value=", ".join([i.url for i in before.attachments]))
-            messagelogchannel = await self.edit_delete_config.query_one(obj_id=before.guild.id, column_name="guild_id")
+            messagelogchannel = await self.edit_delete_config.query_one(guild_id=before.guild.id)
             if messagelogchannel is not None:
                 channel = before.guild.get_channel(messagelogchannel.messagelog_channel)
                 if channel is not None:
@@ -402,7 +382,7 @@ class Moderation(Cog):
     @bot_has_permissions(manage_roles=True)
     async def timeout(self, ctx, duration: float):
         """Set a timeout (no sending messages or adding reactions) on the current channel."""
-        settings = await MemberRole.get_by_guild(guild_id=ctx.guild.id)
+        settings = await MemberRole.get_by(guild_id=ctx.guild.id)
         if len(settings) == 0:
             settings = MemberRole(guild_id=ctx.guild.id)
             await settings.update_or_add()
@@ -597,7 +577,7 @@ class Moderation(Cog):
     @has_permissions(administrator=True)
     async def modlogconfig(self, ctx, channel_mentions: discord.TextChannel):
         """Set the modlog channel for a server by passing the channel id"""
-        config = await GuildModLog.get_by_guild(guild_id=ctx.guild.id)
+        config = await GuildModLog.get_by(guild_id=ctx.guild.id)
         if len(config) != 0:
             config = config[0]
             config.name = ctx.guild.name
@@ -614,7 +594,7 @@ class Moderation(Cog):
     @has_permissions(administrator=True)
     async def nmconfig(self, ctx, channel_mention: discord.TextChannel, role: discord.Role, *, message):
         """Sets the config for the new members channel"""
-        config = await GuildNewMember.get_by_guild(guild_id=ctx.guild.id)
+        config = await GuildNewMember.get_by(guild_id=ctx.guild.id)
         if len(config) != 0:
             config = config[0]
             config.channel_id = channel_mention.id
@@ -644,7 +624,7 @@ class Moderation(Cog):
         if member_role >= ctx.author.top_role:
             raise BadArgument('member role cannot be higher than your top role!')
 
-        settings = await MemberRole.get_by_guild(guild_id=ctx.guild.id)
+        settings = await MemberRole.get_by(guild_id=ctx.guild.id)
         if len(settings) == 0:
             settings = MemberRole(guild_id=ctx.guild.id, member_role=member_role.id)
         else:
@@ -672,7 +652,7 @@ class Moderation(Cog):
         if link_role >= ctx.author.top_role:
             raise BadArgument('Link role cannot be higher than your top role!')
 
-        settings = await GuildMessageLinks.get_by_guild(guild_id=ctx.guild.id)
+        settings = await GuildMessageLinks.get_by(guild_id=ctx.guild.id)
         if len(settings) == 0:
             settings = GuildMessageLinks(guild_id=ctx.guild.id, role_id=link_role.id)
         else:
@@ -694,7 +674,7 @@ class Moderation(Cog):
     @has_permissions(administrator=True)
     async def memberlogconfig(self, ctx, channel_mentions: discord.TextChannel):
         """Set the join/leave channel for a server by passing a channel mention"""
-        config = await GuildMemberLog.get_by_guild(guild_id=ctx.guild.id)
+        config = await GuildMemberLog.get_by(guild_id=ctx.guild.id)
         if len(config) != 0:
             config = config[0]
             config.name = ctx.guild.name
@@ -711,7 +691,7 @@ class Moderation(Cog):
     @has_permissions(administrator=True)
     async def messagelogconfig(self, ctx, channel_mentions: discord.TextChannel):
         """Set the modlog channel for a server by passing the channel id"""
-        config = await GuildMessageLog.get_by_guild(guild_id=ctx.guild.id)
+        config = await GuildMessageLog.get_by(guild_id=ctx.guild.id)
         if len(config) != 0:
             config = config[0]
             config.name = ctx.guild.name
@@ -751,9 +731,8 @@ class Mute(db.DatabaseTable):
         self.guild_id = guild_id
 
     @classmethod
-    async def get_by_attribute(cls, obj_id, column_name):
-        """Gets a list of all objects with a given attribute"""
-        results = await super().get_by_attribute(obj_id, column_name)
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
             obj = Mute(member_id=result.get("member_id"), guild_id=result.get("guild_id"))
@@ -806,9 +785,8 @@ class Deafen(db.DatabaseTable):
         self.self_inflicted = self_inflicted
 
     @classmethod
-    async def get_by_attribute(cls, obj_id, column_name):
-        """Gets a list of all objects with a given attribute"""
-        results = await super().get_by_attribute(obj_id, column_name)
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
             obj = Deafen(member_id=result.get("member_id"), guild_id=result.get("guild_id"),
@@ -840,9 +818,8 @@ class GuildModLog(db.DatabaseTable):
         self.name = name
 
     @classmethod
-    async def get_by_attribute(cls, obj_id, column_name):
-        """Gets a list of all objects with a given attribute"""
-        results = await super().get_by_attribute(obj_id, column_name)
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
             obj = GuildModLog(guild_id=result.get("guild_id"), modlog_channel=result.get("modlog_channel"),
@@ -872,30 +849,13 @@ class MemberRole(db.DatabaseTable):
         self.member_role = member_role
 
     @classmethod
-    async def get_by_attribute(cls, obj_id, column_name):
-        """Gets a list of all objects with a given attribute"""
-        results = await super().get_by_attribute(obj_id, column_name)
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
             obj = MemberRole(member_role=result.get("member_role"), guild_id=result.get("guild_id"))
             result_list.append(obj)
         return result_list
-
-    # async def update_or_add(self):
-    #     values = [self.member_role, self.guild_id]
-    #     keys = ["member_role", "guild_id"]
-    #     async with db.Pool.acquire() as conn:
-    #         # noinspection SqlResolve
-    #         statement = f"""
-    #         INSERT INTO {self.__tablename__} ({", ".join(keys)})
-    #         VALUES({','.join(f'${i+1}' for i in range(len(values)))})
-    #         ON CONFLICT (guild_id) DO UPDATE
-    #         SET member_role = excluded.member_role;
-    #         """
-    #         print(statement)
-    #         for value in values:
-    #             print(value, type(value))
-    #         await conn.execute(statement, *values)
 
 
 class GuildNewMember(db.DatabaseTable):
@@ -923,9 +883,8 @@ class GuildNewMember(db.DatabaseTable):
         self.message = message
 
     @classmethod
-    async def get_by_attribute(cls, obj_id, column_name):
-        """Gets a list of all objects with a given attribute"""
-        results = await super().get_by_attribute(obj_id, column_name)
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
             obj = GuildNewMember(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
@@ -957,9 +916,8 @@ class GuildMemberLog(db.DatabaseTable):
         self.name = name
 
     @classmethod
-    async def get_by_attribute(cls, obj_id, column_name):
-        """Gets a list of all objects with a given attribute"""
-        results = await super().get_by_attribute(obj_id, column_name)
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
             obj = GuildMemberLog(guild_id=result.get("guild_id"), memberlog_channel=result.get("memberlog_channel"),
@@ -991,9 +949,8 @@ class GuildMessageLog(db.DatabaseTable):
         self.messagelog_channel = messagelog_channel
 
     @classmethod
-    async def get_by_attribute(cls, obj_id, column_name):
-        """Gets a list of all objects with a given attribute"""
-        results = await super().get_by_attribute(obj_id, column_name)
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
             obj = GuildMessageLog(guild_id=result.get("guild_id"), name=result.get("name"),
@@ -1023,9 +980,8 @@ class GuildMessageLinks(db.DatabaseTable):
         self.role_id = role_id
 
     @classmethod
-    async def get_by_attribute(cls, obj_id, column_name):
-        """Gets a list of all objects with a given attribute"""
-        results = await super().get_by_attribute(obj_id, column_name)
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
             obj = GuildMessageLinks(guild_id=result.get("guild_id"), role_id=result.get("role_id"))
@@ -1067,9 +1023,8 @@ class PunishmentTimerRecords(db.DatabaseTable):
         self.reason = reason
 
     @classmethod
-    async def get_by_attribute(cls, obj_id, column_name):
-        """Gets a list of all objects with a given attribute"""
-        results = await super().get_by_attribute(obj_id, column_name)
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
             obj = PunishmentTimerRecords(guild_id=result.get("guild_id"), actor_id=result.get("actor_id"),
@@ -1080,22 +1035,6 @@ class PunishmentTimerRecords(db.DatabaseTable):
                                          input_id=result.get('id'))
             result_list.append(obj)
         return result_list
-
-    async def get_all(self):
-        async with db.Pool.acquire() as conn:  # Use transaction here?
-            results = await conn.fetch(f"""SELECT * FROM {self.__tablename__}""")
-            result_list = []
-            for result in results:
-                obj = PunishmentTimerRecords(guild_id=result.get("guild_id"), actor_id=result.get("actor_id"),
-                                             target_id=result.get("target_id"),
-                                             type_of_punishment=result.get("type_of_punishment"),
-                                             target_ts=result.get("target_ts"),
-                                             orig_channel_id=result.get("orig_channel_id"), reason=result.get("reason"),
-                                             input_id=result.get('id'))
-                # for var in obj.__dict__:
-                #     setattr(obj, var, result.get(var))
-                result_list.append(obj)
-            return result_list
 
 
 def setup(bot):

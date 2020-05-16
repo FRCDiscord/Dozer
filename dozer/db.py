@@ -77,7 +77,7 @@ class DatabaseTable:
         async with Pool.acquire() as conn:
             statement = f"""
             INSERT INTO {self.__tablename__} ({", ".join(keys)})
-            VALUES({','.join(f'${i+1}' for i in range(len(values)))}) 
+            VALUES({','.join(f'${i+1}' for i in range(len(values)))})
             ON CONFLICT ({self.__uniques__}) DO UPDATE
             SET {updates}
             """
@@ -91,59 +91,42 @@ class DatabaseTable:
                 values += ", "
                 first = False
             values += f"{key}: {value}"
-        return f"{self.__tablename__}: < {', '.join(self.__dict__.items())}>"
+        return f"{self.__tablename__}: <{values}>"
 
     # Class Methods
 
     @classmethod
-    async def get_by_attribute(cls, obj_id, column_name):
-        """Gets a list of all objects with a given attribute. This will grab all attributes, it's more efficient to
-        write your own SQL queries than use this one, but for a simple query this is fine."""
-        async with Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.fetch(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = $1""", obj_id)
-            return stmt
-
-    @classmethod
-    async def get_by_id(cls, obj_id):
-        """Get an instance of this object by it's primary key, id. This function will work for most subclasses using
-        `id` as it's primary key."""
-        await cls.get_by_attribute(obj_id, "id")
-
-    @classmethod
-    async def get_by_guild(cls, guild_id, guild_column_name="guild_id"):
-        """Get by guild ID"""
-        return await cls.get_by_attribute(obj_id=guild_id, column_name=guild_column_name)
-
-    @classmethod
-    async def get_by_channel(cls, channel_id, channel_column_name="channel_id"):
-        """Get by channel ID"""
-        return await cls.get_by_attribute(obj_id=channel_id, column_name=channel_column_name)
-
-    @classmethod
-    async def get_by_user(cls, user_id, user_column_name="user_id"):
-        """Get by user ID"""
-        return await cls.get_by_attribute(obj_id=user_id, column_name=user_column_name)
-
-    @classmethod
-    async def get_by_role(cls, role_id, role_column_name="role_id"):
-        """Get by role ID"""
-        return await cls.get_by_attribute(obj_id=role_id, column_name=role_column_name)
-
-    @classmethod
-    async def get_all(cls):
-        """Obtain all the things"""
-        async with Pool.acquire() as conn:  # Use transaction here?
-            return await conn.fetch(f"""SELECT * FROM {cls.__tablename__};""")
-
-    @classmethod
-    async def delete(cls, data_tuple_list):
-        """Deletes by any number of criteria specified as a list of (data_column, data) tuples"""
+    async def get_by(cls, **filters):
+        """Get a list of all records matching the given column=value criteria. This will grab all attributes, it's more
+        efficent to write your own SQL queries than use this one, but for a simple query this is fine."""
         async with Pool.acquire() as conn:
-            if len(data_tuple_list) > 1:
-                conditions = " AND ".join(f"{column_name} = ${i + 1}" for (i, (column_name, _)) in enumerate(data_tuple_list))
-            statement = f"DELETE FROM {cls.__tablename__} WHERE {conditions};"
-            params = [value for (key, value) in data_tuple_list]
-            await conn.execute(statement, *params)
+            statement = f"SELECT * FROM {cls.__tablename__}"
+            if filters:
+                # note: this code relies on subsequent iterations of the same dict having the same iteration order.
+                # This is an implementation detail of CPython 3.6 and a language guarantee in Python 3.7+.
+                conditions = " AND ".join(f"{column_name} = ${i + 1}" for (i, column_name) in enumerate(filters))
+                statement = f"{statement} WHERE {conditions};"
+            else:
+                statement += ";"
+            return await conn.fetch(statement, *filters.values())
+
+    @classmethod
+    async def delete(cls, **filters):
+        """Deletes by any number of criteria specified as column=value keyword arguments."""
+        async with Pool.acquire() as conn:
+            if filters:
+                # This code relies on properties of dicts - see get_by
+                conditions = " AND ".join(f"{column_name} = ${i + 1}" for (i, column_name) in enumerate(filters))
+                statement = f"DELETE FROM {cls.__tablename__} WHERE {conditions};"
+            else:
+                # Should this be a warning/error? It's almost certainly not intentional
+                statement = f"TRUNCATE {cls.__tablename__};"
+            await conn.execute(statement, *filters.values())
+
+    @classmethod
+    async def set_initial_version(cls):
+        """Sets initial version"""
+        await Pool.execute("""INSERT INTO versions (table_name, version_num) VALUES ($1,$2)""", cls.__tablename__, 0)
 
 
 class ConfigCache:
@@ -158,22 +141,22 @@ class ConfigCache:
         # sort the keys to make this repeatable; this allows consistency even when insertion order is different
         return tuple((k, dic[k]) for k in sorted(dic))
 
-    async def query_one(self, *args, obj_id, column_name):
+    async def query_one(self, **kwargs):
         """Query the cache for an entry matching the kwargs, then try again using the database."""
-        query_hash = args
+        query_hash = self._hash_dict(kwargs)
         if query_hash not in self.cache:
-            self.cache[query_hash] = await self.table.get_by_attribute(obj_id=obj_id, column_name=column_name)
+            self.cache[query_hash] = await self.table.get_by(**kwargs)
             if len(self.cache[query_hash]) == 0:
                 self.cache[query_hash] = None
             else:
                 self.cache[query_hash] = self.cache[query_hash][0]
-            return self.cache[query_hash]
+        return self.cache[query_hash]
 
-    async def query_all(self, *args):
+    async def query_all(self, **kwargs):
         """Query the cache for all entries matching the kwargs, then try again using the database."""
-        query_hash = args
+        query_hash = self._hash_dict(kwargs)
         if query_hash not in self.cache:
-            self.cache[query_hash] = await self.table.get_all()
+            self.cache[query_hash] = await self.table.get_by(**kwargs)
         return self.cache[query_hash]
 
     def invalidate_entry(self, **kwargs):
@@ -181,11 +164,6 @@ class ConfigCache:
         query_hash = self._hash_dict(kwargs)
         if query_hash in self.cache:
             del self.cache[query_hash]
-
-    @classmethod
-    async def set_initial_version(cls):
-        """Sets initial version"""
-        await Pool.execute("""INSERT INTO versions (table_name, version_num) VALUES ($1,$2)""", cls.__tablename__, 0)
 
     __versions__ = {}
 
