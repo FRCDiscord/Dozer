@@ -16,17 +16,16 @@ class Voice(Cog):
         if member.guild.me.guild_permissions.manage_roles and before.channel != after.channel:
             # determine if it's a join/leave event as well.
             # before and after are voice states
-            if after.channel is not None:
-                # join event, give role
-                config = await Voicebinds.get_by(channel_id=after.channel.id)
-                if len(config) != 0:
-                    await member.add_roles(member.guild.get_role(config[0].role_id))
-
             if before.channel is not None:
                 # leave event, take role
                 config = await Voicebinds.get_by(channel_id=before.channel.id)
                 if len(config) != 0:
                     await member.remove_roles(member.guild.get_role(config[0].role_id))
+            if after.channel is not None:
+                # join event, give role
+                config = await Voicebinds.get_by(channel_id=after.channel.id)
+                if len(config) != 0:
+                    await member.add_roles(member.guild.get_role(config[0].role_id))
 
     @command()
     @bot_has_permissions(manage_roles=True)
