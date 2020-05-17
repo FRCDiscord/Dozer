@@ -18,8 +18,16 @@ class Info(Cog):
     @guild_only()
     @bot_has_permissions(embed_links=True)
     async def member(self, ctx, *, member: discord.Member = None):
-        """ Show information on a member of this guild.
-            If no member is specified, your information will be shown."""
+        """Retrieve information about a member of the guild.
+         If no arguments are passed, information about the author is used.
+         **This command works without mentions.** Remove the '@' before your mention so you don't ping the person unnecessarily.
+         You can pick a member by:
+         - Username (`cooldude`)
+         - Username and discriminator (`cooldude#1234`)
+         - ID (`326749693969301506`)
+         - Nickname - must be exact and is case-sensitive (`"Mr. Cool Dude III | Team 1234"`)
+         - Mention (not recommended) (`@Mr Cool Dude III | Team 1234`)
+         """
         if member is None:
             member = ctx.author
 
@@ -47,9 +55,9 @@ class Info(Cog):
         await ctx.send(embed=embed)
 
     member.example_usage = """
-        `{prefix}member`: show your member info
-        `{prefix}member {ctx.me}`: show my member info
-        """
+    `{prefix}member`: show your member info
+    `{prefix}member {ctx.me}`: show my member info
+    """
 
     @staticmethod
     def _format_activities(activities: typing.Sequence[discord.Activity]) -> typing.List[str]:
@@ -82,7 +90,7 @@ class Info(Cog):
 
     @staticmethod
     def pluralize(values: typing.List[str]) -> str:
-        """Pluralizes things"""
+        """Given a list of items, it inserts commas and "and"s in the right places to create a grammatically correct list."""
         if len(values) == 0:
             return ''
         elif len(values) == 1:
@@ -98,6 +106,8 @@ class Info(Cog):
     async def guild(self, ctx):
         """Retrieve information about this guild."""
         guild = ctx.guild
+        static_emoji = sum(not e.animated for e in ctx.guild.emojis)
+        animated_emoji = sum(e.animated for e in ctx.guild.emojis)
         e = discord.Embed(color=blurple)
         e.set_thumbnail(url=guild.icon_url)
         e.add_field(name='Name', value=guild.name)
@@ -107,7 +117,7 @@ class Info(Cog):
         e.add_field(name='Members', value=guild.member_count)
         e.add_field(name='Channels', value=str(len(guild.channels)))
         e.add_field(name='Roles', value=str(len(guild.roles) - 1))  # Remove @everyone
-        e.add_field(name='Emoji', value=str(len(guild.emojis)))
+        e.add_field(name='Emoji', value="{} static, {} animated".format(static_emoji, animated_emoji))
         e.add_field(name='Region', value=guild.region.name)
         e.add_field(name='Icon URL', value=guild.icon_url or 'This guild has no icon.')
         e.add_field(name='Nitro Boost', value=f'Level {ctx.guild.premium_tier}, '
