@@ -90,7 +90,7 @@ class Info(Cog):
 
     @staticmethod
     def pluralize(values: typing.List[str]) -> str:
-        """Given a list of items, it inserts commas and "and"s in the right places to create a grammatically correct list."""
+        """Inserts commas and "and"s in the right places to create a grammatically correct list."""
         if len(values) == 0:
             return ''
         elif len(values) == 1:
