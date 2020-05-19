@@ -1,9 +1,9 @@
 """Commands for making and seeing robotics team associations."""
 
 import collections
+import json
 import discord
 from discord.ext.commands import BadArgument, guild_only
-import json
 
 from ._utils import *
 from .. import db
