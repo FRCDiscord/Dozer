@@ -3,9 +3,12 @@
 import collections
 import discord
 from discord.ext.commands import BadArgument, guild_only
+import json
 
 from ._utils import *
 from .. import db
+from .tba import TBA
+from .toa import TOA
 
 
 class Teams(Cog):
@@ -55,6 +58,41 @@ class Teams(Cog):
             e.description = "Teams: \n"
             for i in teams:
                 e.description = "{} {} Team {} \n".format(e.description, i.team_type.upper(), i.team_number)
+            await ctx.send(embed=e)
+
+    teamsfor.example_usage = """
+    `{prefix}teamsfor member` - Returns all team associations with the mentioned user. Assumes caller if blank.
+    """
+
+    @command()
+    @guild_only()
+    async def compcheck(self, ctx, event_type: str, event_key):
+        """Allows you to see people in the Discord server that are going to a certain competition."""
+        if event_type.lower() == "frc":
+            teams_raw = await TBA(ctx.bot).session.event_teams(event_key)
+            teams = [team.team_number for team in teams_raw]
+        elif event_type.lower() == "ftc":
+            teams_raw = json.loads(await TOA(ctx.bot).parser.req(f"/api/event/{event_key}/teams"))
+            teams = [team['team']['team_number'] for team in teams_raw]
+        else:
+            raise BadArgument("Unknown event type!")
+        found_mems = False
+        e = discord.Embed(type='rich')
+        e.title = 'Members going to {}'.format(event_key)
+        for team in teams:
+            members = await TeamNumbers.get_by(team_type=event_type.lower(), team_number=team)
+            memstr = ""
+            for member in members:
+                mem = ctx.guild.get_member(member.user_id)
+                if mem is not None:
+                    memstr += "{} {} \n".format(mem.display_name, mem.mention)
+                    found_mems = True
+            if len(memstr) > 0:
+                e.add_field(name=f"Team {team}", value=memstr)
+
+        if not found_mems:
+            raise BadArgument("Couldn't find any team members for that event!")
+        else:
             await ctx.send(embed=e)
 
     teamsfor.example_usage = """
@@ -168,6 +206,7 @@ class TeamNumbers(db.DatabaseTable):
             result_list.append(obj)
         return result_list
 
+    # noinspection SqlResolve
     @classmethod
     async def top10(cls, user_ids):
         """Returns the top 10 team entries"""

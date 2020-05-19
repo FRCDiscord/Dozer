@@ -391,10 +391,10 @@ class Moderation(Cog):
     @command()
     @has_permissions(kick_members=True)
     async def customlog(self, ctx, *, reason):
-        """Sends a message to the mod log specifying the member has been warned without punishment."""
+        """Sends a message to the mod log with custom text."""
         await self.mod_log(actor=ctx.author, action="", target=None, orig_channel=ctx.channel, reason=reason, embed_color=0xFFC400)
 
-    warn.example_usage = """
+    customlog.example_usage = """
     `{prefix}`customlog reason - warns a user for "reason"
     """
 
