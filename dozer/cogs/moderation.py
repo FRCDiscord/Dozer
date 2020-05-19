@@ -287,6 +287,8 @@ class Moderation(Cog):
     @Cog.listener('on_message_delete')
     async def on_message_delete(self, message):
         """When a message is deleted, log it."""
+        if message.author == self.bot.user:
+            return
         e = discord.Embed(type='rich')
         e.title = 'Message Deletion'
         e.color = 0xFF0000
