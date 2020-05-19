@@ -85,9 +85,17 @@ class Teams(Cog):
             for member in members:
                 mem = ctx.guild.get_member(member.user_id)
                 if mem is not None:
-                    memstr += "{} {} \n".format(mem.display_name, mem.mention)
+                    newmemstr = "{} {} \n".format(mem.display_name, mem.mention)
+                    if len(newmemstr + memstr) > 1023:
+                        e.add_field(name=f"Team {team}", value=memstr)
+                        memstr = ""
+                    memstr += newmemstr
                     found_mems = True
             if len(memstr) > 0:
+                if len(e.fields) == 25:
+                    await ctx.send(embed=e)
+                    e = discord.Embed(type='rich')
+                    e.title = 'Members going to {}'.format(event_key)
                 e.add_field(name=f"Team {team}", value=memstr)
 
         if not found_mems:
