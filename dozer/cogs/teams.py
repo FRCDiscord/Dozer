@@ -103,8 +103,8 @@ class Teams(Cog):
         else:
             await ctx.send(embed=e)
 
-    teamsfor.example_usage = """
-    `{prefix}teamsfor member` - Returns all team associations with the mentioned user. Assumes caller if blank.
+    compcheck.example_usage = """
+    `{prefix}compcheck event_type event_key` - Returns all members on teams registered for an event.
     """
 
     @group(invoke_without_command=True)
