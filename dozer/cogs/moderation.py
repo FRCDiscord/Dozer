@@ -55,12 +55,11 @@ class Moderation(Cog):
         modlog_embed.add_field(name="Requested by", value=f"{actor.mention} ({actor} | {actor.id})", inline=False)
         modlog_embed.add_field(name="Reason", value=reason or "No reason specified", inline=False)
         modlog_embed.timestamp = datetime.datetime.utcnow()
-        try:
-            await target.send(embed=modlog_embed)
-        except discord.Forbidden:
-            await orig_channel.send("Failed to DM modlog to user")
-        except AttributeError:
-            pass
+        if target is not None:
+            try:
+                await target.send(embed=modlog_embed)
+            except discord.Forbidden:
+                await orig_channel.send("Failed to DM modlog to user")
         modlog_channel = await GuildModLog.get_by(guild_id=actor.guild.id)
         if orig_channel is not None:
             await orig_channel.send(embed=modlog_embed)

@@ -7,8 +7,6 @@ from discord.ext.commands import BadArgument, guild_only
 
 from ._utils import *
 from .. import db
-from .tba import TBA
-from .toa import TOA
 
 
 class Teams(Cog):
@@ -69,10 +67,10 @@ class Teams(Cog):
     async def compcheck(self, ctx, event_type: str, event_key):
         """Allows you to see people in the Discord server that are going to a certain competition."""
         if event_type.lower() == "frc":
-            teams_raw = await TBA(ctx.bot).session.event_teams(event_key)
+            teams_raw = await ctx.bot.get_cog("tba").session.event_teams(event_key)
             teams = [team.team_number for team in teams_raw]
         elif event_type.lower() == "ftc":
-            teams_raw = json.loads(await TOA(ctx.bot).parser.req(f"/api/event/{event_key}/teams"))
+            teams_raw = json.loads(await ctx.bot.get_cog("TOA").parser.req(f"/api/event/{event_key}/teams"))
             teams = [team['team']['team_number'] for team in teams_raw]
         else:
             raise BadArgument("Unknown event type!")
