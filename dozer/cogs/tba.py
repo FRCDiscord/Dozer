@@ -1,11 +1,13 @@
 """A series of commands that talk to The Blue Alliance."""
 import datetime
+import io
 import itertools
 import json
 
 from pprint import pformat
 from urllib.parse import quote as urlquote, urljoin
 
+import aiohttp
 import discord
 from discord.ext.commands import BadArgument
 import googlemaps
@@ -22,7 +24,8 @@ class TBA(Cog):
         super().__init__(bot)
         tba_config = bot.config['tba']
         self.gmaps_key = bot.config['gmaps_key']
-        self.session = aiotba.TBASession(tba_config['key'], self.bot.http._session)
+        self.http_session = aiohttp.ClientSession()
+        self.session = aiotba.TBASession(tba_config['key'], self.http_session)
         # self.parser = tbapi.TBAParser(tba_config['key'], cache=False)
 
     col = discord.Color.from_rgb(63, 81, 181)
@@ -88,10 +91,10 @@ class TBA(Cog):
         try:
             events = await self.session.team_events(team_num, year=year)
         except aiotba.http.AioTBAError:
-            raise BadArgument(f"Couldn't find matching data!")
+            raise BadArgument("Couldn't find matching data!")
 
         if not events:
-            raise BadArgument(f"Couldn't find matching data!")
+            raise BadArgument("Couldn't find matching data!")
 
         e = discord.Embed(color=self.col)
         events = "\n".join(i.name for i in events)
@@ -245,10 +248,16 @@ class TBA(Cog):
         if td.country == "USA":
             td.country = "United States of America"
             units = 'u'
-        e = discord.Embed(title=f"Current weather for {team_program.upper()} Team {team_num}:")
-        e.set_image(url="https://wttr.in/{}".format(urlquote("{}+{}+{}_0_{}.png".format(td.city, td.state_prov, td.country, units))))
+        url = "https://wttr.in/{}".format(urlquote("{}+{}+{}_0_{}.png".format(td.city, td.state_prov, td.country, units)))
+
+        async with ctx.typing(), self.http_session.get(url) as resp:
+            image_data = io.BytesIO(await resp.read())
+
+        file_name = f"weather_{team_program.lower()}{team_num}.png"
+        e = discord.Embed(title=f"Current weather for {team_program.upper()} Team {team_num}:", url=url)
+        e.set_image(url=f"attachment://{file_name}")
         e.set_footer(text="Powered by wttr.in and sometimes TBA")
-        await ctx.send(embed=e)
+        await ctx.send(embed=e, file=discord.File(image_data, file_name))
 
     weather.example_usage = """
     `{prefix}weather 5052` - show the current weather for FRC team 5052, The RoboLobos

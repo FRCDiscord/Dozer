@@ -80,27 +80,28 @@ class General(Cog):
 
     async def _help_command(self, ctx, command):
         """Gets the help message for one command."""
-        info = discord.Embed(title='Command: {}{}'.format(ctx.prefix, command.signature), description=command.help or (
-            None if command.example_usage else 'No information provided.'), color=discord.Color.blue())
+        info = discord.Embed(title='Command: {}{} {}'.format(ctx.prefix, command.qualified_name, command.signature),
+                             description=command.help or (None if command.example_usage else 'No information provided.'),
+                             color=discord.Color.blue())
         usage = command.example_usage
-        if usage is not None:
+        if usage:
             info.add_field(name='Usage', value=usage.format(prefix=ctx.prefix, name=ctx.invoked_with), inline=False)
         info.set_footer(text='Dozer Help | {!r} command | Info'.format(command.qualified_name))
-        await self._show_help(ctx, info, 'Subcommands: {prefix}{signature}', '', '{command.qualified_name!r} command',
-                              command.commands if isinstance(command, Group) else set(), command=command, signature=command.signature)
+        await self._show_help(ctx, info, 'Subcommands: {prefix}{name} {signature}', '', '{name!r} command',
+                              command.commands if isinstance(command, Group) else set(),
+                              name=command.qualified_name, signature=command.signature)
 
     async def _help_cog(self, ctx, cog):
         """Gets the help message for one cog."""
         await self._show_help(ctx, None, 'Category: {cog_name}', inspect.cleandoc(cog.__doc__ or ''),
                               '{cog_name!r} category',
-                              (command for command in ctx.bot.commands if command.instance is cog),
+                              (command for command in ctx.bot.commands if command.cog is cog),
                               cog_name=type(cog).__name__)
 
     async def _show_help(self, ctx, start_page, title, description, footer, commands, **format_args):
         """Creates and sends a template help message, with arguments filled in."""
         format_args['prefix'] = ctx.prefix
-        footer = 'Dozer Help | {} | Page {}'.format(footer,
-                                                    '{page_num} of {len_pages}')
+        footer = 'Dozer Help | {} | Page {}'.format(footer, '{page_num} of {len_pages}')
         # Page info is inserted as a parameter so page_num and len_pages aren't evaluated now
         if commands:
             command_chunks = list(chunk(sorted(commands, key=lambda cmd: cmd.name), 4))
@@ -117,7 +118,7 @@ class General(Cog):
                             ctx, command)
                     else:
                         embed_value = 'No information provided.'
-                    page.add_field(name=ctx.prefix + command.signature, value=embed_value, inline=False)
+                    page.add_field(name='{}{} {}'.format(ctx.prefix, command.qualified_name, command.signature), value=embed_value, inline=False)
                 page.set_footer(text=footer.format(**format_args))
                 pages.append(page)
 
@@ -172,17 +173,17 @@ class General(Cog):
         Generates a set number of single use invites.
         """
 
-        settings = WelcomeChannel.get_by_channel(ctx.guild.id)
-        if len(settings) != 1:
+        settings = await WelcomeChannel.get_by(guild_id=ctx.guild.id)
+        if len(settings) == 0:
             await ctx.send(
-                "There is no welcome channel set. Please set one using `{0}welcomeconifg channel` and try again.".format(
+                "There is no welcome channel set. Please set one using `{0}welcomeconfig channel` and try again.".format(
                     ctx.prefix))
             return
         else:
-            invitechannel = ctx.bot.get_channel(settings.channel_id)
+            invitechannel = ctx.bot.get_channel(settings[0].channel_id)
             if invitechannel is None:
                 await ctx.send(
-                    "There was an issue getting your welcome channel. Please set it again using `{0} welcomeconfig channel`.".format(
+                    "There was an issue getting your welcome channel. Please set it again using `{0}welcomeconfig channel`.".format(
                         ctx.prefix))
                 return
             text = ""
@@ -206,7 +207,7 @@ class General(Cog):
         if welcome_channel.guild != ctx.guild:
             await ctx.send("That channel is not in this guild.")
             return
-        settings = WelcomeChannel(ctx.guild.id, welcome_channel)
+        settings = WelcomeChannel(ctx.guild.id, welcome_channel.id)
         await settings.update_or_add()
         await ctx.send("Welcome channel set to {}".format(welcome_channel.mention))
 
@@ -221,35 +222,31 @@ def setup(bot):
     bot.add_cog(General(bot))
 
 
-# class WelcomeChannel(db.DatabaseObject):
-#     """Maintains a list of channels for welcome messages"""
-#     __tablename__ = 'welcome_channel'
-#     id = db.Column(db.BigInteger, primary_key=True)
-#     channel_id = db.Column(db.BigInteger, nullable=True)
-
-
 class WelcomeChannel(db.DatabaseTable):
+    """Welcome channel object class"""
     __tablename__ = 'welcome_channel'
+    __uniques__ = 'guild_id'
 
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
+        """Create the table in the database"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            guild_id bigint PRIMARY KEY,
+            guild_id bigint PRIMARY KEY NOT NULL,
             channel_id bigint null
             )""")
-        await cls.set_initial_version()
-
-    @classmethod
-    async def initial_migrate(cls):
-        async with db.Pool.acquire() as conn:
-            await conn.execute("""ALTER TABLE welcome_channel RENAME id TO guild_id""")
-        await cls.set_initial_version()
 
     def __init__(self, guild_id, channel_id):
         super().__init__()
-        self._guild_id = guild_id
+        self.guild_id = guild_id
         self.channel_id = channel_id
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = WelcomeChannel(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"))
+            result_list.append(obj)
+        return result_list

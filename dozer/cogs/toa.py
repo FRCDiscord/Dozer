@@ -9,7 +9,7 @@ import async_timeout
 import discord
 from ._utils import *
 
-embed_color = discord.Color(0xff9800)
+embed_color = discord.Color(0xf89808)
 
 
 class TOAParser:
@@ -54,8 +54,8 @@ class TOA(Cog):
     """TOA commands"""
     def __init__(self, bot):
         super().__init__(bot)
-        self.parser = TOAParser(bot.config['toa']['key'], bot.http._session, app_name=bot.config['toa']['app_name'])
-        # The line above has an error (bot.http._session is a protected class)
+        self.http_session = aiohttp.ClientSession()
+        self.parser = TOAParser(bot.config['toa']['key'], self.http_session, app_name=bot.config['toa']['app_name'])
 
     @group(invoke_without_command=True)
     async def toa(self, ctx, team_num: int):
@@ -66,7 +66,7 @@ class TOA(Cog):
         await self.team.callback(self, ctx, team_num) # This works but Pylint throws an error
 
     toa.example_usage = """
-    `{prefix}toa 5667` - show information on team 5667, the Robominers
+    `{prefix}toa 5667` - show information on team 5667, Robominers
     """
 
     @toa.command()
@@ -81,13 +81,13 @@ class TOA(Cog):
 
         e = discord.Embed(color=embed_color)
         e.set_author(name='FIRST® Tech Challenge Team {}'.format(team_num),
-                     url='https://www.theorangealliance.org/teams/{}'.format(team_num),
-                     icon_url='https://theorangealliance.org/assets/imgs/favicon.png')
+                     url='https://theorangealliance.org/teams/{}'.format(team_num),
+                     icon_url='https://theorangealliance.org/assets/imgs/favicon.png?v=1')
         e.add_field(name='Name', value=team_data['team_name_short'])
         e.add_field(name='Rookie Year', value=team_data['rookie_year'])
         e.add_field(name='Location', value=', '.join((team_data['city'], team_data['state_prov'], team_data['country'])))
         e.add_field(name='Website', value=team_data['website'] or 'n/a')
-        e.add_field(name='Team Info Page', value='https://www.theorangealliance.org/teams/{}'.format(team_data['team_key']))
+        e.add_field(name='Team Info Page', value='https://theorangealliance.org/teams/{}'.format(team_data['team_key']))
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send('', embed=e)
 

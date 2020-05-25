@@ -21,7 +21,7 @@ class Development(Cog):
         eval_globals[module] = __import__(module)
     eval_globals['__builtins__'] = __import__('builtins')
 
-    def __local_check(self, ctx):  # All of this cog is only available to devs
+    def cog_check(self, ctx):  # All of this cog is only available to devs
         if ctx.author.id not in ctx.bot.config['developers']:
             raise NotOwner('you are not a developer!')
         return True
@@ -31,8 +31,7 @@ class Development(Cog):
         """Reloads a cog."""
         extension = 'dozer.cogs.' + cog
         msg = await ctx.send('Reloading extension %s' % extension)
-        self.bot.unload_extension(extension)
-        self.bot.load_extension(extension)
+        self.bot.reload_extension(extension)
         await msg.edit(content='Reloaded extension %s' % extension)
 
     reload.example_usage = """

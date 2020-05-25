@@ -1,7 +1,8 @@
 """Provides database storage for the Dozer Discord bot"""
 
 import asyncpg
-import discord
+
+Pool = None
 
 
 async def db_init(db_url):
@@ -18,7 +19,7 @@ async def db_migrate():
         version_num int NOT NULL
         )""")
     for cls in DatabaseTable.__subclasses__():
-        exists = await Pool.fetchrow(f"""SELECT EXISTS(
+        exists = await Pool.fetchrow("""SELECT EXISTS(
         SELECT 1
         FROM information_schema.tables
         WHERE
@@ -38,38 +39,20 @@ async def db_migrate():
 
 
 class DatabaseTable:
+    """Defines a database table"""
     __tablename__ = None
+    __uniques__ = []
 
     # Declare the migrate/create functions
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database with just the ID field. Overwrite this field in your subclasses with your
-        full schema. Make sure your DB rows have the exact same name as the python variable names."""
-        async with Pool.acquire() as conn:
-            await conn.execute(f"""
-            CREATE TABLE {cls.__tablename__} (
-            id serial PRIMARY KEY
-            )""")
-            await cls.set_initial_version()
+        """Create the table in the database"""
+        raise NotImplementedError("Database schema not implemented!")
 
     @classmethod
     async def initial_migrate(cls):
         """Migrate the table from the SQLalchemy based system to the asyncpg system. Define this yourself, or leave it
         blank if no migration is necessary."""
-        await cls.set_initial_version()
-
-    @classmethod
-    async def set_initial_version(cls):
-        await Pool.execute("""INSERT INTO versions (table_name, version_num) 
-                                          VALUES (?,?)""", cls.__tablename__, 0)
-
-    __versions__ = {}
-
-    __uniques__ = []
-
-    def __init__(self):
-        """Blank constructor, fill with your database roles exactly like the variable names. Also make sure your
-         __uniques__ property is overridden."""
 
     async def update_or_add(self):
         """Assign the attribute to this object, then call this method to either insert the object if it doesn't exist in
@@ -78,8 +61,9 @@ class DatabaseTable:
         values = []
         for var, value in self.__dict__.items():
             # Done so that the two are guaranteed to be in the same order, which isn't true of keys() and values()
-            keys.append(var)
-            values.append(value)
+            if value is not None:
+                keys.append(var)
+                values.append(value)
         updates = ""
         for key in keys:
             if key in self.__uniques__:
@@ -91,12 +75,13 @@ class DatabaseTable:
             else:
                 updates += ", \n"
         async with Pool.acquire() as conn:
-            conn.execute(f"""
+            statement = f"""
             INSERT INTO {self.__tablename__} ({", ".join(keys)})
-            VALUES($1)
-            ON CONFLICT ({", ".join(self.__uniques__)}) DO UPDATE
+            VALUES({','.join(f'${i+1}' for i in range(len(values)))})
+            ON CONFLICT ({self.__uniques__}) DO UPDATE
             SET {updates}
-            """, values)
+            """
+            await conn.execute(statement, *values)
 
     def __repr__(self):
         values = ""
@@ -106,44 +91,80 @@ class DatabaseTable:
                 values += ", "
                 first = False
             values += f"{key}: {value}"
-        return f"{self.__tablename__}: < {', '.join(self.__dict__.items())}>"
+        return f"{self.__tablename__}: <{values}>"
 
     # Class Methods
 
     @classmethod
-    async def get_by_attribute(cls, obj_id, column_name):
-        """Gets a list of all objects with a given attribute. This will grab all attributes, it's more efficient to
-        write your own SQL queries than use this one, but for a simple query this is fine."""
-        async with Pool.acquire() as conn:  # Use transaction here?
-            stmt = await conn.prepare(f"""SELECT * FROM {cls.__tablename__} WHERE {column_name} = ?""")
-            results = stmt.fetch(obj_id)
-            list = []
-            for result in results:
-                obj = cls()
-                for var in cls().__dict__:
-                    setattr(obj, var, result.get(var))
-                list.append(obj)
-            return list
+    async def get_by(cls, **filters):
+        """Get a list of all records matching the given column=value criteria. This will grab all attributes, it's more
+        efficent to write your own SQL queries than use this one, but for a simple query this is fine."""
+        async with Pool.acquire() as conn:
+            statement = f"SELECT * FROM {cls.__tablename__}"
+            if filters:
+                # note: this code relies on subsequent iterations of the same dict having the same iteration order.
+                # This is an implementation detail of CPython 3.6 and a language guarantee in Python 3.7+.
+                conditions = " AND ".join(f"{column_name} = ${i + 1}" for (i, column_name) in enumerate(filters))
+                statement = f"{statement} WHERE {conditions};"
+            else:
+                statement += ";"
+            return await conn.fetch(statement, *filters.values())
 
     @classmethod
-    async def get_by_id(cls, obj_id):
-        """Get an instance of this object by it's primary key, id. This function will work for most subclasses using
-        `id` as it's primary key."""
-        await cls.get_by_attribute(obj_id, "id")
+    async def delete(cls, **filters):
+        """Deletes by any number of criteria specified as column=value keyword arguments."""
+        async with Pool.acquire() as conn:
+            if filters:
+                # This code relies on properties of dicts - see get_by
+                conditions = " AND ".join(f"{column_name} = ${i + 1}" for (i, column_name) in enumerate(filters))
+                statement = f"DELETE FROM {cls.__tablename__} WHERE {conditions};"
+            else:
+                # Should this be a warning/error? It's almost certainly not intentional
+                statement = f"TRUNCATE {cls.__tablename__};"
+            await conn.execute(statement, *filters.values())
 
     @classmethod
-    async def get_by_guild(cls, guild_id, guild_column_name = "guild_id"):
-        await cls.get_by_attribute(guild_id, guild_column_name)
+    async def set_initial_version(cls):
+        """Sets initial version"""
+        await Pool.execute("""INSERT INTO versions (table_name, version_num) VALUES ($1,$2)""", cls.__tablename__, 0)
 
-    @classmethod
-    async def get_by_channel(cls, channel_id, channel_column_name = "channel_id"):
-        await cls.get_by_attribute(channel_id, channel_column_name)
 
-    @classmethod
-    async def get_by_user(cls, user_id, user_column_name="user_id"):
-        await cls.get_by_attribute(user_id, user_column_name)
+class ConfigCache:
+    """Class that will reduce calls to sqlalchemy as much as possible. Has no growth limit (yet)"""
+    def __init__(self, table):
+        self.cache = {}
+        self.table = table
 
-    @classmethod
-    async def get_by_role(cls, role_id, role_column_name="role_id"):
-        await cls.get_by_attribute(role_id, role_column_name)
+    @staticmethod
+    def _hash_dict(dic):
+        """Makes a dict hashable by turning it into a tuple of tuples"""
+        # sort the keys to make this repeatable; this allows consistency even when insertion order is different
+        return tuple((k, dic[k]) for k in sorted(dic))
 
+    async def query_one(self, **kwargs):
+        """Query the cache for an entry matching the kwargs, then try again using the database."""
+        query_hash = self._hash_dict(kwargs)
+        if query_hash not in self.cache:
+            self.cache[query_hash] = await self.table.get_by(**kwargs)
+            if len(self.cache[query_hash]) == 0:
+                self.cache[query_hash] = None
+            else:
+                self.cache[query_hash] = self.cache[query_hash][0]
+        return self.cache[query_hash]
+
+    async def query_all(self, **kwargs):
+        """Query the cache for all entries matching the kwargs, then try again using the database."""
+        query_hash = self._hash_dict(kwargs)
+        if query_hash not in self.cache:
+            self.cache[query_hash] = await self.table.get_by(**kwargs)
+        return self.cache[query_hash]
+
+    def invalidate_entry(self, **kwargs):
+        """Removes an entry from the cache if it exists - used to mark changed data."""
+        query_hash = self._hash_dict(kwargs)
+        if query_hash in self.cache:
+            del self.cache[query_hash]
+
+    __versions__ = {}
+
+    __uniques__ = []
