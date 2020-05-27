@@ -11,7 +11,6 @@ from .. import db
 from ..sources import *
 
 DOZER_LOGGER = logging.getLogger('dozer')
-DOZER_LOGGER.level = logging.INFO
 
 
 class News(Cog):
@@ -44,7 +43,7 @@ class News(Cog):
             DOZER_LOGGER.debug(f"Getting source {source.full_name}")
             subs = await NewsSubscription.get_by(source=source.short_name)
             if not subs:
-                DOZER_LOGGER.debug(f"Skipping source {source.source_name} due to no subscriptions")
+                DOZER_LOGGER.debug(f"Skipping source {source.full_name} due to no subscriptions")
                 continue
             if source.accepts_data:
                 if source.needs_data and not source.data:
@@ -105,18 +104,23 @@ class News(Cog):
         embed.color = discord.Color.dark_orange()
         await ctx.send(embed=embed)
 
+    def get_source(self, name):
+        chosen_source = None
+        for enabled_source in self.sources.values():
+            if name in enabled_source.aliases:
+                chosen_source = enabled_source
+                break
+        return chosen_source
+
     @news.command()
     @guild_only()
     async def add(self, ctx, channel: discord.TextChannel,  source, kind='embed', data=None):
         """Add a new subscription of a given source to a channel."""
 
-        chosen_source = None
-        for enabled_source in self.sources.values():
-            if source in enabled_source.aliases:
-                chosen_source = enabled_source
-            break
+        chosen_source = self.get_source(source)
+
         if chosen_source is None:
-            await ctx.send(f"No source under the name {source} found.")
+            await ctx.send(f"No source under the name `{source}` found.")
             return
 
         if data is not None and not chosen_source.accepts_data:
@@ -124,7 +128,7 @@ class News(Cog):
             return
 
         if data is None and chosen_source.needs_data:
-            await ctx.send(f"The source {source} needs extra data.")
+            await ctx.send(f"The source {chosen_source.full_name} needs extra data.")
             return
 
         if channel is None:
@@ -135,23 +139,36 @@ class News(Cog):
             await ctx.send(f"I don't have permission to post in f{channel.mention}.")
             return
 
+        if channel.guild != ctx.guild:
+            await ctx.send(f"The channel {channel.mention} does not belong to this server.")
+            return
+
         if kind not in self.kinds:
             await ctx.send(f"{kind} is not a accepted kind of post. Accepted kinds are {', '.join(self.kinds)}")
             return
 
         search_exists = await NewsSubscription.get_by(channel_id=channel.id, source=chosen_source.short_name)
 
-        data_found = []
-        for existing in search_exists:
-            data_found += existing.data
-        if data_found:
-            if data[0] is None:
-                await ctx.send(f"There is already a subscription of {source} for {channel.mention}")
+        if chosen_source.accepts_data:
+            data_found = []
+            for existing in search_exists:
+                data_found += existing.data
+
+            if data_found:
+                if data in data_found:
+                    await ctx.send(f"There is already a subscription of {chosen_source.full_name} with data {data} "
+                                   f"in {channel.mention}")
+                    return
+
+        if search_exists:
+            if search_exists[0].kind == kind:
+                await ctx.send(f"There is already a subscription of {chosen_source.full_name} for {channel.mention}.")
                 return
             else:
-                if data in data_found:
-                    await ctx.send(f"There is already a subscription of {source} with data {data} in {channel.mention}")
-                    return
+                await ctx.send(f"There is already a subscription of {chosen_source.full_name} for {channel.mention}, "
+                               f"but with a different kind of post. To change the kind of posts, remove the "
+                               f"subscription first using `{self.bot.config['prefix']}news remove {channel.mention} "
+                               f"{chosen_source.short_name}` and add the subscription again with this command.")
 
         if chosen_source.accepts_data:
             try:
@@ -163,6 +180,72 @@ class News(Cog):
         new_sub = NewsSubscription(channel_id=channel.id, guild_id=channel.guild.id, source=chosen_source.short_name,
                                    kind=kind, data=data)
         await new_sub.update_or_add()
+
+        embed = discord.Embed(title=f"Channel {channel.mention} subscribed to {chosen_source.full_name}",
+                              description="New posts should be in this channel soon.")
+        embed.add_field(name="Kind", value=kind)
+        if chosen_source.accepts_data:
+            embed.add_field(name="Data", value=data)
+
+        embed.color = discord.colour.Color.green()
+
+        await ctx.send(embed=embed)
+
+    @news.command()
+    async def remove(self, ctx, channel: discord.TextChannel, source, data=None):
+        chosen_source = self.get_source(source)
+
+        if chosen_source is None:
+            await ctx.send(f"The source `{source}` cannot be found.")
+
+        if channel is None:
+            await ctx.send(f"The channel {channel} cannot be found.")
+
+        if channel.guild != ctx.guild:
+            await ctx.send(f"The channel {channel.mention} does not belong to this server.")
+            return
+
+        if not data:
+            sub = await NewsSubscription.get_by(channel_id=channel.id, guild_id=channel.guild.id,
+                                                source=chosen_source.short_name)
+            if len(sub) == 0:
+                await ctx.send(f"No subscription of {chosen_source.full_name} for channel {channel.mention} found.")
+
+            elif len(sub) > 1:
+                if chosen_source.accepts_data:
+                    await ctx.send("There ware multiple subscriptions found. Try again with a data parameter.")
+                    return
+                else:
+                    DOZER_LOGGER.error(f"More than one subscription of {chosen_source.full_name} for channel "
+                                       f"{channel.mention} found when attempting to delete.")
+                    await ctx.send(f"More than one subscription of {chosen_source.full_name} for channel "
+                                   f"{channel.mention} was found. Please contact the Dozer administrators for help.")
+                    return
+
+        else:
+            sub = await NewsSubscription.get_by(channel_id=channel.id, guild_id=channel.guild.id,
+                                                source=chosen_source.short_name, data=data)
+            if len(sub) == 0:
+                await ctx.send(f"No subscription of {chosen_source.full_name} for channel {channel.mention} with data"
+                               f"{data} found.")
+            elif len(sub) > 1:
+                DOZER_LOGGER.error(f"More that one subscription of {chosen_source.full_name} for channel "
+                                   f"{channel.mention} with data {data} found when attempting to delete.")
+                await ctx.send(f"More that one subscription of {chosen_source.full_name} for channel {channel.mention} "
+                               f"with data {data} found. Please contact the Dozer administrator for help.")
+                return
+
+        await NewsSubscription.delete(id=sub[0].id)
+
+        embed = discord.Embed(title=f"Subscription of channel {channel.mention} to {chosen_source.full_name} deleted",
+                              description="Posts from this source will no longer appear.")
+        if chosen_source.accepts_data:
+            embed.add_field(name="Data", value=sub[0].data)
+
+        embed.color = discord.colour.Color.green()
+
+        await ctx.send(embed=embed)
+
 
     @news.command()
     async def list(self, ctx):

@@ -13,13 +13,13 @@ class Source:
     full_name = "Source Name"
     short_name = "src"
     base_url = None
-    aliases = []
+    aliases = tuple()
     description = "Description"
     accepts_data = False
     needs_data = False
 
     def __init__(self, aiohttp_session: aiohttp.ClientSession):
-        self.aliases += [self.full_name, self.short_name]
+        self.aliases += (self.full_name, self.short_name)
         self.http_session = aiohttp_session
 
     async def get_new_posts(self):
@@ -51,7 +51,7 @@ class RSSSource(Source):
     base_url = None
 
     def __init__(self, aiohttp_session: aiohttp.ClientSession):
-        super(RSSSource, self).__init__(aiohttp_session)
+        super().__init__(aiohttp_session)
         self.guids_seen = set()
 
     async def first_run(self):

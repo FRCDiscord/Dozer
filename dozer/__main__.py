@@ -24,6 +24,7 @@ config = {
         'check_interval': 5.0,
         "daily_youtube_quota": 10000
     },
+    'debug': False,
     'is_backup': False
 }
 config_file = 'config.json'

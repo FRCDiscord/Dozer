@@ -47,6 +47,9 @@ class Dozer(commands.Bot):
     def __init__(self, config):
         super().__init__(command_prefix=config['prefix'])
         self.config = config
+        if self.config['debug']:
+            DOZER_LOGGER.level = logging.DEBUG
+            DOZER_HANDLER.level = logging.DEBUG
         self._restarting = False
         self.check(self.global_checks)
 
