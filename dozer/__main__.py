@@ -22,7 +22,10 @@ config = {
     'discord_token': "Put Discord API Token here.",
     'news': {
         'check_interval': 5.0,
-        "daily_youtube_quota": 10000
+        'twitch': {
+            'client_id': "Put Twitch Client ID here",
+            'client_secret': "Put Twitch Secret Here"
+        }
     },
     'debug': False,
     'is_backup': False

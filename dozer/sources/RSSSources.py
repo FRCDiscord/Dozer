@@ -1,46 +1,19 @@
-"""Provide helper classes and end classes for source data"""
 import re
+import datetime
+import xml.etree.ElementTree
 
 import aiohttp
-import xml.etree.ElementTree
 import discord
-import datetime
+
+from .AbstractSources import Source
 
 
-class Source:
-    """Abstract base class for a data source."""
-
-    full_name = "Source Name"
-    short_name = "src"
-    base_url = None
-    aliases = tuple()
-    description = "Description"
-    accepts_data = False
-    needs_data = False
-
-    def __init__(self, aiohttp_session: aiohttp.ClientSession):
-        self.aliases += (self.full_name, self.short_name)
-        self.http_session = aiohttp_session
-
-    async def get_new_posts(self):
-        """Fetches latest data from an arbitrary source. This should return an dict with two lists in it. The dict
-        should be of the following format:
-        new_posts = {
-            'source': {
-                'embed': [discord.Embed, discord.Embed, ...],
-                'plain': [str, str, ...]
-            }
-        }
-        The two lists inside each source do not need to be in the same order. If you are defining a source with multiple
-        data points (say, multiple twitch or youtube channels), each data point should be the name of the first order
-        dict ('source') in the above example. If the source only has one data point, name it 'source' as seen above.
-        """
-        return NotImplementedError
-
-    async def first_run(self):
-        """Function to be run first time around. This can be used for example to fetch current posts in the RSS
-        feed to not show on boot or to validate tokens. If this is not needed, simply leave as is. """
-        return
+def clean_html(raw_html):
+    """Clean all HTML tags.
+    From https://stackoverflow.com/questions/9662346/python-code-to-remove-html-tags-from-a-string"""
+    cleanr = re.compile('<.*?>')
+    cleantext = re.sub(cleanr, '', raw_html)
+    return cleantext
 
 
 class RSSSource(Source):
@@ -50,8 +23,8 @@ class RSSSource(Source):
                     "%a, %d %b %Y %H:%M:%S %Z"]  # format for datetime.strptime()
     base_url = None
 
-    def __init__(self, aiohttp_session: aiohttp.ClientSession):
-        super().__init__(aiohttp_session)
+    def __init__(self, aiohttp_session: aiohttp.ClientSession, bot):
+        super().__init__(aiohttp_session, bot)
         self.guids_seen = set()
 
     async def first_run(self):
@@ -131,21 +104,14 @@ class RSSSource(Source):
         else:
             data['date'] = datetime.datetime.now()
 
-        data['description'] = self.cleanhtml(data['description'])[0:1024]
+        data['description'] = clean_html(data['description'])[0:1024]
 
         return data
-
-    def cleanhtml(self, raw_html):
-        """Clean all HTML tags.
-        From https://stackoverflow.com/questions/9662346/python-code-to-remove-html-tags-from-a-string"""
-        cleanr = re.compile('<.*?>')
-        cleantext = re.sub(cleanr, '', raw_html)
-        return cleantext
 
     def generate_embed(self, data):
         embed = discord.Embed()
         embed.title = f"New Post From {self.full_name}!"
-        embed.color = self.color
+        embed.colour = self.color
 
         embed.description = f"[{data['title']}]({data['url']})"
 
@@ -160,7 +126,10 @@ class RSSSource(Source):
         return embed
 
     def generate_plain_text(self, data):
-        return f"New Post from {self.full_name} from {data['author']}: [{data['title']}]({data['url']})"
+        return f"New Post from {self.full_name} from {data['author']}:\n" \
+               f"{data['title']}\n" \
+               f">>> {data['description']}\n" \
+               f"Read more at {data['url']}"
 
 
 class FRCBlogPosts(RSSSource):
@@ -168,7 +137,7 @@ class FRCBlogPosts(RSSSource):
     base_url = "https://www.firstinspires.org/robotics/frc/blog/"
     full_name = "FRC Blog Posts"
     short_name = "frc"
-    description = "Official blog posts from the FIRST Robotics Competition."
+    description = "Official blog posts from the FIRST Robotics Competition"
     color = discord.colour.Color.dark_blue()
 
 
@@ -182,28 +151,8 @@ class CDLatest(RSSSource):
 
 
 class TestSource(RSSSource):
-    url = "http://lorem-rss.herokuapp.com/feed?unit=second&interval=12"
+    url = "http://lorem-rss.herokuapp.com/feed?unit=second&interval=10"
     base_url = "http://lorem-rss.herokuapp.com"
     full_name = "Test Source"
     short_name = "test"
     description = "Test Source Please Ignore"
-
-
-class DataBasedSource(Source):
-
-    accepts_data = True
-
-    def __init__(self, aiohttp_session: aiohttp.ClientSession, data=None, *args, **kwargs):
-        super().__init__(aiohttp_session)
-        if data is None:
-            data = []
-        self.data = data
-
-    def add_data(self, obj):
-        self.data += obj
-
-    def remove_data(self, obj):
-        self.data.remove(obj)
-
-    class InvalidDataException(Exception):
-        reason = "Unknown Reason."
