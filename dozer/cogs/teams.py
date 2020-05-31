@@ -3,6 +3,7 @@
 import collections
 import json
 import discord
+from aiotba.http import AioTBAError
 from discord.ext.commands import BadArgument, guild_only
 
 from ._utils import *
@@ -69,11 +70,17 @@ class Teams(Cog):
     async def compcheck(self, ctx, event_type: str, event_key):
         """Allows you to see people in the Discord server that are going to a certain competition."""
         if event_type.lower() == "frc":
-            teams_raw = await ctx.bot.get_cog("TBA").session.event_teams(event_key)
-            teams = [team.team_number for team in teams_raw]
+            try:
+                teams_raw = await ctx.bot.get_cog("TBA").session.event_teams(event_key)
+                teams = [team.team_number for team in teams_raw]
+            except AioTBAError:
+                raise BadArgument("Invalid event!")
         elif event_type.lower() == "ftc":
             teams_raw = json.loads(await ctx.bot.get_cog("TOA").parser.req(f"/api/event/{event_key}/teams"))
-            teams = [team['team']['team_number'] for team in teams_raw]
+            try:
+                teams = [team['team']['team_number'] for team in teams_raw]
+            except TypeError:
+                raise BadArgument("Invalid event!")
         else:
             raise BadArgument("Unknown event type!")
         found_mems = False
@@ -100,7 +107,8 @@ class Teams(Cog):
                 e.add_field(name=f"Team {team}", value=memstr)
                 embeds.append(e)
         if not found_mems:
-            raise BadArgument("Couldn't find any team members for that event!")
+            await ctx.send("Couldn't find any team members for that event!")
+            return
         else:
             pagenum = 1
             for embed in embeds:
@@ -109,7 +117,8 @@ class Teams(Cog):
             await paginate(ctx, embeds)
 
     compcheck.example_usage = """
-    `{prefix}compcheck event_type event_key` - Returns all members on teams registered for an event.
+    `{prefix}compcheck frc 2019txaus` - Returns all members on teams registered for 2019 Austin District Event
+    `{prefix}compcheck ftc 1920-TX-AML2` - Returns all members on teams registered for the 2020 Austin Metro League Championship Dell Division
     """
 
     @group(invoke_without_command=True)
