@@ -48,7 +48,7 @@ class TwitchSource(DataBasedSource):
         try:
             self.access_token = response['access_token']
         except KeyError:
-            DOZER_LOGGER.critical(f"Error in Twitch Token Get: {response['message']}")
+            DOZER_LOGGER.critical(f"Error in {self.full_name} Token Get: {response['message']}")
             self.disabled = True
             return
 
@@ -112,7 +112,7 @@ class TwitchSource(DataBasedSource):
 
     async def remove_data(self, obj):
         try:
-            del self.users[obj.id]
+            del self.users[obj.user_id]
             return True
         except KeyError:
             return False

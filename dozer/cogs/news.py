@@ -23,7 +23,7 @@ def str_or_none(obj):
 
 
 class News(Cog):
-    enabled_sources = [FRCBlogPosts, CDLatest, TestSource, TwitchSource]
+    enabled_sources = [FRCBlogPosts, CDLatest, TestSource, TwitchSource, RedditSource]
     kinds = ['plain', 'embed']
 
     def __init__(self, *args, **kwargs):
@@ -184,7 +184,12 @@ class News(Cog):
                                f"in {channel.mention}")
                 return
 
-            await chosen_source.add_data(data_obj)
+            added = await chosen_source.add_data(data_obj)
+            if not added:
+                DOZER_LOGGER.error(f"Failed to add data {data_obj} to source {chosen_source.full_name}")
+                await ctx.send(f"Failed to add new data source. Please contact the Dozer Administrators.")
+                return
+
             # TODO: Check if source is already added before adding
         else:
             search_exists = await NewsSubscription.get_by(channel_id=channel.id, source=chosen_source.short_name)
@@ -247,7 +252,12 @@ class News(Cog):
                 return
 
             # TODO: Check if any other subscriptions use this data first
-            await chosen_source.remove_data(data_obj)
+            removed = await chosen_source.remove_data(data_obj)
+            if not removed:
+                DOZER_LOGGER.error(f"Failed to remove data {data_obj} from source {chosen_source.full_name}")
+                await ctx.send(f"Failed to remove data source. Please contact the Dozer Administrators.")
+                return
+
         else:
             sub = await NewsSubscription.get_by(channel_id=channel.id, guild_id=channel.guild.id,
                                                 source=chosen_source.short_name)

@@ -150,6 +150,15 @@ class CDLatest(RSSSource):
     color = discord.colour.Color.orange()
 
 
+class FRCQA(RSSSource):
+    url = "https://frc-qa.firstinspires.org/rss/answers.rss"
+    base_url = "https://frc-qa.firstinspires.org/"
+    full_name = "FRC Q&A Answers"
+    short_name = "frc-qa"
+    description = "Answers from the official FIRST Robotics Competition Q&A system"
+    color = discord.colour.Color.dark_blue()
+
+
 class TestSource(RSSSource):
     url = "http://lorem-rss.herokuapp.com/feed?unit=second&interval=10"
     base_url = "http://lorem-rss.herokuapp.com"

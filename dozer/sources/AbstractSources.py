@@ -1,13 +1,6 @@
 """Provide helper classes and end classes for source data"""
 import aiohttp
 
-from dateutil import parser
-import discord
-import datetime
-import logging
-
-DOZER_LOGGER = logging.getLogger('dozer')
-
 
 class Source:
     """Abstract base class for a data source."""

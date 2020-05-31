@@ -25,7 +25,12 @@ config = {
         'twitch': {
             'client_id': "Put Twitch Client ID here",
             'client_secret': "Put Twitch Secret Here"
-        }
+        },
+        'reddit': {
+            'client_id': "Put Reddit Client ID here",
+            'client_secret': "Put Reddit Secret Here"
+        },
+
     },
     'debug': False,
     'is_backup': False
