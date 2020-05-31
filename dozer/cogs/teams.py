@@ -64,10 +64,12 @@ class Teams(Cog):
 
     @command()
     @guild_only()
+    @bot_has_permissions(add_reactions=True, embed_links=True,
+                         read_message_history=True)
     async def compcheck(self, ctx, event_type: str, event_key):
         """Allows you to see people in the Discord server that are going to a certain competition."""
         if event_type.lower() == "frc":
-            teams_raw = await ctx.bot.get_cog("tba").session.event_teams(event_key)
+            teams_raw = await ctx.bot.get_cog("TBA").session.event_teams(event_key)
             teams = [team.team_number for team in teams_raw]
         elif event_type.lower() == "ftc":
             teams_raw = json.loads(await ctx.bot.get_cog("TOA").parser.req(f"/api/event/{event_key}/teams"))
@@ -75,9 +77,10 @@ class Teams(Cog):
         else:
             raise BadArgument("Unknown event type!")
         found_mems = False
-        e = discord.Embed(type='rich')
-        e.title = 'Members going to {}'.format(event_key)
+        embeds = []
         for team in teams:
+            e = discord.Embed(type='rich')
+            e.title = 'Members going to {}'.format(event_key)
             members = await TeamNumbers.get_by(team_type=event_type.lower(), team_number=team)
             memstr = ""
             for member in members:
@@ -91,15 +94,15 @@ class Teams(Cog):
                     found_mems = True
             if len(memstr) > 0:
                 if len(e.fields) == 25:
-                    await ctx.send(embed=e)
+                    embeds.append(e)
                     e = discord.Embed(type='rich')
                     e.title = 'Members going to {}'.format(event_key)
                 e.add_field(name=f"Team {team}", value=memstr)
-
+                embeds.append(e)
         if not found_mems:
             raise BadArgument("Couldn't find any team members for that event!")
         else:
-            await ctx.send(embed=e)
+            await paginate(ctx, embeds)
 
     compcheck.example_usage = """
     `{prefix}compcheck event_type event_key` - Returns all members on teams registered for an event.
