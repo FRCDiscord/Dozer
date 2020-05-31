@@ -102,6 +102,10 @@ class Teams(Cog):
         if not found_mems:
             raise BadArgument("Couldn't find any team members for that event!")
         else:
+            pagenum = 1
+            for embed in embeds:
+                embed.set_footer(text=f"Page {pagenum} of {len(embeds)}")
+                pagenum += 1
             await paginate(ctx, embeds)
 
     compcheck.example_usage = """
