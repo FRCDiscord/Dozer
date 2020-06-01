@@ -1,5 +1,4 @@
 """Given an arbitrary RSS feed, get new posts from it"""
-
 import re
 import datetime
 import xml.etree.ElementTree
@@ -8,7 +7,6 @@ import aiohttp
 import discord
 
 from .AbstractSources import Source
-
 
 def clean_html(raw_html):
     """Clean all HTML tags.
@@ -158,6 +156,16 @@ class FRCBlogPosts(RSSSource):
     color = discord.colour.Color.dark_blue()
 
 
+class TBABlog(RSSSource):
+    """Posts from The Blue Alliance's Blog"""
+    url = "https://blog.thebluealliance.com/feed/"
+    base_url = "https://blog.thebluealliance.com/"
+    full_name = "The Blue Alliance Blog"
+    short_name = "tba-blog"
+    description = "Posts from The Blue Alliance's Blog"
+    color = discord.colour.Color.dark_blue()
+
+
 class CDLatest(RSSSource):
     """Official blog posts from the FIRST Robotics Competition"""
     url = "https://www.chiefdelphi.com/latest.rss"
@@ -178,6 +186,50 @@ class FRCQA(RSSSource):
     color = discord.colour.Color.dark_blue()
 
 
+class FTCBlogPosts(RSSSource):
+    """The official FTC Blogspot blog"""
+    url = "http://firsttechchallenge.blogspot.com//feeds/posts/default"
+    base_url = "http://firsttechchallenge.blogspot.com/"
+    full_name = "FTC Blog Posts"
+    short_name = "ftc"
+    description = "The official FTC Blogspot blog"
+    color = discord.colour.Color.orange()
+
+
+class FTCForum(RSSSource):
+    """The official FTC Forum posts"""
+    url = "https://ftcforum.firstinspires.org/external?type=rss2&nodeid=1"
+    base_url = "https://ftcforum.firstinspires.org/"
+    full_name = "FTC Forum Posts"
+    short_name = "ftcforum"
+    description = "The official FTC Forum Posts"
+    color = discord.colour.Color.orange()
+
+
+class JVNBlog(RSSSource):
+    """Blog posts by John V Neun, 148 Head Engineer"""
+    url = "https://johnvneun.com/blog?format=rss"
+    base_url = "https://johnvneun.com/"
+    full_name = "JVN's Blog"
+    short_name = "jvn"
+    aliases = ['148', 'robowranglers']
+    description = "Blog posts by John V Neun, 148 Head Engineer"
+    color = discord.colour.Color(value=000000)
+    disabled = True
+    # For some reason, the XML parser hates this source. Investigate later.
+
+
+class SpectrumBlog(RSSSource):
+    """Blog Posts from team 3847, Spectrum"""
+    url = "http://spectrum3847.org/feed/"
+    base_url = "http://spectrum3847.org/category/blog/"
+    full_name = "Spectrum Blog"
+    short_name = "spectrum"
+    aliases = ['3847']
+    description = "Blog Posts from team 3847, Spectrum"
+    color = discord.colour.Color.purple()
+
+
 class TestSource(RSSSource):
     """A source for testing. Make sure to disable this before committing."""
     url = "http://lorem-rss.herokuapp.com/feed?interval=1"
@@ -185,3 +237,4 @@ class TestSource(RSSSource):
     full_name = "Test Source"
     short_name = "test"
     description = "Test Source Please Ignore"
+    disabled = True

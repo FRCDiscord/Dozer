@@ -4,6 +4,7 @@ import logging
 from asyncio import CancelledError, InvalidStateError
 import datetime
 import traceback
+import xml.etree.ElementTree as ElementTree
 import aiohttp
 
 import discord
@@ -12,7 +13,7 @@ from discord.ext.commands import guild_only, has_permissions, BadArgument
 
 from ._utils import *
 from .. import db
-from ..sources import *
+from ..sources import DataBasedSource, Source, sources
 
 DOZER_LOGGER = logging.getLogger('dozer')
 
@@ -27,7 +28,7 @@ def str_or_none(obj):
 
 class News(Cog):
     """Commands and management for news subscriptions"""
-    enabled_sources = [FRCBlogPosts, CDLatest, TwitchSource, RedditSource]
+    enabled_sources = sources
     kinds = ['plain', 'embed']
 
     def __init__(self, *args, **kwargs):
@@ -40,22 +41,26 @@ class News(Cog):
     async def startup(self):
         """Initialize sources and start the loop after initialization"""
         self.sources = {}
-        self.http_source = aiohttp.ClientSession()
+        self.http_source = aiohttp.ClientSession(headers={'Connection': 'keep-alive'})
+        # Headers to work around JVN's blog... for some reason
         for source in self.enabled_sources:
-            self.sources[source.short_name] = source(aiohttp_session=self.http_source, bot=self.bot)
-            if issubclass(source, DataBasedSource):
-                subs = await NewsSubscription.get_by(source=source.short_name)
-                data = {sub.data for sub in subs}
-                await self.sources[source.short_name].first_run(data)
-            else:
-                await self.sources[source.short_name].first_run()
+            try:
+                self.sources[source.short_name] = source(aiohttp_session=self.http_source, bot=self.bot)
+                if issubclass(source, DataBasedSource):
+                    subs = await NewsSubscription.get_by(source=source.short_name)
+                    data = {sub.data for sub in subs}
+                    await self.sources[source.short_name].first_run(data)
+                else:
+                    await self.sources[source.short_name].first_run()
+            except ElementTree.ParseError as err:
+                del self.sources[source.short_name]
+                DOZER_LOGGER.error(f"Parsing error in source {source.short_name}: {err}")
         self.get_new_posts.change_interval(minutes=self.bot.config['news']['check_interval'])
         self.get_new_posts.start()
 
     def cog_unload(self):
         """Attempt to gracefully shut down the loop. Doesn't generally work. """
         self.get_new_posts.cancel()
-        self.http_source.close()
 
     @tasks.loop()
     async def get_new_posts(self):
