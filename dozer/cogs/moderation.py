@@ -36,22 +36,30 @@ class Moderation(Cog):
 
     """=== Helper functions ==="""
 
-    async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member], reason, orig_channel=None,
+    async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member, None], reason, orig_channel=None,
                       embed_color=discord.Color.red(), global_modlog=True):
         """Generates a modlog embed"""
+
+        if target is None:
+            title = "Custom Modlog"
+        else:
+            title = f"User {action}!"
+
         modlog_embed = discord.Embed(
             color=embed_color,
-            title=f"User {action}!"
+            title=title
 
         )
-        modlog_embed.add_field(name=f"{action.capitalize()} user", value=f"{target.mention} ({target} | {target.id})", inline=False)
+        if target is not None:
+            modlog_embed.add_field(name=f"{action.capitalize()} user", value=f"{target.mention} ({target} | {target.id})", inline=False)
         modlog_embed.add_field(name="Requested by", value=f"{actor.mention} ({actor} | {actor.id})", inline=False)
         modlog_embed.add_field(name="Reason", value=reason or "No reason specified", inline=False)
-        modlog_embed.add_field(name="Timestamp", value=str(datetime.datetime.now()), inline=False)
-        try:
-            await target.send(embed=modlog_embed)
-        except discord.Forbidden:
-            await orig_channel.send("Failed to DM modlog to user")
+        modlog_embed.timestamp = datetime.datetime.utcnow()
+        if target is not None:
+            try:
+                await target.send(embed=modlog_embed)
+            except discord.Forbidden:
+                await orig_channel.send("Failed to DM modlog to user")
         modlog_channel = await GuildModLog.get_by(guild_id=actor.guild.id)
         if orig_channel is not None:
             await orig_channel.send(embed=modlog_embed)
@@ -287,6 +295,8 @@ class Moderation(Cog):
     @Cog.listener('on_message_delete')
     async def on_message_delete(self, message):
         """When a message is deleted, log it."""
+        if message.author == self.bot.user:
+            return
         e = discord.Embed(type='rich')
         e.title = 'Message Deletion'
         e.color = 0xFF0000
@@ -375,6 +385,16 @@ class Moderation(Cog):
 
     warn.example_usage = """
     `{prefix}`warn @user reason - warns a user for "reason"
+    """
+
+    @command()
+    @has_permissions(kick_members=True)
+    async def customlog(self, ctx, *, reason):
+        """Sends a message to the mod log with custom text."""
+        await self.mod_log(actor=ctx.author, action="", target=None, orig_channel=ctx.channel, reason=reason, embed_color=0xFFC400)
+
+    customlog.example_usage = """
+    `{prefix}`customlog reason - warns a user for "reason"
     """
 
     @command()

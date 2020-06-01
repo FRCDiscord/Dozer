@@ -1,7 +1,9 @@
 """Commands for making and seeing robotics team associations."""
 
 import collections
+import json
 import discord
+from aiotba.http import AioTBAError
 from discord.ext.commands import BadArgument, guild_only
 
 from ._utils import *
@@ -59,6 +61,64 @@ class Teams(Cog):
 
     teamsfor.example_usage = """
     `{prefix}teamsfor member` - Returns all team associations with the mentioned user. Assumes caller if blank.
+    """
+
+    @command()
+    @guild_only()
+    @bot_has_permissions(add_reactions=True, embed_links=True,
+                         read_message_history=True)
+    async def compcheck(self, ctx, event_type: str, event_key):
+        """Allows you to see people in the Discord server that are going to a certain competition."""
+        if event_type.lower() == "frc":
+            try:
+                teams_raw = await ctx.bot.get_cog("TBA").session.event_teams(event_key)
+                teams = [team.team_number for team in teams_raw]
+            except AioTBAError:
+                raise BadArgument("Invalid event!")
+        elif event_type.lower() == "ftc":
+            teams_raw = json.loads(await ctx.bot.get_cog("TOA").parser.req(f"/api/event/{event_key}/teams"))
+            try:
+                teams = [team['team']['team_number'] for team in teams_raw]
+            except TypeError:
+                raise BadArgument("Invalid event!")
+        else:
+            raise BadArgument("Unknown event type!")
+        found_mems = False
+        embeds = []
+        for team in teams:
+            e = discord.Embed(type='rich')
+            e.title = 'Members going to {}'.format(event_key)
+            members = await TeamNumbers.get_by(team_type=event_type.lower(), team_number=team)
+            memstr = ""
+            for member in members:
+                mem = ctx.guild.get_member(member.user_id)
+                if mem is not None:
+                    newmemstr = "{} {} \n".format(mem.display_name, mem.mention)
+                    if len(newmemstr + memstr) > 1023:
+                        e.add_field(name=f"Team {team}", value=memstr)
+                        memstr = ""
+                    memstr += newmemstr
+                    found_mems = True
+            if len(memstr) > 0:
+                if len(e.fields) == 25:
+                    embeds.append(e)
+                    e = discord.Embed(type='rich')
+                    e.title = 'Members going to {}'.format(event_key)
+                e.add_field(name=f"Team {team}", value=memstr)
+                embeds.append(e)
+        if not found_mems:
+            await ctx.send("Couldn't find any team members for that event!")
+            return
+        else:
+            pagenum = 1
+            for embed in embeds:
+                embed.set_footer(text=f"Page {pagenum} of {len(embeds)}")
+                pagenum += 1
+            await paginate(ctx, embeds)
+
+    compcheck.example_usage = """
+    `{prefix}compcheck frc 2019txaus` - Returns all members on teams registered for 2019 Austin District Event
+    `{prefix}compcheck ftc 1920-TX-AML2` - Returns all members on teams registered for the 2020 Austin Metro League Championship Dell Division
     """
 
     @group(invoke_without_command=True)
@@ -168,6 +228,7 @@ class TeamNumbers(db.DatabaseTable):
             result_list.append(obj)
         return result_list
 
+    # noinspection SqlResolve
     @classmethod
     async def top10(cls, user_ids):
         """Returns the top 10 team entries"""

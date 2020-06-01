@@ -17,7 +17,7 @@ config = {
         'key': 'Put TOA API key here',
         'app_name': 'Dozer',
     },
-    'db_url': 'sqlite:///dozer.db',
+    'db_url': 'postgres://POSTGRES URL HERE',
     'gmaps_key': "PUT GOOGLE MAPS API KEY HERE",
     'discord_token': "Put Discord API Token here.",
     'is_backup': False
@@ -28,10 +28,12 @@ if os.path.isfile(config_file):
     with open(config_file) as f:
         config.update(json.load(f))
 
-asyncio.get_event_loop().run_until_complete(db_init(config['db_url']))
 
 with open('config.json', 'w') as f:
     json.dump(config, f, indent='\t')
+
+asyncio.get_event_loop().run_until_complete(db_init(config['db_url']))
+
 
 if 'discord_token' not in config:
     sys.exit('Discord token must be supplied in configuration')
