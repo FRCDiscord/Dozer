@@ -204,7 +204,9 @@ class News(Cog):
                 await ctx.send("Failed to add new data source. Please contact the Dozer Administrators.")
                 return
 
-            # TODO: Check if source is already added before adding
+            data_exists = await NewsSubscription.get_by(source=source.short_name, data=str(data_obj))
+            if not data_exists:
+                await source.add_data(data)
         else:
             search_exists = await NewsSubscription.get_by(channel_id=channel.id, source=source.short_name)
 
@@ -266,12 +268,13 @@ class News(Cog):
                                f"with data {data} found. Please contact the Dozer administrator for help.")
                 return
 
-            # TODO: Check if any other subscriptions use this data first
-            removed = await source.remove_data(data_obj)
-            if not removed:
-                DOZER_LOGGER.error(f"Failed to remove data {data_obj} from source {source.full_name}")
-                await ctx.send("Failed to remove data source. Please contact the Dozer Administrators.")
-                return
+            data_exists = await NewsSubscription.get_by(source=source.short_name, data=str(data_obj))
+            if len(data_exists) > 1:
+                removed = await source.remove_data(data_obj)
+                if not removed:
+                    DOZER_LOGGER.error(f"Failed to remove data {data_obj} from source {source.full_name}")
+                    await ctx.send("Failed to remove data source. Please contact the Dozer Administrators.")
+                    return
 
         else:
             sub = await NewsSubscription.get_by(channel_id=channel.id, guild_id=channel.guild.id,
