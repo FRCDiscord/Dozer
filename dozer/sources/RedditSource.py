@@ -1,13 +1,16 @@
+"""Get new posts from any arbitrary subreddit"""
 import datetime
-import aiohttp
-from .AbstractSources import DataBasedSource
-import discord
 import logging
+import aiohttp
+import discord
+
+from .AbstractSources import DataBasedSource
 
 DOZER_LOGGER = logging.getLogger('dozer')
 
 
 class RedditSource(DataBasedSource):
+    """Get new posts from any arbitrary subreddit"""
 
     full_name = "Reddit"
     short_name = "reddit"
@@ -20,6 +23,7 @@ class RedditSource(DataBasedSource):
     color = discord.Color.from_rgb(255, 69, 0)
 
     class SubReddit(DataBasedSource.DataPoint):
+        """Represents a single subreddit with associated detail"""
         def __init__(self, name, url, color):
             super().__init__(name, url)
             self.name = name
@@ -35,6 +39,7 @@ class RedditSource(DataBasedSource):
         self.seen_posts = set()
 
     async def get_token(self):
+        """Using OAuth2, get a reddit bearer token. If this fails, fallback to non-oauth API"""
         client_id = self.bot.config['news']['reddit']['client_id']
         client_secret = self.bot.config['news']['reddit']['client_secret']
         params = {
@@ -55,7 +60,12 @@ class RedditSource(DataBasedSource):
         time_delta = datetime.timedelta(seconds=expiry_seconds)
         self.expiry_time = datetime.datetime.now() + time_delta
 
-    async def request(self, url, headers=None, *args, **kwargs):
+    async def request(self, url, *args, headers=None, **kwargs):
+        """Make a request using OAuth2 (or not, if it's been disabled)"""
+        if datetime.datetime.now() > self.expiry_time:
+            DOZER_LOGGER.info("Refreshing Reddit token due to expiry time")
+            await self.get_token()
+
         if headers is None:
             headers = {}
         headers['Authorization'] = f"Bearer {self.access_token}"
@@ -78,6 +88,7 @@ class RedditSource(DataBasedSource):
         return json
 
     def create_subreddit_obj(self, data):
+        """Given a dict, create a subreddit object"""
         color = data['key_color']
         if "#" in color:
             color = color.replace("#", "")
@@ -90,6 +101,7 @@ class RedditSource(DataBasedSource):
         return RedditSource.SubReddit(data['display_name'], data['url'], color)
 
     async def clean_data(self, text):
+        """Make a request to the reddit API to verify the subreddit exists and clean it into a object"""
         try:
             return self.subreddits[text]
         except KeyError:
@@ -101,18 +113,18 @@ class RedditSource(DataBasedSource):
 
             if subreddit_about['kind'] == "t5":
                 # Exact subreddit match found
+                if subreddit_about['data']['over18']:
+                    raise DataBasedSource.InvalidDataException(f"No subreddit found for search string {text}")
                 return self.create_subreddit_obj(subreddit_about['data'])
-
 
             elif subreddit_about['kind'] == "Listing":
                 # Reddit "helpfully" redirected us to subreddit search. Let's get some helful error messages out of
                 # this...
-                search = subreddit_about['data']['children']
-                if len(search) == 0:
+                subreddits = [subreddit['data']['display_name'] for subreddit in subreddit_about['data']['children']
+                              if not subreddit['data']['over18']]
+                if len(subreddits) == 0:
                     raise DataBasedSource.InvalidDataException(f"No subreddit found for search string {text}")
-                elif len(search) > 1:
-                    subreddits = [subreddit['data']['display_name'] for subreddit in search
-                                  if not subreddit['data']['over18']]
+                elif len(subreddits) > 1:
                     raise DataBasedSource.InvalidDataException(f"No exact match was found, but multiple similar "
                                                                f"subredidts found. Did you mean any of the following:"
                                                                f"{', '.join(subreddits)}")
@@ -121,10 +133,21 @@ class RedditSource(DataBasedSource):
                     return self.create_subreddit_obj(subreddit_about['data'])
 
     async def add_data(self, obj):
+        """Add the object to the internal store and store current posts on the feed"""
         self.subreddits[obj.name] = obj
+
+        if len(self.subreddits) == 0:
+            return {}
+
+        json = await self.request(f"r/{obj.name}/new.json")
+
+        for post in json['data']['children']:
+            self.seen_posts.add(post['data']['name'])
+
         return True
 
     async def remove_data(self, obj):
+        """Remove the object from the internal store"""
         try:
             del self.subreddits[obj.name]
             return True
@@ -132,6 +155,7 @@ class RedditSource(DataBasedSource):
             return False
 
     async def first_run(self, data=None):
+        """Get a OAuth 2 token and get current posts for subscribed subreddits"""
         await self.get_token()
 
         if not data:
@@ -147,16 +171,12 @@ class RedditSource(DataBasedSource):
             self.subreddits[subreddit_obj.name] = subreddit_obj
         await self.get_new_posts(first_time=True)
 
-    async def get_new_posts(self, first_time=False):
-        if datetime.datetime.now() > self.expiry_time:
-            DOZER_LOGGER.info(f"Refreshing Reddit token due to expiry time")
-            await self.get_token()
-
+    async def get_new_posts(self, first_time=False):  # pylint: disable=arguments-differ
+        """Make a API request for new posts and generate embed and strings for them"""
         if len(self.subreddits) == 0:
             return {}
 
         json = await self.request(f"r/{'+'.join(self.subreddits)}/new.json")
-        print(json)
 
         posts = {}
         for post in json['data']['children']:
@@ -175,6 +195,7 @@ class RedditSource(DataBasedSource):
         return posts
 
     def generate_embed(self, data):
+        """Given a dict of data, create a embed"""
         embed = discord.Embed()
         embed.title = f"New post on {data['subreddit_name_prefixed']}!"
 
@@ -189,10 +210,13 @@ class RedditSource(DataBasedSource):
         if data['selftext'] != "":
             embed.add_field(name="Text", value=data['selftext'])
         else:
-            if data["post_hint"] == "image":
-                embed.set_image(url=data['url'])
-            elif "thumbnail" in data:
-                embed.set_image(url=data['thumbnail'])
+            try:
+                if data["post_hint"] == "image":
+                    embed.set_image(url=data['url'])
+                elif "thumbnail" in data:
+                    embed.set_image(url=data['thumbnail'])
+            except KeyError:
+                pass
 
         time = datetime.datetime.utcfromtimestamp(data['created_utc'])
         embed.timestamp = time
@@ -200,5 +224,6 @@ class RedditSource(DataBasedSource):
         return embed
 
     def generate_plain_text(self, data):
+        """Given a dict of data, create a string"""
         return f"New post on {data['subreddit_name_prefixed']}: {data['title']}\n" \
                f"Read more at https://reddit.com{data['permalink']}"

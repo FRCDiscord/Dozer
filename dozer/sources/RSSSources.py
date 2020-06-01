@@ -1,3 +1,5 @@
+"""Given an arbitrary RSS feed, get new posts from it"""
+
 import re
 import datetime
 import xml.etree.ElementTree
@@ -17,21 +19,25 @@ def clean_html(raw_html):
 
 
 class RSSSource(Source):
+    """Given an arbitrary RSS feed, get new posts from it"""
     url = None
     color = discord.colour.Color.blurple()
     date_formats = ["%a, %d %b %Y %H:%M:%S %z",
                     "%a, %d %b %Y %H:%M:%S %Z"]  # format for datetime.strptime()
     base_url = None
+    read_more_str = "...\n Read More"
 
     def __init__(self, aiohttp_session: aiohttp.ClientSession, bot):
         super().__init__(aiohttp_session, bot)
         self.guids_seen = set()
 
     async def first_run(self):
+        """Fetch the current posts in the feed and add them to the guids_seen set"""
         response = await self.fetch()
         self.parse(response, True)
 
     async def get_new_posts(self):
+        """Fetch the current posts in the feed, parse them for data and generate embeds/strings for them"""
         response = await self.fetch()
         items = self.parse(response)
         new_posts = {
@@ -47,10 +53,12 @@ class RSSSource(Source):
         return new_posts
 
     async def fetch(self):
+        """Use aiohttp to get the source feed"""
         response = await self.http_session.get(url=self.url)
         return await response.text()
 
     def parse(self, response, first_time=False):
+        """Use xml ElementTrees to get individual Elements for new posts"""
         new_items = set()
         root = xml.etree.ElementTree.fromstring(response)
         channel = root[0]
@@ -74,6 +82,7 @@ class RSSSource(Source):
             return False
 
     def get_data(self, item):
+        """Given a xml Element, extract it into readable data"""
         types = {
             'title': 'title',
             'url': 'url',
@@ -104,11 +113,17 @@ class RSSSource(Source):
         else:
             data['date'] = datetime.datetime.now()
 
-        data['description'] = clean_html(data['description'])[0:1024]
+        desc = clean_html(data['description'])
+        length = 1024 - len(self.read_more_str)
+        if len(desc) >= length:
+            data['description'] = desc[0:length] + self.read_more_str
+        else:
+            data['description'] = desc
 
         return data
 
     def generate_embed(self, data):
+        """Given a dictionary of data, generate a discord.Embed using that data"""
         embed = discord.Embed()
         embed.title = f"New Post From {self.full_name}!"
         embed.colour = self.color
@@ -126,6 +141,7 @@ class RSSSource(Source):
         return embed
 
     def generate_plain_text(self, data):
+        """Given a dictionary of data, generate a string using that data"""
         return f"New Post from {self.full_name} from {data['author']}:\n" \
                f"{data['title']}\n" \
                f">>> {data['description']}\n" \
@@ -133,6 +149,7 @@ class RSSSource(Source):
 
 
 class FRCBlogPosts(RSSSource):
+    """Official blog posts from the FIRST Robotics Competition"""
     url = "https://www.firstinspires.org/robotics/frc/blog-rss"
     base_url = "https://www.firstinspires.org/robotics/frc/blog/"
     full_name = "FRC Blog Posts"
@@ -142,15 +159,17 @@ class FRCBlogPosts(RSSSource):
 
 
 class CDLatest(RSSSource):
+    """Official blog posts from the FIRST Robotics Competition"""
     url = "https://www.chiefdelphi.com/latest.rss"
     base_url = "https://www.chiefdelphi.com/latest"
     full_name = "Chief Delphi"
     short_name = "cd"
-    description = "Latest topics from a very popular FIRST forum"
+    description = "Official blog posts from the FIRST Robotics Competition"
     color = discord.colour.Color.orange()
 
 
 class FRCQA(RSSSource):
+    """Answers from the official FIRST Robotics Competition Q&A system"""
     url = "https://frc-qa.firstinspires.org/rss/answers.rss"
     base_url = "https://frc-qa.firstinspires.org/"
     full_name = "FRC Q&A Answers"
@@ -160,7 +179,8 @@ class FRCQA(RSSSource):
 
 
 class TestSource(RSSSource):
-    url = "http://lorem-rss.herokuapp.com/feed?unit=second&interval=10"
+    """A source for testing. Make sure to disable this before committing."""
+    url = "http://lorem-rss.herokuapp.com/feed?interval=1"
     base_url = "http://lorem-rss.herokuapp.com"
     full_name = "Test Source"
     short_name = "test"

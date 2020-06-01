@@ -80,6 +80,7 @@ class Cog(commands.Cog):
 
 
 def dev_check():
+    """Function decorator to check that the calling user is a developer"""
     async def predicate(ctx):
         if ctx.author.id not in ctx.bot.config['developers']:
             raise commands.NotOwner('you are not a developer!')

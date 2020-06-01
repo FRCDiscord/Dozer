@@ -1,5 +1,6 @@
 """Provide helper classes and end classes for source data"""
 import aiohttp
+from discord.ext.commands import BadArgument
 
 
 class Source:
@@ -16,6 +17,9 @@ class Source:
         self.aliases += (self.full_name, self.short_name)
         self.http_session = aiohttp_session
         self.bot = bot
+
+    def __str__(self):
+        return self.full_name
 
     async def get_new_posts(self):
         """Fetches latest data from an arbitrary source. This should return an dict with two lists in it. The dict
@@ -37,11 +41,24 @@ class Source:
         feed to not show on boot or to validate tokens. If this is not needed, simply leave as is. """
         return
 
+    @classmethod
+    async def convert(cls, ctx, argument):
+        """Converter for a Source being used as a type annotation"""
+        cog = ctx.bot.get_cog('News')
+        chosen_source = None
+        for enabled_source in cog.sources.values():
+            if argument in enabled_source.aliases:
+                chosen_source = enabled_source
+                break
+
+        if chosen_source is None:
+            raise BadArgument(f"No source under the name `{argument}` found.")
+
+        return chosen_source
+
 
 class DataBasedSource(Source):
-
-    def __init__(self, aiohttp_session: aiohttp.ClientSession, bot):
-        super().__init__(aiohttp_session, bot)
+    """Abstract class for sources which take some kind of data"""
 
     async def clean_data(self, text):
         """Takes a user-inputted string and should return a DataPoint object that can be stored in the database.
@@ -70,12 +87,11 @@ class DataBasedSource(Source):
         This function should return True is the data was successfully removed, and False if the data was not."""
         raise NotImplementedError
 
-    async def first_run(self, data=None):
-        return
+    async def first_run(self, data=None):  # pylint: disable=arguments-differ
+        raise NotImplementedError
 
     class InvalidDataException(Exception):
-        def __init__(self, *attr):
-            super().__init__(*attr)
+        """Exception to be raised by clean_data if the data is in any way invalid"""
 
     class DataPoint:
         """A helper object that should be returned by clean_data.

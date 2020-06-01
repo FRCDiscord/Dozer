@@ -1,7 +1,9 @@
-from dateutil import parser
-import discord
+"""News source to send a notification whenever a twitch streamer goes live."""
+
 import datetime
 import logging
+import discord
+from dateutil import parser
 
 from .AbstractSources import DataBasedSource
 
@@ -9,6 +11,7 @@ DOZER_LOGGER = logging.getLogger('dozer')
 
 
 class TwitchSource(DataBasedSource):
+    """News source to send a notification whenever a twitch streamer goes live."""
     full_name = "Twitch"
     short_name = "twitch"
     base_url = "https://twitch.tv"
@@ -19,6 +22,7 @@ class TwitchSource(DataBasedSource):
     color = discord.Color.from_rgb(145, 70, 255)
 
     class TwitchUser(DataBasedSource.DataPoint):
+        """A helper class to represent a single Twitch streamer"""
         def __init__(self, user_id, display_name, profile_image_url, login):
             super().__init__(login, display_name)
             self.user_id = user_id
@@ -35,6 +39,7 @@ class TwitchSource(DataBasedSource):
         self.seen_streams = set()
 
     async def get_token(self):
+        """Use OAuth2 to request a new token. If token fails, disable the source."""
         client_id = self.bot.config['news']['twitch']['client_id']
         self.client_id = client_id
         client_secret = self.bot.config['news']['twitch']['client_secret']
@@ -56,7 +61,8 @@ class TwitchSource(DataBasedSource):
         time_delta = datetime.timedelta(seconds=expiry_seconds)
         self.expiry_time = datetime.datetime.now() + time_delta
 
-    async def request(self, url, headers=None, *args, **kwargs):
+    async def request(self, url, *args, headers=None, **kwargs):
+        """Make a OAuth2 verified request to a API Endpoint"""
         if headers is None:
             headers = {'Authorization': f"Bearer {self.access_token}",
                        "Client-ID": self.client_id}
@@ -77,6 +83,7 @@ class TwitchSource(DataBasedSource):
         return json
 
     async def first_run(self, data=None):
+        """Make sure we have a token, then verify and add all the current users in the DB"""
         await self.get_token()
 
         if not data:
@@ -92,6 +99,7 @@ class TwitchSource(DataBasedSource):
             self.users[user['id']] = user_obj
 
     async def clean_data(self, text):
+        """Request user data from Twitch to verify the username exists and clean the data"""
         try:
             user_obj = self.users[text]
         except KeyError:
@@ -107,10 +115,12 @@ class TwitchSource(DataBasedSource):
         return user_obj
 
     async def add_data(self, obj):
+        """Add the user object to the store"""
         self.users[obj.user_id] = obj
         return True
 
     async def remove_data(self, obj):
+        """Remove the user object from the store"""
         try:
             del self.users[obj.user_id]
             return True
@@ -118,8 +128,9 @@ class TwitchSource(DataBasedSource):
             return False
 
     async def get_new_posts(self):
+        """Assemble all the current user IDs, get any game names and return the embeds and strings"""
         if datetime.datetime.now() > self.expiry_time:
-            DOZER_LOGGER.info(f"Refreshing Twitch token due to expiry time")
+            DOZER_LOGGER.info("Refreshing Twitch token due to expiry time")
             await self.get_token()
 
         params = []
@@ -159,6 +170,7 @@ class TwitchSource(DataBasedSource):
         return posts
 
     def generate_embed(self, data, games):
+        """Given data on a stream and a dict of games, assemble a embed"""
         try:
             display_name = data['display_name']
         except KeyError:
@@ -185,6 +197,7 @@ class TwitchSource(DataBasedSource):
         return embed
 
     def generate_plain_text(self, data, games):
+        """Given data on a stream and a dict of games, assemble a string"""
         try:
             display_name = data['display_name']
         except KeyError:
