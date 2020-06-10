@@ -37,26 +37,7 @@ class News(Cog):
         self.http_source = None
         self.sources = {}
 
-    @Cog.listener('on_ready')
-    async def startup(self):
-        """Initialize sources and start the loop after initialization"""
-        self.sources = {}
-        self.http_source = aiohttp.ClientSession(headers={'Connection': 'keep-alive'})
-        # Headers to work around JVN's blog... for some reason
-        for source in self.enabled_sources:
-            try:
-                self.sources[source.short_name] = source(aiohttp_session=self.http_source, bot=self.bot)
-                if issubclass(source, DataBasedSource):
-                    subs = await NewsSubscription.get_by(source=source.short_name)
-                    data = {sub.data for sub in subs}
-                    await self.sources[source.short_name].first_run(data)
-                else:
-                    await self.sources[source.short_name].first_run()
-            except ElementTree.ParseError as err:
-                del self.sources[source.short_name]
-                DOZER_LOGGER.error(f"Parsing error in source {source.short_name}: {err}")
-        self.get_new_posts.change_interval(minutes=self.bot.config['news']['check_interval'])
-        self.get_new_posts.start()
+
 
     def cog_unload(self):
         """Attempt to gracefully shut down the loop. Doesn't generally work. """
@@ -66,6 +47,10 @@ class News(Cog):
     async def get_new_posts(self):
         """Attempt to get current subscriptions and post new posts in the respective channels"""
         DOZER_LOGGER.debug('Getting new news posts.')
+        to_delete = [source.short_name for source in self.sources.values() if source.disabled]
+        for name in to_delete:
+            del self.sources[name]
+
         for source in self.sources.values():
 
             DOZER_LOGGER.debug(f"Getting source {source.full_name}")
@@ -104,8 +89,6 @@ class News(Cog):
             # We've gotten all of the channels we need to post to, lets get the posts and post them now
             posts = await source.get_new_posts()
             if posts is None:
-                if source.disabled:
-                    del self.sources[source.short_name]
                 continue
 
             for (data, channels) in channel_dict.items():
@@ -129,6 +112,27 @@ class News(Cog):
     # async def log_exception(self, exception):
     #     DOZER_LOGGER.error(exception)
 
+    @get_new_posts.before_loop()
+    async def startup(self):
+        """Initialize sources and start the loop after initialization"""
+        self.sources = {}
+        self.http_source = aiohttp.ClientSession(headers={'Connection': 'keep-alive'})
+        # Headers to work around JVN's blog... for some reason
+        for source in self.enabled_sources:
+            try:
+                self.sources[source.short_name] = source(aiohttp_session=self.http_source, bot=self.bot)
+                if issubclass(source, DataBasedSource):
+                    subs = await NewsSubscription.get_by(source=source.short_name)
+                    data = {sub.data for sub in subs}
+                    await self.sources[source.short_name].first_run(data)
+                else:
+                    await self.sources[source.short_name].first_run()
+            except ElementTree.ParseError as err:
+                del self.sources[source.short_name]
+                DOZER_LOGGER.error(f"Parsing error in source {source.short_name}: {err}")
+        self.get_new_posts.change_interval(minutes=self.bot.config['news']['check_interval'])
+        self.get_new_posts.start()
+
     @group(invoke_without_command=True)
     @guild_only()
     async def news(self, ctx):
@@ -145,14 +149,14 @@ class News(Cog):
                               f"`{ctx.bot.command_prefix}news add #channel cd plain`")
         embed.add_field(name="Data based sources",
                         value=f"Some sources accept data, like Reddit. To add a reddit subreddit, for example the FRC "
-                              f"subreddit you can use the command `{ctx.bot.command_prefix}news add #channel reddit "
+                              f"subreddit you can use the command `{ctx.prefix}news add #channel reddit "
                               f"embed frc`")
         embed.add_field(name="Removing Subscriptions",
-                        value=f"To remove a source, use `{ctx.bot.command_prefix}news remove #channel `")
+                        value=f"To remove a source, use `{ctx.prefix}news remove #channel `")
         embed.add_field(name="List all sources",
-                        value=f"To see all sources, use `{ctx.bot.command_prefix}news sources`")
+                        value=f"To see all sources, use `{ctx.prefix}news sources`")
         embed.add_field(name="List all subscriptions",
-                        value=f"To see all of your server's subscriptions, use `{ctx.bot.command_prefix}news "
+                        value=f"To see all of your server's subscriptions, use `{ctx.prefix}news "
                               f"subscriptions`")
         await ctx.send(embed=embed)
     news.example_usage = "`{prefix}news` - Get a small guide on using the News system"
@@ -172,8 +176,7 @@ class News(Cog):
 
         if data is None and isinstance(source, DataBasedSource):
             raise BadArgument(f"The source {source.full_name} needs data. To subscribe with data, try "
-                              f"`{ctx.bot.command_prefix}news add {source.short_name} {channel.mention} embed"
-                              f" data`")
+                              f"`{ctx.prefix}news add {source.short_name} {channel.mention} embed data`")
 
         if not channel.permissions_for(ctx.me).send_messages:
             raise BadArgument(f"I don't have permission to post in f{channel.mention}.")
@@ -216,7 +219,7 @@ class News(Cog):
                 else:
                     await ctx.send(f"There is already a subscription of {source.full_name} for {channel.mention}, "
                                    f"but with a different kind of post. To change the kind of posts, remove the "
-                                   f"subscription first using `{self.bot.config['prefix']}news remove {channel.mention}"
+                                   f"subscription first using `{ctx.prefix}news remove {channel.mention}"
                                    f" {source.short_name}` and add the subscription again with this command.")
                     return
 
@@ -241,10 +244,7 @@ class News(Cog):
     @has_permissions(manage_guild=True)
     @guild_only()
     async def remove(self, ctx, channel: discord.TextChannel, source: Source, data=None):
-        """Remove a subscription of a given source to a specific channel"""
-        if channel.guild != ctx.guild:
-            raise BadArgument(f"The channel {channel.mention} does not belong to this server.")\
-
+        """Remove a subscription of a given source from a specific channel"""
         if isinstance(source, DataBasedSource):
             if data is None:
                 raise BadArgument(f"The source {source.full_name} needs data.")
@@ -309,8 +309,8 @@ class News(Cog):
         """List all available sources to subscribe to."""
         embed = discord.Embed(title="All available sources to subscribe to.")
 
-        embed.description = f"To subscribe to any of these sources, use the `{self.bot.command_prefix}news add " \
-                            f"<channel> <source name.` command."
+        embed.description = f"To subscribe to any of these sources, use the `{ctx.prefix}news add " \
+                            f"<channel> <source name>` command."
 
         for source in self.sources.values():
             aliases = ", ".join(source.aliases)
@@ -382,8 +382,8 @@ class News(Cog):
         next_run = self.get_new_posts.next_iteration
         if next_run is None:
             await ctx.send(f"No next run scheduled. This likely means an exception occurred in the loop. Check this "
-                           f"exception using {self.bot.config.prefix}news get_exception, and then restart using "
-                           f"{self.bot.config.prefix}news restart_loop if appropriate. ")
+                           f"exception using {ctx.prefix}news get_exception, and then restart using "
+                           f"{ctx.prefix}news restart_loop if appropriate. ")
         else:
             await ctx.send(f"Next run in "
                            f"{(next_run - datetime.datetime.now(datetime.timezone.utc)).total_seconds()} seconds.")
@@ -404,7 +404,7 @@ class News(Cog):
             await ctx.send("Task has been cancelled.")
         except InvalidStateError:
             await ctx.send("Task has not yet completed. This likely means the loop is continuing just fine. You can"
-                           f"determine the next time it's running with {self.bot.config.prefix}news next_run")
+                           f"determine the next time it's running with {ctx.prefix}news next_run")
     get_exception.example_usage = "`{prefix}news get_exception` - Get the exception that the loop failed with"
 
 

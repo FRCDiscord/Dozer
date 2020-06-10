@@ -82,7 +82,7 @@ class RedditSource(DataBasedSource):
             if 'www-authenticate' in response.headers:
                 DOZER_LOGGER.info("Reddit token expired when request made, requesting new token and retrying.")
                 await self.get_token()
-                return await self.request(url, headers, *args, **kwargs)
+                return await self.request(url, headers=headers, *args, **kwargs)
 
         json = await response.json()
         return json
@@ -126,7 +126,7 @@ class RedditSource(DataBasedSource):
                     raise DataBasedSource.InvalidDataException(f"No subreddit found for search string {text}")
                 elif len(subreddits) > 1:
                     raise DataBasedSource.InvalidDataException(f"No exact match was found, but multiple similar "
-                                                               f"subredidts found. Did you mean any of the following:"
+                                                               f"subreddits found. Did you mean any of the following:"
                                                                f"{', '.join(subreddits)}")
                 else:
                     # Search only returned one result, so let's assume that's what the user wanted and return the one
@@ -156,7 +156,8 @@ class RedditSource(DataBasedSource):
 
     async def first_run(self, data=None):
         """Get a OAuth 2 token and get current posts for subscribed subreddits"""
-        await self.get_token()
+        if not self.oauth_disabled:
+            await self.get_token()
 
         if not data:
             return
@@ -187,10 +188,14 @@ class RedditSource(DataBasedSource):
 
                 embed = self.generate_embed(post['data'])
                 plain = self.generate_plain_text(post['data'])
-                posts[post['data']['subreddit']] = {
-                    'embed': [embed],
-                    'plain': [plain]
-                }
+                if 'subreddit' in post['data']:
+                    posts[post['data']['subreddit']]['embed'].append(embed)
+                    posts[post['data']['subreddit']]['plain'].append(plain)
+                else:
+                    posts[post['data']['subreddit']] = {
+                        'embed': [embed],
+                        'plain': [plain]
+                    }
 
         return posts
 

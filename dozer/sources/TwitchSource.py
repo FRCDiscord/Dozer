@@ -77,7 +77,7 @@ class TwitchSource(DataBasedSource):
             if 'WWW-Authenticate' in response.headers:
                 DOZER_LOGGER.info("Twitch token expired when request made, request new token and retrying.")
                 await self.get_token()
-                return await self.request(url, headers, *args, **kwargs)
+                return await self.request(url, headers=headers, *args, **kwargs)
 
         json = await response.json()
         return json
@@ -170,7 +170,7 @@ class TwitchSource(DataBasedSource):
         return posts
 
     def generate_embed(self, data, games):
-        """Given data on a stream and a dict of games, assemble a embed"""
+        """Given data on a stream and a dict of games, assemble an embed"""
         try:
             display_name = data['display_name']
         except KeyError:

@@ -103,11 +103,15 @@ class RSSSource(Source):
 
         date_string = item.find('pubDate')
         if date_string is not None:
+            formatted = False
             for date_format in self.date_formats:
                 try:
                     data['date'] = datetime.datetime.strptime(date_string.text, date_format)
+                    formatted = True
                 except ValueError:
                     continue
+            if not formatted:
+                data['data'] = datetime.datetime.now()
         else:
             data['date'] = datetime.datetime.now()
 

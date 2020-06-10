@@ -22,7 +22,7 @@ class Source:
         return self.full_name
 
     async def get_new_posts(self):
-        """Fetches latest data from an arbitrary source. This should return an dict with two lists in it. The dict
+        """Fetches latest data from an arbitrary source. This should return a dict with two lists in it. The dict
         should be of the following format:
         new_posts = {
             'source': {
