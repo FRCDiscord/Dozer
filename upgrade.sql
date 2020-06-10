@@ -28,4 +28,4 @@ ALTER TABLE dozer.public.modlogconfig RENAME COLUMN id TO guild_id;
 ALTER TABLE dozer.public.member_roles RENAME COLUMN id TO guild_id;
 ALTER TABLE dozer.public.memberlogconfig RENAME COLUMN id TO guild_id;
 ALTER TABLE dozer.public.messagelogconfig RENAME COLUMN id TO guild_id;
-
+ALTER TABLE dozer.public.punishment_timers RENAME COLUMN type TO type_of_punishment;
