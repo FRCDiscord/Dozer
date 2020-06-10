@@ -36,8 +36,8 @@ class News(Cog):
         self.updated = True
         self.http_source = None
         self.sources = {}
-
-
+        self.get_new_posts.change_interval(minutes=self.bot.config['news']['check_interval'])
+        self.get_new_posts.start()
 
     def cog_unload(self):
         """Attempt to gracefully shut down the loop. Doesn't generally work. """
@@ -112,7 +112,7 @@ class News(Cog):
     # async def log_exception(self, exception):
     #     DOZER_LOGGER.error(exception)
 
-    @get_new_posts.before_loop()
+    @get_new_posts.before_loop
     async def startup(self):
         """Initialize sources and start the loop after initialization"""
         self.sources = {}
@@ -130,8 +130,6 @@ class News(Cog):
             except ElementTree.ParseError as err:
                 del self.sources[source.short_name]
                 DOZER_LOGGER.error(f"Parsing error in source {source.short_name}: {err}")
-        self.get_new_posts.change_interval(minutes=self.bot.config['news']['check_interval'])
-        self.get_new_posts.start()
 
     @group(invoke_without_command=True)
     @guild_only()
