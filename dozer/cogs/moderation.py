@@ -217,8 +217,6 @@ class Moderation(Cog):
         if results:
             await self.perm_override(member=member, read_messages=None)
             await Deafen.delete(member_id=member.id, guild_id=member.guild.id)
-            #await self.mod_log(actor=ctx.author, action="undeafened", target=member, reason=reason,
-            #                   orig_channel=ctx.channel, embed_color=discord.Color.green(), global_modlog=not results[0].self_inflicted)
             truths = [True, results[0].self_inflicted]
             return truths
         else:
