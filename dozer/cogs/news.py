@@ -150,7 +150,7 @@ class News(Cog):
                               f"subreddit you can use the command `{ctx.prefix}news add #channel reddit "
                               f"embed frc`")
         embed.add_field(name="Removing Subscriptions",
-                        value=f"To remove a source, use `{ctx.prefix}news remove #channel `")
+                        value=f"To remove a source, like Chief Delphi, use `{ctx.prefix}news remove #channel cd`")
         embed.add_field(name="List all sources",
                         value=f"To see all sources, use `{ctx.prefix}news sources`")
         embed.add_field(name="List all subscriptions",
