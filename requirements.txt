@@ -7,3 +7,4 @@ datetime
 geopy
 fuzzywuzzy
 python-Levenshtein
+python-dateutil
