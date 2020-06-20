@@ -177,7 +177,7 @@ class News(Cog):
                               f"`{ctx.prefix}news add {source.short_name} {channel.mention} embed data`")
 
         if not channel.permissions_for(ctx.me).send_messages:
-            raise BadArgument(f"I don't have permission to post in f{channel.mention}.")
+            raise BadArgument(f"I don't have permission to post in {channel.mention}.")
 
         if channel.guild != ctx.guild:
             raise BadArgument(f"The channel {channel.mention} does not belong to this server.")
