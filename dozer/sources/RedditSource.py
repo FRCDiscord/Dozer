@@ -178,6 +178,9 @@ class RedditSource(DataBasedSource):
             return {}
 
         json = await self.request(f"r/{'+'.join(self.subreddits)}/new.json")
+        if 'data' not in json:
+            DOZER_LOGGER.error(f"Getting new posts failed. Error: {json}")
+            return {}
 
         posts = {}
         for post in json['data']['children']:
