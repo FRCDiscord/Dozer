@@ -62,7 +62,7 @@ class RedditSource(DataBasedSource):
 
     async def request(self, url, *args, headers=None, **kwargs):
         """Make a request using OAuth2 (or not, if it's been disabled)"""
-        if datetime.datetime.now() > self.expiry_time:
+        if not self.oauth_disabled and datetime.datetime.now() > self.expiry_time:
             DOZER_LOGGER.info("Refreshing Reddit token due to expiry time")
             await self.get_token()
 
