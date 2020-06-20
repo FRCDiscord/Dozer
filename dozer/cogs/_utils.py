@@ -7,7 +7,7 @@ from collections.abc import Mapping
 import discord
 from discord.ext import commands
 
-__all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk']
+__all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk', 'dev_check']
 
 
 class CommandMixin:
@@ -77,6 +77,15 @@ class Cog(commands.Cog):
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
+
+
+def dev_check():
+    """Function decorator to check that the calling user is a developer"""
+    async def predicate(ctx):
+        if ctx.author.id not in ctx.bot.config['developers']:
+            raise commands.NotOwner('you are not a developer!')
+        return True
+    return commands.check(predicate)
 
 
 class Reactor:
