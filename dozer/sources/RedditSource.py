@@ -188,7 +188,7 @@ class RedditSource(DataBasedSource):
 
                 embed = self.generate_embed(post['data'])
                 plain = self.generate_plain_text(post['data'])
-                if 'subreddit' in post['data']:
+                if post['data']['subreddit'] in posts:
                     posts[post['data']['subreddit']]['embed'].append(embed)
                     posts[post['data']['subreddit']]['plain'].append(plain)
                 else:
