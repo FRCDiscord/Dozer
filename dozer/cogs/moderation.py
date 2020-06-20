@@ -211,16 +211,16 @@ class Moderation(Cog):
                                       global_modlog=not self_inflicted))
             return True
 
-    async def _undeafen(self, member: discord.Member, reason, ctx):
+    async def _undeafen(self, member: discord.Member):
         """Undeafens a user."""
         results = await Deafen.get_by(guild_id=member.guild.id, member_id=member.id)
         if results:
             await self.perm_override(member=member, read_messages=None)
             await Deafen.delete(member_id=member.id, guild_id=member.guild.id)
-            await self.mod_log(actor=ctx.author, action="undeafened", target=member, reason=reason,
-                               orig_channel=ctx.channel, embed_color=discord.Color.green(), global_modlog=not results[0].self_inflicted)
+            truths = [True, results[0].self_inflicted]
+            return truths
         else:
-            await ctx.send("Member is not deafened!")
+            return [False]
 
     """=== Event handlers ==="""
 
@@ -567,7 +567,12 @@ class Moderation(Cog):
     async def undeafen(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
         """Undeafen a user to allow them to see message and send message again."""
         async with ctx.typing():
-            await self._undeafen(member_mentions, reason, ctx)
+            result = await self._undeafen(member_mentions)
+            if result[0]:
+                await self.mod_log(actor=ctx.author, action="undeafened", target=member_mentions, reason=reason,
+                                   orig_channel=ctx.channel, embed_color=discord.Color.green(), global_modlog=not result[1])
+            else:
+                await ctx.send("Member is not deafened!")
     undeafen.example_usage = """
     `{prefix}undeafen @user reason - undeafen @user for a given (optional) reason
     """
