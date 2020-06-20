@@ -207,7 +207,7 @@ class News(Cog):
 
             data_exists = await NewsSubscription.get_by(source=source.short_name, data=str(data_obj))
             if not data_exists:
-                await source.add_data(data)
+                await source.add_data(data_obj)
         else:
             search_exists = await NewsSubscription.get_by(channel_id=channel.id, source=source.short_name)
 
