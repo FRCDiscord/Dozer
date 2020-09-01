@@ -166,7 +166,7 @@ class Moderation(Cog):
         else:
             user = Mute(member_id=member.id, guild_id=member.guild.id)
             await user.update_or_add()
-            await self.perm_override(member, send_messages=False, add_reactions=False)
+            await self.perm_override(member, send_messages=False, add_reactions=False, speak=False)
 
             self.bot.loop.create_task(
                 self.punishment_timer(seconds, member, Mute, reason, actor or member.guild.me, orig_channel=orig_channel))
@@ -177,7 +177,7 @@ class Moderation(Cog):
         results = await Mute.get_by(guild_id=member.guild.id, member_id=member.id)
         if results:
             await Mute.delete(member_id=member.id, guild_id=member.guild.id)
-            await self.perm_override(member, send_messages=None, add_reactions=None)
+            await self.perm_override(member, send_messages=None, add_reactions=None, speak=None)
             return True
         else:
             return False # member not muted
