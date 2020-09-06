@@ -87,7 +87,11 @@ class News(Cog):
                 channel_dict[sub.data][channel] = sub.kind
 
             # We've gotten all of the channels we need to post to, lets get the posts and post them now
-            posts = await source.get_new_posts()
+            try:
+                posts = await source.get_new_posts()
+            except ElementTree.ParseError:
+                DOZER_LOGGER.error(f"XML Parser errored out on source f{source.full_name}")
+                continue
             if posts is None:
                 continue
 
@@ -107,10 +111,9 @@ class News(Cog):
                            f"{(next_run - datetime.datetime.now(datetime.timezone.utc)).total_seconds()}"
                            f" seconds.")
 
-    # Whenever version 1.4.0 of discord.py comes out, this can be uncommented. For now, use the get_exception commmand
-    # @get_new_posts.error()
-    # async def log_exception(self, exception):
-    #     DOZER_LOGGER.error(exception)
+    @get_new_posts.error()
+    async def log_exception(self, exception):
+        self.get_new_posts.start()
 
     @get_new_posts.before_loop
     async def startup(self):
