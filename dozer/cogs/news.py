@@ -111,7 +111,7 @@ class News(Cog):
                            f"{(next_run - datetime.datetime.now(datetime.timezone.utc)).total_seconds()}"
                            f" seconds.")
 
-    @get_new_posts.error()
+    @get_new_posts.error
     async def log_exception(self, exception):
         self.get_new_posts.start()
 
