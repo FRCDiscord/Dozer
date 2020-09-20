@@ -1,8 +1,12 @@
 """Records members' XP and level."""
 
+import asyncio
 import logging
+import math
 from datetime import timedelta, timezone
 
+import discord
+from discord.ext.commands import guild_only
 from discord.ext.tasks import loop
 
 from ._utils import *
@@ -90,7 +94,14 @@ class Levels(Cog):
                                    to_write)
         logger.debug("Inserted/updated %d record(s)", len(to_write))
 
-    sync_task = loop(minutes=1)(sync_to_database)
+    @loop(minutes=1)
+    async def sync_task(self):
+        """Sync dirty records to the database, and evict others from the cache.
+        This function merely wraps `sync_to_database` into a periodic task.
+        """
+        # @loop(...) assumes that getattr(self, func.__name__) is the task, so this needs to be a new function instead
+        # of `sync_task = loop(minutes=1)(sync_to_database)`
+        await self.sync_to_database()
 
     @sync_task.before_loop
     async def before_sync(self):
@@ -100,6 +111,97 @@ class Levels(Cog):
     def cog_unload(self):
         """Detach from the running bot and cancel long-running code as the cog is unloaded."""
         self.sync_task.stop()
+
+    def _ensure_sync_running(self):
+        task = self.sync_task.get_task()
+        if task is None or not task.done():  # has not been started or has been started and not stopped
+            return
+        try:
+            exc = task.exception()
+        except asyncio.CancelledError:
+            logger.warning("Task syncing records was cancelled prematurely, restarting")
+        else:
+            # exc could be None if the task returns normally, but that would also be an error
+            logger.error("Task syncing records failed: %r", exc)
+        finally:
+            self.sync_task.start()
+
+    @command()
+    @guild_only()
+    async def rank(self, ctx, *, member: discord.Member = None):
+        """Get a user's ranking on the XP leaderboard.
+        If no member is passed, the caller's ranking is shown.
+        """
+        member = member or ctx.author
+
+        await self.sync_to_database()
+        self._ensure_sync_running()
+
+        # Make Postgres compute the rank for us (need WITH-query so rank() sees records for every user)
+        record = await db.Pool.fetchrow(f"""
+            WITH ranked_xp AS (
+                SELECT user_id, total_xp, rank() OVER (ORDER BY total_xp DESC) FROM {MemberXP.__tablename__}
+                WHERE guild_id = $1
+            ) SELECT total_xp, rank FROM ranked_xp WHERE user_id = $2;
+        """, ctx.guild.id, member.id)
+
+        if record:
+            total_xp, rank = record
+        else:
+            await ctx.send("That user isn't on the leaderboard.")
+            return
+
+        count = await db.Pool.fetchval(f"""SELECT count(*) FROM {MemberXP.__tablename__} WHERE guild_id = $1;""",
+                                       ctx.guild.id)
+
+        embed = discord.Embed(color=member.color)
+        embed.description = (f"Level TODO, TODO/TODO XP to level up ({total_xp} total)\n"
+                             f"#{rank} of {count} in this server")
+        embed.set_author(name=member.display_name, icon_url=member.avatar_url_as(format='png', size=64))
+        await ctx.send(embed=embed)
+
+    rank.example_usage = """
+    `{prefix}rank`: show your ranking
+    `{prefix}rank coolgal#1234`: show another user's ranking
+    """
+
+    @staticmethod
+    def _fmt_member(guild, user_id):
+        member = guild.get_member(user_id)
+        if member:
+            return str(member)
+        else:
+            return "Missing member"
+
+    @command()
+    @guild_only()
+    async def levels(self, ctx):
+        """Show the XP leaderboard for this server."""
+
+        await self.sync_to_database()
+        self._ensure_sync_running()
+
+        # Order by total_xp needs a tiebreaker, otherwise all records with equal XP have the same rank
+        # This causes rankings like #1, #1, #1, #4, #4, #6, ...
+        # user_id is arbitrary, chosen because it is guaranteed to be unique between two records in the same guild
+        records = await db.Pool.fetch(f"""
+            SELECT user_id, total_xp, rank() OVER (ORDER BY total_xp DESC, user_id) FROM {MemberXP.__tablename__}
+            WHERE guild_id = $1 ORDER BY rank;
+        """, ctx.guild.id)
+
+        # TODO load only a few pages of data at a time with a cursor
+        embeds = []
+        for page_num, page in enumerate(chunk(records, 10)):
+            embed = discord.Embed(title=f"Rankings for {ctx.guild}", color=discord.Color.blue())
+            embed.description = '\n'.join(f"#{rank}: {self._fmt_member(ctx.guild, user_id)} (lvl TODO, {total_xp} XP)"
+                                          for (user_id, total_xp, rank) in page)
+            embed.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(records) / 10)}")
+            embeds.append(embed)
+        await paginate(ctx, embeds)
+
+    levels.example_usage = """
+    `{prefix}levels`: show the XP leaderboard
+    """
 
 
 class MemberXP(db.DatabaseTable):
