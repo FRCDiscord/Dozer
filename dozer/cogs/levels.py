@@ -1,5 +1,6 @@
 """Records members' XP and level."""
 
+import functools
 import asyncio
 import logging
 import math
@@ -38,6 +39,35 @@ class Levels(Cog):
             self._guild_settings[record.guild_id] = record
         logger.info("Loaded settings for %d guilds", len(self._guild_settings))
         # Load subset of member XP records here?
+
+    @staticmethod
+    @functools.lru_cache(100)
+    def total_xp_for_level(level):
+        """Compute the total XP required to reach the given level.
+        All members at this level have at least this much XP.
+        """
+        # https://github.com/Mee6/Mee6-documentation/blob/9d98a8fe8ab494fd85ec27750592fc9f8ef82472/docs/levels_xp.md
+        # > The formula to calculate how many xp you need for the next level is 5 * (lvl ^ 2) + 50 * lvl + 100 with
+        # > your current level as lvl
+        needed = 0
+        for lvl in range(level):
+            needed += 5 * lvl ** 2 + 50 * lvl + 100
+        return needed
+
+    @staticmethod
+    @functools.lru_cache(100)
+    def level_for_total_xp(xp):
+        """Compute the level of a member with the given amount of total XP.
+        All members with this much XP are at or above this level.
+        """
+        # https://github.com/Mee6/Mee6-documentation/blob/9d98a8fe8ab494fd85ec27750592fc9f8ef82472/docs/levels_xp.md
+        # > The formula to calculate how many xp you need for the next level is 5 * (lvl ^ 2) + 50 * lvl + 100 with
+        # > your current level as lvl
+        lvl = 0
+        while xp >= 0:
+            xp -= 5 * lvl ** 2 + 50 * lvl + 100
+            lvl += 1
+        return lvl - 1
 
     @Cog.listener('on_message')
     async def give_message_xp(self, message):
@@ -153,9 +183,12 @@ class Levels(Cog):
 
         count = await db.Pool.fetchval(f"""SELECT count(*) FROM {MemberXP.__tablename__} WHERE guild_id = $1;""",
                                        ctx.guild.id)
+        level = self.level_for_total_xp(total_xp)
+        level_floor = self.total_xp_for_level(level)
+        level_xp = self.total_xp_for_level(level + 1) - level_floor
 
         embed = discord.Embed(color=member.color)
-        embed.description = (f"Level TODO, TODO/TODO XP to level up ({total_xp} total)\n"
+        embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
                              f"#{rank} of {count} in this server")
         embed.set_author(name=member.display_name, icon_url=member.avatar_url_as(format='png', size=64))
         await ctx.send(embed=embed)
@@ -193,7 +226,8 @@ class Levels(Cog):
         embeds = []
         for page_num, page in enumerate(chunk(records, 10)):
             embed = discord.Embed(title=f"Rankings for {ctx.guild}", color=discord.Color.blue())
-            embed.description = '\n'.join(f"#{rank}: {self._fmt_member(ctx.guild, user_id)} (lvl TODO, {total_xp} XP)"
+            embed.description = '\n'.join(f"#{rank}: {self._fmt_member(ctx.guild, user_id)}"
+                                          f" (lvl {self.level_for_total_xp(total_xp)}, {total_xp} XP)"
                                           for (user_id, total_xp, rank) in page)
             embed.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(records) / 10)}")
             embeds.append(embed)
