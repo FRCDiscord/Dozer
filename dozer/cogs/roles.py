@@ -27,35 +27,35 @@ class Roles(Cog):
 
     @staticmethod
     def calculate_epoch_time(time_string):
+        """Calculates a unix timestamp based on a 1m style string"""
         seconds_per_unit = {"m": 60, "h": 3600, "d": 86400, "w": 604800, "y": 3.154e+7}
         time_delta = int(time_string[:-1]) * seconds_per_unit[time_string[-1]]
-        time_release = round(time.time() + abs(time_delta))
+        time_release = round(time.time() + time_delta)
         return time_release
 
     @Cog.listener('on_ready')
     async def on_ready(self):
         """Restore tempRole timers on bot startup"""
         q = await TempRoleTimerRecords.get_by()  # no filters: all
-        for r in q:
-            self.bot.loop.create_task(self.removal_timer(r))
+        for record in q:
+            self.bot.loop.create_task(self.removal_timer(record))
 
-    async def removal_timer(self, r):
+    async def removal_timer(self, record):
         """Asynchronous task that sleeps for a set time to remove a role from a member after a set period of time."""
 
-        guild = self.bot.get_guild(int(r.guild_id))
-        actor = guild.get_member(int(r.actor_id))
-        # target = await guild.fetch_member(int(r.target_id))
-        target = guild.get_member(int(r.target_id))
-        target_role = guild.get_role(int(r.target_role_id))
-        removal_time = r.removal_ts
+        guild = self.bot.get_guild(int(record.guild_id))
+        target = guild.get_member(int(record.target_id))
+        target_role = guild.get_role(int(record.target_role_id))
+        removal_time = record.removal_ts
 
+        # Max function is used to make sure the delay is not negative
         time_delta = max(int(removal_time - time.time()), 1)
 
         await asyncio.sleep(time_delta)
 
         await target.remove_roles(target_role)
 
-        await TempRoleTimerRecords.delete(id=r.id)
+        await TempRoleTimerRecords.delete(id=record.id)
 
     @Cog.listener('on_member_join')
     async def on_member_join(self, member):
@@ -353,12 +353,15 @@ class Roles(Cog):
         if role > ctx.me.top_role:
             raise BadArgument('Cannot give roles higher than my top role!')
 
+        remove_time = self.calculate_epoch_time(length)
+        if remove_time < time.time():
+            raise BadArgument('Cannot use negative role time')
+
         ent = TempRoleTimerRecords(
             guild_id=member.guild.id,
-            actor_id=ctx.author.id,
             target_id=member.id,
             target_role_id=role.id,
-            removal_ts=self.calculate_epoch_time(length)
+            removal_ts=remove_time
         )
 
         await member.add_roles(role)
@@ -498,17 +501,15 @@ class TempRoleTimerRecords(db.DatabaseTable):
             CREATE TABLE {cls.__tablename__} (
             id serial PRIMARY KEY NOT NULL,
             guild_id bigint NOT NULL,
-            actor_id bigint NOT NULL,
             target_id bigint NOT NULL,
             target_role_id bigint NOT NULL,
             removal_ts bigint NOT NULL
             )""")
 
-    def __init__(self, guild_id, actor_id, target_id, target_role_id, removal_ts, input_id=None):
+    def __init__(self, guild_id, target_id, target_role_id, removal_ts, input_id=None):
         super().__init__()
         self.id = input_id
         self.guild_id = guild_id
-        self.actor_id = actor_id
         self.target_id = target_id
         self.target_role_id = target_role_id
         self.removal_ts = removal_ts
@@ -518,7 +519,7 @@ class TempRoleTimerRecords(db.DatabaseTable):
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
-            obj = TempRoleTimerRecords(guild_id=result.get("guild_id"), actor_id=result.get("actor_id"),
+            obj = TempRoleTimerRecords(guild_id=result.get("guild_id"),
                                        target_id=result.get("target_id"),
                                        target_role_id=result.get("target_role_id"),
                                        removal_ts=result.get("removal_ts"),
