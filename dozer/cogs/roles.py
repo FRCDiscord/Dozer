@@ -43,13 +43,11 @@ class Roles(Cog):
         """Asynchronous task that sleeps for a set time to remove a role from a member after a set period of time."""
 
         guild = self.bot.get_guild(int(r.guild_id))
-        # actor = self.bot.get_member(int(r.actor_id))
-        #target = await guild.fetch_member(int(r.target_id))
-        target = guild.get_member(int(r.actor_id))
+        actor = guild.get_member(int(r.actor_id))
+        # target = await guild.fetch_member(int(r.target_id))
+        target = guild.get_member(int(r.target_id))
         target_role = guild.get_role(int(r.target_role_id))
         removal_time = r.removal_ts
-
-        print(target)
 
         time_delta = max(int(removal_time - time.time()), 1)
 
