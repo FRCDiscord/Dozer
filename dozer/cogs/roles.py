@@ -57,8 +57,6 @@ class Roles(Cog):
 
         await TempRoleTimerRecords.delete(id=r.id)
 
-
-
     @Cog.listener('on_member_join')
     async def on_member_join(self, member):
         """Restores a member's roles when they join if they have joined before."""
@@ -352,6 +350,9 @@ class Roles(Cog):
         if role > ctx.author.top_role:
             raise BadArgument('Cannot give roles higher than your top role!')
 
+        if role > ctx.me.top_role:
+            raise BadArgument('Cannot give roles higher than my top role!')
+
         ent = TempRoleTimerRecords(
             guild_id=member.guild.id,
             actor_id=ctx.author.id,
@@ -360,17 +361,16 @@ class Roles(Cog):
             removal_ts=self.calculate_epoch_time(length)
         )
 
-        await ent.update_or_add()
-        self.bot.loop.create_task(
-            self.removal_timer(ent))
         await member.add_roles(role)
+        await ent.update_or_add()
+        self.bot.loop.create_task(self.removal_timer(ent))
         e = discord.Embed(color=blurple)
         e.add_field(name='Success!', value='I gave {} to {}, for {}!'.format(role.mention, member.mention, length))
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
     tempgive.example_usage = """
-        `{prefix}tempgive cooldude#1234 Java 1h` - gives cooldude any role, giveable or not, named Java for one hour
+        `{prefix}tempgive cooldude#1234 1h Java` - gives cooldude any role, giveable or not, named Java for one hour
         """
 
     @command()
