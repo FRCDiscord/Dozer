@@ -1,15 +1,16 @@
 """Provides commands for voice, currently only voice and text channel access bindings."""
 import discord
-from discord.ext.commands import has_permissions
+from discord.ext.commands import has_permissions, BadArgument
 
 from ._utils import *
+from .info import blurple
 from .. import db
 
 
 class Voice(Cog):
     """Commands interacting with voice."""
 
-    @Cog.listener('on_voice_state_update')
+    @Cog.listener('on_voice_state_update')  # Used for VoiceBind
     async def on_voice_state_update(self, member, before, after):
         """Handles voicebinds when members join/leave voice channels"""
         # skip this if we have no perms, or if it's something like a mute/deafen
@@ -26,6 +27,57 @@ class Voice(Cog):
                 config = await Voicebinds.get_by(channel_id=after.channel.id)
                 if len(config) != 0:
                     await member.add_roles(member.guild.get_role(config[0].role_id))
+
+    @Cog.listener('on_voice_state_update')  # Used for auto PTT
+    async def on_voice_state_update(self, member, before, after):
+        """Handles voicebinds when members join/leave voice channels"""
+        # skip this if we have no perms to edit voice channel
+        total_users = 0
+        if member.guild.me.guild_permissions.manage_channels and before.channel != after.channel:
+            # determine if it's a join/leave event as well.
+            # before and after are voice states
+            if before.channel is not None:
+                # leave event, take role
+                voice_channel = before.channel
+                total_users = len(before.channel.members)
+                config = await AutoPTT.get_by(channel_id=before.channel.id)
+            if after.channel is not None:
+                # join event, give role
+                voice_channel = after.channel
+                total_users = len(after.channel.members)
+                config = await AutoPTT.get_by(channel_id=after.channel.id)
+
+            if total_users > config[0].ptt_limit:
+                perm = discord.Permissions.use_voice_activation
+                perms = voice_channel.overwrites_for(voice_channel.guild.default_role)
+                perms.use_voice_activation = False
+                await voice_channel.edit(overwrites=perms)
+
+    @command()
+    @bot_has_permissions(manage_channels=True)
+    @has_permissions(manage_channels=True)
+    async def autoptt(self, ctx, voice_channel: discord.VoiceChannel, ptt_threshold: int):
+        """Configures AutoPtt limit for when members join/leave voice channels ptt is enabled"""
+        config = await AutoPTT.get_by(channel_id=voice_channel.id)
+        if len(config) != 0:
+            await AutoPTT.delete(id=config[0].id)
+
+        if ptt_threshold <= 0:
+            raise BadArgument('PTT threshold must be above zero')
+
+        ent = AutoPTT(
+            guild_id=ctx.guild.id,
+            channel_id=voice_channel.id,
+            ptt_limit=ptt_threshold
+        )
+
+        await ent.update_or_add()
+
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value='Voice Channel **{}**\'s PTT threshold set to {} members'
+                    .format(voice_channel, ptt_threshold))
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
 
     @command()
     @bot_has_permissions(manage_roles=True)
@@ -120,6 +172,45 @@ class Voicebinds(db.DatabaseTable):
                              guild_id=result.get("guild_id"),
                              channel_id=result.get("channel_id"),
                              role_id=result.get("role_id"))
+            result_list.append(obj)
+        return result_list
+
+
+class AutoPTT(db.DatabaseTable):
+    """DB object to keep track of voice to text channel access bindings."""
+    __tablename__ = 'autoptt'
+
+    __uniques__ = 'id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            id SERIAL PRIMARY KEY NOT NULL,
+            guild_id bigint NOT NULL,
+            channel_id bigint null,
+            ptt_limit bigint null
+            )""")
+
+    def __init__(self, guild_id, channel_id, ptt_limit, row_id=None):
+        super().__init__()
+        if row_id is not None:
+            self.id = row_id
+        self.guild_id = guild_id
+        self.channel_id = channel_id
+        self.ptt_limit = ptt_limit
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = AutoPTT(row_id=result.get("id"),
+                          guild_id=result.get("guild_id"),
+                          channel_id=result.get("channel_id"),
+                          ptt_limit=result.get("ptt_limit"))
             result_list.append(obj)
         return result_list
 
