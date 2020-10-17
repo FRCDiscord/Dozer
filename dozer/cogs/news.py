@@ -116,8 +116,8 @@ class News(Cog):
     async def startup(self):
         """Initialize sources and start the loop after initialization"""
         self.sources = {}
-        self.http_source = aiohttp.ClientSession(headers={'Connection': 'keep-alive'})
-        # Headers to work around JVN's blog... for some reason
+        self.http_source = aiohttp.ClientSession(headers={'Connection': 'keep-alive', 'User-Agent': 'Dozer RSS Feed Reader'})
+        # JVN's blog will 403 you if you use the default user agent, so replacing it with this will yield a parsable result.
         for source in self.enabled_sources:
             try:
                 self.sources[source.short_name] = source(aiohttp_session=self.http_source, bot=self.bot)
