@@ -29,7 +29,7 @@ class Voice(Cog):
                     await member.add_roles(member.guild.get_role(config[0].role_id))
 
     @Cog.listener('on_voice_state_update')  # Used for auto PTT
-    async def on_voice_state_update(self, member, before, after):
+    async def on_PTT_check(self, member, before, after):
         """Handles voice activity when members join/leave voice channels"""
         # skip this if we have no perms to edit voice channel
         total_users = 0
