@@ -30,7 +30,7 @@ class Voice(Cog):
 
     @Cog.listener('on_voice_state_update')  # Used for auto PTT
     async def on_voice_state_update(self, member, before, after):
-        """Handles voicebinds when members join/leave voice channels"""
+        """Handles voice activity when members join/leave voice channels"""
         # skip this if we have no perms to edit voice channel
         total_users = 0
         if member.guild.me.guild_permissions.manage_channels and before.channel != after.channel:
@@ -47,11 +47,14 @@ class Voice(Cog):
                 total_users = len(after.channel.members)
                 config = await AutoPTT.get_by(channel_id=after.channel.id)
 
+            everyone = voice_channel.guild.default_role  # grab the @everyone role
+            perms = voice_channel.overwrites_for(everyone)  # grab the @everyone overwrites
+
             if total_users > config[0].ptt_limit:
-                perm = discord.Permissions.use_voice_activation
-                perms = voice_channel.overwrites_for(voice_channel.guild.default_role)
-                perms.use_voice_activation = False
-                await voice_channel.edit(overwrites=perms)
+                perms.update(use_voice_activation=False)  # Force PTT enable
+            if total_users <= config[0].ptt_limit:
+                perms.update(use_voice_activation=None)  # Set PTT to neutral
+            await voice_channel.set_permissions(target=everyone, overwrite=perms)
 
     @command()
     @bot_has_permissions(manage_channels=True)
@@ -78,6 +81,10 @@ class Voice(Cog):
                     .format(voice_channel, ptt_threshold))
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
+
+    autoptt.example_usage = """
+        `{prefix}autoptt "General #1" 15 - sets up Dozer to give force Push-To-Talk when more than 15 users joins a voice channel.
+        """
 
     @command()
     @bot_has_permissions(manage_roles=True)
