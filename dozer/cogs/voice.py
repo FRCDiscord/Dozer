@@ -12,6 +12,7 @@ class Voice(Cog):
 
     @staticmethod
     async def autoPTTCheck(voice_channel):
+        """Handles voice activity when members join/leave voice channels"""
         total_users = len(voice_channel.channel.members)
         config = await AutoPTT.get_by(channel_id=voice_channel.channel.id)
         if config:
@@ -43,7 +44,7 @@ class Voice(Cog):
 
     @Cog.listener('on_voice_state_update')  # Used for auto PTT
     async def on_PTT_check(self, member, before, after):
-        """Handles voice activity when members join/leave voice channels"""
+        """Runs the autoPTTcheck when a user leaves and/or joins a vc"""
         # skip this if we have no perms to edit voice channel
         total_users = 0
         if member.guild.me.guild_permissions.manage_channels and before.channel != after.channel:
@@ -72,7 +73,7 @@ class Voice(Cog):
             config = await AutoPTT.get_by(channel_id=voice_channel.id)
             if len(config) != 0:
                 await AutoPTT.delete(id=config[0].id)
-                e.add_field(name='Success!', value='AutoPTT has been disabled for '
+                e.add_field(name='Success!', value='AutoPTT has been disabled for voice channel "**{}**"'
                             .format(voice_channel))
             else:
                 e.add_field(name='Error', value='AutoPTT has not been configured for voice channel "**{}**"'
