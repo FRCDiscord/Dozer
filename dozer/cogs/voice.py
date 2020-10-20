@@ -10,6 +10,19 @@ from .. import db
 class Voice(Cog):
     """Commands interacting with voice."""
 
+    @staticmethod
+    async def autoPTTCheck(voice_channel):
+        total_users = len(voice_channel.channel.members)
+        config = await AutoPTT.get_by(channel_id=voice_channel.channel.id)
+        if config:
+            everyone = voice_channel.channel.guild.default_role  # grab the @everyone role
+            perms = voice_channel.channel.overwrites_for(everyone)  # grab the @everyone overwrites
+            if total_users > config[0].ptt_limit:
+                perms.update(use_voice_activation=False)  # Force PTT enable
+            if total_users <= config[0].ptt_limit:
+                perms.update(use_voice_activation=None)  # Set PTT to neutral
+            await voice_channel.channel.set_permissions(target=everyone, overwrite=perms)
+
     @Cog.listener('on_voice_state_update')  # Used for VoiceBind
     async def on_voice_state_update(self, member, before, after):
         """Handles voicebinds when members join/leave voice channels"""
@@ -38,52 +51,48 @@ class Voice(Cog):
             # before and after are voice states
             if before.channel is not None:
                 # leave event, take role
-                voice_channel = before.channel
-                total_users = len(before.channel.members)
-                config = await AutoPTT.get_by(channel_id=before.channel.id)
+                await self.autoPTTCheck(before)
             if after.channel is not None:
                 # join event, give role
-                voice_channel = after.channel
-                total_users = len(after.channel.members)
-                config = await AutoPTT.get_by(channel_id=after.channel.id)
-
-            everyone = voice_channel.guild.default_role  # grab the @everyone role
-            perms = voice_channel.overwrites_for(everyone)  # grab the @everyone overwrites
-
-            if total_users > config[0].ptt_limit:
-                perms.update(use_voice_activation=False)  # Force PTT enable
-            if total_users <= config[0].ptt_limit:
-                perms.update(use_voice_activation=None)  # Set PTT to neutral
-            await voice_channel.set_permissions(target=everyone, overwrite=perms)
+                await self.autoPTTCheck(after)
 
     @command()
     @bot_has_permissions(manage_channels=True)
     @has_permissions(manage_channels=True)
     async def autoptt(self, ctx, voice_channel: discord.VoiceChannel, ptt_threshold: int):
         """Configures AutoPtt limit for when members join/leave voice channels ptt is enabled"""
-        config = await AutoPTT.get_by(channel_id=voice_channel.id)
-        if len(config) != 0:
-            await AutoPTT.delete(id=config[0].id)
-
-        if ptt_threshold <= 0:
-            raise BadArgument('PTT threshold must be above zero')
-
-        ent = AutoPTT(
-            guild_id=ctx.guild.id,
-            channel_id=voice_channel.id,
-            ptt_limit=ptt_threshold
-        )
-
-        await ent.update_or_add()
 
         e = discord.Embed(color=blurple)
-        e.add_field(name='Success!', value='Voice Channel **{}**\'s PTT threshold set to {} members'
-                    .format(voice_channel, ptt_threshold))
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
+
+        if ptt_threshold < 0:
+            raise BadArgument('PTT threshold must be positive integer')
+
+        if ptt_threshold == 0:
+            config = await AutoPTT.get_by(channel_id=voice_channel.id)
+            if len(config) != 0:
+                await AutoPTT.delete(id=config[0].id)
+                e.add_field(name='Success!', value='AutoPTT has been disabled for '
+                            .format(voice_channel))
+            else:
+                e.add_field(name='Error', value='AutoPTT has not been configured for voice channel "**{}**"'
+                            .format(voice_channel))
+        else:
+            ent = AutoPTT(
+                channel_id=voice_channel.id,
+                ptt_limit=ptt_threshold
+            )
+
+            await ent.update_or_add()
+
+            e.add_field(name='Success!', value='Voice Channel **{}**\'s PTT threshold set to {} members'
+                        .format(voice_channel, ptt_threshold))
+
         await ctx.send(embed=e)
 
     autoptt.example_usage = """
         `{prefix}autoptt "General #1" 15 - sets up Dozer to give force Push-To-Talk when more than 15 users joins a voice channel.
+        `{prefix}autoptt "General #1" 0 - disables AutoPTT for General #1.
         """
 
     @command()
@@ -196,16 +205,14 @@ class AutoPTT(db.DatabaseTable):
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
             id SERIAL PRIMARY KEY NOT NULL,
-            guild_id bigint NOT NULL,
             channel_id bigint null,
             ptt_limit bigint null
             )""")
 
-    def __init__(self, guild_id, channel_id, ptt_limit, row_id=None):
+    def __init__(self, channel_id, ptt_limit, row_id=None):
         super().__init__()
         if row_id is not None:
             self.id = row_id
-        self.guild_id = guild_id
         self.channel_id = channel_id
         self.ptt_limit = ptt_limit
 
@@ -215,7 +222,6 @@ class AutoPTT(db.DatabaseTable):
         result_list = []
         for result in results:
             obj = AutoPTT(row_id=result.get("id"),
-                          guild_id=result.get("guild_id"),
                           channel_id=result.get("channel_id"),
                           ptt_limit=result.get("ptt_limit"))
             result_list.append(obj)
