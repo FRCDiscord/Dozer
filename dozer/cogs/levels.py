@@ -42,14 +42,13 @@ class Levels(Cog):
         logger.info("Loaded settings for %d guilds", len(self._guild_settings))
         # Load subset of member XP records here?
 
-    # TODO: For god's sake don't put this in production
     @command(aliases=["mee6sync"])
     @discord.ext.commands.max_concurrency(1, wait=False)  # Only allows one instance of this command to run at a time globally
     @discord.ext.commands.cooldown(rate=1, per=3600, type=discord.ext.commands.BucketType.guild)  # A cooldown of one hour per guild to prevent spam
     @has_permissions(administrator=True)
     async def meesyncs(self, ctx):
+        """Function to scrap ranking data from the mee6 api and save it to the database"""
         guild_id = ctx.guild.id
-        guild_id = 176186766946992128
         progress_template = "Currently syncing from Mee6 API please wait... Page: {page}"
         msg = await ctx.send(progress_template.format(page="N/A"))
         for page in range(0, 100000):
@@ -69,7 +68,7 @@ class Levels(Cog):
                     await msg.edit(content=progress_template.format(page=page))
             else:
                 break
-            time.sleep(1.25)
+            time.sleep(1.25)  # Slow down api calls as to not anger cloudflare
 
         ent = GuildXPSettings(
             guild_id=int(guild_id),
