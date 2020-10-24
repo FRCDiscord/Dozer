@@ -89,6 +89,9 @@ class Dozer(commands.Bot):
         elif isinstance(exception, commands.CommandOnCooldown):
             await context.send(
                 '{}, That command is on cooldown! Try again in {:.2f}s!'.format(context.author.mention, exception.retry_after))
+        elif isinstance(exception, commands.MaxConcurrencyReached):
+            await context.send(
+                '{}, That command is already running more instances than allowed! Please try again later'.format(context.author.mention))
         elif isinstance(exception, (commands.CommandNotFound, InvalidContext)):
             pass  # Silent ignore
         else:
