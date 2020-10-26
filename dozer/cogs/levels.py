@@ -4,8 +4,9 @@ import functools
 import asyncio
 import logging
 import math
-from datetime import timedelta, timezone
+from datetime import timedelta, timezone, datetime
 import requests
+import random
 import time
 import discord
 from discord.ext.commands import guild_only, has_permissions
@@ -43,6 +44,7 @@ class Levels(Cog):
         # Load subset of member XP records here?
 
     @command(aliases=["mee6sync"])
+    @guild_only()  # Prevent command from being executed in a DM
     @discord.ext.commands.max_concurrency(1, wait=False)  # Only allows one instance of this command to run at a time globally
     @discord.ext.commands.cooldown(rate=1, per=3600, type=discord.ext.commands.BucketType.guild)  # A cooldown of one hour per guild to prevent spam
     @has_permissions(administrator=True)
@@ -70,11 +72,6 @@ class Levels(Cog):
                 break
             time.sleep(1.25)  # Slow down api calls as to not anger cloudflare
 
-        ent = GuildXPSettings(
-            guild_id=int(guild_id),
-            enabled=True
-        )
-        await ent.update_or_add()
         await ctx.send("Done")
 
     meesyncs.example_usage = """
@@ -110,6 +107,20 @@ class Levels(Cog):
             lvl += 1
         return lvl - 1
 
+    async def _load_member(self, guild_id, member_id):
+        cached_member = self._xp_cache.get((guild_id, member_id))
+        if cached_member is None:
+            logger.debug("Cache miss: guild_id=%d, user_id=%d", guild_id, member_id)
+            records = await MemberXP.get_by(guild_id=guild_id, user_id=member_id)
+            if records:
+                logger.debug("Loading from database")
+                cached_member = MemberXPCache.from_record(records[0])
+            else:
+                logger.debug("Creating from scratch")
+                cached_member = MemberXPCache(0, datetime.now(), 0, True)
+            self._xp_cache[(guild_id, member_id)] = cached_member
+        return cached_member
+
     @Cog.listener('on_message')
     async def give_message_xp(self, message):
         """Handle giving XP to a user for a message."""
@@ -119,24 +130,14 @@ class Levels(Cog):
         if guild_settings is None or not guild_settings.enabled:
             return
 
-        cached_member = self._xp_cache.get((message.guild.id, message.author.id))
-        if cached_member is None:
-            logger.debug("Cache miss: guild_id=%d, user_id=%d", message.guild.id, message.author.id)
-            records = await MemberXP.get_by(guild_id=message.guild.id, user_id=message.author.id)
-            if records:
-                logger.debug("Loading from database")
-                cached_member = MemberXPCache.from_record(records[0])
-            else:
-                logger.debug("Creating from scratch")
-                cached_member = MemberXPCache(0, None, False, 0)
-            self._xp_cache[(message.guild.id, message.author.id)] = cached_member
+        cached_member = await self._load_member(message.guild.id, message.author.id)
 
         timestamp = message.created_at.replace(tzinfo=timezone.utc)
-        if cached_member.last_given_at is None or timestamp - cached_member.last_given_at > self.xp_cooldown:
-            cached_member.total_xp += self.xp_per_message
+        if cached_member.last_given_at is None or timestamp - cached_member.last_given_at > timedelta(seconds=guild_settings.xp_cooldown):
+            cached_member.total_xp += random.randint(guild_settings.xp_min, guild_settings.xp_max)
             cached_member.last_given_at = timestamp
-            cached_member.total_messages += 1
-            cached_member.dirty = True
+        cached_member.total_messages += 1
+        cached_member.dirty = True
 
     async def sync_to_database(self):
         """Sync dirty records to the database, and evict others from the cache."""
@@ -146,11 +147,13 @@ class Levels(Cog):
         # Note that all mutation of `self._xp_cache` happens before the first yield point to prevent race conditions
         keys = list(self._xp_cache.keys())
         to_write = []  # records to write to the database
+        evicted = 0
         for (guild_id, user_id) in keys:
             cached_member = self._xp_cache[(guild_id, user_id)]
             if not cached_member.dirty:
                 # Evict records that haven't changed since last run from cache to conserve memory
                 del self._xp_cache[(guild_id, user_id)]
+                evicted += 1
                 continue
             to_write.append((guild_id, user_id, cached_member.total_xp, cached_member.total_messages, cached_member.last_given_at))
             cached_member.dirty = False
@@ -165,9 +168,9 @@ class Levels(Cog):
                                    f" SET total_xp = EXCLUDED.total_xp, total_messages = EXCLUDED.total_messages, last_given_at = "
                                    f"EXCLUDED.last_given_at",
                                    to_write)
-        logger.debug("Inserted/updated %d record(s)", len(to_write))
+        logger.debug(f"Inserted/updated {len(to_write)} record(s); Evicted {evicted} records(s)")
 
-    @loop(minutes=10)
+    @loop(minutes=1)
     async def sync_task(self):
         """Sync dirty records to the database, and evict others from the cache.
         This function merely wraps `sync_to_database` into a periodic task.
@@ -199,36 +202,57 @@ class Levels(Cog):
         finally:
             self.sync_task.start()
 
+    # TODO: Finish rank configuration
+    @command(aliases=["configurelevels"])
+    @guild_only()
+    @has_permissions(administrator=True)
+    async def configureranks(self, ctx):
+        ent = GuildXPSettings(
+            guild_id=int(ctx.guild.id),
+            xp_min=5,
+            xp_max=15,
+            xp_cooldown=15,
+            entropy_value=0,
+            enabled=True
+        )
+        await ent.update_or_add()
+
     @command()
     @guild_only()
+    @discord.ext.commands.cooldown(rate=1, per=10, type=discord.ext.commands.BucketType.user)  # cooldown to prevent spamming sync to database
     async def rank(self, ctx, *, member: discord.Member = None):
         """Get a user's ranking on the XP leaderboard.
         If no member is passed, the caller's ranking is shown.
         """
         member = member or ctx.author
 
-        await self.sync_to_database()
-        self._ensure_sync_running()
+        # await self.sync_to_database()
+        # self._ensure_sync_running()
+
+        cache_record = await self._load_member(ctx.guild.id, member.id)
 
         # Make Postgres compute the rank for us (need WITH-query so rank() sees records for every user)
-        record = await db.Pool.fetchrow(f"""
+        db_record = await db.Pool.fetchrow(f"""
             WITH ranked_xp AS (
-                SELECT user_id, total_xp, rank() OVER (ORDER BY total_xp DESC) FROM {MemberXP.__tablename__}
-                WHERE guild_id = $1
-            ) SELECT total_xp, rank FROM ranked_xp WHERE user_id = $2;
-        """, ctx.guild.id, member.id)
+                SELECT user_id, rank() OVER (ORDER BY total_xp DESC) FROM $1
+                WHERE guild_id = $2
+            ) SELECT rank FROM ranked_xp WHERE user_id = $3;
+        """, MemberXP.__tablename__, ctx.guild.id, member.id)
 
-        if record:
-            total_xp, rank = record
-        else:
-            await ctx.send("That user isn't on the leaderboard.")
-            return
+        total_xp = cache_record.total_xp
+
+        logger.debug(f"cache: {self._xp_cache}")
 
         count = await db.Pool.fetchval(f"""SELECT count(*) FROM {MemberXP.__tablename__} WHERE guild_id = $1;""",
                                        ctx.guild.id)
         level = self.level_for_total_xp(total_xp)
         level_floor = self.total_xp_for_level(level)
         level_xp = self.total_xp_for_level(level + 1) - level_floor
+
+        if db_record:
+            rank = db_record
+        else:
+            rank = count
 
         embed = discord.Embed(color=member.color)
         embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
@@ -326,19 +350,20 @@ class MemberXPCache:
         whether the record has been changed since it was loaded from the database or created.
     """
 
-    def __init__(self, total_xp, last_given_at, dirty, total_messages):
+    def __init__(self, total_xp: int, last_given_at: datetime, total_messages: int, dirty: bool):
         self.total_xp = total_xp
         self.total_messages = total_messages
         self.last_given_at = last_given_at
         self.dirty = dirty
 
     def __repr__(self):
-        return f"<MemberXPCache total_xp={self.total_xp!r} last_given_at={self.last_given_at!r} dirty={self.dirty!r}>"
+        return f"<MemberXPCache total_xp={self.total_xp!r} last_given_at={self.last_given_at!r} total_messages={self.last_given_at!r}" \
+               f" dirty={self.dirty!r}>"
 
     @classmethod
     def from_record(cls, record):
         """Create a cache entry from a database record. This copies all shared fields and sets `dirty` to False."""
-        return cls(record.total_xp, record.last_given_at, False, record.total_messages)
+        return cls(record.total_xp, record.last_given_at, record.total_messages, False)
 
 
 class GuildXPSettings(db.DatabaseTable):
@@ -353,12 +378,20 @@ class GuildXPSettings(db.DatabaseTable):
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
             guild_id bigint PRIMARY KEY NOT NULL,
+            xp_max smallint NOT NULL,
+            xp_min smallint NOT NULL,
+            xp_cooldown smallint NOT NULL,
+            entropy_value float4 NOT NULL,
             enabled boolean NOT NULL
             )""")
 
-    def __init__(self, guild_id, enabled):
+    def __init__(self, guild_id, xp_min, xp_max, xp_cooldown, entropy_value, enabled):
         super().__init__()
         self.guild_id = guild_id
+        self.xp_min = xp_min
+        self.xp_max = xp_max
+        self.xp_cooldown = xp_cooldown
+        self.entropy_value = entropy_value
         self.enabled = enabled
 
     @classmethod
@@ -366,7 +399,8 @@ class GuildXPSettings(db.DatabaseTable):
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
-            obj = GuildXPSettings(guild_id=result.get("guild_id"), enabled=result.get("enabled"))
+            obj = GuildXPSettings(guild_id=result.get("guild_id"), xp_min=result.get("xp_min"), xp_max=result.get("xp_max"),
+                                  xp_cooldown=result.get("xp_cooldown"), entropy_value=result.get("entropy_value"), enabled=result.get("enabled"))
             result_list.append(obj)
         return result_list
 
