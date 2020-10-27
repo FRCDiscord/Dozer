@@ -234,10 +234,10 @@ class Levels(Cog):
         # Make Postgres compute the rank for us (need WITH-query so rank() sees records for every user)
         db_record = await db.Pool.fetchrow(f"""
             WITH ranked_xp AS (
-                SELECT user_id, rank() OVER (ORDER BY total_xp DESC) FROM $1
-                WHERE guild_id = $2
-            ) SELECT rank FROM ranked_xp WHERE user_id = $3;
-        """, MemberXP.__tablename__, ctx.guild.id, member.id)
+                SELECT user_id, rank() OVER (ORDER BY total_xp DESC) FROM {MemberXP.__tablename__}
+                WHERE guild_id = $1
+            ) SELECT rank FROM ranked_xp WHERE user_id = $2;
+        """, ctx.guild.id, member.id)
 
         total_xp = cache_record.total_xp
 
@@ -250,7 +250,7 @@ class Levels(Cog):
         level_xp = self.total_xp_for_level(level + 1) - level_floor
 
         if db_record:
-            rank = db_record
+            rank = db_record.get("rank")
         else:
             rank = count
 
@@ -278,8 +278,8 @@ class Levels(Cog):
     async def levels(self, ctx):
         """Show the XP leaderboard for this server."""
 
-        await self.sync_to_database()
-        self._ensure_sync_running()
+        # await self.sync_to_database()
+        # self._ensure_sync_running()
 
         # Order by total_xp needs a tiebreaker, otherwise all records with equal XP have the same rank
         # This causes rankings like #1, #1, #1, #4, #4, #6, ...
