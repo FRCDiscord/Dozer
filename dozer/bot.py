@@ -44,8 +44,8 @@ class Dozer(commands.Bot):
     """Botty things that are critical to Dozer working"""
     _global_cooldown = commands.Cooldown(1, 1, commands.BucketType.user)  # One command per second per user
 
-    def __init__(self, config):
-        super().__init__(command_prefix=config['prefix'])
+    def __init__(self, config, *args, **kwargs):
+        super().__init__(command_prefix=config['prefix'], *args, **kwargs)
         self.config = config
         if self.config['debug']:
             DOZER_LOGGER.level = logging.DEBUG

@@ -196,7 +196,7 @@ class FTCBlogPosts(RSSSource):
     base_url = "http://firsttechchallenge.blogspot.com/"
     full_name = "FTC Blog Posts"
     short_name = "ftc"
-    description = "The official FTC Blogspot blog"
+    description = "Official blog posts from the FIRST Tech Challenge"
     color = discord.colour.Color.orange()
 
 
@@ -219,8 +219,6 @@ class JVNBlog(RSSSource):
     aliases = ['148', 'robowranglers']
     description = "Blog posts by John V Neun, 148 Head Engineer"
     color = discord.colour.Color(value=000000)
-    disabled = True
-    # For some reason, the XML parser hates this source. Investigate later.
 
 
 class SpectrumBlog(RSSSource):
