@@ -254,9 +254,9 @@ class Moderation(Cog):
         join.set_author(name='Member Joined', icon_url=member.avatar_url_as(format='png', size=32))
         join.description = "{0.mention}\n{0} ({0.id})".format(member)
         join.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
-        memberlogchannel = await GuildMemberLog.get_by(guild_id=member.guild.id)
-        if len(memberlogchannel) != 0:
-            channel = member.guild.get_channel(memberlogchannel[0].memberlog_channel)
+        member_log_channel = await GuildMemberLog.get_by(guild_id=member.guild.id)
+        if len(member_log_channel) != 0:
+            channel = member.guild.get_channel(member_log_channel[0].memberlog_channel)
             await channel.send(embed=join)
         users = await Mute.get_by(guild_id=member.guild.id, member_id=member.id)
         if users:
@@ -272,9 +272,9 @@ class Moderation(Cog):
         leave.set_author(name='Member Left', icon_url=member.avatar_url_as(format='png', size=32))
         leave.description = "{0.mention}\n{0} ({0.id})".format(member)
         leave.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
-        memberlogchannel = await GuildMemberLog.get_by(guild_id=member.guild.id)
-        if len(memberlogchannel) != 0:
-            channel = member.guild.get_channel(memberlogchannel[0].memberlog_channel)
+        member_log_channel = await GuildMemberLog.get_by(guild_id=member.guild.id)
+        if len(member_log_channel) != 0:
+            channel = member.guild.get_channel(member_log_channel[0].memberlog_channel)
             await channel.send(embed=leave)
 
     @Cog.listener('on_message')
@@ -303,11 +303,11 @@ class Moderation(Cog):
         if payload.cached_message:
             return
         guild = self.bot.get_guild(int(payload.guild_id))
-        Mchannel = self.bot.get_channel(int(payload.channel_id))
+        message_channel = self.bot.get_channel(int(payload.channel_id))
         message_id = int(payload.message_id)
         message_created = discord.Object(message_id).created_at
         embed = discord.Embed(title="Message Deleted",
-                              description="Message Deleted In: " + str(Mchannel.mention),
+                              description="Message Deleted In: " + str(message_channel.mention),
                               color=0xFF00F0, timestamp=message_created)
         embed.add_field(name="Message", value="N/A", inline=False)
         embed.set_footer(text=f"MessageID: {str(message_id)}; Sent at")
