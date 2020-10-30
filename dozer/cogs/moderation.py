@@ -311,9 +311,9 @@ class Moderation(Cog):
                               color=0xFF00F0, timestamp=message_created)
         embed.add_field(name="Message", value="N/A", inline=False)
         embed.set_footer(text=f"MessageID: {str(message_id)}; Sent at")
-        messagelogchannel = await self.edit_delete_config.query_one(guild_id=guild.id)
-        if messagelogchannel is not None:
-            channel = guild.get_channel(messagelogchannel.messagelog_channel)
+        message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
+        if message_log_channel is not None:
+            channel = guild.get_channel(message_log_channel.messagelog_channel)
             if channel is not None:
                 await channel.send(embed=embed)
 
@@ -340,9 +340,9 @@ class Moderation(Cog):
         embed.set_footer(text="UserID:" + str(message.author.id))
         if message.attachments:
             embed.add_field(name="Attachments", value=", ".join([i.url for i in message.attachments]))
-        messagelogchannel = await self.edit_delete_config.query_one(guild_id=message.guild.id)
-        if messagelogchannel is not None:
-            channel = message.guild.get_channel(messagelogchannel.messagelog_channel)
+        message_log_channel = await self.edit_delete_config.query_one(guild_id=message.guild.id)
+        if message_log_channel is not None:
+            channel = message.guild.get_channel(message_log_channel.messagelog_channel)
             if channel is not None:
                 await channel.send(embed=embed)
 
@@ -382,9 +382,9 @@ class Moderation(Cog):
         else:
             embed.add_field(name="Edited", value="N/A", inline=False)
         embed.set_footer(text="UserID: " + str(user_id))
-        messagelogchannel = await self.edit_delete_config.query_one(guild_id=guild.id)
-        if messagelogchannel is not None:
-            channel = guild.get_channel(messagelogchannel.messagelog_channel)
+        message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
+        if message_log_channel is not None:
+            channel = guild.get_channel(message_log_channel.messagelog_channel)
             if channel is not None:
                 await channel.send(embed=embed)
 
@@ -419,9 +419,9 @@ class Moderation(Cog):
             embed.set_footer(text="UserID:" + str(user_id))
             if after.attachments:
                 embed.add_field(name="Attachments", value=", ".join([i.url for i in before.attachments]))
-            messagelogchannel = await self.edit_delete_config.query_one(guild_id=before.guild.id)
-            if messagelogchannel is not None:
-                channel = before.guild.get_channel(messagelogchannel.messagelog_channel)
+            message_log_channel = await self.edit_delete_config.query_one(guild_id=before.guild.id)
+            if message_log_channel is not None:
+                channel = before.guild.get_channel(message_log_channel.messagelog_channel)
                 if channel is not None:
                     await channel.send(embed=embed)
 
