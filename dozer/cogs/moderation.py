@@ -376,7 +376,9 @@ class Moderation(Cog):
         embed.set_thumbnail(url=avatar_link)
         embed.add_field(name="Original", value="N/A", inline=False)
         if content:
-            embed.add_field(name="Edited", value=str(content), inline=False)
+            embed.add_field(name="Edited", value=str(content[0:1023]), inline=False)
+            if len(content) > 1024:
+                embed.add_field(name="Edited Continued", value=str(content[1024:2000]), inline=False)
         else:
             embed.add_field(name="Edited", value="N/A", inline=False)
         embed.set_footer(text="UserID: " + str(user_id))
@@ -399,7 +401,7 @@ class Moderation(Cog):
             user_id = str(before.author.id)
             message_id = str(before.id)
             link = f"https://discordapp.com/channels/{str(guild_id)}/{str(channel_id)}/{str(message_id)}"
-            embed = discord.Embed(title="Message Edit Log",
+            embed = discord.Embed(title="Message Edited",
                                   description=f"[MESSAGE]({link}) From {before.author.mention}"
                                               f"\nEdited In: {str(before.channel.mention)}", color=0xFFC400,
                                   timestamp=after.edited_at)
