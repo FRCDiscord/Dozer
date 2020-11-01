@@ -354,7 +354,7 @@ class Levels(Cog):
 
     @command()
     @guild_only()
-    @discord.ext.commands.cooldown(rate=1, per=10, type=discord.ext.commands.BucketType.user)  # cooldown to prevent spamming sync to database
+    @discord.ext.commands.cooldown(rate=1, per=10, type=discord.ext.commands.BucketType.user)
     async def rank(self, ctx, *, member: discord.Member = None):
         """Get a user's ranking on the XP leaderboard.
         If no member is passed, the caller's ranking is shown.
