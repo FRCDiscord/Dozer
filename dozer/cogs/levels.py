@@ -211,7 +211,6 @@ class Levels(Cog):
         finally:
             self.sync_task.start()
 
-    # TODO: Make Rank Settings configurable
     @command(aliases=["configurelevels"])
     @guild_only()
     @has_permissions(administrator=True)
