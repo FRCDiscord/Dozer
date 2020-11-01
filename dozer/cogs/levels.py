@@ -37,16 +37,9 @@ class Levels(Cog):
         """Load all guild settings from the database."""
         await self.bot.wait_until_ready()
         logger.info("Preloading guild settings")
-        records = await GuildXPSettings.get_by()  # no filters, get all
-        for record in records:
-            self._guild_settings[record.guild_id] = record
-        level_roles = await XPRole.get_by()
-        for role in level_roles:
-            if self._level_roles.get(role.guild_id):
-                self._level_roles[role.guild_id].append(role)
-            else:
-                self._level_roles[role.guild_id] = [role]
-        logger.info("Loaded settings for %d guilds", len(self._guild_settings))
+        await self.update_server_settings_cache()
+        await self.update_level_role_cache()
+        logger.info(f"Loaded settings for {len(self._guild_settings)} guilds; and {len(self._level_roles)} level roles")
         # Load subset of member XP records here?
 
     @command(aliases=["mee6sync"])
@@ -84,18 +77,25 @@ class Levels(Cog):
         `{prefix}meesyncs`: Sync ranking data from the mee6 API to dozer's database
         """
 
+    async def update_server_settings_cache(self):
+        await asyncio.sleep(0.75)  # Give the database a few to update
+        self._guild_settings = {}
+        records = await GuildXPSettings.get_by()  # no filters, get all
+        for record in records:
+            self._guild_settings[record.guild_id] = record
+
     async def update_level_role_cache(self):
+        await asyncio.sleep(0.75)  # Give the database a few to update
         self._level_roles = {}
         level_roles = await XPRole.get_by()
-        if level_roles:
-            for role in level_roles:
-                if self._level_roles.get(role.guild_id):
-                    self._level_roles[role.guild_id].append(role)
-                else:
-                    self._level_roles[role.guild_id] = [role]
+        for role in level_roles:
+            if self._level_roles.get(role.guild_id):
+                self._level_roles[role.guild_id].append(role)
+            else:
+                self._level_roles[role.guild_id] = [role]
 
     @staticmethod
-    def kwarg_parsing(message):
+    def kwarg_parsing(message):  # Parse message into arguments based on a --
         args = message.split(" ")
         opts = {k.strip('-'): True if v.startswith('-') else v
                 for k, v in zip(args, args[1:] + ["--"]) if k.startswith('-')}
@@ -138,12 +138,12 @@ class Levels(Cog):
             if self.level_for_total_xp(cached_member.total_xp) >= level_role.level and role not in member.roles:
                 await member.add_roles(role)
 
-    async def check_level_up(self, guild, member, old_xp, new_xp):
+    async def check_level_up(self, guild, member, old_xp, new_xp):  # Check and see if a member has ranked up, and then send a message if enabled
         old_level = self.level_for_total_xp(old_xp)
         new_level = self.level_for_total_xp(new_xp)
         if new_level > old_level:
             settings = self._guild_settings[guild.id]
-            if settings.lvl_up_msgs:
+            if settings.lvl_up_msgs != -1:
                 channel = guild.get_channel(settings.lvl_up_msgs)
                 await channel.send(f"{member.mention}, you have reached level {new_level}!")
 
@@ -263,18 +263,21 @@ class Levels(Cog):
         if role == ctx.guild.default_role:
             raise BadArgument("Cannot give @\N{ZERO WIDTH SPACE}everyone for a level")
 
-        ent = XPRole(
-            guild_id=int(ctx.guild.id),
-            role_id=int(role.id),
-            level=int(level)
-        )
+        async with ctx.channel.typing():  # Send typing to show that the bot is thinking and not stalled
+            ent = XPRole(
+                guild_id=int(ctx.guild.id),
+                role_id=int(role.id),
+                level=int(level)
+            )
 
-        await ent.update_or_add()
-        await self.update_level_role_cache()
-        e = discord.Embed(color=blurple)
-        e.add_field(name='Success!', value=f"{role.mention} will be given to users who reach level {level}")
-        e.set_footer(text='Triggered by ' + ctx.author.display_name)
-        await ctx.send(embed=e)
+            await ent.update_or_add()
+
+            await self.update_level_role_cache()
+
+            e = discord.Embed(color=blurple)
+            e.add_field(name='Success!', value=f"{role.mention} will be given to users who reach level {level}")
+            e.set_footer(text='Triggered by ' + ctx.author.display_name)
+            await ctx.send(embed=e)
 
     setrolelevel.example_usage = """
             `{prefix}setrolelevel "level 2" 2`: Will configure the role level 2 to be given to users who reach level 2` 
@@ -290,37 +293,64 @@ class Levels(Cog):
         xp_min = max(min(int(args.get("min")), 32767), 0) if args.get("min") else 5
         xp_max = max(min(int(args.get("max")), 32767), 0) if args.get("max") else 15
         xp_cooldown = max(min(int(args.get("cooldown")), 32767), 0) if args.get("cooldown") else 15
-        lvl_up_msgs = ctx.message.channel_mentions[0] if args.get("notify") else None
-        lvl_up_msgs_id = int(ctx.message.channel_mentions[0].id) if args.get("notify") else None
+        try:
+            lvl_up_msgs = ctx.message.channel_mentions[0] if args.get("notify") else None
+            lvl_up_msgs_id = int(ctx.message.channel_mentions[0].id) if args.get("notify") else -1  # The entry is not set to None because issue#195
+        except IndexError:  # Make sure a channel mention is actually attached to the argument
+            raise BadArgument("--notify requires a channel mention!")
         enabled = False if args.get("disabled") else True
 
-        ent = GuildXPSettings(
-            guild_id=int(ctx.guild.id),
-            xp_min=int(xp_min),
-            xp_max=int(xp_max),
-            xp_cooldown=int(xp_cooldown),
-            entropy_value=0,  # Is in table but is not used yet
-            lvl_up_msgs=lvl_up_msgs_id,
-            enabled=enabled
-        )
-        await ent.update_or_add()
+        if xp_min > xp_max:
+            raise BadArgument("XP_min cannot be greater than XP_max!")
 
-        embed = discord.Embed(color=blurple)
-        embed.set_footer(text='Triggered by ' + ctx.author.display_name)
-        if enabled:
-            embed.add_field(name="Success!", value=f"Server Levels Configured to these settings\n"
-                                                   f"XP min: {xp_min}\n"
-                                                   f"XP max: {xp_max}\n"
-                                                   f"Cooldown: {xp_cooldown} Seconds\n"
-                                                   f"Notification channel: {lvl_up_msgs}")
-        else:
-            embed.add_field(name="Success!", value=f"Server Levels Disabled")
-        await ctx.send(embed=embed)
+        async with ctx.channel.typing():  # Send typing to show that the bot is thinking and not stalled
+            ent = GuildXPSettings(
+                guild_id=int(ctx.guild.id),
+                xp_min=int(xp_min),
+                xp_max=int(xp_max),
+                xp_cooldown=int(xp_cooldown),
+                entropy_value=0,  # Is in table but is not used yet
+                lvl_up_msgs=lvl_up_msgs_id,
+                enabled=enabled
+            )
+            await ent.update_or_add()
+            await self.update_server_settings_cache()
+
+            embed = discord.Embed(color=blurple)
+            embed.set_footer(text='Triggered by ' + ctx.author.display_name)
+            if enabled:
+                embed.add_field(name="Success!", value=f"Server Levels Configured to these settings\n"
+                                                       f"XP min: {xp_min}\n"
+                                                       f"XP max: {xp_max}\n"
+                                                       f"Cooldown: {xp_cooldown} Seconds\n"
+                                                       f"Notification channel: {lvl_up_msgs}")
+            else:
+                embed.add_field(name="Success!", value=f"Server Levels Disabled")
+            await ctx.send(embed=embed)
 
     configureranks.example_usage = """
         `{prefix}configureranks --min 5 --max 15 --cooldown 15:` To configure rankings with a min value of 5, max value of 15 and a cooldown of 15 seconds
         `{prefix}configureranks --disable:` To disable rankings
         """
+
+    @command()
+    @guild_only()
+    async def getlevelsconfig(self, ctx):
+        settings = self._guild_settings[ctx.guild.id]
+
+        embed = discord.Embed(color=blurple)
+        embed.set_footer(text='Triggered by ' + ctx.author.display_name)
+
+        notify_channel = ctx.guild.get_channel(settings.lvl_up_msgs)
+
+        enabled = "Enabled" if settings.enabled else "Disabled"
+        embed.set_author(name=ctx.guild, icon_url=ctx.guild.icon_url)
+        embed.add_field(name=f"Levels are {enabled} for {ctx.guild}", value=f"XP min: {settings.xp_min}\n"
+                                                                            f"XP max: {settings.xp_max}\n"
+                                                                            f"Cooldown: {settings.xp_cooldown} Seconds\n"
+                                                                            f"Notification channel: {notify_channel}")
+
+        await ctx.send(embed=embed)
 
     @command()
     @guild_only()
