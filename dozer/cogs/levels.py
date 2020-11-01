@@ -13,6 +13,7 @@ from discord.ext.commands import guild_only, has_permissions
 from discord.ext.tasks import loop
 
 from ._utils import *
+from .info import blurple
 from .. import db
 
 logger = logging.getLogger(__name__)
@@ -79,6 +80,14 @@ class Levels(Cog):
         """
 
     @staticmethod
+    def kwarg_parsing(message):
+        args = message.split(" ")
+        opts = {k.strip('-'): True if v.startswith('-') else v
+                for k, v in zip(args, args[1:] + ["--"]) if k.startswith('-')}
+        # a, b, c = (int(x) for x in (opts[y] for y in 'acb'))
+        return opts
+
+    @staticmethod
     @functools.lru_cache(cache_size)
     def total_xp_for_level(level):
         """Compute the total XP required to reach the given level.
@@ -117,7 +126,7 @@ class Levels(Cog):
                 cached_member = MemberXPCache.from_record(records[0])
             else:
                 logger.debug("Creating from scratch")
-                cached_member = MemberXPCache(0, datetime.now(), 0, True)
+                cached_member = MemberXPCache(0, datetime.now(tz=timezone.utc), 0, True)
             self._xp_cache[(guild_id, member_id)] = cached_member
         return cached_member
 
@@ -202,20 +211,43 @@ class Levels(Cog):
         finally:
             self.sync_task.start()
 
-    # TODO: Finish rank configuration
+    # TODO: Make Rank Settings configurable
     @command(aliases=["configurelevels"])
     @guild_only()
     @has_permissions(administrator=True)
     async def configureranks(self, ctx):
+        """Get a user's ranking on the XP leaderboard. If no member is passed, the caller's ranking is shown."""
+        args = self.kwarg_parsing(ctx.message.content)  # Parse for kwargs
+
+        xp_min = max(min(int(args.get("min")), 32767), 0) if args.get("min") else 5
+        xp_max = max(min(int(args.get("max")), 32767), 0) if args.get("max") else 15
+        xp_cooldown = max(min(int(args.get("cooldown")), 32767), 0) if args.get("cooldown") else 15
+        enabled = False if args.get("disabled") else True
         ent = GuildXPSettings(
             guild_id=int(ctx.guild.id),
-            xp_min=5,
-            xp_max=15,
-            xp_cooldown=15,
-            entropy_value=0,
-            enabled=True
+            xp_min=int(xp_min),
+            xp_max=int(xp_max),
+            xp_cooldown=int(xp_cooldown),
+            entropy_value=0,  # Is in table but is not used yet
+            enabled=enabled
         )
         await ent.update_or_add()
+
+        embed = discord.Embed(color=blurple)
+        embed.set_footer(text='Triggered by ' + ctx.author.display_name)
+        if enabled:
+            embed.add_field(name="Success!", value=f"Server Levels Configured to these settings\n"
+                                                   f"XP min: {xp_min}\n"
+                                                   f"XP max: {xp_max}\n"
+                                                   f"Cooldown: {xp_cooldown} Seconds")
+        else:
+            embed.add_field(name="Success!", value=f"Server Levels Disabled")
+        await ctx.send(embed=embed)
+
+    configureranks.example_usage = """
+        `{prefix}configureranks --min 5 --max 15 --cooldown 15:` To configure rankings with a min value of 5, max value of 15 and a cooldown of 15 seconds
+        `{prefix}configureranks --disable:` To disable rankings
+        """
 
     @command()
     @guild_only()
@@ -225,9 +257,6 @@ class Levels(Cog):
         If no member is passed, the caller's ranking is shown.
         """
         member = member or ctx.author
-
-        # await self.sync_to_database()
-        # self._ensure_sync_running()
 
         cache_record = await self._load_member(ctx.guild.id, member.id)
 
@@ -241,10 +270,7 @@ class Levels(Cog):
 
         total_xp = cache_record.total_xp
 
-        logger.debug(f"cache: {self._xp_cache}")
-
-        count = await db.Pool.fetchval(f"""SELECT count(*) FROM {MemberXP.__tablename__} WHERE guild_id = $1;""",
-                                       ctx.guild.id)
+        count = ctx.guild.member_count
         level = self.level_for_total_xp(total_xp)
         level_floor = self.total_xp_for_level(level)
         level_xp = self.total_xp_for_level(level + 1) - level_floor
@@ -269,17 +295,14 @@ class Levels(Cog):
     def _fmt_member(guild, user_id):
         member = guild.get_member(user_id)
         if member:
-            return str(member)
+            return str(member.mention)
         else:
             return "Missing member"
 
     @command()
     @guild_only()
     async def levels(self, ctx):
-        """Show the XP leaderboard for this server."""
-
-        # await self.sync_to_database()
-        # self._ensure_sync_running()
+        """Show the XP leaderboard for this server. Scoreboard refreshes every 5 minutes or so"""
 
         # Order by total_xp needs a tiebreaker, otherwise all records with equal XP have the same rank
         # This causes rankings like #1, #1, #1, #4, #4, #6, ...
