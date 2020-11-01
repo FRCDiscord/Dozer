@@ -52,10 +52,10 @@ class Voice(Cog):
             # before and after are voice states
             if before.channel is not None:
                 # leave event, take role
-                await self.autoPTTCheck(before)
+                await self.auto_ptt_check(before)
             if after.channel is not None:
                 # join event, give role
-                await self.autoPTTCheck(after)
+                await self.auto_ptt_check(after)
 
     @command()
     @bot_has_permissions(manage_channels=True)
