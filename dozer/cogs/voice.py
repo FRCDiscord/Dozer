@@ -11,7 +11,7 @@ class Voice(Cog):
     """Commands interacting with voice."""
 
     @staticmethod
-    async def autoPTTCheck(voice_channel):
+    async def auto_ptt_check(voice_channel):
         """Handles voice activity when members join/leave voice channels"""
         total_users = len(voice_channel.channel.members)
         config = await AutoPTT.get_by(channel_id=voice_channel.channel.id)
