@@ -39,6 +39,7 @@ class Moderation(Cog):
 
     @staticmethod
     async def check_audit(guild, event_time=None):
+        """Method for checking the audit log for events"""
         async for entry in guild.audit_logs(limit=1, before=event_time, action=discord.AuditLogAction.message_delete):
             return entry
 
