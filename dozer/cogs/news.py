@@ -112,7 +112,8 @@ class News(Cog):
                            f" seconds.")
 
     @get_new_posts.error
-    async def log_exception(self, exception):
+    async def log_exception(self, _exception):
+        """Catch error in the news loop and attempt to restart"""
         self.get_new_posts.start()
 
     @get_new_posts.before_loop
