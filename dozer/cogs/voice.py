@@ -11,7 +11,7 @@ class Voice(Cog):
     """Commands interacting with voice."""
 
     @staticmethod
-    async def autoPTTCheck(voice_channel):
+    async def auto_ptt_check(voice_channel):
         """Handles voice activity when members join/leave voice channels"""
         total_users = len(voice_channel.channel.members)
         config = await AutoPTT.get_by(channel_id=voice_channel.channel.id)
@@ -52,10 +52,10 @@ class Voice(Cog):
             # before and after are voice states
             if before.channel is not None:
                 # leave event, take role
-                await self.autoPTTCheck(before)
+                await self.auto_ptt_check(before)
             if after.channel is not None:
                 # join event, give role
-                await self.autoPTTCheck(after)
+                await self.auto_ptt_check(after)
 
     @command()
     @bot_has_permissions(manage_channels=True)
@@ -72,7 +72,7 @@ class Voice(Cog):
         if ptt_threshold == 0:
             config = await AutoPTT.get_by(channel_id=voice_channel.id)
             if len(config) != 0:
-                await AutoPTT.delete(id=config[0].id)
+                await AutoPTT.delete(channel_id=config[0].channel_id)
                 e.add_field(name='Success!', value='AutoPTT has been disabled for voice channel "**{}**"'
                             .format(voice_channel))
             else:
@@ -196,8 +196,7 @@ class Voicebinds(db.DatabaseTable):
 class AutoPTT(db.DatabaseTable):
     """DB object to keep track of voice to text channel access bindings."""
     __tablename__ = 'autoptt'
-
-    __uniques__ = 'id'
+    __uniques__ = 'channel_id'
 
     @classmethod
     async def initial_create(cls):
@@ -205,15 +204,12 @@ class AutoPTT(db.DatabaseTable):
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            id SERIAL PRIMARY KEY NOT NULL,
-            channel_id bigint null,
+            channel_id bigint PRIMARY KEY NOT NULL,
             ptt_limit bigint null
             )""")
 
-    def __init__(self, channel_id, ptt_limit, row_id=None):
+    def __init__(self, channel_id, ptt_limit):
         super().__init__()
-        if row_id is not None:
-            self.id = row_id
         self.channel_id = channel_id
         self.ptt_limit = ptt_limit
 
@@ -222,7 +218,7 @@ class AutoPTT(db.DatabaseTable):
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
-            obj = AutoPTT(row_id=result.get("id"),
+            obj = AutoPTT(
                           channel_id=result.get("channel_id"),
                           ptt_limit=result.get("ptt_limit"))
             result_list.append(obj)
