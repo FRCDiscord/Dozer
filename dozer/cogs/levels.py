@@ -5,9 +5,9 @@ import asyncio
 import logging
 import math
 from datetime import timedelta, timezone, datetime
-import requests
 import random
 import time
+import requests
 import discord
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
@@ -78,6 +78,7 @@ class Levels(Cog):
         """
 
     async def update_server_settings_cache(self):
+        """Updates the server settings cache from the database"""
         await asyncio.sleep(0.75)  # Give the database a few to update
         self._guild_settings = {}
         records = await GuildXPSettings.get_by()  # no filters, get all
@@ -85,6 +86,7 @@ class Levels(Cog):
             self._guild_settings[record.guild_id] = record
 
     async def update_level_role_cache(self):
+        """Updates level role cache from the database"""
         await asyncio.sleep(0.75)  # Give the database a few to update
         self._level_roles = {}
         level_roles = await XPRole.get_by()
@@ -95,7 +97,8 @@ class Levels(Cog):
                 self._level_roles[role.guild_id] = [role]
 
     @staticmethod
-    def kwarg_parsing(message):  # Parse message into arguments based on a --
+    def kwarg_parsing(message):
+        """Parse message into arguments based on a --"""
         args = message.split(" ")
         opts = {k.strip('-'): True if v.startswith('-') else v
                 for k, v in zip(args, args[1:] + ["--"]) if k.startswith('-')}
@@ -131,14 +134,16 @@ class Levels(Cog):
             lvl += 1
         return lvl - 1
 
-    async def check_new_roles(self, guild, member, cached_member):  # Check and see if a member has qualified to get a new role
+    async def check_new_roles(self, guild, member, cached_member):
+        """Check and see if a member has qualified to get a new role"""
         roles = self._level_roles.get(guild.id)
         for level_role in roles:
             role = guild.get_role(level_role.role_id)
             if self.level_for_total_xp(cached_member.total_xp) >= level_role.level and role not in member.roles:
                 await member.add_roles(role)
 
-    async def check_level_up(self, guild, member, old_xp, new_xp):  # Check and see if a member has ranked up, and then send a message if enabled
+    async def check_level_up(self, guild, member, old_xp, new_xp):
+        """Check and see if a member has ranked up, and then send a message if enabled"""
         old_level = self.level_for_total_xp(old_xp)
         new_level = self.level_for_total_xp(new_xp)
         if new_level > old_level:
@@ -148,6 +153,7 @@ class Levels(Cog):
                 await channel.send(f"{member.mention}, you have reached level {new_level}!")
 
     async def _load_member(self, guild_id, member_id):
+        """Check to see if a member is in the levle cache and if not load from the database"""
         cached_member = self._xp_cache.get((guild_id, member_id))
         if cached_member is None:
             logger.debug("Cache miss: guild_id=%d, user_id=%d", guild_id, member_id)
@@ -298,7 +304,7 @@ class Levels(Cog):
             lvl_up_msgs_id = int(ctx.message.channel_mentions[0].id) if args.get("notify") else -1  # The entry is not set to None because issue#195
         except IndexError:  # Make sure a channel mention is actually attached to the argument
             raise BadArgument("--notify requires a channel mention!")
-        enabled = False if args.get("disabled") else True
+        enabled = False if args.get("disabled") else True  # Travis-Ci this is intentional and not simplifiable
 
         if xp_min > xp_max:
             raise BadArgument("XP_min cannot be greater than XP_max!")
@@ -325,7 +331,7 @@ class Levels(Cog):
                                                        f"Cooldown: {xp_cooldown} Seconds\n"
                                                        f"Notification channel: {lvl_up_msgs}")
             else:
-                embed.add_field(name="Success!", value=f"Server Levels Disabled")
+                embed.add_field(name="Success!", value="Server Levels Disabled")
             await ctx.send(embed=embed)
 
     configureranks.example_usage = """
