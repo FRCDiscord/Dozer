@@ -366,7 +366,7 @@ class Moderation(Cog):
         channel_id = str(payload.channel_id)
         user_id = str(author['id'])
         if (self.bot.get_user(int(author['id']))).bot:
-            return
+            return  # Breakout if the user is a bot
         message_id = str(payload.message_id)
         link = f"https://discordapp.com/channels/{str(guild_id)}/{str(channel_id)}/{str(message_id)}"
         mention = f"<@!{user_id}>"
@@ -392,7 +392,7 @@ class Moderation(Cog):
     async def on_message_edit(self, before, after):
         """Logs message edits."""
         await self.check_links(after)
-        if before.author.bot:
+        if before.author.bot or after.author.bot:
             return
         if after.edited_at is not None or before.edited_at is not None:
             # There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
