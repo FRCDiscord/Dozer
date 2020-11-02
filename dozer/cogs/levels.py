@@ -342,6 +342,7 @@ class Levels(Cog):
     @command()
     @guild_only()
     async def getlevelsconfig(self, ctx):
+        """Returns the level settings for the current guild"""
         settings = self._guild_settings[ctx.guild.id]
 
         embed = discord.Embed(color=blurple)
@@ -357,6 +358,10 @@ class Levels(Cog):
                                                                             f"Notification channel: {notify_channel}")
 
         await ctx.send(embed=embed)
+
+    getlevelsconfig.example_usage = """
+        `{prefix}getlevelsconfig:` Returns levels config
+    """
 
     @command()
     @guild_only()
