@@ -325,9 +325,9 @@ class Moderation(Cog):
             return
         audit = await self.check_audit(message.guild)
         embed = discord.Embed(title="Message Deleted",
-                              description=f"Message Deleted In: {message.channel.mention}\nSent by: {message.author.mention} ({message.author.name})",
+                              description=f"Message Deleted In: {message.channel.mention}\nSent by: {message.author.mention}",
                               color=0xFF0000, timestamp=message.created_at)
-        embed.set_thumbnail(url=message.author.avatar_url)
+        embed.set_author(name=message.author, icon_url=message.author.avatar_url)
         if audit:
             if audit.target == f"{message.author.name}#{message.author.discriminator}":
                 audit_member = await message.guild.fetch_member(audit.user.id)
@@ -370,7 +370,7 @@ class Moderation(Cog):
         avatar_link = f"http://cdn.discordapp.com/avatars/{user_id}/{author['avatar']}.webp?size=1024"
         embed = discord.Embed(title="Message Edited",
                               description=f"[MESSAGE]({link}) From {mention}\nEdited In: {mchannel.mention}", color=0xFFC400)
-        embed.set_thumbnail(url=avatar_link)
+        embed.set_author(name=f"{author['username']}#{author['discriminator']}",icon_url=avatar_link)
         embed.add_field(name="Original", value="N/A", inline=False)
         if content:
             embed.add_field(name="Edited", value=content[0:1023], inline=False)
@@ -402,7 +402,7 @@ class Moderation(Cog):
                                   description=f"[MESSAGE]({link}) From {before.author.mention}"
                                               f"\nEdited In: {before.channel.mention}", color=0xFFC400,
                                   timestamp=after.edited_at)
-            embed.set_thumbnail(url=after.author.avatar_url)
+            embed.set_author(name=before.author, icon_url=before.author.avatar_url)
             if before.content:
                 embed.add_field(name="Original", value=before.content[0:1023], inline=False)
                 if len(before.content) > 1024:
