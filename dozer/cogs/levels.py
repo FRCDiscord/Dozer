@@ -2,12 +2,13 @@
 
 import functools
 import asyncio
+import itertools
 import logging
 import math
 from datetime import timedelta, timezone, datetime
 import random
 import time
-import requests
+import aiohttp
 import discord
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
@@ -52,24 +53,25 @@ class Levels(Cog):
         guild_id = ctx.guild.id
         progress_template = "Currently syncing from Mee6 API please wait... Page: {page}"
         msg = await ctx.send(progress_template.format(page="N/A"))
-        for page in range(0, 100000):
-            request = requests.get("https://mee6.xyz/api/plugins/levels/leaderboard/{guildID}?page={page}".format(guildID=guild_id, page=page))
-            data = request.json()
-            if len(data["players"]) > 0:
-                for user in data["players"]:
-                    ent = MemberXP(
-                        guild_id=int(guild_id),
-                        user_id=int(user["id"]),
-                        total_xp=int(user["xp"]),
-                        total_messages=int(user["message_count"]),
-                        last_given_at=ctx.message.created_at.replace(tzinfo=timezone.utc)
-                    )
-                    await ent.update_or_add()
-                if page % 2:
-                    await msg.edit(content=progress_template.format(page=page))
-            else:
-                break
-            time.sleep(1.25)  # Slow down api calls as to not anger cloudflare
+        for page in itertools.count():
+            async with aiohttp.ClientSession() as session:
+                async with session.get(f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}") as response:
+                    data = await response.json()
+                    if len(data["players"]) > 0:
+                        for user in data["players"]:
+                            ent = MemberXP(
+                                guild_id=int(guild_id),
+                                user_id=int(user["id"]),
+                                total_xp=int(user["xp"]),
+                                total_messages=int(user["message_count"]),
+                                last_given_at=ctx.message.created_at.replace(tzinfo=timezone.utc)
+                            )
+                            await ent.update_or_add()
+                        if page % 2:
+                            await msg.edit(content=progress_template.format(page=page))
+                    else:
+                        break
+            await asyncio.sleep(1.25)  # Slow down api calls as to not anger cloudflare
 
         await ctx.send("Done")
 
@@ -137,10 +139,14 @@ class Levels(Cog):
     async def check_new_roles(self, guild, member, cached_member):
         """Check and see if a member has qualified to get a new role"""
         roles = self._level_roles.get(guild.id)
+        to_add = []
         for level_role in roles:
+            if self.level_for_total_xp(cached_member.total_xp) >= level_role.level:
+                to_add.append(level_role)
+
+        for level_role in to_add:
             role = guild.get_role(level_role.role_id)
-            if self.level_for_total_xp(cached_member.total_xp) >= level_role.level and role not in member.roles:
-                await member.add_roles(role)
+            await member.add_roles(role)
 
     async def check_level_up(self, guild, member, old_xp, new_xp):
         """Check and see if a member has ranked up, and then send a message if enabled"""
@@ -383,8 +389,9 @@ class Levels(Cog):
         """, ctx.guild.id, member.id)
 
         total_xp = cache_record.total_xp
-
-        count = ctx.guild.member_count
+        db_count = await db.Pool.fetchval(f"""SELECT count(*) FROM {MemberXP.__tablename__} WHERE guild_id = $1; """, ctx.guild.id)
+        # Prevents 1/1 in servers of ~100 and 50/40 in shrunk servers
+        count = ctx.guild.member_count if ctx.guild.member_count > db_count else db_count
         level = self.level_for_total_xp(total_xp)
         level_floor = self.total_xp_for_level(level)
         level_xp = self.total_xp_for_level(level + 1) - level_floor
