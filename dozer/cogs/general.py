@@ -2,7 +2,7 @@
 
 import inspect
 import discord
-from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions
+from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions, NotOwner
 
 from ._utils import *
 from .. import db
@@ -103,8 +103,16 @@ class General(Cog):
         format_args['prefix'] = ctx.prefix
         footer = 'Dozer Help | {} | Page {}'.format(footer, '{page_num} of {len_pages}')
         # Page info is inserted as a parameter so page_num and len_pages aren't evaluated now
+
         if commands:
-            command_chunks = list(chunk(sorted(commands, key=lambda cmd: cmd.name), 4))
+            filtered_commands = []
+            for sort_command in commands:
+                try:
+                    sort_command.cog.cog_check(ctx)
+                except NotOwner:
+                    break
+                filtered_commands.append(sort_command)
+            command_chunks = list(chunk(sorted(filtered_commands, key=lambda cmd: cmd.name), 4))
             format_args['len_pages'] = len(command_chunks)
             pages = []
             for page_num, page_commands in enumerate(command_chunks):
