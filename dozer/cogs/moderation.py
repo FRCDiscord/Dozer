@@ -308,10 +308,10 @@ class Moderation(Cog):
         message_id = int(payload.message_id)
         message_created = discord.Object(message_id).created_at
         embed = discord.Embed(title="Message Deleted",
-                              description="Message Deleted In: " + str(message_channel.mention),
+                              description=f"Message Deleted In: {message_channel.mention}",
                               color=0xFF00F0, timestamp=message_created)
         embed.add_field(name="Message", value="N/A", inline=False)
-        embed.set_footer(text=f"MessageID: {str(message_id)}; Sent at")
+        embed.set_footer(text=f"MessageID: {message_id}; Sent at")
         message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
         if message_log_channel is not None:
             channel = guild.get_channel(message_log_channel.messagelog_channel)
@@ -325,20 +325,20 @@ class Moderation(Cog):
             return
         audit = await self.check_audit(message.guild)
         embed = discord.Embed(title="Message Deleted",
-                              description=f"Message Deleted In: {str(message.channel.mention)}\nSent by: {str(message.author.mention)}",
+                              description=f"Message Deleted In: {message.channel.mention}\nSent by: {message.author.mention} ({message.author.name})",
                               color=0xFF0000, timestamp=message.created_at)
         embed.set_thumbnail(url=message.author.avatar_url)
         if audit:
-            if str(audit.target) == str(message.author.name + "#" + message.author.discriminator):
-                auditMember = await message.guild.fetch_member(audit.user.id)
-                embed.add_field(name="Message Deleted By: ", value=str(auditMember.mention), inline=False)
+            if audit.target == f"{message.author.name}#{message.author.discriminator}":
+                audit_member = await message.guild.fetch_member(audit.user.id)
+                embed.add_field(name="Message Deleted By: ", value=audit_member.mention, inline=False)
         if message.content:
-            embed.add_field(name="Message Content:", value=str(message.content[0:1023]), inline=False)
+            embed.add_field(name="Message Content:", value=message.content[0:1023], inline=False)
             if len(message.content) > 1024:
                 embed.add_field(name="Message Content Continued:", value=message.content[1024:2000], inline=False)
         else:
             embed.add_field(name="Message Content:", value="N/A", inline=False)
-        embed.set_footer(text="UserID:" + str(message.author.id))
+        embed.set_footer(text=f"UserID: {message.author.id}")
         if message.attachments:
             embed.add_field(name="Attachments", value=", ".join([i.url for i in message.attachments]))
         message_log_channel = await self.edit_delete_config.query_one(guild_id=message.guild.id)
@@ -352,37 +352,33 @@ class Moderation(Cog):
         """Logs message edits that are not currently in the bots message cache"""
         if payload.cached_message:
             return
-        Mchannel = self.bot.get_channel(int(payload.channel_id))
-        guild = Mchannel.guild
-        print(payload)
+        mchannel = self.bot.get_channel(int(payload.channel_id))
+        guild = mchannel.guild
         try:
             content = payload.data['content']
         except KeyError:
             content = None
-        try:
-            author = payload.data['author']
-        except KeyError:
-            return
-        guild_id = str(guild.id)
-        channel_id = str(payload.channel_id)
-        user_id = str(author['id'])
-        if (self.bot.get_user(int(author['id']))).bot:
+        author = payload.data['author']
+        guild_id = guild.id
+        channel_id = payload.channel_id
+        user_id = author['id']
+        if (self.bot.get_user(int(user_id))).bot:
             return  # Breakout if the user is a bot
-        message_id = str(payload.message_id)
-        link = f"https://discordapp.com/channels/{str(guild_id)}/{str(channel_id)}/{str(message_id)}"
+        message_id = payload.message_id
+        link = f"https://discordapp.com/channels/{guild_id}/{channel_id}/{message_id}"
         mention = f"<@!{user_id}>"
-        avatar_link = f"http://cdn.discordapp.com/avatars/{str(user_id)}/{author['avatar']}.webp?size=1024"
+        avatar_link = f"http://cdn.discordapp.com/avatars/{user_id}/{author['avatar']}.webp?size=1024"
         embed = discord.Embed(title="Message Edited",
-                              description=f"[MESSAGE]({link}) From {mention}\nEdited In: {str(Mchannel.mention)}", color=0xFFC400)
+                              description=f"[MESSAGE]({link}) From {mention}\nEdited In: {mchannel.mention}", color=0xFFC400)
         embed.set_thumbnail(url=avatar_link)
         embed.add_field(name="Original", value="N/A", inline=False)
         if content:
-            embed.add_field(name="Edited", value=str(content[0:1023]), inline=False)
+            embed.add_field(name="Edited", value=content[0:1023], inline=False)
             if len(content) > 1024:
-                embed.add_field(name="Edited Continued", value=str(content[1024:2000]), inline=False)
+                embed.add_field(name="Edited Continued", value=content[1024:2000], inline=False)
         else:
             embed.add_field(name="Edited", value="N/A", inline=False)
-        embed.set_footer(text="UserID: " + str(user_id))
+        embed.set_footer(text=f"UserID: {user_id}")
         message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
         if message_log_channel is not None:
             channel = guild.get_channel(message_log_channel.messagelog_channel)
@@ -393,31 +389,31 @@ class Moderation(Cog):
     async def on_message_edit(self, before, after):
         """Logs message edits."""
         await self.check_links(after)
-        if before.author.bot or after.author.bot:
+        if before.author.bot:
             return
         if after.edited_at is not None or before.edited_at is not None:
             # There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
-            guild_id = str(before.guild.id)
-            channel_id = str(before.channel.id)
-            user_id = str(before.author.id)
-            message_id = str(before.id)
-            link = f"https://discordapp.com/channels/{str(guild_id)}/{str(channel_id)}/{str(message_id)}"
+            guild_id = before.guild.id
+            channel_id = before.channel.id
+            user_id = before.author.id
+            message_id = before.id
+            link = f"https://discordapp.com/channels/{guild_id}/{channel_id}/{message_id}"
             embed = discord.Embed(title="Message Edited",
                                   description=f"[MESSAGE]({link}) From {before.author.mention}"
-                                              f"\nEdited In: {str(before.channel.mention)}", color=0xFFC400,
+                                              f"\nEdited In: {before.channel.mention}", color=0xFFC400,
                                   timestamp=after.edited_at)
             embed.set_thumbnail(url=after.author.avatar_url)
             if before.content:
-                embed.add_field(name="Original", value=str(before.content[0:1023]), inline=False)
+                embed.add_field(name="Original", value=before.content[0:1023], inline=False)
                 if len(before.content) > 1024:
-                    embed.add_field(name="Original Continued", value=str(before.content[1024:2000]), inline=False)
-                embed.add_field(name="Edited", value=str(after.content[0:1023]), inline=False)
+                    embed.add_field(name="Original Continued", value=before.content[1024:2000], inline=False)
+                embed.add_field(name="Edited", value=after.content[0:1023], inline=False)
                 if len(after.content) > 1024:
-                    embed.add_field(name="Edited Continued", value=str(after.content[1024:2000]), inline=False)
+                    embed.add_field(name="Edited Continued", value=after.content[1024:2000], inline=False)
             else:
                 embed.add_field(name="Original", value="N/A", inline=False)
                 embed.add_field(name="Edited", value="N/A", inline=False)
-            embed.set_footer(text="UserID:" + str(user_id))
+            embed.set_footer(text=f"UserID: {user_id}")
             if after.attachments:
                 embed.add_field(name="Attachments", value=", ".join([i.url for i in before.attachments]))
             message_log_channel = await self.edit_delete_config.query_one(guild_id=before.guild.id)
