@@ -220,9 +220,9 @@ class RedditSource(DataBasedSource):
         else:
             try:
                 if data["post_hint"] == "image":
-                    embed.set_image(url=data['url'])
+                    embed.set_thumbnail(url=data['url'])
                 elif "thumbnail" in data:
-                    embed.set_image(url=data['thumbnail'])
+                    embed.set_thumbnail(url=data['thumbnail'])
             except KeyError:
                 pass
 
