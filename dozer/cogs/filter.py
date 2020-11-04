@@ -48,7 +48,7 @@ class Filter(Cog):
 
     async def check_filters(self, message):
         """Check all the filters for a certain message (with it's guild)"""
-        if message.author.id == self.bot.user.id:
+        if message.author.id == self.bot.user.id or not hasattr(message.author, 'roles'):
             return
         roles = await self.word_filter_role_whitelist.query_all(guild_id=message.guild.id)
         whitelisted_ids = set(role.role_id for role in roles)
