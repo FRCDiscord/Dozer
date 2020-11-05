@@ -109,9 +109,9 @@ class General(Cog):
             for sort_command in commands:
                 try:
                     sort_command.cog.cog_check(ctx)
+                    filtered_commands.append(sort_command)
                 except NotOwner:
-                    break
-                filtered_commands.append(sort_command)
+                    continue
             command_chunks = list(chunk(sorted(filtered_commands, key=lambda cmd: cmd.name), 4))
             format_args['len_pages'] = len(command_chunks)
             pages = []
