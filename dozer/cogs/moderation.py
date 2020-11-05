@@ -329,9 +329,9 @@ class Moderation(Cog):
                               color=0xFF0000, timestamp=message.created_at)
         embed.set_author(name=message.author, icon_url=message.author.avatar_url)
         if audit:
-            if audit.target == f"{message.author.name}#{message.author.discriminator}":
+            if audit.target == message.author:
                 audit_member = await message.guild.fetch_member(audit.user.id)
-                embed.add_field(name="Message Deleted By: ", value=audit_member.mention, inline=False)
+                embed.add_field(name="Message Deleted By: ", value=str(audit_member.mention), inline=False)
         if message.content:
             embed.add_field(name="Message Content:", value=message.content[0:1023], inline=False)
             if len(message.content) > 1024:
