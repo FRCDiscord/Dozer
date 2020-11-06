@@ -57,7 +57,7 @@ class Development(Cog):
         if code.startswith('```'):
             code = code.strip('```').partition('\n')[2].strip()  # Remove multiline code blocks
         else:
-            code = code.strip('`').strip()  # Remove single-line code blocks, if necessaryoh
+            code = code.strip('`').strip()  # Remove single-line code blocks, if necessary
 
         logger.info(f"Evaluating code at request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
         logger.info("-"*32)
@@ -83,7 +83,7 @@ class Development(Cog):
 
     evaluate.example_usage = """
     `{prefix}eval 0.1 + 0.2` - calculates 0.1 + 0.2
-    `{prefix}eval  await ctx.send('Hello world!')` - send "Hello World!" to this channel
+    `{prefix}eval await ctx.send('Hello world!')` - send "Hello World!" to this channel
     """
 
     @command(name='su', pass_context=True)
