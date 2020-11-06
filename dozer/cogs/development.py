@@ -81,9 +81,14 @@ class Development(Cog):
         if return_results:
             await ctx.send('', embed=e)
 
-    evaluate.example_usage = """
+    eval.example_usage = """
     `{prefix}eval 0.1 + 0.2` - calculates 0.1 + 0.2
     `{prefix}eval await ctx.send('Hello world!')` - send "Hello World!" to this channel
+    """
+
+    noreturn.example_usage = """
+    `{prefix}eval noreturn 0.1 + 0.2` - calculates 0.1 + 0.2
+    `{prefix}eval noreturn await ctx.send('Hello world!')` - send "Hello World!" to this channel
     """
 
     @command(name='su', pass_context=True)
