@@ -38,16 +38,26 @@ class Development(Cog):
     `{prefix}reload development` - reloads the development cog
     """
 
-    @command(name='eval')
-    async def evaluate(self, ctx, *, code):
+    @group(name='eval', invoke_without_command=True)
+    async def eval(self, ctx, *, code):
         """
         Evaluates Python.
         Await is valid and `{ctx}` is the command context.
         """
+        if ctx.invoked_subcommand is None:
+            await self.evaluate(ctx, code, True)
+
+    @eval.command()
+    async def noreturn(self, ctx, *, code):
+        """Executes python code, does not return an evaluation embed"""
+        await self.evaluate(ctx, code, False)
+
+    async def evaluate(self, ctx, code, return_results=True):
+        """Where the python code actually gets evaluated"""
         if code.startswith('```'):
             code = code.strip('```').partition('\n')[2].strip()  # Remove multiline code blocks
         else:
-            code = code.strip('`').strip()  # Remove single-line code blocks, if necessary
+            code = code.strip('`').strip()  # Remove single-line code blocks, if necessaryoh
 
         logger.info(f"Evaluating code at request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
         logger.info("-"*32)
@@ -61,7 +71,6 @@ class Development(Cog):
             locals_ = locals()
             load_function(code, self.eval_globals, locals_)
             ret = await locals_['evaluated_function'](ctx)
-
             e.title = 'Python Evaluation - Success'
             e.color = 0x00FF00
             e.add_field(name='Output', value='```\n%s (%s)\n```' % (repr(ret), type(ret).__name__), inline=False)
@@ -69,11 +78,12 @@ class Development(Cog):
             e.title = 'Python Evaluation - Error'
             e.color = 0xFF0000
             e.add_field(name='Error', value='```\n%s\n```' % repr(err))
-        await ctx.send('', embed=e)
+        if return_results:
+            await ctx.send('', embed=e)
 
     evaluate.example_usage = """
     `{prefix}eval 0.1 + 0.2` - calculates 0.1 + 0.2
-    `{prefix}eval await ctx.send('Hello world!')` - send "Hello World!" to this channel
+    `{prefix}eval  await ctx.send('Hello world!')` - send "Hello World!" to this channel
     """
 
     @command(name='su', pass_context=True)
