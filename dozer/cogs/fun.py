@@ -36,6 +36,8 @@ class Fun(Cog):
         while hps[0] > 0 and hps[1] > 0:
             opp_idx = (turn + 1) % 2
             damage = random.choice(damages)
+            if players[turn].id in ctx.bot.config['developers']:
+                damage = damage * 2
             hps[opp_idx] = max(hps[opp_idx] - damage, 0)
             messages.append(
                 await ctx.send("**{opponent}** {response} **{attacker}**! *[-{dmg} hp] [{hp} HP remaining]*".format(
