@@ -15,6 +15,7 @@ from .. import db
 
 class SafeRoleConverter(RoleConverter):
     """Allows for @everyone to be specified without pinging everyone"""
+
     async def convert(self, ctx, argument):
         try:
             return await super().convert(ctx, argument)
@@ -35,6 +36,12 @@ class Moderation(Cog):
         self.links_config = db.ConfigCache(GuildMessageLinks)
 
     """=== Helper functions ==="""
+
+    @staticmethod
+    async def check_audit(guild, event_time=None):
+        """Method for checking the audit log for events"""
+        async for entry in guild.audit_logs(limit=1, before=event_time, action=discord.AuditLogAction.message_delete):
+            return entry
 
     async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member, None], reason, orig_channel=None,
                       embed_color=discord.Color.red(), global_modlog=True):
@@ -66,7 +73,7 @@ class Moderation(Cog):
         if len(modlog_channel) != 0:
             if global_modlog:
                 channel = actor.guild.get_channel(modlog_channel[0].modlog_channel)
-                if channel is not None and channel != orig_channel: # prevent duplicate embeds
+                if channel is not None and channel != orig_channel:  # prevent duplicate embeds
                     await channel.send(embed=modlog_embed)
         else:
             if orig_channel is not None:
@@ -162,7 +169,7 @@ class Moderation(Cog):
         """
         results = await Mute.get_by(guild_id=member.guild.id, member_id=member.id)
         if results:
-            return False # member already muted
+            return False  # member already muted
         else:
             user = Mute(member_id=member.id, guild_id=member.guild.id)
             await user.update_or_add()
@@ -180,7 +187,7 @@ class Moderation(Cog):
             await self.perm_override(member, send_messages=None, add_reactions=None, speak=None)
             return True
         else:
-            return False # member not muted
+            return False  # member not muted
 
     async def _deafen(self, member: discord.Member, reason: str = "No reason provided", seconds=0, self_inflicted: bool = False, actor=None,
                       orig_channel=None):
@@ -201,7 +208,7 @@ class Moderation(Cog):
             await self.perm_override(member, read_messages=False)
 
             if self_inflicted and seconds == 0:
-                seconds = 30 # prevent lockout in case of bad argument
+                seconds = 30  # prevent lockout in case of bad argument
             self.bot.loop.create_task(
                 self.punishment_timer(seconds, member,
                                       punishment=Deafen,
@@ -248,9 +255,9 @@ class Moderation(Cog):
         join.set_author(name='Member Joined', icon_url=member.avatar_url_as(format='png', size=32))
         join.description = "{0.mention}\n{0} ({0.id})".format(member)
         join.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
-        memberlogchannel = await GuildMemberLog.get_by(guild_id=member.guild.id)
-        if len(memberlogchannel) != 0:
-            channel = member.guild.get_channel(memberlogchannel[0].memberlog_channel)
+        member_log_channel = await GuildMemberLog.get_by(guild_id=member.guild.id)
+        if len(member_log_channel) != 0:
+            channel = member.guild.get_channel(member_log_channel[0].memberlog_channel)
             await channel.send(embed=join)
         users = await Mute.get_by(guild_id=member.guild.id, member_id=member.id)
         if users:
@@ -266,9 +273,9 @@ class Moderation(Cog):
         leave.set_author(name='Member Left', icon_url=member.avatar_url_as(format='png', size=32))
         leave.description = "{0.mention}\n{0} ({0.id})".format(member)
         leave.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
-        memberlogchannel = await GuildMemberLog.get_by(guild_id=member.guild.id)
-        if len(memberlogchannel) != 0:
-            channel = member.guild.get_channel(memberlogchannel[0].memberlog_channel)
+        member_log_channel = await GuildMemberLog.get_by(guild_id=member.guild.id)
+        if len(member_log_channel) != 0:
+            channel = member.guild.get_channel(member_log_channel[0].memberlog_channel)
             await channel.send(embed=leave)
 
     @Cog.listener('on_message')
@@ -276,7 +283,6 @@ class Moderation(Cog):
         """Check things when messages come in."""
         if message.author.bot or message.guild is None or not message.guild.me.guild_permissions.manage_roles:
             return
-
         if await self.check_links(message):
             return
         config = await GuildNewMember.get_by(guild_id=message.guild.id)
@@ -292,38 +298,92 @@ class Moderation(Cog):
                 return
             await message.author.add_roles(message.guild.get_role(role_id))
 
+    @Cog.listener()
+    async def on_raw_message_delete(self, payload):
+        """When a message is deleted and its not in the bot cache, log it anyway."""
+        if payload.cached_message:
+            return
+        guild = self.bot.get_guild(int(payload.guild_id))
+        message_channel = self.bot.get_channel(int(payload.channel_id))
+        message_id = int(payload.message_id)
+        message_created = discord.Object(message_id).created_at
+        embed = discord.Embed(title="Message Deleted",
+                              description=f"Message Deleted In: {message_channel.mention}",
+                              color=0xFF00F0, timestamp=message_created)
+        embed.add_field(name="Message", value="N/A", inline=False)
+        embed.set_footer(text=f"MessageID: {message_id}; Sent at")
+        message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
+        if message_log_channel is not None:
+            channel = guild.get_channel(message_log_channel.messagelog_channel)
+            if channel is not None:
+                await channel.send(embed=embed)
+
     @Cog.listener('on_message_delete')
     async def on_message_delete(self, message):
         """When a message is deleted, log it."""
         if message.author == self.bot.user:
             return
-        e = discord.Embed(type='rich')
-        e.title = 'Message Deletion'
-        e.color = 0xFF0000
-        e.timestamp = datetime.datetime.utcnow()
-        e.add_field(name='Author', value=message.author)
-        e.add_field(name='Author pingable', value=message.author.mention)
-        e.add_field(name='Channel', value=message.channel)
-        if 1024 > len(message.content) > 0:
-            e.add_field(name="Deleted message", value=message.content)
-        elif len(message.content) != 0:
-            e.add_field(name="Deleted message", value=message.content[0:1023])
-            e.add_field(name="Deleted message continued", value=message.content[1024:2000])
-        elif len(message.content) == 0:
-            for i in message.embeds:
-                e.add_field(name="Title", value=i.title)
-                e.add_field(name="Description", value=i.description)
-                e.add_field(name="Timestamp", value=i.timestamp)
-                for x in i.fields:
-                    e.add_field(name=x.name, value=x.value)
-                e.add_field(name="Footer", value=i.footer)
+        audit = await self.check_audit(message.guild)
+        embed = discord.Embed(title="Message Deleted",
+                              description=f"Message Deleted In: {message.channel.mention}\nSent by: {message.author.mention}",
+                              color=0xFF0000, timestamp=message.created_at)
+        embed.set_author(name=message.author, icon_url=message.author.avatar_url)
+        if audit:
+            if audit.target == message.author:
+                audit_member = await message.guild.fetch_member(audit.user.id)
+                embed.add_field(name="Message Deleted By: ", value=str(audit_member.mention), inline=False)
+        if message.content:
+            embed.add_field(name="Message Content:", value=message.content[0:1023], inline=False)
+            if len(message.content) > 1024:
+                embed.add_field(name="Message Content Continued:", value=message.content[1024:2000], inline=False)
+        else:
+            embed.add_field(name="Message Content:", value="N/A", inline=False)
+        embed.set_footer(text=f"UserID: {message.author.id}")
         if message.attachments:
-            e.add_field(name="Attachments", value=", ".join([i.url for i in message.attachments]))
-        messagelogchannel = await self.edit_delete_config.query_one(guild_id=message.guild.id)
-        if messagelogchannel is not None:
-            channel = message.guild.get_channel(messagelogchannel.messagelog_channel)
+            embed.add_field(name="Attachments", value=", ".join([i.url for i in message.attachments]))
+        message_log_channel = await self.edit_delete_config.query_one(guild_id=message.guild.id)
+        if message_log_channel is not None:
+            channel = message.guild.get_channel(message_log_channel.messagelog_channel)
             if channel is not None:
-                await channel.send(embed=e)
+                await channel.send(embed=embed)
+
+    @Cog.listener()
+    async def on_raw_message_edit(self, payload):
+        """Logs message edits that are not currently in the bots message cache"""
+        if payload.cached_message:
+            return
+        mchannel = self.bot.get_channel(int(payload.channel_id))
+        guild = mchannel.guild
+        try:
+            content = payload.data['content']
+        except KeyError:
+            content = None
+        author = payload.data['author']
+        guild_id = guild.id
+        channel_id = payload.channel_id
+        user_id = author['id']
+        if (self.bot.get_user(int(user_id))).bot:
+            return  # Breakout if the user is a bot
+        message_id = payload.message_id
+        link = f"https://discordapp.com/channels/{guild_id}/{channel_id}/{message_id}"
+        mention = f"<@!{user_id}>"
+        avatar_link = f"http://cdn.discordapp.com/avatars/{user_id}/{author['avatar']}.webp?size=1024"
+        embed = discord.Embed(title="Message Edited",
+                              description=f"[MESSAGE]({link}) From {mention}\nEdited In: {mchannel.mention}", color=0xFFC400)
+        embed.set_author(name=f"{author['username']}#{author['discriminator']}",icon_url=avatar_link)
+        embed.add_field(name="Original", value="N/A", inline=False)
+        if content:
+            embed.add_field(name="Edited", value=content[0:1023], inline=False)
+            if len(content) > 1024:
+                embed.add_field(name="Edited Continued", value=content[1024:2000], inline=False)
+        else:
+            embed.add_field(name="Edited", value="N/A", inline=False)
+        embed.set_footer(text=f"UserID: {user_id}")
+        message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
+        if message_log_channel is not None:
+            channel = guild.get_channel(message_log_channel.messagelog_channel)
+            if channel is not None:
+                await channel.send(embed=embed)
 
     @Cog.listener('on_message_edit')
     async def on_message_edit(self, before, after):
@@ -333,47 +393,34 @@ class Moderation(Cog):
             return
         if after.edited_at is not None or before.edited_at is not None:
             # There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
-            e = discord.Embed(type='rich')
-            e.title = 'Message Edited'
-            e.color = 0xFFC400
-            e.timestamp = after.edited_at
-            e.add_field(name='Author', value=before.author)
-            e.add_field(name='Author pingable', value=before.author.mention)
-            e.add_field(name='Channel', value=before.channel)
-            if 1024 > len(before.content) > 0:
-                e.add_field(name="Old message", value=before.content)
-            elif len(before.content) != 0:
-                e.add_field(name="Old message", value=before.content[0:1023])
-                e.add_field(name="Old message continued", value=before.content[1024:2000])
-            elif len(before.content) == 0 and before.edited_at is not None:
-                for i in before.embeds:
-                    e.add_field(name="Title", value=i.title)
-                    e.add_field(name="Description", value=i.description)
-                    e.add_field(name="Timestamp", value=i.timestamp)
-                    for x in i.fields:
-                        e.add_field(name=x.name, value=x.value)
-                    e.add_field(name="Footer", value=i.footer)
-            if before.attachments:
-                e.add_field(name="Attachments", value=", ".join([i.url for i in before.attachments]))
-            if 0 < len(after.content) < 1024:
-                e.add_field(name="New message", value=after.content)
-            elif len(after.content) != 0:
-                e.add_field(name="New message", value=after.content[0:1023])
-                e.add_field(name="New message continued", value=after.content[1024:2000])
-            elif len(after.content) == 0 and after.edited_at is not None:
-                for i in after.embeds:
-                    e.add_field(name="Title", value=i.title)
-                    e.add_field(name="Description", value=i.description)
-                    e.add_field(name="Timestamp", value=i.timestamp)
-                    for x in i.fields:
-                        e.add_field(name=x.name, value=x.value)
+            guild_id = before.guild.id
+            channel_id = before.channel.id
+            user_id = before.author.id
+            message_id = before.id
+            link = f"https://discordapp.com/channels/{guild_id}/{channel_id}/{message_id}"
+            embed = discord.Embed(title="Message Edited",
+                                  description=f"[MESSAGE]({link}) From {before.author.mention}"
+                                              f"\nEdited In: {before.channel.mention}", color=0xFFC400,
+                                  timestamp=after.edited_at)
+            embed.set_author(name=before.author, icon_url=before.author.avatar_url)
+            if before.content:
+                embed.add_field(name="Original", value=before.content[0:1023], inline=False)
+                if len(before.content) > 1024:
+                    embed.add_field(name="Original Continued", value=before.content[1024:2000], inline=False)
+                embed.add_field(name="Edited", value=after.content[0:1023], inline=False)
+                if len(after.content) > 1024:
+                    embed.add_field(name="Edited Continued", value=after.content[1024:2000], inline=False)
+            else:
+                embed.add_field(name="Original", value="N/A", inline=False)
+                embed.add_field(name="Edited", value="N/A", inline=False)
+            embed.set_footer(text=f"UserID: {user_id}")
             if after.attachments:
-                e.add_field(name="Attachments", value=", ".join([i.url for i in before.attachments]))
-            messagelogchannel = await self.edit_delete_config.query_one(guild_id=before.guild.id)
-            if messagelogchannel is not None:
-                channel = before.guild.get_channel(messagelogchannel.messagelog_channel)
+                embed.add_field(name="Attachments", value=", ".join([i.url for i in before.attachments]))
+            message_log_channel = await self.edit_delete_config.query_one(guild_id=before.guild.id)
+            if message_log_channel is not None:
+                channel = before.guild.get_channel(message_log_channel.messagelog_channel)
                 if channel is not None:
-                    await channel.send(embed=e)
+                    await channel.send(embed=embed)
 
     """=== Direct moderation commands ==="""
 
@@ -447,6 +494,7 @@ class Moderation(Cog):
 
         e.description = 'The timeout has ended.'
         await msg.edit(embed=e)
+
     timeout.example_usage = """
     `{prefix}timeout 60` - prevents sending messages in this channel for 1 minute (60s)
     """
@@ -460,6 +508,7 @@ class Moderation(Cog):
         await ctx.send(
             "Deleted {n} messages under request of {user}".format(n=num_to_delete, user=ctx.message.author.mention),
             delete_after=5)
+
     prune.example_usage = """
     `{prefix}prune 10` - Delete the last 10 messages in the current channel.
     """
@@ -471,6 +520,7 @@ class Moderation(Cog):
         """Bans the user mentioned."""
         await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason, orig_channel=ctx.channel)
         await ctx.guild.ban(user_mention, reason=reason)
+
     ban.example_usage = """
     `{prefix}ban @user reason - ban @user for a given (optional) reason
     """
@@ -482,6 +532,7 @@ class Moderation(Cog):
         """Unbans the user mentioned."""
         await ctx.guild.unban(user_mention, reason=reason)
         await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason, orig_channel=ctx.channel)
+
     unban.example_usage = """
     `{prefix}unban user_id reason - unban the user corresponding to the ID for a given (optional) reason
     """
@@ -493,6 +544,7 @@ class Moderation(Cog):
         """Kicks the user mentioned."""
         await self.mod_log(actor=ctx.author, action="kicked", target=user_mention, reason=reason, orig_channel=ctx.channel)
         await ctx.guild.kick(user_mention, reason=reason)
+
     kick.example_usage = """
     `{prefix}kick @user reason - kick @user for a given (optional) reason
     """
@@ -509,6 +561,7 @@ class Moderation(Cog):
                 await self.mod_log(ctx.author, "muted", member_mentions, reason, ctx.channel, discord.Color.red())
             else:
                 await ctx.send("Member is already muted!")
+
     mute.example_usage = """
     `{prefix}mute @user 1h reason` - mute @user for 1 hour for a given reason, the timing component (1h) and reason is optional.
     """
@@ -524,6 +577,7 @@ class Moderation(Cog):
                                    orig_channel=ctx.channel, embed_color=discord.Color.green())
             else:
                 await ctx.send("Member is not muted!")
+
     unmute.example_usage = """
     `{prefix}unmute @user reason - unmute @user for a given (optional) reason
     """
@@ -573,6 +627,7 @@ class Moderation(Cog):
                                    orig_channel=ctx.channel, embed_color=discord.Color.green(), global_modlog=not result[1])
             else:
                 await ctx.send("Member is not deafened!")
+
     undeafen.example_usage = """
     `{prefix}undeafen @user reason - undeafen @user for a given (optional) reason
     """
@@ -592,6 +647,7 @@ class Moderation(Cog):
                 return
             await member.edit(voice_channel=None, reason=reason)
             await ctx.send(f"{member} has been kicked from voice chat.")
+
     voicekick.example_usage = """
     `{prefix}voicekick @user reason` - kick @user out of voice
     """
@@ -611,6 +667,7 @@ class Moderation(Cog):
             config = GuildModLog(guild_id=ctx.guild.id, modlog_channel=channel_mentions.id, name=ctx.guild.name)
         await config.update_or_add()
         await ctx.send(ctx.message.author.mention + ', modlog settings configured!')
+
     modlogconfig.example_usage = """
     `{prefix}modlogconfig #join-leave-logs` - set a channel named #join-leave-logs to log joins/leaves 
     """
@@ -634,6 +691,7 @@ class Moderation(Cog):
         await ctx.send(
             "New Member Channel configured as: {channel}. Role configured as: {role}. Message: {message}".format(
                 channel=channel_mention.name, role=role_name, message=message))
+
     nmconfig.example_usage = """
     `{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel 
     so if someone types "I have read the rules and regulations" it assigns them the Member role. 
@@ -657,6 +715,7 @@ class Moderation(Cog):
             settings.member_role = member_role.id
         await settings.update_or_add()
         await ctx.send('Member role set as `{}`.'.format(member_role.name))
+
     memberconfig.example_usage = """
     `{prefix}memberconfig Members` - set a role called "Members" as the member role
     `{prefix}memberconfig @everyone` - set the default role as the member role
@@ -686,6 +745,7 @@ class Moderation(Cog):
         await settings.update_or_add()
         self.links_config.invalidate_entry(guild_id=ctx.guild.id)
         await ctx.send(f'Link role set as `{link_role.name}`.')
+
     linkscrubconfig.example_usage = """
     `{prefix}linkscrubconfig Links` - set a role called "Links" as the link role
     `{prefix}linkscrubconfig @everyone` - set the default role as the link role
@@ -708,6 +768,7 @@ class Moderation(Cog):
             config = GuildMemberLog(guild_id=ctx.guild.id, memberlog_channel=channel_mentions.id, name=ctx.guild.name)
         await config.update_or_add()
         await ctx.send(ctx.message.author.mention + ', memberlog settings configured!')
+
     memberlogconfig.example_usage = """
     `{prefix}memberlogconfig #join-leave-logs` - set a channel named #join-leave-logs to log joins/leaves 
     """
@@ -726,6 +787,7 @@ class Moderation(Cog):
         await config.update_or_add()
         self.edit_delete_config.invalidate_entry(id=ctx.guild.id)
         await ctx.send(ctx.message.author.mention + ', messagelog settings configured!')
+
     messagelogconfig.example_usage = """
     `{prefix}messagelogconfig #orwellian-dystopia` - set a channel named #orwellian-dystopia to log message edits/deletions
     """
@@ -778,7 +840,7 @@ class Mute(db.DatabaseTable):
         async with db.Pool.acquire() as conn:
             statement = f"""
             INSERT INTO {self.__tablename__} ({", ".join(keys)})
-            VALUES({','.join(f'${i+1}' for i in range(len(values)))}) 
+            VALUES({','.join(f'${i + 1}' for i in range(len(values)))}) 
             """
             await conn.execute(statement, *values)
 
