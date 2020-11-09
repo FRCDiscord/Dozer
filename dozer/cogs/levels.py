@@ -426,13 +426,16 @@ class Levels(Cog):
     `{prefix}rank coolgal#1234`: show another user's ranking
     """
 
-    @staticmethod
-    def _fmt_member(guild, user_id):
+    def _fmt_member(self, guild, user_id):
         member = guild.get_member(user_id)
         if member:
             return str(member.mention)
-        else:
-            return "Missing member"
+        else:  # Still try to see if the bot can find the user to get their name
+            user = self.bot.get_user(user_id)
+            if user:
+                return user
+            else:  # If the bot can't get the user's name then return the user's id
+                return f"({user_id})"
 
     @command(aliases=["ranks", "leaderboard"])
     @guild_only()
@@ -447,16 +450,21 @@ class Levels(Cog):
             WHERE guild_id = $1 ORDER BY rank;
         """, ctx.guild.id)
 
-        # TODO load only a few pages of data at a time with a cursor
-        embeds = []
-        for page_num, page in enumerate(chunk(records, 10)):
-            embed = discord.Embed(title=f"Rankings for {ctx.guild}", color=discord.Color.blue())
-            embed.description = '\n'.join(f"#{rank}: {self._fmt_member(ctx.guild, user_id)}"
-                                          f" (lvl {self.level_for_total_xp(total_xp)}, {total_xp} XP)"
-                                          for (user_id, total_xp, rank) in page)
-            embed.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(records) / 10)}")
-            embeds.append(embed)
-        await paginate(ctx, embeds)
+        if len(records):
+            embeds = []
+            for page_num, page in enumerate(chunk(records, 10)):
+                embed = discord.Embed(title=f"Rankings for {ctx.guild}", color=discord.Color.blue())
+                embed.description = '\n'.join(f"#{rank}: {self._fmt_member(ctx.guild, user_id)}"
+                                              f" (lvl {self.level_for_total_xp(total_xp)}, {total_xp} XP)"
+                                              for (user_id, total_xp, rank) in page)
+                embed.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(records) / 10)}")
+                embeds.append(embed)
+            await paginate(ctx, embeds)
+        else:
+            embed = discord.Embed(title=f"Rankings for {ctx.guild}", color=discord.Color.red())
+            embed.description = f"Rankings currently unavailable for {ctx.guild}"
+            embed.set_footer(text="Please Try Again Later")
+            await ctx.send(embed=embed)
 
     levels.example_usage = """
     `{prefix}levels`: show the XP leaderboard
