@@ -53,7 +53,7 @@ def make_starboard_embed(msg: discord.Message, reaction_count):
 
     if len(msg.attachments) > 1:
         e.add_field(name="Attachments:", value="\n".join([f"[{a.filename}]({a.url})" for a in msg.attachments]))
-    if len(msg.attachments) == 1:
+    elif len(msg.attachments) == 1:
         if msg.attachments[0].width is not None and msg.attachments[0].filename[-4:] not in VIDEO_FORMATS:
             e.set_image(url=msg.attachments[0].url)
         else:
