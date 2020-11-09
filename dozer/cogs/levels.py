@@ -216,7 +216,7 @@ class Levels(Cog):
                                    to_write)
         logger.debug(f"Inserted/updated {len(to_write)} record(s); Evicted {evicted} records(s)")
 
-    @loop(minutes=1)
+    @loop(minutes=2.5)
     async def sync_task(self):
         """Sync dirty records to the database, and evict others from the cache.
         This function merely wraps `sync_to_database` into a periodic task.
