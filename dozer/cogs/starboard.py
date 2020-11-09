@@ -1,5 +1,5 @@
 """Cog to post specific 'Hall of Fame' messages in a specific channel"""
-import datetime
+import logging
 
 import discord
 import typing
@@ -8,6 +8,8 @@ from discord.ext.commands import guild_only
 from ._utils import *
 from .. import db
 
+MAX_EMBED = 1024
+DOZER_LOGGER = logging.getLogger('dozer')
 
 async def is_cancelled(config, message, me, author=None):
     if author is None:
@@ -35,24 +37,35 @@ def starboard_embed_footer(emoji=None, reaction_count=None):
 
 def make_starboard_embed(msg: discord.Message):
     """Makes a starboard embed."""
-    e = discord.Embed(color=discord.Color.gold())
+    e = discord.Embed(color=msg.author.color, title="New Starred Message")
     e.set_author(name=msg.author.display_name, icon_url=msg.author.avatar_url)
-    if len(msg.content):
-        e.description = msg.content
 
-    # Open question: how do we deal with attachment posts that aren't just an image?
+    view_link = f" [[view]]({msg.jump_url})"
+    if not len(msg.content):
+        e.add_field(name="Link:", value=view_link)
+    elif len(msg.content) < (MAX_EMBED - len(view_link)):
+        e.add_field(name="Content:", value=msg.content + view_link)
+    elif len(msg.content) < MAX_EMBED:
+        e.add_field(name="Content:", value=msg.content)
+        e.add_field(name="Link:", value=view_link)
+    elif len(msg.content) < ((2*MAX_EMBED) - len(view_link)):
+        e.add_field(name="Content:", value=msg.content[0:MAX_EMBED], inline=False)
+        e.add_field(name="More:", value=msg.content[MAX_EMBED:2000] + view_link, inline=False)
+    else:
+        e.add_field(name="Content:", value=msg.content[0:MAX_EMBED], inline=False)
+        e.add_field(name="More:", value=msg.content[MAX_EMBED:2000], inline=False)
+        e.add_field(name="Link:", value=view_link)
+
     if len(msg.attachments) > 1:
         e.add_field(name="Attachments:", value="\n".join([a.url for a in msg.attachments[1:]]))
     if len(msg.attachments) == 1:
-        if hasattr(msg.attachments[0], 'width'):
+        if msg.attachments[0].width is not None:
             e.set_image(url=msg.attachments[0].url)
         else:
-            e.add_field(name="Attachment:", value=msg.attachments[0].url)
-
-    e.add_field(name="Jump link", value=f"[here]({msg.jump_url})")
+            e.add_field(name="Attachment:", value=f"[{msg.attachments[0].filename}]({msg.attachments[0].url})")
 
     e.set_footer(text=str(msg.guild))  # self.starboard_embed_footer(emoji, reaction_count) + str(msg.guild))
-    e.timestamp = datetime.datetime.utcnow()
+    e.timestamp = msg.created_at
     return e
 
 
@@ -77,10 +90,33 @@ class Starboard(Cog):
         starboard_channel = message.guild.get_channel(config.channel_id)
         if starboard_channel is None:
             return
-        await starboard_channel.send("Test!")
 
-    async def remove_from_starboard(self, config, message):
-        print("Removed!")
+        db_msgs = await StarboardMessage.get_by(message_id=message.id)
+        if len(db_msgs) == 0:
+            sent_msg = await starboard_channel.send(embed=make_starboard_embed(message))
+            db_msg = StarboardMessage(message.id, message.channel.id, sent_msg.id, message.author.id)
+            await db_msg.update_or_add()
+            await message.add_reaction(config.star_emoji)
+        else:
+            try:
+                sent_msg = await self.bot.get_channel(config.channel_id).fetch_message(db_msgs[0].starboard_message_id)
+            except discord.errors.NotFound:
+                # Uh oh! Starboard message was deleted. Let's try and delete it
+                DOZER_LOGGER.warning(f"Cannot find Starboard Message {db_msgs[0].starboard_message_id} to update")
+                fake_msg = discord.Object(db_msgs[0].starboard_message_id)
+                await self.remove_from_starboard(config, fake_msg, True)
+                return
+            await sent_msg.edit(embed=make_starboard_embed(message))
+
+    async def remove_from_starboard(self, config, starboard_message, cancel=False):
+        db_msgs = await StarboardMessage.get_by(starboard_message_id=starboard_message.id)
+        if len(db_msgs):
+            if hasattr(starboard_message, 'delete'):
+                await starboard_message.delete()
+            if cancel:
+                orig_msg = await self.bot.get_channel(db_msgs[0].channel_id).fetch_message(db_msgs[0].message_id)
+                await orig_msg.add_reaction(config.cancel_emoji)
+            await StarboardMessage.delete(message_id=db_msgs[0].message_id)
 
     async def starboard_check(self, reaction, member):
         """Provides all logic for checking and updating the Starboard"""
@@ -101,7 +137,37 @@ class Starboard(Cog):
         # Starboard check
         if str(reaction) == config.star_emoji and reaction.count >= config.threshold and \
                 member != msg.guild.me and not await is_cancelled(config, msg, msg.guild.me):
+            DOZER_LOGGER.debug("Starboard threshold reached, sending to starboard")
             await self.send_to_starboard(config, msg)
+            return
+
+        # check if it's gone under the limit
+        if str(reaction) == config.star_emoji and reaction.count < config.threshold:
+            db_msgs = await StarboardMessage.get_by(message_id=msg.id)
+            if len(db_msgs):
+                DOZER_LOGGER.debug("Under starboard threshold, removing starboard")
+                starboard_msg = await self.bot.get_channel(config.channel_id).\
+                    fetch_message(db_msgs[0].starboard_message_id)
+                await self.remove_from_starboard(config, starboard_msg)
+                return
+
+        # check if it's been cancelled in the starboard channel
+        if str(reaction) == config.cancel_emoji and msg.channel.id == config.channel_id:
+            db_msgs = await StarboardMessage.get_by(starboard_message_id=msg.id)
+            if len(db_msgs) and member.id == db_msgs[0].author_id:
+                DOZER_LOGGER.debug("Message cancelled in starboard channel, cancelling")
+                await self.remove_from_starboard(config, msg, True)
+                return
+
+        # check if it's been cancelled on the original message
+        if str(reaction) == config.cancel_emoji:
+            db_msgs = await StarboardMessage.get_by(message_id=msg.id)
+            if len(db_msgs) and member.id == db_msgs[0].author_id:
+                DOZER_LOGGER.debug("Message cancelled in original channel, cancelling")
+                starboard_msg = await self.bot.get_channel(config.channel_id). \
+                    fetch_message(db_msgs[0].starboard_message_id)
+                await self.remove_from_starboard(config, starboard_msg, True)
+                return
 
     @Cog.listener()
     async def on_reaction_add(self, reaction, user):
@@ -156,7 +222,7 @@ class Starboard(Cog):
             await ctx.send("There is not Starboard set up for this server.")
             return
 
-        await config[0].delete()
+        await StarboardConfig.delete(guild_id=ctx.guild.it)
         try:
             del self.config_cache[ctx.guild]
         except KeyError:
@@ -220,13 +286,15 @@ class StarboardMessage(db.DatabaseTable):
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
             message_id bigint PRIMARY KEY NOT NULL,
+            channel_id bigint NOT NULL,
             starboard_message_id bigint NOT NULL,
             author_id bigint NOT NULL
             )""")
 
-    def __init__(self, message_id, starboard_message_id, author_id):
+    def __init__(self, message_id, channel_id, starboard_message_id, author_id):
         super().__init__()
         self.message_id = message_id
+        self.channel_id = channel_id
         self.starboard_message_id = starboard_message_id
         self.author_id = author_id
 
@@ -236,6 +304,7 @@ class StarboardMessage(db.DatabaseTable):
         result_list = []
         for result in results:
             obj = StarboardMessage(message_id=result.get("message_id"),
+                                   channel_id=result.get("channel_id"),
                                    starboard_message_id=result.get("starboard_message_id"),
                                    author_id=result.get('author_id'))
             result_list.append(obj)
