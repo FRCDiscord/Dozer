@@ -7,6 +7,7 @@ from typing import Union
 from logging import getLogger
 
 import discord
+from discord import Forbidden
 from discord.ext.commands import BadArgument, has_permissions, RoleConverter
 
 from ._utils import *
@@ -40,8 +41,11 @@ class Moderation(Cog):
     @staticmethod
     async def check_audit(guild, event_time=None):
         """Method for checking the audit log for events"""
-        async for entry in guild.audit_logs(limit=1, before=event_time, action=discord.AuditLogAction.message_delete):
-            return entry
+        try:
+            async for entry in guild.audit_logs(limit=1, before=event_time, action=discord.AuditLogAction.message_delete):
+                return entry
+        except Forbidden:
+            return None
 
     async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member, None], reason, orig_channel=None,
                       embed_color=discord.Color.red(), global_modlog=True):
