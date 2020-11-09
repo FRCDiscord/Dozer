@@ -249,7 +249,7 @@ class Levels(Cog):
 
     @command()
     @guild_only()
-    @has_permissions(administrator=True)
+    @has_permissions(manage_roles=True)
     async def setrolelevel(self, ctx, role: discord.Role, level: int):
         """Sets a role to be given to a user when they reach a certain level"""
         if role > ctx.author.top_role:
@@ -284,15 +284,16 @@ class Levels(Cog):
             `{prefix}setrolelevel "level 2" 2`: Will configure the role level 2 to be given to users who reach level 2` 
             """
 
-    @group(invoke_without_command=True)
+    @group(invoke_without_command=True, aliases=["configurelevels"])
     @guild_only()
-    @has_permissions(administrator=True)
+    @has_permissions(manage_guild=True)
     async def configureranks(self, ctx):
         """Configure dozer ranks:tm: any key word arguments not entered will be treated as default"""
         if ctx.invoked_subcommand is None:
             raise BadArgument('Invalid config command passed!')
 
     @configureranks.command()
+    @has_permissions(manage_guild=True)
     async def xprange(self, ctx, xp_min: int, xp_max: int):
         """Set the range of a servers levels random xp"""
         if xp_min > xp_max:
@@ -300,16 +301,19 @@ class Levels(Cog):
         await self._config_guild_setting(ctx, xp_min=xp_min, xp_max=xp_max)
 
     @configureranks.command()
+    @has_permissions(manage_guild=True)
     async def setcooldown(self, ctx, cooldown: int):
         """Set the time between messages before xp is calculated again"""
         await self._config_guild_setting(ctx, xp_cooldown=cooldown)
 
     @configureranks.command()
-    async def toggleranks(self, ctx):
+    @has_permissions(manage_guild=True)
+    async def toggle(self, ctx):
         """Toggle dozer ranks"""
         await self._config_guild_setting(ctx, toggle_enabled=True)
 
     @configureranks.command()
+    @has_permissions(manage_guild=True)
     async def notificationchannel(self, ctx, channel: discord.TextChannel):
         """Set up the channel where level up messages are sent"""
         await self._config_guild_setting(ctx, lvl_up_msgs_id=channel.id)
@@ -342,8 +346,9 @@ class Levels(Cog):
             )
             await ent.update_or_add()
             await self.update_server_settings_cache()
-            lvl_up_msgs = ctx.guild.get_channel(lvl_up_msgs_id)
+            lvl_up_msgs = ctx.guild.get_channel(ent.lvl_up_msgs)
             embed = discord.Embed(color=blurple)
+            embed.set_author(name=ctx.guild, icon_url=ctx.guild.icon_url)
             embed.set_footer(text='Triggered by ' + ctx.author.display_name)
             enabled = "Enabled" if ent.enabled else "Disabled"
             embed.add_field(name=f"Levels are {enabled} for {ctx.guild}", value=f"XP min: {ent.xp_min}\n"
@@ -352,7 +357,7 @@ class Levels(Cog):
                                                                                 f"Notification channel: {lvl_up_msgs}")
             await ctx.send(embed=embed)
 
-    @command()
+    @command(aliases=["ranksettings", "levelsettings"])
     @guild_only()
     async def getlevelsconfig(self, ctx):
         """Returns the level settings for the current guild"""
@@ -375,7 +380,7 @@ class Levels(Cog):
         `{prefix}getlevelsconfig:` Returns levels config
     """
 
-    @command()
+    @command(aliases=["rnak", "level"])
     @guild_only()
     @discord.ext.commands.cooldown(rate=1, per=10, type=discord.ext.commands.BucketType.user)
     async def rank(self, ctx, *, member: discord.Member = None):
@@ -426,7 +431,7 @@ class Levels(Cog):
         else:
             return "Missing member"
 
-    @command()
+    @command(aliases=["ranks", "leaderboard"])
     @guild_only()
     async def levels(self, ctx):
         """Show the XP leaderboard for this server. Scoreboard refreshes every 5 minutes or so"""
@@ -502,7 +507,7 @@ class MemberXP(db.DatabaseTable):
             CREATE TABLE {cls.__tablename__} (
             guild_id bigint NOT NULL,
             user_id bigint NOT NULL,
-            total_xp int NOT NULL,
+            total_xp bigint NOT NULL,
             total_messages int NOT NULL,
             last_given_at timestamptz NOT NULL,
             PRIMARY KEY (guild_id, user_id)
