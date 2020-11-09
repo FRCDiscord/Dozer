@@ -125,7 +125,7 @@ class Starboard(Cog):
             return
 
         if msg.guild.id in self.config_cache:
-            config = self.config_cache[msg.guild.id]
+            config = self.config_cache[msg.guild]
         else:
             config_lst = await StarboardConfig.get_by(guild_id=msg.guild.id)
             if len(config_lst) == 1:
@@ -243,10 +243,10 @@ class Starboard(Cog):
         """Turn off the starboard if it is enabled"""
         config = await StarboardConfig.get_by(guild_id=ctx.guild.id)
         if not config:
-            await ctx.send("There is not Starboard set up for this server.")
+            await ctx.send("There is not a Starboard set up for this server.")
             return
 
-        await StarboardConfig.delete(guild_id=ctx.guild.it)
+        await StarboardConfig.delete(guild_id=ctx.guild.id)
         try:
             del self.config_cache[ctx.guild]
         except KeyError:
