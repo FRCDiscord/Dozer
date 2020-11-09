@@ -18,7 +18,7 @@ jobs:
           python-version: '3.8.2'
 
       - name: Install dependencies
-        run: pip install pylint && pip install -r requirements.txt
+        run: pip install pylint wheel -r requirements.txt
 
       # Runs a set of commands using the runners shell
       - name: Lint
