@@ -131,10 +131,11 @@ class Levels(Cog):
         """Check and see if a member has qualified to get a new role"""
         roles = self._level_roles.get(guild.id)
         to_add = []
-        for level_role in roles:
-            if self.level_for_total_xp(cached_member.total_xp) >= level_role.level:
-                to_add.append(guild.get_role(level_role.role_id))
-        await member.add_roles(*to_add)
+        if roles:
+            for level_role in roles:
+                if self.level_for_total_xp(cached_member.total_xp) >= level_role.level:
+                    to_add.append(guild.get_role(level_role.role_id))
+            await member.add_roles(*to_add)
 
     async def check_level_up(self, guild, member, old_xp, new_xp):
         """Check and see if a member has ranked up, and then send a message if enabled"""
