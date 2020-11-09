@@ -45,10 +45,10 @@ def make_starboard_embed(msg: discord.Message, reaction_count):
         e.add_field(name="Link:", value=view_link)
     elif len(msg.content) < ((2*MAX_EMBED) - len(view_link)):
         e.add_field(name="Content:", value=msg.content[0:MAX_EMBED], inline=False)
-        e.add_field(name="More:", value=msg.content[MAX_EMBED:2000] + view_link, inline=False)
+        e.add_field(name="More:", value=msg.content[MAX_EMBED:(2*MAX_EMBED) - len(view_link)] + view_link, inline=False)
     else:
         e.add_field(name="Content:", value=msg.content[0:MAX_EMBED], inline=False)
-        e.add_field(name="More:", value=msg.content[MAX_EMBED:2000], inline=False)
+        e.add_field(name="More:", value=msg.content[MAX_EMBED:2*MAX_EMBED], inline=False)
         e.add_field(name="Link:", value=view_link)
 
     if len(msg.attachments) > 1:
