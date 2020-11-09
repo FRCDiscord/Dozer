@@ -110,8 +110,11 @@ class Starboard(Cog):
             if hasattr(starboard_message, 'delete'):
                 await starboard_message.delete()
             if cancel:
-                orig_msg = await self.bot.get_channel(db_msgs[0].channel_id).fetch_message(db_msgs[0].message_id)
-                await orig_msg.add_reaction(config.cancel_emoji)
+                try:
+                    orig_msg = await self.bot.get_channel(db_msgs[0].channel_id).fetch_message(db_msgs[0].message_id)
+                    await orig_msg.add_reaction(config.cancel_emoji)
+                except discord.NotFound:
+                    pass
             await StarboardMessage.delete(message_id=db_msgs[0].message_id)
 
     async def starboard_check(self, reaction, member):
@@ -142,8 +145,12 @@ class Starboard(Cog):
             db_msgs = await StarboardMessage.get_by(message_id=msg.id)
             if len(db_msgs):
                 DOZER_LOGGER.debug("Under starboard threshold, removing starboard")
-                starboard_msg = await self.bot.get_channel(config.channel_id).\
-                    fetch_message(db_msgs[0].starboard_message_id)
+                try:
+                    starboard_msg = await self.bot.get_channel(config.channel_id).\
+                        fetch_message(db_msgs[0].starboard_message_id)
+                except discord.NotFound:
+                    DOZER_LOGGER.warning(f"Cannot find Starboard Message {db_msgs[0].starboard_message_id} to remove")
+                    starboard_msg = discord.Object(db_msgs[0].starboard_message_id)
                 await self.remove_from_starboard(config, starboard_msg)
                 return
 
@@ -160,8 +167,12 @@ class Starboard(Cog):
             db_msgs = await StarboardMessage.get_by(message_id=msg.id)
             if len(db_msgs) and member.id == db_msgs[0].author_id:
                 DOZER_LOGGER.debug("Message cancelled in original channel, cancelling")
-                starboard_msg = await self.bot.get_channel(config.channel_id). \
-                    fetch_message(db_msgs[0].starboard_message_id)
+                try:
+                    starboard_msg = await self.bot.get_channel(config.channel_id). \
+                        fetch_message(db_msgs[0].starboard_message_id)
+                except discord.NotFound:
+                    DOZER_LOGGER.warning(f"Cannot find Starboard Message {db_msgs[0].starboard_message_id} to remove")
+                    starboard_msg = discord.Object(db_msgs[0].starboard_message_id)
                 await self.remove_from_starboard(config, starboard_msg, True)
                 return
 
