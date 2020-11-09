@@ -61,7 +61,7 @@ intents = discord.Intents.default()
 intents.members = True
 intents.presences = True
 
-bot = Dozer(config, intents=intents)
+bot = Dozer(config, intents=intents, max_messages=5000)
 
 for ext in os.listdir('dozer/cogs'):
     if not ext.startswith(('_', '.')):
