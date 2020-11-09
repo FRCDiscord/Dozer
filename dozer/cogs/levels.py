@@ -362,20 +362,22 @@ class Levels(Cog):
     @guild_only()
     async def getlevelsconfig(self, ctx):
         """Returns the level settings for the current guild"""
-        settings = self._guild_settings[ctx.guild.id]
+        settings = self._guild_settings.get(ctx.guild.id)
+        if settings:
+            embed = discord.Embed(color=blurple)
+            embed.set_footer(text='Triggered by ' + ctx.author.display_name)
 
-        embed = discord.Embed(color=blurple)
-        embed.set_footer(text='Triggered by ' + ctx.author.display_name)
+            notify_channel = ctx.guild.get_channel(settings.lvl_up_msgs)
 
-        notify_channel = ctx.guild.get_channel(settings.lvl_up_msgs)
-
-        enabled = "Enabled" if settings.enabled else "Disabled"
-        embed.set_author(name=ctx.guild, icon_url=ctx.guild.icon_url)
-        embed.add_field(name=f"Levels are {enabled} for {ctx.guild}", value=f"XP min: {settings.xp_min}\n"
-                                                                            f"XP max: {settings.xp_max}\n"
-                                                                            f"Cooldown: {settings.xp_cooldown} Seconds\n"
-                                                                            f"Notification channel: {notify_channel}")
-        await ctx.send(embed=embed)
+            enabled = "Enabled" if settings.enabled else "Disabled"
+            embed.set_author(name=ctx.guild, icon_url=ctx.guild.icon_url)
+            embed.add_field(name=f"Levels are {enabled} for {ctx.guild}", value=f"XP min: {settings.xp_min}\n"
+                                                                                f"XP max: {settings.xp_max}\n"
+                                                                                f"Cooldown: {settings.xp_cooldown} Seconds\n"
+                                                                                f"Notification channel: {notify_channel}")
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("Levels not configured for this server")
 
     getlevelsconfig.example_usage = """
         `{prefix}getlevelsconfig:` Returns levels config
