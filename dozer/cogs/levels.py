@@ -289,7 +289,7 @@ class Levels(Cog):
     @guild_only()
     @has_permissions(manage_guild=True)
     async def configureranks(self, ctx):
-        """Configure dozer ranks:tm: any key word arguments not entered will be treated as default"""
+        """Configures dozer ranks:tm:"""
         if ctx.invoked_subcommand is None:
             raise BadArgument('Invalid config command passed!')
 
@@ -320,6 +320,7 @@ class Levels(Cog):
         await self._config_guild_setting(ctx, lvl_up_msgs_id=channel.id)
 
     async def _config_guild_setting(self, ctx, xp_min=None, xp_max=None, xp_cooldown=None, lvl_up_msgs_id=None, toggle_enabled=False):
+        """Basic Database entry updater"""
         async with ctx.channel.typing():  # Send typing to show that the bot is thinking and not stalled
             results = await GuildXPSettings.get_by(guild_id=int(ctx.guild.id))
 
