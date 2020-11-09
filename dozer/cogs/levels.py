@@ -145,7 +145,8 @@ class Levels(Cog):
             settings = self._guild_settings[guild.id]
             if settings.lvl_up_msgs != -1:
                 channel = guild.get_channel(settings.lvl_up_msgs)
-                await channel.send(f"{member.mention}, you have reached level {new_level}!")
+                if channel:
+                    await channel.send(f"{member.mention}, you have reached level {new_level}!")
 
     async def _load_member(self, guild_id, member_id):
         """Check to see if a member is in the levle cache and if not load from the database"""
