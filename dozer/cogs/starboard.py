@@ -10,6 +10,7 @@ from .. import db
 
 MAX_EMBED = 1024
 DOZER_LOGGER = logging.getLogger('dozer')
+VIDEO_FORMATS = ['.mp4', '.mov', 'webm']
 
 
 async def is_cancelled(config, message, me, author=None):
@@ -35,7 +36,6 @@ def make_starboard_embed(msg: discord.Message, reaction_count):
     e.set_author(name=msg.author.display_name, icon_url=msg.author.avatar_url)
 
     view_link = f" [[view]]({msg.jump_url})"
-    video_formats = ['.mp4', '.mov', 'webm']
     if not len(msg.content):
         e.add_field(name="Link:", value=view_link)
     elif len(msg.content) < (MAX_EMBED - len(view_link)):
@@ -52,9 +52,9 @@ def make_starboard_embed(msg: discord.Message, reaction_count):
         e.add_field(name="Link:", value=view_link)
 
     if len(msg.attachments) > 1:
-        e.add_field(name="Attachments:", value="\n".join([a.url for a in msg.attachments[1:]]))
+        e.add_field(name="Attachments:", value="\n".join([f"[{a.filename}]({a.url})" for a in msg.attachments]))
     if len(msg.attachments) == 1:
-        if msg.attachments[0].width is not None and msg.attachments[0].filename[-4:] not in video_formats:
+        if msg.attachments[0].width is not None and msg.attachments[0].filename[-4:] not in VIDEO_FORMATS:
             e.set_image(url=msg.attachments[0].url)
         else:
             e.add_field(name="Attachment:", value=f"[{msg.attachments[0].filename}]({msg.attachments[0].url})")
