@@ -280,10 +280,28 @@ class Levels(Cog):
             e.add_field(name='Success!', value=f"{role.mention} will be given to users who reach level {level}")
             e.set_footer(text='Triggered by ' + ctx.author.display_name)
             await ctx.send(embed=e)
-
     setrolelevel.example_usage = """
-            `{prefix}setrolelevel "level 2" 2`: Will configure the role level 2 to be given to users who reach level 2` 
-            """
+                `{prefix}setrolelevel "level 2" 2`: Will configure the role "level 2" to be given to users who reach level 2` 
+                """
+
+    @command(aliases=["delrolelevel"])
+    @guild_only()
+    @has_permissions(manage_roles=True)
+    async def removerolelevel(self, ctx, role: discord.Role):
+        """Removes a levelrole"""
+        e = discord.Embed(color=blurple)
+        async with ctx.channel.typing():
+            removed = int((await XPRole.delete(role_id=int(role.id))).split(" ", 1)[1])
+            if removed > 0:
+                await self.update_level_role_cache()
+                e.add_field(name='Success!', value=f"{role.mention} was removed from the levels database")
+            else:
+                e.add_field(name='Failed!', value=f"{role.mention} was not found in the levels database!")
+            e.set_footer(text='Triggered by ' + ctx.author.display_name)
+            await ctx.send(embed=e)
+    removerolelevel.example_usage = """
+    `{prefix}removerolelevel level 2 `: Will remove role "level 2" from level roles
+    """
 
     @group(invoke_without_command=True, aliases=["configurelevels"])
     @guild_only()
