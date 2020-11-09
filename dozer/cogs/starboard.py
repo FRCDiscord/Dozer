@@ -35,6 +35,7 @@ def make_starboard_embed(msg: discord.Message, reaction_count):
     e.set_author(name=msg.author.display_name, icon_url=msg.author.avatar_url)
 
     view_link = f" [[view]]({msg.jump_url})"
+    video_formats = ['.mp4', '.mov', 'webm']
     if not len(msg.content):
         e.add_field(name="Link:", value=view_link)
     elif len(msg.content) < (MAX_EMBED - len(view_link)):
@@ -53,7 +54,7 @@ def make_starboard_embed(msg: discord.Message, reaction_count):
     if len(msg.attachments) > 1:
         e.add_field(name="Attachments:", value="\n".join([a.url for a in msg.attachments[1:]]))
     if len(msg.attachments) == 1:
-        if msg.attachments[0].width is not None:
+        if msg.attachments[0].width is not None and msg.attachments[0].filename[-4:] not in video_formats:
             e.set_image(url=msg.attachments[0].url)
         else:
             e.add_field(name="Attachment:", value=f"[{msg.attachments[0].filename}]({msg.attachments[0].url})")
