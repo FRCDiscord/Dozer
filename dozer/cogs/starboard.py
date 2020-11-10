@@ -26,30 +26,18 @@ async def is_cancelled(config, message, me, author=None):
         if author in users or me in users:
             await message.add_reaction(config.cancel_emoji)
             return True
+        return False
 
     return False
 
 
 def make_starboard_embed(msg: discord.Message, reaction_count):
     """Makes a starboard embed."""
-    e = discord.Embed(color=msg.author.color, title="New Starred Message")
+    e = discord.Embed(color=msg.author.color, title="New Starred Message", description=msg.content)
     e.set_author(name=msg.author.display_name, icon_url=msg.author.avatar_url)
 
     view_link = f" [[view]]({msg.jump_url})"
-    if not len(msg.content):
-        e.add_field(name="Link:", value=view_link)
-    elif len(msg.content) < (MAX_EMBED - len(view_link)):
-        e.add_field(name="Content:", value=msg.content + view_link)
-    elif len(msg.content) < MAX_EMBED:
-        e.add_field(name="Content:", value=msg.content)
-        e.add_field(name="Link:", value=view_link)
-    elif len(msg.content) < ((2*MAX_EMBED) - len(view_link)):
-        e.add_field(name="Content:", value=msg.content[0:MAX_EMBED], inline=False)
-        e.add_field(name="More:", value=msg.content[MAX_EMBED:(2*MAX_EMBED) - len(view_link)] + view_link, inline=False)
-    else:
-        e.add_field(name="Content:", value=msg.content[0:MAX_EMBED], inline=False)
-        e.add_field(name="More:", value=msg.content[MAX_EMBED:2*MAX_EMBED], inline=False)
-        e.add_field(name="Link:", value=view_link)
+    e.add_field(name="Link:", value=view_link)
 
     if len(msg.attachments) > 1:
         e.add_field(name="Attachments:", value="\n".join([f"[{a.filename}]({a.url})" for a in msg.attachments]))
@@ -59,7 +47,7 @@ def make_starboard_embed(msg: discord.Message, reaction_count):
         else:
             e.add_field(name="Attachment:", value=f"[{msg.attachments[0].filename}]({msg.attachments[0].url})")
 
-    e.set_footer(text=f"{reaction_count} reactions")
+    e.set_footer(text=f"{reaction_count} reaction{'s' if reaction_count != 1 else ''}")
     e.timestamp = msg.created_at
     return e
 
@@ -69,12 +57,18 @@ class Starboard(Cog):
 
     def __init__(self, bot):
         super().__init__(bot)
-        self.config_cache = {}
+        self.config_cache = db.ConfigCache(StarboardConfig)
 
     def make_config_embed(self, ctx, title, config):
         """Makes a config embed."""
+        channel = self.bot.get_channel(config.channel_id)
+        if channel is None:
+            return discord.Embed(title="Starboard channel no longer exists!",
+                                 description="Please reconfigure the starboard to fix this.",
+                                 color=discord.colour.Color.red())
+
         e = discord.Embed(title=title, color=discord.Color.gold())
-        e.add_field(name="Starboard Channel", value=self.bot.get_channel(config.channel_id).mention)
+        e.add_field(name="Starboard Channel", value=channel.mention)
         e.add_field(name="Starboard Emoji", value=config.star_emoji)
         e.add_field(name="Cancel Emoji", value=config.cancel_emoji)
         e.add_field(name="Threshold", value=config.threshold)
@@ -124,15 +118,9 @@ class Starboard(Cog):
         if not msg.guild:
             return
 
-        if msg.guild.id in self.config_cache:
-            config = self.config_cache[msg.guild.id]
-        else:
-            config_lst = await StarboardConfig.get_by(guild_id=msg.guild.id)
-            if len(config_lst) == 1:
-                self.config_cache[msg.guild] = config_lst[0]
-                config = config_lst[0]
-            else:
-                return
+        config = await self.config_cache.query_one(guild_id=msg.guild.id)
+        if config is None:
+            pass
 
         # Starboard check
         if str(reaction) == config.star_emoji and reaction.count >= config.threshold and \
@@ -208,6 +196,7 @@ class Starboard(Cog):
     `{prefix}starboard` - Get the current starboard settings for this server
     """
 
+    @guild_only()
     @has_permissions(manage_guild=True, manage_channels=True)
     @bot_has_permissions(add_reactions=True, embed_links=True)
     @starboard.command()
@@ -220,6 +209,9 @@ class Starboard(Cog):
                 # try adding it to make sure it's a real emoji. This covers both custom emoijs & unicode emojis
                 await ctx.message.add_reaction(emoji)
                 await ctx.message.remove_reaction(emoji, ctx.guild.me)
+                if isinstance(emoji, discord.Emoji) and emoji.guild_id != ctx.guild.id:
+                    await ctx.send(f"The emoji {emoji} is a custom emoji not from this server!")
+                    return
             except discord.HTTPException:
                 await ctx.send(f"{ctx.author.mention}, bad argument: '{emoji}' is not an emoji, or isn't from a server "
                                f"{ctx.me.name} is in.")
@@ -228,7 +220,7 @@ class Starboard(Cog):
         config = StarboardConfig(guild_id=ctx.guild.id, channel_id=channel.id, star_emoji=str(star_emoji),
                                  threshold=threshold, cancel_emoji=str(cancel_emoji))
         await config.update_or_add()
-        self.config_cache[ctx.guild] = config
+        self.config_cache.invalidate_entry(guild_id=ctx.guild.id)
 
         await ctx.send(embed=self.make_config_embed(ctx, "Update Starboard config", config))
 
@@ -237,6 +229,7 @@ class Starboard(Cog):
     `{prefix}starboard config #hall-of-fame 🌟 5 ❌` - Same as above, but with a extra X cancel emoji 
     """
 
+    @guild_only()
     @has_permissions(manage_guild=True, manage_channels=True)
     @starboard.command()
     async def disable(self, ctx):
@@ -246,18 +239,15 @@ class Starboard(Cog):
             await ctx.send("There is not Starboard set up for this server.")
             return
 
-        await StarboardConfig.delete(guild_id=ctx.guild.it)
-        try:
-            del self.config_cache[ctx.guild]
-        except KeyError:
-            pass
-
+        await StarboardConfig.delete(guild_id=ctx.guild.id)
+        self.config_cache.invalidate_entry(guild_id=ctx.guild.id)
         await ctx.send("Starboard disabled for this server.")
 
     disable.example_usage = """
     `{prefix}starboard disable` - disables the starboard for the current server
     """
 
+    @guild_only()
     @has_permissions(manage_messages=True)
     @starboard.command()
     async def add(self, ctx, message_id, channel: discord.TextChannel = None):
@@ -285,6 +275,7 @@ class Starboard(Cog):
     `{prefix}starboard add 1285719825125 #channel` - add message with id `1285719825125` in `#channel` to the starboard 
     manually.
     """
+
 
 def setup(bot):
     """Add this cog to the bot"""
