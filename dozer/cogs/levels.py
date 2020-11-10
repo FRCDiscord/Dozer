@@ -57,7 +57,7 @@ class Levels(Cog):
             async with aiohttp.ClientSession() as session:
                 async with session.get(f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}") as response:
                     data = await response.json()
-                    if len(data["players"]) > 0:
+                    if data.get("players") and len(data["players"]) > 0:
                         for user in data["players"]:
                             ent = MemberXP(
                                 guild_id=int(guild_id),
