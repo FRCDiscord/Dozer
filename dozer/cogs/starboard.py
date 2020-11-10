@@ -121,7 +121,7 @@ class Starboard(Cog):
 
         config = await self.config_cache.query_one(guild_id=msg.guild.id)
         if config is None:
-            pass
+            return
 
         self_react = 0
         if await is_cancelled(config.star_emoji, msg, msg.guild.me, msg.guild.me):
