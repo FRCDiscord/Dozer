@@ -98,7 +98,13 @@ class Development(Cog):
         msg.author = user
         msg.content = command
         context = await self.bot.get_context(msg)
-        return await self.bot.invoke(context)
+        context.is_pseudo = True # adds new flag to bypass ratelimit
+        # let's also add a log of who ran pseudo
+        logger.info(f"Running pseudo on request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
+        logger.info("-"*32)
+        logger.info(ctx.message.content)
+        logger.info("-"*32)
+        await self.bot.invoke(context)
 
     pseudo.example_usage = """
     `{prefix}su cooldude#1234 {prefix}ping` - simulate cooldude sending `{prefix}ping`
