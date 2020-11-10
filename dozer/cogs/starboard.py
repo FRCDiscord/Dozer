@@ -81,6 +81,12 @@ class Starboard(Cog):
         if starboard_channel is None:
             return
 
+        # check if the message we're trying to HoF is a hof message
+        starboard_check = await StarboardMessage.get_by(starboard_mesasage_id=message.id)
+        if len(starboard_check):
+            DOZER_LOGGER.info("Attempt to star starboard message, skipping")
+            return
+
         db_msgs = await StarboardMessage.get_by(message_id=message.id)
         if len(db_msgs) == 0:
             sent_msg = await starboard_channel.send(embed=make_starboard_embed(message, reaction_count))
