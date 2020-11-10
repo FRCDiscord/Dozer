@@ -256,8 +256,8 @@ class Starboard(Cog):
     @starboard.command()
     async def add(self, ctx, message_id, channel: discord.TextChannel = None):
         """Add a message to the starboard manually"""
-        config = await StarboardConfig.get_by(guild_id=ctx.guild.id)
-        if len(config) == 0:
+        config = await self.config_cache.query_one(guild_id=ctx.guild.id)
+        if config is None:
             await ctx.send(f"There is not a Starboard configured for this server. Set one up with "
                            f"`{ctx.bot.config}starboard config`")
             return
@@ -272,6 +272,7 @@ class Starboard(Cog):
                     break
         except discord.NotFound:
             await ctx.send(f"Message {message_id} not found in {channel.mention}")
+            return
 
         await ctx.send(f"Successfully posted message {message_id} to the starboard!")
 
