@@ -82,7 +82,7 @@ class Starboard(Cog):
             return
 
         # check if the message we're trying to HoF is a hof message
-        starboard_check = await StarboardMessage.get_by(starboard_mesasage_id=message.id)
+        starboard_check = await StarboardMessage.get_by(starboard_message_id=message.id)
         if len(starboard_check):
             DOZER_LOGGER.info("Attempt to star starboard message, skipping")
             return
