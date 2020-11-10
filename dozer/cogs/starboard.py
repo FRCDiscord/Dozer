@@ -68,7 +68,7 @@ class Starboard(Cog):
                                  color=discord.colour.Color.red())
 
         e = discord.Embed(title=title, color=discord.Color.gold())
-        e.add_field(name="Starboard Channel", value=channel.mention)
+        e.add_field(name="Starboard Channel", value=self.bot.get_channel(config.channel_id).mention)
         e.add_field(name="Starboard Emoji", value=config.star_emoji)
         e.add_field(name="Cancel Emoji", value=config.cancel_emoji)
         e.add_field(name="Threshold", value=config.threshold)
@@ -236,7 +236,7 @@ class Starboard(Cog):
         """Turn off the starboard if it is enabled"""
         config = await StarboardConfig.get_by(guild_id=ctx.guild.id)
         if not config:
-            await ctx.send("There is not Starboard set up for this server.")
+            await ctx.send("There is not a Starboard set up for this server.")
             return
 
         await StarboardConfig.delete(guild_id=ctx.guild.id)
