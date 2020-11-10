@@ -248,7 +248,29 @@ class Levels(Cog):
         finally:
             self.sync_task.start()
 
-    @command()
+    @command(aliases=["rolelevels", "levelroles"])
+    @guild_only()
+    async def checkrolelevels(self, ctx):
+        """Displays all level associated roles"""
+        roles = sorted(self._level_roles.get(ctx.guild.id), key=lambda entry: entry.level)  # Sort roles based on level
+        e = discord.Embed(title=f"Level roles for {ctx.guild}", color=blurple)
+        if roles:
+            e.description = f"This server has {len(roles)} level roles"
+            for level_role in roles:
+                role = ctx.guild.get_role(level_role.role_id)
+                if_unavailable = f"<@{level_role.role_id}>"
+                e.add_field(name=f"Level: {level_role.level}", value=rf"{role.mention if role else if_unavailable}", inline=False)
+        else:
+            e.description = "This server has no level roles assigned"
+
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
+
+    checkrolelevels.example_usage = """
+        `{prefix}checkrolelevels`: Returns an embed of all the role levels 
+        """
+
+    @command(aliases=["addrolelevel", "addlevelrole", "setlevelrole"])
     @guild_only()
     @has_permissions(manage_roles=True)
     async def setrolelevel(self, ctx, role: discord.Role, level: int):
