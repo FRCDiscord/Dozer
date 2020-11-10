@@ -13,18 +13,17 @@ DOZER_LOGGER = logging.getLogger('dozer')
 VIDEO_FORMATS = ['.mp4', '.mov', 'webm']
 
 
-async def is_cancelled(config, message, me, author=None):
+async def is_cancelled(emoji, message, me, author=None):
     """Determine if the message has cancellation reacts"""
     if author is None:
         author = message.author
 
     for reaction in message.reactions:
-        if str(reaction) != config.cancel_emoji:
+        if str(reaction) != emoji:
             continue
 
         users = await reaction.users().flatten()
         if author in users or me in users:
-            await message.add_reaction(config.cancel_emoji)
             return True
         return False
 
@@ -123,15 +122,19 @@ class Starboard(Cog):
         if config is None:
             pass
 
+        self_react = 0
+        if await is_cancelled(config.star_emoji, msg, msg.guild.me, msg.guild.me):
+            self_react = 1
+
         # Starboard check
-        if str(reaction) == config.star_emoji and reaction.count >= config.threshold and \
-                member != msg.guild.me and not await is_cancelled(config, msg, msg.guild.me):
+        if str(reaction) == config.star_emoji and (reaction.count - self_react) >= config.threshold and \
+                member != msg.guild.me and not await is_cancelled(config.cancel_emoji, msg, msg.guild.me):
             DOZER_LOGGER.debug("Starboard threshold reached, sending to starboard")
             await self.send_to_starboard(config, msg, reaction.count)
             return
 
         # check if it's gone under the limit
-        if str(reaction) == config.star_emoji and reaction.count < config.threshold:
+        elif str(reaction) == config.star_emoji and (reaction.count - self_react) < config.threshold:
             db_msgs = await StarboardMessage.get_by(message_id=msg.id)
             if len(db_msgs):
                 DOZER_LOGGER.debug("Under starboard threshold, removing starboard")
