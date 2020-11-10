@@ -121,7 +121,7 @@ class Dozer(commands.Bot):
         if ctx.author.bot:
             raise InvalidContext('Bots cannot run commands!')
         retry_after = self._global_cooldown.update_rate_limit()
-        if retry_after:
+        if retry_after and not hasattr(ctx, "is_pseudo"): # bypass ratelimit for su'ed commands
             raise InvalidContext('Global rate-limit exceeded!')
         return True
 
