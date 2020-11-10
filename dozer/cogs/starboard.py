@@ -33,7 +33,8 @@ async def is_cancelled(config, message, me, author=None):
 
 def make_starboard_embed(msg: discord.Message, reaction_count):
     """Makes a starboard embed."""
-    e = discord.Embed(color=msg.author.color, title="New Starred Message", description=msg.content)
+    e = discord.Embed(color=msg.author.color, title=f"New Starred Message in #{msg.channel.name}",
+                      description=msg.content, url=msg.jump_url)
     e.set_author(name=msg.author.display_name, icon_url=msg.author.avatar_url)
 
     view_link = f" [[view]]({msg.jump_url})"
