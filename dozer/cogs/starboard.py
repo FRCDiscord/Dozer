@@ -69,7 +69,7 @@ class Starboard(Cog):
                                  color=discord.colour.Color.red())
 
         e = discord.Embed(title=title, color=discord.Color.gold())
-        e.add_field(name="Starboard Channel", value=self.bot.get_channel(config.channel_id).mention)
+        e.add_field(name="Starboard Channel", value=channel.mention)
         e.add_field(name="Starboard Emoji", value=config.star_emoji)
         e.add_field(name="Cancel Emoji", value=config.cancel_emoji)
         e.add_field(name="Threshold", value=config.threshold)
@@ -77,7 +77,7 @@ class Starboard(Cog):
         return e
 
     async def send_to_starboard(self, config, message, reaction_count):
-        """GIven a message which may or may not exist, send it to the starboard"""
+        """Given a message which may or may not exist, send it to the starboard"""
         starboard_channel = message.guild.get_channel(config.channel_id)
         if starboard_channel is None:
             return
