@@ -32,6 +32,7 @@ class Levels(Cog):
         self._level_roles = {}
         self._xp_cache = {}  # dct[(guild_id, user_id)] = MemberXPCache(...)
         self._loop.create_task(self.preload_cache())
+        self.session = aiohttp.ClientSession(loop=bot.loop)
         self.sync_task.start()
 
     async def preload_cache(self):
@@ -54,23 +55,22 @@ class Levels(Cog):
         progress_template = "Currently syncing from Mee6 API please wait... Page: {page}"
         msg = await ctx.send(progress_template.format(page="N/A"))
         for page in itertools.count():
-            async with aiohttp.ClientSession() as session:
-                async with session.get(f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}") as response:
-                    data = await response.json()
-                    if data.get("players") and len(data["players"]) > 0:
-                        for user in data["players"]:
-                            ent = MemberXP(
-                                guild_id=int(guild_id),
-                                user_id=int(user["id"]),
-                                total_xp=int(user["xp"]),
-                                total_messages=int(user["message_count"]),
-                                last_given_at=ctx.message.created_at.replace(tzinfo=timezone.utc)
-                            )
-                            await ent.update_or_add()
-                        if page % 2:
-                            await msg.edit(content=progress_template.format(page=page))
-                    else:
-                        break
+            async with self.session.get(f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}") as response:
+                data = await response.json()
+                if data.get("players") and len(data["players"]) > 0:
+                    for user in data["players"]:
+                        ent = MemberXP(
+                            guild_id=int(guild_id),
+                            user_id=int(user["id"]),
+                            total_xp=int(user["xp"]),
+                            total_messages=int(user["message_count"]),
+                            last_given_at=ctx.message.created_at.replace(tzinfo=timezone.utc)
+                        )
+                        await ent.update_or_add()
+                    if page % 2:
+                        await msg.edit(content=progress_template.format(page=page))
+                else:
+                    break
             await asyncio.sleep(1.25)  # Slow down api calls as to not anger cloudflare
 
         await ctx.send("Done")
@@ -258,7 +258,7 @@ class Levels(Cog):
             e.description = f"This server has {len(roles)} level roles"
             for level_role in roles:
                 role = ctx.guild.get_role(level_role.role_id)
-                if_unavailable = f"<@{level_role.role_id}>"
+                if_unavailable = f"Deleted role"
                 e.add_field(name=f"Level: {level_role.level}", value=rf"{role.mention if role else if_unavailable}", inline=False)
         else:
             e.description = "This server has no level roles assigned"
@@ -270,7 +270,50 @@ class Levels(Cog):
         `{prefix}checkrolelevels`: Returns an embed of all the role levels 
         """
 
-    @command(aliases=["addrolelevel", "addlevelrole", "setlevelrole"])
+    @group(invoke_without_command=True, aliases=["configurelevels"])
+    @guild_only()
+    @has_permissions(manage_guild=True)
+    async def configureranks(self, ctx):
+        """Configures dozer ranks:tm:"""
+        if ctx.invoked_subcommand is None:
+            raise BadArgument('Invalid config command passed!')
+
+    configureranks.example_usage = """
+    `{prefix}configureranks xprange 5 15`: Sets the xp range
+    `{prefix}configureranks setcooldown 5 15`: Sets the cooldown time
+    `{prefix}configureranks toggle`: Toggles levels
+    `{prefix}configureranks notificationchannel channel`: Sets level up message channel
+    `{prefix}configureranks setrolelevel role level`: Adds a level role
+    `{prefix}configureranks delrolelevel role`: Deletes a level role 
+    """
+
+    @configureranks.command()
+    @has_permissions(manage_guild=True)
+    async def xprange(self, ctx, xp_min: int, xp_max: int):
+        """Set the range of a servers levels random xp"""
+        if xp_min > xp_max:
+            raise BadArgument("XP_min cannot be greater than XP_max!")
+        await self._config_guild_setting(ctx, xp_min=xp_min, xp_max=xp_max)
+
+    @configureranks.command()
+    @has_permissions(manage_guild=True)
+    async def setcooldown(self, ctx, cooldown: int):
+        """Set the time in seconds between messages before xp is calculated again"""
+        await self._config_guild_setting(ctx, xp_cooldown=cooldown)
+
+    @configureranks.command()
+    @has_permissions(manage_guild=True)
+    async def toggle(self, ctx):
+        """Toggle dozer ranks"""
+        await self._config_guild_setting(ctx, toggle_enabled=True)
+
+    @configureranks.command()
+    @has_permissions(manage_guild=True)
+    async def notificationchannel(self, ctx, channel: discord.TextChannel):
+        """Set up the channel where level up messages are sent"""
+        await self._config_guild_setting(ctx, lvl_up_msgs_id=channel.id)
+
+    @configureranks.command(aliases=["addrolelevel", "addlevelrole", "setlevelrole"])
     @guild_only()
     @has_permissions(manage_roles=True)
     async def setrolelevel(self, ctx, role: discord.Role, level: int):
@@ -302,11 +345,12 @@ class Levels(Cog):
             e.add_field(name='Success!', value=f"{role.mention} will be given to users who reach level {level}")
             e.set_footer(text='Triggered by ' + ctx.author.display_name)
             await ctx.send(embed=e)
-    setrolelevel.example_usage = """
-                `{prefix}setrolelevel "level 2" 2`: Will configure the role "level 2" to be given to users who reach level 2` 
-                """
 
-    @command(aliases=["delrolelevel"])
+    setrolelevel.example_usage = """
+                    `{prefix}setrolelevel "level 2" 2`: Will configure the role "level 2" to be given to users who reach level 2` 
+                    """
+
+    @configureranks.command(aliases=["delrolelevel"])
     @guild_only()
     @has_permissions(manage_roles=True)
     async def removerolelevel(self, ctx, role: discord.Role):
@@ -321,43 +365,10 @@ class Levels(Cog):
                 e.add_field(name='Failed!', value=f"{role.mention} was not found in the levels database!")
             e.set_footer(text='Triggered by ' + ctx.author.display_name)
             await ctx.send(embed=e)
+
     removerolelevel.example_usage = """
-    `{prefix}removerolelevel level 2 `: Will remove role "level 2" from level roles
-    """
-
-    @group(invoke_without_command=True, aliases=["configurelevels"])
-    @guild_only()
-    @has_permissions(manage_guild=True)
-    async def configureranks(self, ctx):
-        """Configures dozer ranks:tm:"""
-        if ctx.invoked_subcommand is None:
-            raise BadArgument('Invalid config command passed!')
-
-    @configureranks.command()
-    @has_permissions(manage_guild=True)
-    async def xprange(self, ctx, xp_min: int, xp_max: int):
-        """Set the range of a servers levels random xp"""
-        if xp_min > xp_max:
-            raise BadArgument("XP_min cannot be greater than XP_max!")
-        await self._config_guild_setting(ctx, xp_min=xp_min, xp_max=xp_max)
-
-    @configureranks.command()
-    @has_permissions(manage_guild=True)
-    async def setcooldown(self, ctx, cooldown: int):
-        """Set the time between messages before xp is calculated again"""
-        await self._config_guild_setting(ctx, xp_cooldown=cooldown)
-
-    @configureranks.command()
-    @has_permissions(manage_guild=True)
-    async def toggle(self, ctx):
-        """Toggle dozer ranks"""
-        await self._config_guild_setting(ctx, toggle_enabled=True)
-
-    @configureranks.command()
-    @has_permissions(manage_guild=True)
-    async def notificationchannel(self, ctx, channel: discord.TextChannel):
-        """Set up the channel where level up messages are sent"""
-        await self._config_guild_setting(ctx, lvl_up_msgs_id=channel.id)
+        `{prefix}removerolelevel level 2 `: Will remove role "level 2" from level roles
+        """
 
     async def _config_guild_setting(self, ctx, xp_min=None, xp_max=None, xp_cooldown=None, lvl_up_msgs_id=None, toggle_enabled=False):
         """Basic Database entry updater"""
