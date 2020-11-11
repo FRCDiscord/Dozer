@@ -2,7 +2,7 @@
 import asyncio
 import inspect
 import discord
-from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions, NotOwner
+from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions, NotOwner, guild_only
 
 from . import _utils
 from ._utils import *
@@ -226,6 +226,7 @@ class General(Cog):
     """
 
     @command(aliases=["setprefix"])
+    @guild_only()
     @has_permissions(manage_guild=True)
     async def configprefix(self, ctx, prefix: str):
         """Update a servers dynamic prefix"""

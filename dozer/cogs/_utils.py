@@ -314,7 +314,7 @@ class PrefixHandler:
 
     def handler(self, bot, message):
         """Process the dynamic prefix for each message"""
-        dynamic = self.prefix_cache.get(message.guild.id)
+        dynamic = self.prefix_cache.get(message.guild.id if message.guild else 0)
         return dynamic if dynamic else self.default_prefix
 
     async def refresh(self):
