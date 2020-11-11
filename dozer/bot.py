@@ -8,6 +8,7 @@ import discord
 from discord.ext import commands
 
 from . import utils
+from .cogs import _utils
 
 DOZER_LOGGER = logging.getLogger('dozer')
 DOZER_LOGGER.level = logging.INFO
@@ -45,7 +46,8 @@ class Dozer(commands.Bot):
     _global_cooldown = commands.Cooldown(1, 1, commands.BucketType.user)  # One command per second per user
 
     def __init__(self, config, *args, **kwargs):
-        super().__init__(command_prefix=config['prefix'], *args, **kwargs)
+        dynamic_prefix = _utils.PrefixHandler(config['prefix'])
+        super().__init__(command_prefix=dynamic_prefix.handler, *args, **kwargs)
         self.config = config
         if self.config['debug']:
             DOZER_LOGGER.level = logging.DEBUG
