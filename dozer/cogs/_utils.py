@@ -10,7 +10,7 @@ from discord.ext import commands
 
 from dozer import db
 
-__all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk', 'dev_check']
+__all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk', 'dev_check', 'DynamicPrefixEntry']
 
 logger = logging.getLogger("dozer")
 
