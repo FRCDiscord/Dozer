@@ -75,10 +75,16 @@ class Starboard(Cog):
         e.set_footer(text=f"For more information, try {ctx.prefix}help starboard")
         return e
 
-    async def send_to_starboard(self, config, message, reaction_count):
+    async def send_to_starboard(self, config, message, reaction_count, add_react = True):
         """Given a message which may or may not exist, send it to the starboard"""
         starboard_channel = message.guild.get_channel(config.channel_id)
         if starboard_channel is None:
+            return
+
+        # check if the message we're trying to HoF is a hof message
+        starboard_check = await StarboardMessage.get_by(starboard_message_id=message.id)
+        if len(starboard_check):
+            DOZER_LOGGER.info("Attempt to star starboard message, skipping")
             return
 
         db_msgs = await StarboardMessage.get_by(message_id=message.id)
@@ -86,7 +92,8 @@ class Starboard(Cog):
             sent_msg = await starboard_channel.send(embed=make_starboard_embed(message, reaction_count))
             db_msg = StarboardMessage(message.id, message.channel.id, sent_msg.id, message.author.id)
             await db_msg.update_or_add()
-            await message.add_reaction(config.star_emoji)
+            if add_react:
+                await message.add_reaction(config.star_emoji)
         else:
             try:
                 sent_msg = await self.bot.get_channel(config.channel_id).fetch_message(db_msgs[0].starboard_message_id)
@@ -120,7 +127,7 @@ class Starboard(Cog):
 
         config = await self.config_cache.query_one(guild_id=msg.guild.id)
         if config is None:
-            pass
+            return
 
         self_react = 0
         if await is_cancelled(config.star_emoji, msg, msg.guild.me, msg.guild.me):
@@ -256,8 +263,8 @@ class Starboard(Cog):
     @starboard.command()
     async def add(self, ctx, message_id, channel: discord.TextChannel = None):
         """Add a message to the starboard manually"""
-        config = await StarboardConfig.get_by(guild_id=ctx.guild.id)
-        if len(config) == 0:
+        config = await self.config_cache.query_one(guild_id=ctx.guild.id)
+        if config is None:
             await ctx.send(f"There is not a Starboard configured for this server. Set one up with "
                            f"`{ctx.bot.config}starboard config`")
             return
@@ -267,11 +274,14 @@ class Starboard(Cog):
         try:
             msg = await channel.fetch_message(message_id)
             for reaction in msg.reactions:
-                if str(reaction) != config[0].star_emoji:
-                    await self.send_to_starboard(config[0], msg, reaction.count)
+                if str(reaction) != config.star_emoji:
+                    await self.send_to_starboard(config, msg, reaction.count, False)
                     break
+            else:
+                await self.send_to_starboard(config, msg, 0, False)
         except discord.NotFound:
             await ctx.send(f"Message {message_id} not found in {channel.mention}")
+            return
 
         await ctx.send(f"Successfully posted message {message_id} to the starboard!")
 
