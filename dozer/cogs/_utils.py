@@ -3,9 +3,7 @@ import asyncio
 import inspect
 import logging
 import typing
-from asyncore import loop
 from collections.abc import Mapping
-from concurrent.futures.thread import ThreadPoolExecutor
 
 import discord
 from discord.ext import commands
