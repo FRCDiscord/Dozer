@@ -313,7 +313,7 @@ class PrefixHandler:
         self.prefix_cache = {}
 
     def handler(self, bot, message):
-        """Process the dynamic prefix from message"""
+        """Process the dynamic prefix for each message"""
         dynamic = self.prefix_cache.get(message.guild.id)
         return dynamic if dynamic else self.default_prefix
 
@@ -325,9 +325,8 @@ class PrefixHandler:
         logger.info(f"{len(prefixes)} prefixes loaded from database")
 
 
-
 class DynamicPrefixEntry(db.DatabaseTable):
-    """Holds the roles of those who leave"""
+    """Holds the custom prefixes for guilds"""
     __tablename__ = 'dynamic_prefixes'
     __uniques__ = 'guild_id'
 
