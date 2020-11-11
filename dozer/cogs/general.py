@@ -1,5 +1,5 @@
 """General, basic commands that are common for Discord bots"""
-
+import asyncio
 import inspect
 import discord
 from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions, NotOwner
@@ -234,9 +234,11 @@ class General(Cog):
             prefix=prefix
         )
         await new_prefix.update_or_add()
+        await asyncio.sleep(1)
+        await self.bot.dynamic_prefix.refresh()
         e = discord.Embed(color=blurple)
         e.add_field(name='Success!', value=f"`{ctx.guild}`'s prefix has set to `{prefix}`!")
-        e.set_footer(text="It will take approximately 1 minute for these changes to take effect")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
 

@@ -317,14 +317,13 @@ class PrefixHandler:
         dynamic = self.prefix_cache.get(message.guild.id)
         return dynamic if dynamic else self.default_prefix
 
-    async def refresh_loop(self):
-        """Refreshes the prefix cache from the database ever minute"""
-        while True:
-            prefixes = await DynamicPrefixEntry.get_by()  # no filters, get all
-            for prefix in prefixes:
-                self.prefix_cache[prefix.guild_id] = prefix.prefix
-            logger.debug(f"{len(prefixes)} prefixes loaded from database")
-            await asyncio.sleep(60)
+    async def refresh(self):
+        """Refreshes the prefix cache"""
+        prefixes = await DynamicPrefixEntry.get_by()  # no filters, get all
+        for prefix in prefixes:
+            self.prefix_cache[prefix.guild_id] = prefix.prefix
+        logger.info(f"{len(prefixes)} prefixes loaded from database")
+
 
 
 class DynamicPrefixEntry(db.DatabaseTable):
