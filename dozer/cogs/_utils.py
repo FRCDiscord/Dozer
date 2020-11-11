@@ -1,8 +1,11 @@
 """Utilities for Dozer."""
 import asyncio
 import inspect
+import logging
 import typing
+from asyncore import loop
 from collections.abc import Mapping
+from concurrent.futures.thread import ThreadPoolExecutor
 
 import discord
 from discord.ext import commands
@@ -10,6 +13,8 @@ from discord.ext import commands
 from dozer import db
 
 __all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk', 'dev_check']
+
+logger = logging.getLogger("dozer")
 
 
 class CommandMixin:
@@ -307,11 +312,22 @@ class PrefixHandler:
         self.default_prefix = default_prefix
         self.prefix_cache = {}
 
-    def handler(self, message):
-        return self.default_prefix
+    def handler(self, bot, message):
+        """Process the dynamic prefix from message"""
+        dynamic = self.prefix_cache.get(message.guild.id)
+        return dynamic if dynamic else self.default_prefix
+
+    async def refresh_loop(self):
+        """Refreshes the prefix cache from the database ever minute"""
+        while True:
+            prefixes = await DynamicPrefixEntry.get_by()  # no filters, get all
+            for prefix in prefixes:
+                self.prefix_cache[prefix.guild_id] = prefix.prefix
+            logger.debug(f"{len(prefixes)} prefixes loaded from database")
+            await asyncio.sleep(60)
 
 
-class _DynamicPrefixEntry(db.DatabaseTable):
+class DynamicPrefixEntry(db.DatabaseTable):
     """Holds the roles of those who leave"""
     __tablename__ = 'dynamic_prefixes'
     __uniques__ = 'guild_id'
@@ -337,6 +353,6 @@ class _DynamicPrefixEntry(db.DatabaseTable):
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
-            obj = _DynamicPrefixEntry(guild_id=result.get("guild_id"), prefix=result.get("prefix"))
+            obj = DynamicPrefixEntry(guild_id=result.get("guild_id"), prefix=result.get("prefix"))
             result_list.append(obj)
         return result_list

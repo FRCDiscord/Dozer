@@ -4,7 +4,9 @@ import inspect
 import discord
 from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions, NotOwner
 
+from . import _utils
 from ._utils import *
+from .info import blurple
 from .. import db
 
 
@@ -222,6 +224,20 @@ class General(Cog):
     welcomeconfig.example_usage = """
     `{prefix}welcomeconfig #new-members` - Sets the invite channel to #new-members.
     """
+
+    @command(aliases=["setprefix"])
+    @has_permissions(manage_guild=True)
+    async def configprefix(self, ctx, prefix: str):
+        """Update a servers dynamic prefix"""
+        new_prefix = _utils.DynamicPrefixEntry(
+            guild_id=int(ctx.guild.id),
+            prefix=prefix
+        )
+        await new_prefix.update_or_add()
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value=f"`{ctx.guild}`'s prefix has set to `{prefix}`!")
+        e.set_footer(text="It will take approximately 1 minute for these changes to take effect")
+        await ctx.send(embed=e)
 
 
 def setup(bot):

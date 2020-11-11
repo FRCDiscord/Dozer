@@ -46,8 +46,8 @@ class Dozer(commands.Bot):
     _global_cooldown = commands.Cooldown(1, 1, commands.BucketType.user)  # One command per second per user
 
     def __init__(self, config, *args, **kwargs):
-        dynamic_prefix = _utils.PrefixHandler(config['prefix'])
-        super().__init__(command_prefix=dynamic_prefix.handler, *args, **kwargs)
+        self.dynamic_prefix = _utils.PrefixHandler(config['prefix'])
+        super().__init__(command_prefix=self.dynamic_prefix.handler, *args, **kwargs)
         self.config = config
         if self.config['debug']:
             DOZER_LOGGER.level = logging.DEBUG
@@ -58,6 +58,7 @@ class Dozer(commands.Bot):
     async def on_ready(self):
         """Things to run when the bot has initialized and signed in"""
         DOZER_LOGGER.info('Signed in as {}#{} ({})'.format(self.user.name, self.user.discriminator, self.user.id))
+        await self.loop.create_future(await self.dynamic_prefix.refresh_loop())
         if self.config['is_backup']:
             status = discord.Status.dnd
         else:
