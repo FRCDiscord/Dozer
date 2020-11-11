@@ -12,7 +12,7 @@ from dozer import db
 
 __all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk', 'dev_check', 'DynamicPrefixEntry']
 
-logger = logging.getLogger("dozer")
+DOZER_LOGGER = logging.getLogger("dozer")
 
 
 class CommandMixin:
@@ -312,15 +312,15 @@ class PrefixHandler:
 
     def handler(self, bot, message):
         """Process the dynamic prefix for each message"""
-        dynamic = self.prefix_cache.get(message.guild.id if message.guild else 0)
-        return dynamic if dynamic else self.default_prefix
+        dynamic = self.prefix_cache.get(message.guild.id) if message.guild else self.default_prefix
+        return [f"<@!{bot.user.id}> ", bot.user.mention, dynamic]
 
     async def refresh(self):
         """Refreshes the prefix cache"""
         prefixes = await DynamicPrefixEntry.get_by()  # no filters, get all
         for prefix in prefixes:
             self.prefix_cache[prefix.guild_id] = prefix.prefix
-        logger.info(f"{len(prefixes)} prefixes loaded from database")
+        DOZER_LOGGER.info(f"{len(prefixes)} prefixes loaded from database")
 
 
 class DynamicPrefixEntry(db.DatabaseTable):
