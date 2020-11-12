@@ -295,6 +295,7 @@ class Levels(Cog):
     `{prefix}configureranks setcooldown 15`: Sets the cooldown time in seconds
     `{prefix}configureranks toggle`: Toggles levels
     `{prefix}configureranks notificationchannel channel`: Sets level up message channel
+    `{prefix}configureranks notificationsoff`: Turns off notification channel
     `{prefix}configureranks setrolelevel role level`: Adds a level role
     `{prefix}configureranks delrolelevel role`: Deletes a level role 
     """
@@ -311,6 +312,8 @@ class Levels(Cog):
     @has_permissions(manage_guild=True)
     async def setcooldown(self, ctx, cooldown: int):
         """Set the time in seconds between messages before xp is calculated again"""
+        if cooldown < 0:
+            raise BadArgument("Cooldown cannot be less than zero!")
         await self._config_guild_setting(ctx, xp_cooldown=cooldown)
 
     @configureranks.command()
@@ -324,6 +327,12 @@ class Levels(Cog):
     async def notificationchannel(self, ctx, channel: discord.TextChannel):
         """Set up the channel where level up messages are sent"""
         await self._config_guild_setting(ctx, lvl_up_msgs_id=channel.id)
+
+    @configureranks.command()
+    @has_permissions(manage_guild=True)
+    async def notificationsoff(self, ctx):
+        """Turns off level up messages"""
+        await self._config_guild_setting(ctx, no_lvl_up=True)
 
     @configureranks.command(aliases=["addrolelevel", "addlevelrole", "setlevelrole"])
     @guild_only()
@@ -341,6 +350,9 @@ class Levels(Cog):
 
         if role == ctx.guild.default_role:
             raise BadArgument("Cannot give @\N{ZERO WIDTH SPACE}everyone for a level")
+
+        if role.managed:
+            raise BadArgument("I am not allowed to assign that role!")
 
         async with ctx.channel.typing():  # Send typing to show that the bot is thinking and not stalled
             ent = XPRole(
@@ -382,7 +394,7 @@ class Levels(Cog):
     `{prefix}removerolelevel level 2 `: Will remove role "level 2" from level roles
     """
 
-    async def _config_guild_setting(self, ctx, xp_min=None, xp_max=None, xp_cooldown=None, lvl_up_msgs_id=None, toggle_enabled=False):
+    async def _config_guild_setting(self, ctx, xp_min=None, xp_max=None, xp_cooldown=None, lvl_up_msgs_id=None, toggle_enabled=False, no_lvl_up=False):
         """Basic Database entry updater"""
         async with ctx.channel.typing():  # Send typing to show that the bot is thinking and not stalled
             results = await GuildXPSettings.get_by(guild_id=int(ctx.guild.id))
@@ -406,7 +418,7 @@ class Levels(Cog):
                 xp_max=int(xp_max) if xp_max else old_ent.xp_max,
                 xp_cooldown=int(xp_cooldown) if xp_cooldown else old_ent.xp_cooldown,
                 entropy_value=0,  # Is in table but is not used yet
-                lvl_up_msgs=int(lvl_up_msgs_id) if lvl_up_msgs_id else int(old_ent.lvl_up_msgs),
+                lvl_up_msgs=int(lvl_up_msgs_id) if lvl_up_msgs_id else int(old_ent.lvl_up_msgs) if not no_lvl_up else -1,
                 enabled=not old_ent.enabled if toggle_enabled else old_ent.enabled
             )
             await ent.update_or_add()
