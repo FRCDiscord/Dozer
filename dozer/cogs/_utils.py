@@ -313,7 +313,8 @@ class PrefixHandler:
     def handler(self, bot, message):
         """Process the dynamic prefix for each message"""
         dynamic = self.prefix_cache.get(message.guild.id) if message.guild else self.default_prefix
-        return [f"<@!{bot.user.id}> ", bot.user.mention, dynamic]  # <@!> is a nickname mention which discord.py doesn't make by default
+        # <@!> is a nickname mention which discord.py doesn't make by default
+        return [f"<@!{bot.user.id}> ", bot.user.mention, dynamic if dynamic else self.default_prefix]
 
     async def refresh(self):
         """Refreshes the prefix cache"""
