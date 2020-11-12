@@ -81,7 +81,6 @@ class Levels(Cog):
 
     async def update_server_settings_cache(self):
         """Updates the server settings cache from the database"""
-        await asyncio.sleep(0.75)  # Give the database a few to update
         self._guild_settings = {}
         records = await GuildXPSettings.get_by()  # no filters, get all
         for record in records:
@@ -89,7 +88,6 @@ class Levels(Cog):
 
     async def update_level_role_cache(self):
         """Updates level role cache from the database"""
-        await asyncio.sleep(0.75)  # Give the database a few to update
         self._level_roles = {}
         level_roles = await XPRole.get_by()
         for role in level_roles:
