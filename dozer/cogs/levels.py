@@ -300,15 +300,19 @@ class Levels(Cog):
     `{prefix}configureranks delrolelevel role`: Deletes a level role 
     """
 
-    @configureranks.command()
+    @configureranks.command(aliases=["xp"])
+    @guild_only()
     @has_permissions(manage_guild=True)
     async def xprange(self, ctx, xp_min: int, xp_max: int):
         """Set the range of a servers levels random xp"""
         if xp_min > xp_max:
             raise BadArgument("XP_min cannot be greater than XP_max!")
+        if xp_min < 0:
+            raise BadArgument("XP_min cannot be below zero!")
         await self._config_guild_setting(ctx, xp_min=xp_min, xp_max=xp_max)
 
-    @configureranks.command()
+    @configureranks.command(aliases=["cooldown"])
+    @guild_only()
     @has_permissions(manage_guild=True)
     async def setcooldown(self, ctx, cooldown: int):
         """Set the time in seconds between messages before xp is calculated again"""
@@ -317,18 +321,21 @@ class Levels(Cog):
         await self._config_guild_setting(ctx, xp_cooldown=cooldown)
 
     @configureranks.command()
+    @guild_only()
     @has_permissions(manage_guild=True)
     async def toggle(self, ctx):
         """Toggle dozer ranks"""
         await self._config_guild_setting(ctx, toggle_enabled=True)
 
-    @configureranks.command()
+    @configureranks.command(aliases=["notifications"])
+    @guild_only()
     @has_permissions(manage_guild=True)
     async def notificationchannel(self, ctx, channel: discord.TextChannel):
         """Set up the channel where level up messages are sent"""
         await self._config_guild_setting(ctx, lvl_up_msgs_id=channel.id)
 
-    @configureranks.command()
+    @configureranks.command(aliases=["nonotifications"])
+    @guild_only()
     @has_permissions(manage_guild=True)
     async def notificationsoff(self, ctx):
         """Turns off level up messages"""
