@@ -76,8 +76,8 @@ class Levels(Cog):
         await ctx.send("Done")
 
     meesyncs.example_usage = """
-        `{prefix}meesyncs`: Sync ranking data from the mee6 API to dozer's database
-        """
+    `{prefix}meesyncs`: Sync ranking data from the mee6 API to dozer's database
+    """
 
     async def update_server_settings_cache(self):
         """Updates the server settings cache from the database"""
@@ -267,8 +267,8 @@ class Levels(Cog):
         await ctx.send(embed=e)
 
     checkrolelevels.example_usage = """
-        `{prefix}checkrolelevels`: Returns an embed of all the role levels 
-        """
+    `{prefix}checkrolelevels`: Returns an embed of all the role levels 
+    """
 
     @group(invoke_without_command=True, aliases=["configurelevels"])
     @guild_only()
@@ -347,8 +347,8 @@ class Levels(Cog):
             await ctx.send(embed=e)
 
     setrolelevel.example_usage = """
-                    `{prefix}setrolelevel "level 2" 2`: Will configure the role "level 2" to be given to users who reach level 2` 
-                    """
+    `{prefix}setrolelevel "level 2" 2`: Will configure the role "level 2" to be given to users who reach level 2` 
+    """
 
     @configureranks.command(aliases=["delrolelevel"])
     @guild_only()
@@ -367,8 +367,8 @@ class Levels(Cog):
             await ctx.send(embed=e)
 
     removerolelevel.example_usage = """
-        `{prefix}removerolelevel level 2 `: Will remove role "level 2" from level roles
-        """
+    `{prefix}removerolelevel level 2 `: Will remove role "level 2" from level roles
+    """
 
     async def _config_guild_setting(self, ctx, xp_min=None, xp_max=None, xp_cooldown=None, lvl_up_msgs_id=None, toggle_enabled=False):
         """Basic Database entry updater"""
