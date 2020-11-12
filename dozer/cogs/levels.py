@@ -275,10 +275,25 @@ class Levels(Cog):
     @has_permissions(manage_guild=True)
     async def configureranks(self, ctx):
         """Configures dozer ranks:tm:"""
-        if ctx.invoked_subcommand is None:
-            raise BadArgument('Invalid config command passed!')
+        settings = self._guild_settings.get(ctx.guild.id)
+        if settings:
+            embed = discord.Embed(color=blurple)
+            embed.set_footer(text='Triggered by ' + ctx.author.display_name)
+
+            notify_channel = ctx.guild.get_channel(settings.lvl_up_msgs)
+
+            enabled = "Enabled" if settings.enabled else "Disabled"
+            embed.set_author(name=ctx.guild, icon_url=ctx.guild.icon_url)
+            embed.add_field(name=f"Levels are {enabled} for {ctx.guild}", value=f"XP min: {settings.xp_min}\n"
+                                                                                f"XP max: {settings.xp_max}\n"
+                                                                                f"Cooldown: {settings.xp_cooldown} Seconds\n"
+                                                                                f"Notification channel: {notify_channel}")
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("Levels not configured for this server")
 
     configureranks.example_usage = """
+    `{prefix}configureranks`: Returns current configuration
     `{prefix}configureranks xprange 5 15`: Sets the xp range
     `{prefix}configureranks setcooldown 15`: Sets the cooldown time in seconds
     `{prefix}configureranks toggle`: Toggles levels
@@ -409,31 +424,6 @@ class Levels(Cog):
                                                                                 f"Cooldown: {ent.xp_cooldown} Seconds\n"
                                                                                 f"Notification channel: {lvl_up_msgs}")
             await ctx.send(embed=embed)
-
-    @command(aliases=["ranksettings", "levelsettings"])
-    @guild_only()
-    async def getlevelsconfig(self, ctx):
-        """Returns the level settings for the current guild"""
-        settings = self._guild_settings.get(ctx.guild.id)
-        if settings:
-            embed = discord.Embed(color=blurple)
-            embed.set_footer(text='Triggered by ' + ctx.author.display_name)
-
-            notify_channel = ctx.guild.get_channel(settings.lvl_up_msgs)
-
-            enabled = "Enabled" if settings.enabled else "Disabled"
-            embed.set_author(name=ctx.guild, icon_url=ctx.guild.icon_url)
-            embed.add_field(name=f"Levels are {enabled} for {ctx.guild}", value=f"XP min: {settings.xp_min}\n"
-                                                                                f"XP max: {settings.xp_max}\n"
-                                                                                f"Cooldown: {settings.xp_cooldown} Seconds\n"
-                                                                                f"Notification channel: {notify_channel}")
-            await ctx.send(embed=embed)
-        else:
-            await ctx.send("Levels not configured for this server")
-
-    getlevelsconfig.example_usage = """
-        `{prefix}getlevelsconfig:` Returns levels config
-    """
 
     @command(aliases=["rnak", "level"])
     @guild_only()
