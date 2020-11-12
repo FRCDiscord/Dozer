@@ -272,7 +272,6 @@ class Levels(Cog):
 
     @group(invoke_without_command=True, aliases=["configurelevels"])
     @guild_only()
-    @has_permissions(manage_guild=True)
     async def configureranks(self, ctx):
         """Configures dozer ranks:tm:"""
         settings = self._guild_settings.get(ctx.guild.id)
