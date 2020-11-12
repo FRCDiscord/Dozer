@@ -35,67 +35,6 @@ class Levels(Cog):
         self.session = aiohttp.ClientSession(loop=bot.loop)
         self.sync_task.start()
 
-    async def preload_cache(self):
-        """Load all guild settings from the database."""
-        await self.bot.wait_until_ready()
-        logger.info("Preloading guild settings")
-        await self.update_server_settings_cache()
-        await self.update_level_role_cache()
-        logger.info(f"Loaded settings for {len(self._guild_settings)} guilds; and {len(self._level_roles)} level roles")
-        # Load subset of member XP records here?
-
-    @command(aliases=["mee6sync"])
-    @guild_only()  # Prevent command from being executed in a DM
-    @discord.ext.commands.max_concurrency(1, wait=False)  # Only allows one instance of this command to run at a time globally
-    @discord.ext.commands.cooldown(rate=1, per=3600, type=discord.ext.commands.BucketType.guild)  # A cooldown of one hour per guild to prevent spam
-    @has_permissions(administrator=True)
-    async def meesyncs(self, ctx):
-        """Function to scrap ranking data from the mee6 api and save it to the database"""
-        guild_id = ctx.guild.id
-        progress_template = "Currently syncing from Mee6 API please wait... Page: {page}"
-        msg = await ctx.send(progress_template.format(page="N/A"))
-        for page in itertools.count():
-            async with self.session.get(f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}") as response:
-                data = await response.json()
-                if data.get("players") and len(data["players"]) > 0:
-                    for user in data["players"]:
-                        ent = MemberXP(
-                            guild_id=int(guild_id),
-                            user_id=int(user["id"]),
-                            total_xp=int(user["xp"]),
-                            total_messages=int(user["message_count"]),
-                            last_given_at=ctx.message.created_at.replace(tzinfo=timezone.utc)
-                        )
-                        await ent.update_or_add()
-                    if page % 2:
-                        await msg.edit(content=progress_template.format(page=page))
-                else:
-                    break
-            await asyncio.sleep(1.25)  # Slow down api calls as to not anger cloudflare
-
-        await ctx.send("Done")
-
-    meesyncs.example_usage = """
-    `{prefix}meesyncs`: Sync ranking data from the mee6 API to dozer's database
-    """
-
-    async def update_server_settings_cache(self):
-        """Updates the server settings cache from the database"""
-        self._guild_settings = {}
-        records = await GuildXPSettings.get_by()  # no filters, get all
-        for record in records:
-            self._guild_settings[record.guild_id] = record
-
-    async def update_level_role_cache(self):
-        """Updates level role cache from the database"""
-        self._level_roles = {}
-        level_roles = await XPRole.get_by()
-        for role in level_roles:
-            if self._level_roles.get(role.guild_id):
-                self._level_roles[role.guild_id].append(role)
-            else:
-                self._level_roles[role.guild_id] = [role]
-
     @staticmethod
     @functools.lru_cache(cache_size)
     def total_xp_for_level(level):
@@ -124,6 +63,32 @@ class Levels(Cog):
             xp -= 5 * lvl ** 2 + 50 * lvl + 100
             lvl += 1
         return lvl - 1
+
+    async def preload_cache(self):
+        """Load all guild settings from the database."""
+        await self.bot.wait_until_ready()
+        logger.info("Preloading guild settings")
+        await self.update_server_settings_cache()
+        await self.update_level_role_cache()
+        logger.info(f"Loaded settings for {len(self._guild_settings)} guilds; and {len(self._level_roles)} level roles")
+        # Load subset of member XP records here?
+
+    async def update_server_settings_cache(self):
+        """Updates the server settings cache from the database"""
+        self._guild_settings = {}
+        records = await GuildXPSettings.get_by()  # no filters, get all
+        for record in records:
+            self._guild_settings[record.guild_id] = record
+
+    async def update_level_role_cache(self):
+        """Updates level role cache from the database"""
+        self._level_roles = {}
+        level_roles = await XPRole.get_by()
+        for role in level_roles:
+            if self._level_roles.get(role.guild_id):
+                self._level_roles[role.guild_id].append(role)
+            else:
+                self._level_roles[role.guild_id] = [role]
 
     async def check_new_roles(self, guild, member, cached_member):
         """Check and see if a member has qualified to get a new role"""
@@ -160,28 +125,6 @@ class Levels(Cog):
                 cached_member = MemberXPCache(0, datetime.now(tz=timezone.utc), 0, True)
             self._xp_cache[(guild_id, member_id)] = cached_member
         return cached_member
-
-    @Cog.listener('on_message')
-    async def give_message_xp(self, message):
-        """Handle giving XP to a user for a message."""
-        if message.author.bot or not message.guild:
-            return
-        guild_settings = self._guild_settings.get(message.guild.id)
-        if guild_settings is None or not guild_settings.enabled:
-            return
-
-        cached_member = await self._load_member(message.guild.id, message.author.id)
-        await self.check_new_roles(message.guild, message.author, cached_member)
-        old_xp = cached_member.total_xp
-
-        timestamp = message.created_at.replace(tzinfo=timezone.utc)
-        if cached_member.last_given_at is None or timestamp - cached_member.last_given_at > timedelta(seconds=guild_settings.xp_cooldown):
-            cached_member.total_xp += random.randint(guild_settings.xp_min, guild_settings.xp_max)
-            cached_member.last_given_at = timestamp
-        cached_member.total_messages += 1
-        cached_member.dirty = True
-
-        await self.check_level_up(message.guild, message.author, old_xp, cached_member.total_xp)
 
     async def sync_to_database(self):
         """Sync dirty records to the database, and evict others from the cache."""
@@ -246,6 +189,74 @@ class Levels(Cog):
         finally:
             self.sync_task.start()
 
+    def _fmt_member(self, guild, user_id):
+        member = guild.get_member(user_id)
+        if member:
+            return str(member.mention)
+        else:  # Still try to see if the bot can find the user to get their name
+            user = self.bot.get_user(user_id)
+            if user:
+                return user
+            else:  # If the bot can't get the user's name then return the user's id
+                return f"({user_id})"
+
+    @Cog.listener('on_message')
+    async def give_message_xp(self, message):
+        """Handle giving XP to a user for a message."""
+        if message.author.bot or not message.guild:
+            return
+        guild_settings = self._guild_settings.get(message.guild.id)
+        if guild_settings is None or not guild_settings.enabled:
+            return
+
+        cached_member = await self._load_member(message.guild.id, message.author.id)
+        await self.check_new_roles(message.guild, message.author, cached_member)
+        old_xp = cached_member.total_xp
+
+        timestamp = message.created_at.replace(tzinfo=timezone.utc)
+        if cached_member.last_given_at is None or timestamp - cached_member.last_given_at > timedelta(seconds=guild_settings.xp_cooldown):
+            cached_member.total_xp += random.randint(guild_settings.xp_min, guild_settings.xp_max)
+            cached_member.last_given_at = timestamp
+        cached_member.total_messages += 1
+        cached_member.dirty = True
+
+        await self.check_level_up(message.guild, message.author, old_xp, cached_member.total_xp)
+
+    @command(aliases=["mee6sync"])
+    @guild_only()  # Prevent command from being executed in a DM
+    @discord.ext.commands.max_concurrency(1, wait=False)  # Only allows one instance of this command to run at a time globally
+    @discord.ext.commands.cooldown(rate=1, per=3600, type=discord.ext.commands.BucketType.guild)  # A cooldown of one hour per guild to prevent spam
+    @has_permissions(administrator=True)
+    async def meesyncs(self, ctx):
+        """Function to scrap ranking data from the mee6 api and save it to the database"""
+        guild_id = ctx.guild.id
+        progress_template = "Currently syncing from Mee6 API please wait... Page: {page}"
+        msg = await ctx.send(progress_template.format(page="N/A"))
+        for page in itertools.count():
+            async with self.session.get(f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}") as response:
+                data = await response.json()
+                if data.get("players") and len(data["players"]) > 0:
+                    for user in data["players"]:
+                        ent = MemberXP(
+                            guild_id=int(guild_id),
+                            user_id=int(user["id"]),
+                            total_xp=int(user["xp"]),
+                            total_messages=int(user["message_count"]),
+                            last_given_at=ctx.message.created_at.replace(tzinfo=timezone.utc)
+                        )
+                        await ent.update_or_add()
+                    if page % 2:
+                        await msg.edit(content=progress_template.format(page=page))
+                else:
+                    break
+            await asyncio.sleep(1.25)  # Slow down api calls as to not anger cloudflare
+
+        await ctx.send("Done")
+
+    meesyncs.example_usage = """
+        `{prefix}meesyncs`: Sync ranking data from the mee6 API to dozer's database
+        """
+
     @command(aliases=["rolelevels", "levelroles"])
     @guild_only()
     async def checkrolelevels(self, ctx):
@@ -309,7 +320,7 @@ class Levels(Cog):
             raise BadArgument("XP_min cannot be greater than XP_max!")
         if xp_min < 0:
             raise BadArgument("XP_min cannot be below zero!")
-        await self._config_guild_setting(ctx, xp_min=xp_min, xp_max=xp_max)
+        await self._cfg_guild_setting(ctx, xp_min=xp_min, xp_max=xp_max)
 
     @configureranks.command(aliases=["cooldown"])
     @guild_only()
@@ -318,28 +329,28 @@ class Levels(Cog):
         """Set the time in seconds between messages before xp is calculated again"""
         if cooldown < 0:
             raise BadArgument("Cooldown cannot be less than zero!")
-        await self._config_guild_setting(ctx, xp_cooldown=cooldown)
+        await self._cfg_guild_setting(ctx, xp_cooldown=cooldown)
 
     @configureranks.command()
     @guild_only()
     @has_permissions(manage_guild=True)
     async def toggle(self, ctx):
         """Toggle dozer ranks"""
-        await self._config_guild_setting(ctx, toggle_enabled=True)
+        await self._cfg_guild_setting(ctx, toggle_enabled=True)
 
     @configureranks.command(aliases=["notifications"])
     @guild_only()
     @has_permissions(manage_guild=True)
     async def notificationchannel(self, ctx, channel: discord.TextChannel):
         """Set up the channel where level up messages are sent"""
-        await self._config_guild_setting(ctx, lvl_up_msgs_id=channel.id)
+        await self._cfg_guild_setting(ctx, lvl_up_msgs_id=channel.id)
 
     @configureranks.command(aliases=["nonotifications"])
     @guild_only()
     @has_permissions(manage_guild=True)
     async def notificationsoff(self, ctx):
         """Turns off level up messages"""
-        await self._config_guild_setting(ctx, no_lvl_up=True)
+        await self._cfg_guild_setting(ctx, no_lvl_up=True)
 
     @configureranks.command(aliases=["addrolelevel", "addlevelrole", "setlevelrole"])
     @guild_only()
@@ -401,7 +412,7 @@ class Levels(Cog):
     `{prefix}removerolelevel level 2 `: Will remove role "level 2" from level roles
     """
 
-    async def _config_guild_setting(self, ctx, xp_min=None, xp_max=None, xp_cooldown=None, lvl_up_msgs_id=None, toggle_enabled=False, no_lvl_up=False):
+    async def _cfg_guild_setting(self, ctx, xp_min=None, xp_max=None, xp_cooldown=None, lvl_up_msgs_id=None, toggle_enabled=False, no_lvl_up=False):
         """Basic Database entry updater"""
         async with ctx.channel.typing():  # Send typing to show that the bot is thinking and not stalled
             results = await GuildXPSettings.get_by(guild_id=int(ctx.guild.id))
@@ -483,17 +494,6 @@ class Levels(Cog):
     `{prefix}rank`: show your ranking
     `{prefix}rank coolgal#1234`: show another user's ranking
     """
-
-    def _fmt_member(self, guild, user_id):
-        member = guild.get_member(user_id)
-        if member:
-            return str(member.mention)
-        else:  # Still try to see if the bot can find the user to get their name
-            user = self.bot.get_user(user_id)
-            if user:
-                return user
-            else:  # If the bot can't get the user's name then return the user's id
-                return f"({user_id})"
 
     @command(aliases=["ranks", "leaderboard"])
     @guild_only()
