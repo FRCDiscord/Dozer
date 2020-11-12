@@ -63,9 +63,9 @@ class Dozer(commands.Bot):
             status = discord.Status.dnd
         else:
             status = discord.Status.online
-        game = discord.Game(name='%shelp | %d guilds' % (self.config['prefix'], len(self.guilds)))
+        activity = discord.Game(name=f"@{self.user.name} or '{self.config['prefix']}' in {len(self.guilds)} guilds")
         try:
-            await self.change_presence(activity=game, status=status)
+            await self.change_presence(activity=activity, status=status)
         except TypeError:
             DOZER_LOGGER.warning("You are running an older version of the discord.py rewrite (with breaking changes)! "
                                  "To upgrade, run `pip install -r requirements.txt --upgrade`")
