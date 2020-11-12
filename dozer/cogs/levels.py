@@ -280,7 +280,7 @@ class Levels(Cog):
 
     configureranks.example_usage = """
     `{prefix}configureranks xprange 5 15`: Sets the xp range
-    `{prefix}configureranks setcooldown 5 15`: Sets the cooldown time
+    `{prefix}configureranks setcooldown 15`: Sets the cooldown time in seconds
     `{prefix}configureranks toggle`: Toggles levels
     `{prefix}configureranks notificationchannel channel`: Sets level up message channel
     `{prefix}configureranks setrolelevel role level`: Adds a level role
