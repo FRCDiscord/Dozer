@@ -117,7 +117,7 @@ class Levels(Cog):
                     await channel.send(f"{member.mention}, you have reached level {new_level}!")
 
     async def _load_member(self, guild_id, member_id):
-        """Check to see if a member is in the levle cache and if not load from the database"""
+        """Check to see if a member is in the level cache and if not load from the database"""
         cached_member = self._xp_cache.get((guild_id, member_id))
         if cached_member is None:
             DOZER_LOGGER.debug("Cache miss: guild_id=%d, user_id=%d", guild_id, member_id)
@@ -270,8 +270,8 @@ class Levels(Cog):
         DOZER_LOGGER.info(f"Successfully synced Mee6 data for guild {ctx.guild}({guild_id})")
 
     meesyncs.example_usage = """
-        `{prefix}meesyncs`: Sync ranking data from the mee6 API to dozer's database
-        """
+    `{prefix}meesyncs`: Sync ranking data from the mee6 API to dozer's database
+    """
 
     @command(aliases=["rolelevels", "levelroles"])
     @guild_only()
