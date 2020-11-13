@@ -450,7 +450,7 @@ class Levels(Cog):
                 guild_id=int(ctx.guild.id),
                 xp_min=int(xp_min) if xp_min else old_ent.xp_min,
                 xp_max=int(xp_max) if xp_max else old_ent.xp_max,
-                xp_cooldown=int(xp_cooldown) if xp_cooldown else old_ent.xp_cooldown,
+                xp_cooldown=int(xp_cooldown) if xp_cooldown or xp_cooldown == 0 else old_ent.xp_cooldown,
                 entropy_value=0,  # Is in table but is not used yet
                 lvl_up_msgs=int(lvl_up_msgs_id) if lvl_up_msgs_id else int(old_ent.lvl_up_msgs) if not no_lvl_up else -1,
                 enabled=not old_ent.enabled if toggle_enabled else old_ent.enabled
@@ -470,7 +470,7 @@ class Levels(Cog):
 
     @command(aliases=["rnak", "level"])
     @guild_only()
-    @discord.ext.commands.cooldown(rate=1, per=10, type=discord.ext.commands.BucketType.user)
+    @discord.ext.commands.cooldown(rate=1, per=5, type=discord.ext.commands.BucketType.user)
     async def rank(self, ctx, *, member: discord.Member = None):
         """Get a user's ranking on the XP leaderboard.
         If no member is passed, the caller's ranking is shown.
