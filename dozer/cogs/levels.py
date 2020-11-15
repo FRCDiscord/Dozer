@@ -238,9 +238,8 @@ class Levels(Cog):
         progress_template = "Currently syncing from Mee6 API please wait... Page: {page}"
         DOZER_LOGGER.info(f"Syncing Mee6 level data for {ctx.guild.member_count} members from guild {ctx.guild}({guild_id})")
 
-        results = await GuildXPSettings.get_by(guild_id=int(ctx.guild.id))
-        if len(results):
-            results[0].enabled = False
+        if self._guild_settings.get(guild_id):
+            self._guild_settings[guild_id].enabled = False
 
         await self.sync_to_database()  # We sync the database twice so that the entire cache gets flushed
         await self.sync_to_database()  # This is to prevent cache entries from overwriting the new synced data
@@ -448,9 +447,9 @@ class Levels(Cog):
 
             ent = GuildXPSettings(
                 guild_id=int(ctx.guild.id),
-                xp_min=int(xp_min) if xp_min else old_ent.xp_min,
-                xp_max=int(xp_max) if xp_max else old_ent.xp_max,
-                xp_cooldown=int(xp_cooldown) if xp_cooldown or xp_cooldown == 0 else old_ent.xp_cooldown,
+                xp_min=int(xp_min) if xp_min is not None else old_ent.xp_min,
+                xp_max=int(xp_max) if xp_max is not None else old_ent.xp_max,
+                xp_cooldown=int(xp_cooldown) if xp_cooldown is not None else old_ent.xp_cooldown,
                 entropy_value=0,  # Is in table but is not used yet
                 lvl_up_msgs=int(lvl_up_msgs_id) if lvl_up_msgs_id else int(old_ent.lvl_up_msgs) if not no_lvl_up else -1,
                 enabled=not old_ent.enabled if toggle_enabled else old_ent.enabled
