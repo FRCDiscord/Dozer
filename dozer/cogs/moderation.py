@@ -188,6 +188,7 @@ class Moderation(Cog):
         results = await Mute.get_by(guild_id=member.guild.id, member_id=member.id)
         if results:
             await Mute.delete(member_id=member.id, guild_id=member.guild.id)
+            await PunishmentTimerRecords.delete(target_id=member.id, guild_id=member.guild.id, type_of_punishment=Mute.type)
             await self.perm_override(member, send_messages=None, add_reactions=None, speak=None)
             return True
         else:
@@ -227,6 +228,7 @@ class Moderation(Cog):
         results = await Deafen.get_by(guild_id=member.guild.id, member_id=member.id)
         if results:
             await self.perm_override(member=member, read_messages=None)
+            await PunishmentTimerRecords.delete(target_id=member.id, guild_id=member.guild.id, type_of_punishment=Deafen.type)
             await Deafen.delete(member_id=member.id, guild_id=member.guild.id)
             truths = [True, results[0].self_inflicted]
             return truths
