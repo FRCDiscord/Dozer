@@ -17,7 +17,7 @@ from ._utils import *
 from .info import blurple
 from .. import db
 
-logger = logging.getLogger(__name__)
+DOZER_LOGGER = logging.getLogger(__name__)
 
 
 class Levels(Cog):
@@ -67,10 +67,10 @@ class Levels(Cog):
     async def preload_cache(self):
         """Load all guild settings from the database."""
         await self.bot.wait_until_ready()
-        logger.info("Preloading guild settings")
+        DOZER_LOGGER.info("Preloading guild settings")
         await self.update_server_settings_cache()
         await self.update_level_role_cache()
-        logger.info(f"Loaded settings for {len(self._guild_settings)} guilds; and {len(self._level_roles)} level roles")
+        DOZER_LOGGER.info(f"Loaded settings for {len(self._guild_settings)} guilds; and {len(self._level_roles)} level roles")
         # Load subset of member XP records here?
 
     async def update_server_settings_cache(self):
@@ -97,8 +97,13 @@ class Levels(Cog):
         if roles:
             for level_role in roles:
                 if self.level_for_total_xp(cached_member.total_xp) >= level_role.level:
-                    to_add.append(guild.get_role(level_role.role_id))
-            await member.add_roles(*to_add)
+                    add_role = guild.get_role(level_role.role_id)
+                    if add_role not in member.roles:
+                        to_add.append(add_role)
+            try:
+                await member.add_roles(*to_add, reason="Level Up")
+            except discord.Forbidden:
+                DOZER_LOGGER.debug(f"Unable to add roles to {member} in guild {guild} Reason: Forbidden")
 
     async def check_level_up(self, guild, member, old_xp, new_xp):
         """Check and see if a member has ranked up, and then send a message if enabled"""
@@ -112,16 +117,16 @@ class Levels(Cog):
                     await channel.send(f"{member.mention}, you have reached level {new_level}!")
 
     async def _load_member(self, guild_id, member_id):
-        """Check to see if a member is in the levle cache and if not load from the database"""
+        """Check to see if a member is in the level cache and if not load from the database"""
         cached_member = self._xp_cache.get((guild_id, member_id))
         if cached_member is None:
-            logger.debug("Cache miss: guild_id=%d, user_id=%d", guild_id, member_id)
+            DOZER_LOGGER.debug("Cache miss: guild_id=%d, user_id=%d", guild_id, member_id)
             records = await MemberXP.get_by(guild_id=guild_id, user_id=member_id)
             if records:
-                logger.debug("Loading from database")
+                DOZER_LOGGER.debug("Loading from database")
                 cached_member = MemberXPCache.from_record(records[0])
             else:
-                logger.debug("Creating from scratch")
+                DOZER_LOGGER.debug("Creating from scratch")
                 cached_member = MemberXPCache(0, datetime.now(tz=timezone.utc), 0, True)
             self._xp_cache[(guild_id, member_id)] = cached_member
         return cached_member
@@ -146,7 +151,7 @@ class Levels(Cog):
             cached_member.dirty = False
 
         if not to_write:
-            logger.debug("Sync task skipped, nothing to do")
+            DOZER_LOGGER.debug("Sync task skipped, nothing to do")
             return
         # Query written manually to insert all records at once
         async with db.Pool.acquire() as conn:
@@ -155,7 +160,7 @@ class Levels(Cog):
                                    f" SET total_xp = EXCLUDED.total_xp, total_messages = EXCLUDED.total_messages, last_given_at = "
                                    f"EXCLUDED.last_given_at",
                                    to_write)
-        logger.debug(f"Inserted/updated {len(to_write)} record(s); Evicted {evicted} records(s)")
+        DOZER_LOGGER.debug(f"Inserted/updated {len(to_write)} record(s); Evicted {evicted} records(s)")
 
     @loop(minutes=2.5)
     async def sync_task(self):
@@ -182,10 +187,10 @@ class Levels(Cog):
         try:
             exc = task.exception()
         except asyncio.CancelledError:
-            logger.warning("Task syncing records was cancelled prematurely, restarting")
+            DOZER_LOGGER.warning("Task syncing records was cancelled prematurely, restarting")
         else:
             # exc could be None if the task returns normally, but that would also be an error
-            logger.error("Task syncing records failed: %r", exc)
+            DOZER_LOGGER.error("Task syncing records failed: %r", exc)
         finally:
             self.sync_task.start()
 
@@ -225,12 +230,20 @@ class Levels(Cog):
     @command(aliases=["mee6sync"])
     @guild_only()  # Prevent command from being executed in a DM
     @discord.ext.commands.max_concurrency(1, wait=False)  # Only allows one instance of this command to run at a time globally
-    @discord.ext.commands.cooldown(rate=1, per=3600, type=discord.ext.commands.BucketType.guild)  # A cooldown of one hour per guild to prevent spam
+    @discord.ext.commands.cooldown(rate=1, per=900, type=discord.ext.commands.BucketType.guild)  # A cooldown of 15 minutes per guild to prevent spam
     @has_permissions(administrator=True)
     async def meesyncs(self, ctx):
         """Function to scrap ranking data from the mee6 api and save it to the database"""
         guild_id = ctx.guild.id
         progress_template = "Currently syncing from Mee6 API please wait... Page: {page}"
+        DOZER_LOGGER.info(f"Syncing Mee6 level data for {ctx.guild.member_count} members from guild {ctx.guild}({guild_id})")
+
+        if self._guild_settings.get(guild_id):
+            self._guild_settings[guild_id].enabled = False
+
+        await self.sync_to_database()  # We sync the database twice so that the entire cache gets flushed
+        await self.sync_to_database()  # This is to prevent cache entries from overwriting the new synced data
+
         msg = await ctx.send(progress_template.format(page="N/A"))
         for page in itertools.count():
             async with self.session.get(f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}") as response:
@@ -251,11 +264,13 @@ class Levels(Cog):
                     break
             await asyncio.sleep(1.25)  # Slow down api calls as to not anger cloudflare
 
-        await ctx.send("Done")
+        await self.update_server_settings_cache()  # We refresh the settings cache to return the settings back to previous values
+        await msg.edit(content="Levels data successfully synced from Mee6")
+        DOZER_LOGGER.info(f"Successfully synced Mee6 data for guild {ctx.guild}({guild_id})")
 
     meesyncs.example_usage = """
-        `{prefix}meesyncs`: Sync ranking data from the mee6 API to dozer's database
-        """
+    `{prefix}meesyncs`: Sync ranking data from the mee6 API to dozer's database
+    """
 
     @command(aliases=["rolelevels", "levelroles"])
     @guild_only()
@@ -265,7 +280,7 @@ class Levels(Cog):
         e = discord.Embed(title=f"Level roles for {ctx.guild}", color=blurple)
         if roles:
             e.description = f"This server has {len(roles)} level roles"
-            for level_role in roles:
+            for level_role in roles.__reversed__():
                 role = ctx.guild.get_role(level_role.role_id)
                 if_unavailable = f"Deleted role"
                 e.add_field(name=f"Level: {level_role.level}", value=rf"{role.mention if role else if_unavailable}", inline=False)
@@ -412,7 +427,7 @@ class Levels(Cog):
     `{prefix}removerolelevel level 2 `: Will remove role "level 2" from level roles
     """
 
-    async def _cfg_guild_setting(self, ctx, xp_min=None, xp_max=None, xp_cooldown=None, lvl_up_msgs_id=None, toggle_enabled=False, no_lvl_up=False):
+    async def _cfg_guild_setting(self, ctx, xp_min=None, xp_max=None, xp_cooldown=None, lvl_up_msgs_id=None, toggle_enabled=None, no_lvl_up=False):
         """Basic Database entry updater"""
         async with ctx.channel.typing():  # Send typing to show that the bot is thinking and not stalled
             results = await GuildXPSettings.get_by(guild_id=int(ctx.guild.id))
@@ -427,14 +442,14 @@ class Levels(Cog):
                     xp_cooldown=15,
                     entropy_value=0,  # Is in table but is not used yet
                     lvl_up_msgs=-1,
-                    enabled=True
+                    enabled=False
                 )
 
             ent = GuildXPSettings(
                 guild_id=int(ctx.guild.id),
-                xp_min=int(xp_min) if xp_min else old_ent.xp_min,
-                xp_max=int(xp_max) if xp_max else old_ent.xp_max,
-                xp_cooldown=int(xp_cooldown) if xp_cooldown else old_ent.xp_cooldown,
+                xp_min=int(xp_min) if xp_min is not None else old_ent.xp_min,
+                xp_max=int(xp_max) if xp_max is not None else old_ent.xp_max,
+                xp_cooldown=int(xp_cooldown) if xp_cooldown is not None else old_ent.xp_cooldown,
                 entropy_value=0,  # Is in table but is not used yet
                 lvl_up_msgs=int(lvl_up_msgs_id) if lvl_up_msgs_id else int(old_ent.lvl_up_msgs) if not no_lvl_up else -1,
                 enabled=not old_ent.enabled if toggle_enabled else old_ent.enabled
@@ -454,39 +469,44 @@ class Levels(Cog):
 
     @command(aliases=["rnak", "level"])
     @guild_only()
-    @discord.ext.commands.cooldown(rate=1, per=10, type=discord.ext.commands.BucketType.user)
+    @discord.ext.commands.cooldown(rate=1, per=5, type=discord.ext.commands.BucketType.user)
     async def rank(self, ctx, *, member: discord.Member = None):
         """Get a user's ranking on the XP leaderboard.
         If no member is passed, the caller's ranking is shown.
         """
         member = member or ctx.author
-
-        cache_record = await self._load_member(ctx.guild.id, member.id)
-
-        # Make Postgres compute the rank for us (need WITH-query so rank() sees records for every user)
-        db_record = await db.Pool.fetchrow(f"""
-            WITH ranked_xp AS (
-                SELECT user_id, rank() OVER (ORDER BY total_xp DESC) FROM {MemberXP.__tablename__}
-                WHERE guild_id = $1
-            ) SELECT rank FROM ranked_xp WHERE user_id = $2;
-        """, ctx.guild.id, member.id)
-
-        total_xp = cache_record.total_xp
-        db_count = await db.Pool.fetchval(f"""SELECT count(*) FROM {MemberXP.__tablename__} WHERE guild_id = $1; """, ctx.guild.id)
-        # Prevents 1/1 in servers of ~100 and 50/40 in shrunk servers
-        count = ctx.guild.member_count if ctx.guild.member_count > db_count else db_count
-        level = self.level_for_total_xp(total_xp)
-        level_floor = self.total_xp_for_level(level)
-        level_xp = self.total_xp_for_level(level + 1) - level_floor
-
-        if db_record:
-            rank = db_record.get("rank")
-        else:
-            rank = count
-
         embed = discord.Embed(color=member.color)
-        embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
-                             f"#{rank} of {count} in this server")
+
+        guild_settings = self._guild_settings.get(ctx.message.guild.id)
+
+        if guild_settings is None or not guild_settings.enabled:
+            embed.description = "Levels are not enabled in this server"
+        else:
+            cache_record = await self._load_member(ctx.guild.id, member.id)
+
+            # Make Postgres compute the rank for us (need WITH-query so rank() sees records for every user)
+            db_record = await db.Pool.fetchrow(f"""
+                WITH ranked_xp AS (
+                    SELECT user_id, rank() OVER (ORDER BY total_xp DESC) FROM {MemberXP.__tablename__}
+                    WHERE guild_id = $1
+                ) SELECT rank FROM ranked_xp WHERE user_id = $2;
+            """, ctx.guild.id, member.id)
+
+            total_xp = cache_record.total_xp
+            db_count = await db.Pool.fetchval(f"""SELECT count(*) FROM {MemberXP.__tablename__} WHERE guild_id = $1; """, ctx.guild.id)
+            # Prevents 1/1 in servers of ~100 and 50/40 in shrunk servers
+            count = ctx.guild.member_count if ctx.guild.member_count > db_count else db_count
+            level = self.level_for_total_xp(total_xp)
+            level_floor = self.total_xp_for_level(level)
+            level_xp = self.total_xp_for_level(level + 1) - level_floor
+
+            if db_record:
+                rank = db_record.get("rank")
+            else:
+                rank = count
+
+            embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
+                                 f"#{rank} of {count} in this server")
         embed.set_author(name=member.display_name, icon_url=member.avatar_url_as(format='png', size=64))
         await ctx.send(embed=embed)
 
