@@ -40,8 +40,6 @@ Instructions for installing are located [here](https://github.com/pyenv/pyenv-in
 2. `pyenv global 3.8.2` sets 3.8.2 as the primary version for the current user
 3. run `python -V` to ensure that version 3.8 or newer is installed. 
 
-If you are on macOS, there may be more steps to complete involving SSL certificates to connect to Discord correctly. Please see [this thread](https://github.com/Rapptz/discord.py/issues/423) for more info.
-
 Through the rest of this README, we will assume that you have found the correct `python` executable for your setup and are using it accordingly.
 
 ### Installing PostgreSQL
@@ -95,8 +93,6 @@ machine for development or production. You can install PostgreSQL for your platf
 
 ### Adding the bot to your server
 
-Note: This process will eventually be replaced by an `invite` command.
-
 1. To add the bot to your server, paste the following link into your browser.  Your client ID can be found on the applications page in the [Discord Developer Portal](https://discordapp.com/developers/applications/me)
 
    `https://discordapp.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot`
@@ -104,10 +100,3 @@ Note: This process will eventually be replaced by an `invite` command.
 2. Select the server that you would like to add the bot to.
 
 3. Try it out! `[prefix]help` to see what Dozer can do.
-
-### Setting up the database systems
-If you want just a database file with no replication, Dozer will work using SQLite without needing any extra work on your end.
-If you're interested in using a more advanced database system, we recommend postgres. You can set up postgres on your own server
-or use a service such as ElephantSQL. To make it work in Dozer, install the psycopg2 pip package, then change the `db_url` key
-in `config.json` to a URL that follows this format: `postgresql://username:password@host/db_name_in_postgres` with the correct
-information filled in.
