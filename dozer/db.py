@@ -112,7 +112,7 @@ class DatabaseTable:
 
     @classmethod
     async def delete(cls, **filters):
-        """Deletes by any number of criteria specified as column=value keyword arguments."""
+        """Deletes by any number of criteria specified as column=value keyword arguments. Returns the number of entries deleted"""
         async with Pool.acquire() as conn:
             if filters:
                 # This code relies on properties of dicts - see get_by
@@ -121,7 +121,7 @@ class DatabaseTable:
             else:
                 # Should this be a warning/error? It's almost certainly not intentional
                 statement = f"TRUNCATE {cls.__tablename__};"
-            await conn.execute(statement, *filters.values())
+            return await conn.execute(statement, *filters.values())
 
     @classmethod
     async def set_initial_version(cls):

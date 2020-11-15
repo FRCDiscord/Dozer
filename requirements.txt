@@ -8,3 +8,5 @@ geopy
 fuzzywuzzy
 python-Levenshtein
 python-dateutil
+aiohttp
+
