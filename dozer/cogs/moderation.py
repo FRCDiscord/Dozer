@@ -455,7 +455,7 @@ class Moderation(Cog):
         """Set a timeout (no sending messages or adding reactions) on the current channel."""
         settings = await MemberRole.get_by(guild_id=ctx.guild.id)
         if len(settings) == 0:
-            settings = MemberRole(guild_id=ctx.guild.id)
+            settings = MemberRole(guild_id=ctx.guild.id, member_role=MemberRole.nullify)
             await settings.update_or_add()
         else:
             settings = settings[0]
