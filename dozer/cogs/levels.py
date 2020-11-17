@@ -295,7 +295,7 @@ class Levels(Cog):
     `{prefix}checkrolelevels`: Returns an embed of all the role levels 
     """
 
-    @group(invoke_without_command=True, aliases=["configurelevels"])
+    @group(invoke_without_command=True, aliases=["configurelevels", "levelconfig", "rankconfig"])
     @guild_only()
     async def configureranks(self, ctx):
         """Configures dozer ranks:tm:"""
