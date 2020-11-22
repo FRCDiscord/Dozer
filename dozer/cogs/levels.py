@@ -111,7 +111,7 @@ class Levels(Cog):
         new_level = self.level_for_total_xp(new_xp)
         if new_level > old_level:
             settings = self._guild_settings[guild.id]
-            if settings.lvl_up_msgs != -1:
+            if settings.lvl_up_msgs:
                 channel = guild.get_channel(settings.lvl_up_msgs)
                 if channel:
                     await channel.send(f"{member.mention}, you have reached level {new_level}!")
@@ -441,7 +441,7 @@ class Levels(Cog):
                     xp_max=15,
                     xp_cooldown=15,
                     entropy_value=0,  # Is in table but is not used yet
-                    lvl_up_msgs=-1,
+                    lvl_up_msgs=GuildXPSettings.nullify,
                     enabled=False
                 )
 
@@ -451,7 +451,7 @@ class Levels(Cog):
                 xp_max=int(xp_max) if xp_max is not None else old_ent.xp_max,
                 xp_cooldown=int(xp_cooldown) if xp_cooldown is not None else old_ent.xp_cooldown,
                 entropy_value=0,  # Is in table but is not used yet
-                lvl_up_msgs=int(lvl_up_msgs_id) if lvl_up_msgs_id else int(old_ent.lvl_up_msgs) if not no_lvl_up else -1,
+                lvl_up_msgs=int(lvl_up_msgs_id) if lvl_up_msgs_id else old_ent.lvl_up_msgs if not no_lvl_up else GuildXPSettings.nullify,
                 enabled=not old_ent.enabled if toggle_enabled else old_ent.enabled
             )
             await ent.update_or_add()
@@ -660,7 +660,7 @@ class GuildXPSettings(db.DatabaseTable):
             xp_max int NOT NULL,
             xp_cooldown int NOT NULL,
             entropy_value int NOT NULL,
-            lvl_up_msgs bigint NOT NULL,
+            lvl_up_msgs bigint NULL,
             enabled boolean NOT NULL
             )""")
 
