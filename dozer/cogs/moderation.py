@@ -188,6 +188,7 @@ class Moderation(Cog):
         results = await Mute.get_by(guild_id=member.guild.id, member_id=member.id)
         if results:
             await Mute.delete(member_id=member.id, guild_id=member.guild.id)
+            await PunishmentTimerRecords.delete(target_id=member.id, guild_id=member.guild.id, type_of_punishment=Mute.type)
             await self.perm_override(member, send_messages=None, add_reactions=None, speak=None)
             return True
         else:
@@ -227,6 +228,7 @@ class Moderation(Cog):
         results = await Deafen.get_by(guild_id=member.guild.id, member_id=member.id)
         if results:
             await self.perm_override(member=member, read_messages=None)
+            await PunishmentTimerRecords.delete(target_id=member.id, guild_id=member.guild.id, type_of_punishment=Deafen.type)
             await Deafen.delete(member_id=member.id, guild_id=member.guild.id)
             truths = [True, results[0].self_inflicted]
             return truths
@@ -455,7 +457,7 @@ class Moderation(Cog):
         """Set a timeout (no sending messages or adding reactions) on the current channel."""
         settings = await MemberRole.get_by(guild_id=ctx.guild.id)
         if len(settings) == 0:
-            settings = MemberRole(guild_id=ctx.guild.id)
+            settings = MemberRole(guild_id=ctx.guild.id, member_role=MemberRole.nullify)
             await settings.update_or_add()
         else:
             settings = settings[0]
