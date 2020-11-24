@@ -1,9 +1,12 @@
 """Role management commands."""
+import asyncio
+import time
 
 import discord
 import discord.utils
 from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgument
 from ..db import *
+from .moderation import GuildMemberLog
 
 from ._utils import *
 from .. import db
@@ -22,6 +25,38 @@ class Roles(Cog):
                 """Before invoking a giveme command, run a purge"""
                 if await self.ctx_purge(ctx):
                     await ctx.send("Purged missing roles")
+
+    @staticmethod
+    def calculate_epoch_time(time_string):
+        """Calculates a unix timestamp based on a 1m style string"""
+        seconds_per_unit = {"m": 60, "h": 3600, "d": 86400, "w": 604800, "y": 3.154e+7}
+        time_delta = int(time_string[:-1]) * seconds_per_unit[time_string[-1]]
+        time_release = round(time.time() + time_delta)
+        return time_release
+
+    @Cog.listener('on_ready')
+    async def on_ready(self):
+        """Restore tempRole timers on bot startup"""
+        q = await TempRoleTimerRecords.get_by()  # no filters: all
+        for record in q:
+            self.bot.loop.create_task(self.removal_timer(record))
+
+    async def removal_timer(self, record):
+        """Asynchronous task that sleeps for a set time to remove a role from a member after a set period of time."""
+
+        guild = self.bot.get_guild(int(record.guild_id))
+        target = guild.get_member(int(record.target_id))
+        target_role = guild.get_role(int(record.target_role_id))
+        removal_time = record.removal_ts
+
+        # Max function is used to make sure the delay is not negative
+        time_delta = max(int(removal_time - time.time()), 1)
+
+        await asyncio.sleep(time_delta)
+
+        await target.remove_roles(target_role)
+
+        await TempRoleTimerRecords.delete(id=record.id)
 
     @Cog.listener('on_member_join')
     async def on_member_join(self, member):
@@ -56,15 +91,14 @@ class Roles(Cog):
         if cant_give:
             e.add_field(name='I couldn\'t restore these roles, as I don\'t have permission.',
                         value='\n'.join(sorted(cant_give)))
-
-        send_perms = discord.Permissions()
-        send_perms.update(send_messages=True, embed_links=True)
         try:
-            dest = next(channel for channel in member.guild.text_channels if channel.permissions_for(me) >= send_perms)
-        except StopIteration:
-            dest = await member.guild.owner.create_dm()
-
-        await dest.send(embed=e)
+            dest_id = await GuildMemberLog.get_by(guild_id=member.guild.id)
+            dest = member.guild.get_channel(dest_id[0].memberlog_channel)
+            await dest.send(embed=e)
+        except discord.Forbidden:
+            pass
+        except IndexError:
+            pass
 
     @Cog.listener('on_member_remove')
     async def on_member_remove(self, member):
@@ -107,7 +141,8 @@ class Roles(Cog):
     async def giveme(self, ctx, *, roles):
         """Give you one or more giveable roles, separated by commas."""
         norm_names = [self.normalize(name) for name in roles.split(',')]
-        giveable_ids = [tup.role_id for tup in await GiveableRole.get_by(guild_id=ctx.guild.id) if tup.norm_name in norm_names]
+        giveable_ids = [tup.role_id for tup in await GiveableRole.get_by(guild_id=ctx.guild.id) if
+                        tup.norm_name in norm_names]
         valid = set(role for role in ctx.guild.roles if role.id in giveable_ids)
 
         already_have = valid & set(ctx.author.roles)
@@ -310,6 +345,40 @@ class Roles(Cog):
     @command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
+    async def tempgive(self, ctx, member: discord.Member, length, *, role: discord.Role):
+        """Temporarily gives a member a role for a set time. Not restricted to giveable roles."""
+        if role > ctx.author.top_role:
+            raise BadArgument('Cannot give roles higher than your top role!')
+
+        if role > ctx.me.top_role:
+            raise BadArgument('Cannot give roles higher than my top role!')
+
+        remove_time = self.calculate_epoch_time(length)
+        if remove_time < time.time():
+            raise BadArgument('Cannot use negative role time')
+
+        ent = TempRoleTimerRecords(
+            guild_id=member.guild.id,
+            target_id=member.id,
+            target_role_id=role.id,
+            removal_ts=remove_time
+        )
+
+        await member.add_roles(role)
+        await ent.update_or_add()
+        self.bot.loop.create_task(self.removal_timer(ent))
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value='I gave {} to {}, for {}!'.format(role.mention, member.mention, length))
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
+
+    tempgive.example_usage = """
+        `{prefix}tempgive cooldude#1234 1h Java` - gives cooldude any role, giveable or not, named Java for one hour
+        """
+
+    @command()
+    @bot_has_permissions(manage_roles=True, embed_links=True)
+    @has_permissions(manage_roles=True)
     async def give(self, ctx, member: discord.Member, *, role: discord.Role):
         """Gives a member a role. Not restricted to giveable roles."""
         if role > ctx.author.top_role:
@@ -414,6 +483,47 @@ class MissingRole(db.DatabaseTable):
         for result in results:
             obj = MissingRole(guild_id=result.get("guild_id"), role_id=result.get("role_id"),
                               member_id=result.get("member_id"), role_name=result.get("role_name"))
+            result_list.append(obj)
+        return result_list
+
+
+class TempRoleTimerRecords(db.DatabaseTable):
+    """TempRole Timer Records"""
+
+    __tablename__ = 'temp_role_timers'
+    __uniques__ = 'id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            id serial PRIMARY KEY NOT NULL,
+            guild_id bigint NOT NULL,
+            target_id bigint NOT NULL,
+            target_role_id bigint NOT NULL,
+            removal_ts bigint NOT NULL
+            )""")
+
+    def __init__(self, guild_id, target_id, target_role_id, removal_ts, input_id=None):
+        super().__init__()
+        self.id = input_id
+        self.guild_id = guild_id
+        self.target_id = target_id
+        self.target_role_id = target_role_id
+        self.removal_ts = removal_ts
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = TempRoleTimerRecords(guild_id=result.get("guild_id"),
+                                       target_id=result.get("target_id"),
+                                       target_role_id=result.get("target_role_id"),
+                                       removal_ts=result.get("removal_ts"),
+                                       input_id=result.get('id'))
             result_list.append(obj)
         return result_list
 

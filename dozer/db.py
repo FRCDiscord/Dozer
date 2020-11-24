@@ -54,6 +54,10 @@ class DatabaseTable:
         """Migrate the table from the SQLalchemy based system to the asyncpg system. Define this yourself, or leave it
         blank if no migration is necessary."""
 
+    @staticmethod
+    def nullify():
+        """Function to be referenced when a table entry value needs to be set to null"""
+
     async def update_or_add(self):
         """Assign the attribute to this object, then call this method to either insert the object if it doesn't exist in
         the DB or update it if it does exist. It will update every column not specified in __uniques__."""
@@ -61,9 +65,13 @@ class DatabaseTable:
         values = []
         for var, value in self.__dict__.items():
             # Done so that the two are guaranteed to be in the same order, which isn't true of keys() and values()
-            if value is not None:
+            if value is self.nullify:
+                keys.append(var)
+                values.append(None)
+            elif value is not None:
                 keys.append(var)
                 values.append(value)
+
         updates = ""
         for key in keys:
             if key in self.__uniques__:
@@ -112,7 +120,7 @@ class DatabaseTable:
 
     @classmethod
     async def delete(cls, **filters):
-        """Deletes by any number of criteria specified as column=value keyword arguments."""
+        """Deletes by any number of criteria specified as column=value keyword arguments. Returns the number of entries deleted"""
         async with Pool.acquire() as conn:
             if filters:
                 # This code relies on properties of dicts - see get_by
@@ -121,7 +129,7 @@ class DatabaseTable:
             else:
                 # Should this be a warning/error? It's almost certainly not intentional
                 statement = f"TRUNCATE {cls.__tablename__};"
-            await conn.execute(statement, *filters.values())
+            return await conn.execute(statement, *filters.values())
 
     @classmethod
     async def set_initial_version(cls):

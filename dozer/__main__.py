@@ -4,6 +4,9 @@ import json
 import os
 import sys
 import asyncio
+
+import discord
+
 from .db import db_init, db_migrate
 
 from . import db
@@ -54,7 +57,11 @@ if sys.version_info < (3, 6):
 
 from . import Dozer  # After version check
 
-bot = Dozer(config)
+intents = discord.Intents.default()
+intents.members = True
+intents.presences = True
+
+bot = Dozer(config, intents=intents, max_messages=5000)
 
 for ext in os.listdir('dozer/cogs'):
     if not ext.startswith(('_', '.')):

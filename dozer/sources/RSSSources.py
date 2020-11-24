@@ -116,7 +116,8 @@ class RSSSource(Source):
             data['date'] = datetime.datetime.now()
 
         desc = clean_html(data['description'])
-        length = 1024 - len(self.read_more_str)
+        #length = 1024 - len(self.read_more_str)
+        length = 500
         if len(desc) >= length:
             data['description'] = desc[0:length] + self.read_more_str
         else:
@@ -196,7 +197,7 @@ class FTCBlogPosts(RSSSource):
     base_url = "http://firsttechchallenge.blogspot.com/"
     full_name = "FTC Blog Posts"
     short_name = "ftc"
-    description = "The official FTC Blogspot blog"
+    description = "Official blog posts from the FIRST Tech Challenge"
     color = discord.colour.Color.orange()
 
 
@@ -219,8 +220,6 @@ class JVNBlog(RSSSource):
     aliases = ['148', 'robowranglers']
     description = "Blog posts by John V Neun, 148 Head Engineer"
     color = discord.colour.Color(value=000000)
-    disabled = True
-    # For some reason, the XML parser hates this source. Investigate later.
 
 
 class SpectrumBlog(RSSSource):

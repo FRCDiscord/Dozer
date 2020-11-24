@@ -8,7 +8,7 @@ from discord.ext.commands import NotOwner
 
 from ._utils import *
 
-logger = logging.getLogger("dozer")
+DOZER_LOGGER = logging.getLogger("dozer")
 
 
 class Development(Cog):
@@ -49,11 +49,11 @@ class Development(Cog):
         else:
             code = code.strip('`').strip()  # Remove single-line code blocks, if necessary
 
-        logger.info(f"Evaluating code at request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
-        logger.info("-"*32)
+        DOZER_LOGGER.info(f"Evaluating code at request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
+        DOZER_LOGGER.info("-" * 32)
         for line in code.splitlines():
-            logger.info(line)
-        logger.info("-"*32)
+            DOZER_LOGGER.info(line)
+        DOZER_LOGGER.info("-" * 32)
 
         e = discord.Embed(type='rich')
         e.add_field(name='Code', value='```py\n%s\n```' % code, inline=False)
@@ -83,7 +83,13 @@ class Development(Cog):
         msg.author = user
         msg.content = command
         context = await self.bot.get_context(msg)
-        return await self.bot.invoke(context)
+        context.is_pseudo = True # adds new flag to bypass ratelimit
+        # let's also add a log of who ran pseudo
+        DOZER_LOGGER.info(f"Running pseudo on request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
+        DOZER_LOGGER.info("-" * 32)
+        DOZER_LOGGER.info(ctx.message.content)
+        DOZER_LOGGER.info("-" * 32)
+        await self.bot.invoke(context)
 
     pseudo.example_usage = """
     `{prefix}su cooldude#1234 {prefix}ping` - simulate cooldude sending `{prefix}ping`

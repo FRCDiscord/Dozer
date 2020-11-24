@@ -87,7 +87,11 @@ class News(Cog):
                 channel_dict[sub.data][channel] = sub.kind
 
             # We've gotten all of the channels we need to post to, lets get the posts and post them now
-            posts = await source.get_new_posts()
+            try:
+                posts = await source.get_new_posts()
+            except ElementTree.ParseError:
+                DOZER_LOGGER.error(f"XML Parser errored out on source f{source.full_name}")
+                continue
             if posts is None:
                 continue
 
@@ -107,17 +111,17 @@ class News(Cog):
                            f"{(next_run - datetime.datetime.now(datetime.timezone.utc)).total_seconds()}"
                            f" seconds.")
 
-    # Whenever version 1.4.0 of discord.py comes out, this can be uncommented. For now, use the get_exception commmand
-    # @get_new_posts.error()
-    # async def log_exception(self, exception):
-    #     DOZER_LOGGER.error(exception)
+    @get_new_posts.error
+    async def log_exception(self, _exception):
+        """Catch error in the news loop and attempt to restart"""
+        self.get_new_posts.start()
 
     @get_new_posts.before_loop
     async def startup(self):
         """Initialize sources and start the loop after initialization"""
         self.sources = {}
-        self.http_source = aiohttp.ClientSession(headers={'Connection': 'keep-alive'})
-        # Headers to work around JVN's blog... for some reason
+        self.http_source = aiohttp.ClientSession(headers={'Connection': 'keep-alive', 'User-Agent': 'Dozer RSS Feed Reader'})
+        # JVN's blog will 403 you if you use the default user agent, so replacing it with this will yield a parsable result.
         for source in self.enabled_sources:
             try:
                 self.sources[source.short_name] = source(aiohttp_session=self.http_source, bot=self.bot)
@@ -150,7 +154,7 @@ class News(Cog):
                               f"subreddit you can use the command `{ctx.prefix}news add #channel reddit "
                               f"embed frc`")
         embed.add_field(name="Removing Subscriptions",
-                        value=f"To remove a source, use `{ctx.prefix}news remove #channel `")
+                        value=f"To remove a source, like Chief Delphi, use `{ctx.prefix}news remove #channel cd`")
         embed.add_field(name="List all sources",
                         value=f"To see all sources, use `{ctx.prefix}news sources`")
         embed.add_field(name="List all subscriptions",
@@ -177,7 +181,7 @@ class News(Cog):
                               f"`{ctx.prefix}news add {source.short_name} {channel.mention} embed data`")
 
         if not channel.permissions_for(ctx.me).send_messages:
-            raise BadArgument(f"I don't have permission to post in f{channel.mention}.")
+            raise BadArgument(f"I don't have permission to post in {channel.mention}.")
 
         if channel.guild != ctx.guild:
             raise BadArgument(f"The channel {channel.mention} does not belong to this server.")
@@ -207,7 +211,7 @@ class News(Cog):
 
             data_exists = await NewsSubscription.get_by(source=source.short_name, data=str(data_obj))
             if not data_exists:
-                await source.add_data(data)
+                await source.add_data(data_obj)
         else:
             search_exists = await NewsSubscription.get_by(channel_id=channel.id, source=source.short_name)
 

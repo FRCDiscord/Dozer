@@ -1,13 +1,18 @@
 """Utilities for Dozer."""
 import asyncio
 import inspect
+import logging
 import typing
 from collections.abc import Mapping
 
 import discord
 from discord.ext import commands
 
-__all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk', 'dev_check']
+from dozer import db
+
+__all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk', 'dev_check', 'DynamicPrefixEntry']
+
+DOZER_LOGGER = logging.getLogger("dozer")
 
 
 class CommandMixin:
@@ -49,6 +54,7 @@ class Command(CommandMixin, commands.Command):
 
 class Group(CommandMixin, commands.Group):
     """Class for command groups"""
+
     def command(self, *args, **kwargs):
         """Initiates a command"""
         kwargs.setdefault('cls', Command)
@@ -74,6 +80,7 @@ def group(**kwargs):
 
 class Cog(commands.Cog):
     """Initiates cogs."""
+
     def __init__(self, bot):
         super().__init__()
         self.bot = bot
@@ -81,10 +88,12 @@ class Cog(commands.Cog):
 
 def dev_check():
     """Function decorator to check that the calling user is a developer"""
+
     async def predicate(ctx):
         if ctx.author.id not in ctx.bot.config['developers']:
             raise commands.NotOwner('you are not a developer!')
         return True
+
     return commands.check(predicate)
 
 
@@ -212,9 +221,9 @@ class Paginator(Reactor):
                 if ind == 0:
                     self.go_to_page(0)
                 elif ind == 1:
-                    self.prev() # pylint: disable=not-callable
+                    self.prev()  # pylint: disable=not-callable
                 elif ind == 2:
-                    self.next() # pylint: disable=not-callable
+                    self.next()  # pylint: disable=not-callable
                 elif ind == 3:
                     self.go_to_page(-1)
                 else:  # Only valid option left is 4
@@ -266,6 +275,7 @@ def chunk(iterable, size):
 
 def bot_has_permissions(**required):
     """Decorator to check if bot has certain permissions when added to a command"""
+
     def predicate(ctx):
         """Function to tell the bot if it has the right permissions"""
         given = ctx.channel.permissions_for((ctx.guild or ctx.channel).me)
@@ -289,4 +299,57 @@ def bot_has_permissions(**required):
             func.__required_permissions__ = discord.Permissions()
             func.__required_permissions__.update(**required)
         return func
+
     return decorator
+
+
+class PrefixHandler:
+    """Handles dynamic prefixes"""
+
+    def __init__(self, default_prefix):
+        self.default_prefix = default_prefix
+        self.prefix_cache = {}
+
+    def handler(self, bot, message):
+        """Process the dynamic prefix for each message"""
+        dynamic = self.prefix_cache.get(message.guild.id) if message.guild else self.default_prefix
+        # <@!> is a nickname mention which discord.py doesn't make by default
+        return [f"<@!{bot.user.id}> ", bot.user.mention, dynamic if dynamic else self.default_prefix]
+
+    async def refresh(self):
+        """Refreshes the prefix cache"""
+        prefixes = await DynamicPrefixEntry.get_by()  # no filters, get all
+        for prefix in prefixes:
+            self.prefix_cache[prefix.guild_id] = prefix.prefix
+        DOZER_LOGGER.info(f"{len(prefixes)} prefixes loaded from database")
+
+
+class DynamicPrefixEntry(db.DatabaseTable):
+    """Holds the custom prefixes for guilds"""
+    __tablename__ = 'dynamic_prefixes'
+    __uniques__ = 'guild_id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+                CREATE TABLE {cls.__tablename__} (
+                guild_id bigint NOT NULL,
+                prefix text NOT NULL,
+                PRIMARY KEY (guild_id)
+                )""")
+
+    def __init__(self, guild_id, prefix):
+        super().__init__()
+        self.guild_id = guild_id
+        self.prefix = prefix
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = DynamicPrefixEntry(guild_id=result.get("guild_id"), prefix=result.get("prefix"))
+            result_list.append(obj)
+        return result_list

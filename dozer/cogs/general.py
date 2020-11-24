@@ -1,10 +1,11 @@
 """General, basic commands that are common for Discord bots"""
-
+import asyncio
 import inspect
 import discord
-from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions
+from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions, NotOwner, guild_only
 
 from ._utils import *
+from .info import blurple
 from .. import db
 
 
@@ -103,8 +104,16 @@ class General(Cog):
         format_args['prefix'] = ctx.prefix
         footer = 'Dozer Help | {} | Page {}'.format(footer, '{page_num} of {len_pages}')
         # Page info is inserted as a parameter so page_num and len_pages aren't evaluated now
+
         if commands:
-            command_chunks = list(chunk(sorted(commands, key=lambda cmd: cmd.name), 4))
+            filtered_commands = []
+            for sort_command in commands:
+                try:
+                    sort_command.cog.cog_check(ctx)
+                    filtered_commands.append(sort_command)
+                except NotOwner:
+                    continue
+            command_chunks = list(chunk(sorted(filtered_commands, key=lambda cmd: cmd.name), 4))
             format_args['len_pages'] = len(command_chunks)
             pages = []
             for page_num, page_commands in enumerate(command_chunks):
@@ -214,6 +223,22 @@ class General(Cog):
     welcomeconfig.example_usage = """
     `{prefix}welcomeconfig #new-members` - Sets the invite channel to #new-members.
     """
+
+    @command(aliases=["setprefix"])
+    @guild_only()
+    @has_permissions(manage_guild=True)
+    async def configprefix(self, ctx, prefix: str):
+        """Update a servers dynamic prefix"""
+        new_prefix = DynamicPrefixEntry(
+            guild_id=int(ctx.guild.id),
+            prefix=prefix
+        )
+        await new_prefix.update_or_add()
+        await self.bot.dynamic_prefix.refresh()
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value=f"`{ctx.guild}`'s prefix has set to `{prefix}`!")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
 
 
 def setup(bot):
