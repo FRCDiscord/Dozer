@@ -1,10 +1,9 @@
 """Role management commands."""
 import asyncio
 import time
-
+import typing
 import discord
 import discord.utils
-import typing
 from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgument, guild_only
 from ..db import *
 
@@ -487,7 +486,6 @@ class Roles(Cog):
     @guild_only()
     async def rolemenu(self, ctx):
         """Base command for setting up reaction roles"""
-        pass
 
     rolemenu.example_usage = """
     `{prefix}rolemenu createmenu #roles Example role menu`: Creates an empty role menu embed

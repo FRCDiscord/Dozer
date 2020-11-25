@@ -282,7 +282,7 @@ class Levels(Cog):
             e.description = f"This server has {len(roles)} level roles"
             for level_role in roles.__reversed__():
                 role = ctx.guild.get_role(level_role.role_id)
-                if_unavailable = f"Deleted role"
+                if_unavailable = "Deleted role"
                 e.add_field(name=f"Level: {level_role.level}", value=rf"{role.mention if role else if_unavailable}", inline=False)
         else:
             e.description = "This server has no level roles assigned"
