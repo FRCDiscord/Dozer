@@ -518,6 +518,10 @@ class Roles(Cog):
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
+    createmenu.example_usage = """
+    `{prefix}rolemenu createmenu #roles Example role menu`: Creates an empty role menu embed
+    """
+
     @rolemenu.command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
@@ -562,6 +566,10 @@ class Roles(Cog):
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
+    addrole.example_usage = """
+    `{prefix}rolemenu addrole <message id> @robots 🤖:` adds the reaction role 'robots' to the target message or menu
+    """
+
     @rolemenu.command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
@@ -584,6 +592,10 @@ class Roles(Cog):
         e.add_field(name='Success!', value=f"I removed {role.mention} to message [{message_id}]({link})")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
+
+    delrole.example_usage = """
+    `{prefix}rolemenu delrole <message id> @robots:` removes the reaction role 'robots' from the target message
+    """
 
 
 class RoleMenu(db.DatabaseTable):
