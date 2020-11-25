@@ -34,6 +34,30 @@ class Roles(Cog):
         time_release = round(time.time() + time_delta)
         return time_release
 
+    @staticmethod
+    async def safe_message_fetch(ctx, menu=None, message_id=None):
+        """Used to safely get a message and raise an error message cannot be found"""
+        try:
+            if menu:
+                channel = ctx.guild.get_channel(menu.channel_id)
+                return await channel.fetch_message(menu.message_id)
+            else:
+                return await ctx.message.channel.fetch_message(message_id)
+        except discord.HTTPException:
+            raise BadArgument("That message does not exist or is not in this channel!")
+
+    @staticmethod
+    async def add_to_message(message, entry):
+        """Adds a reaction role to a message"""
+        await message.add_reaction(entry.reaction)
+        await entry.update_or_add()
+        return
+
+    @staticmethod
+    async def del_from_message(message, entry):
+        """Removes a reaction from a message"""
+        await message.clear_reaction(entry.reaction)
+
     @Cog.listener('on_ready')
     async def on_ready(self):
         """Restore tempRole timers on bot startup"""
@@ -443,37 +467,21 @@ class Roles(Cog):
     `{prefix}take cooldude#1234 Java` - takes any role named Java, giveable or not, from cooldude
     """
 
-    async def add_to_message(self, message, entry):
-        """Adds a reaction role to a message"""
-        await message.add_reaction(entry.reaction)
-        await entry.update_or_add()
-        return
+    async def update_role_menu(self, ctx, menu):
+        """Updates a reaction role menu"""
 
-    async def del_from_message(self, message, entry):
-        """Removes a reaction from a message"""
-        await message.clear_reaction(entry.reaction)
+        menu_message = await self.safe_message_fetch(ctx, menu=menu)
 
-    async def add_to_menu(self, guild, menu, entry):
-        """Adds a reaction role to a menu"""
-        channel = guild.get_channel(menu.channel_id)
-        menu_message = await channel.fetch_message(menu.message_id)
+        menu_embed = discord.Embed(title=f"Role Menu: {menu.name}", description="React to get a role")
+        menu_entries = await ReactionRole.get_by(message_id=menu.message_id)
 
-        old_reaction = await ReactionRole.get_by(message_id=menu.message_id, role_id=entry.role_id)
-        if len(old_reaction):
-            await self.del_from_message(menu_message, old_reaction[0])
-        await self.add_to_message(menu_message, entry)
+        for entry in menu_entries:
+            role = ctx.guild.get_role(entry.role_id)
+            menu_embed.add_field(name=f"Role: {role}", value=f"{entry.reaction}: {role.mention}", inline=False)
+        menu_embed.set_footer(text=f"Menu ID: {menu_message.id}, Total roles: {len(menu_entries)}")
+        await menu_message.edit(embed=menu_embed)
 
-        if menu:
-            menu_embed = discord.Embed(title=f"Role Menu: {menu.name}", description="React to get a role")
-            menu_entries = await ReactionRole.get_by(message_id=menu.message_id)
-
-            for entry in menu_entries:
-                role = guild.get_role(entry.role_id)
-                menu_embed.add_field(name=f"Role: {role}", value=f"{entry.reaction}: {role.mention}", inline=False)
-            menu_embed.set_footer(text=f"Menu ID: {menu_message.id}, Total roles: {len(menu_entries)}")
-            await menu_message.edit(embed=menu_embed)
-
-    @group(invoke_without_command=True, aliases=["reactionrole"])
+    @group(invoke_without_command=True, aliases=["reactionrole", "reactionroles"])
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
     @guild_only()
@@ -507,31 +515,52 @@ class Roles(Cog):
         if isinstance(emoji, discord.Emoji) and emoji.guild_id != ctx.guild.id:
             raise BadArgument(f"The emoji {emoji} is a custom emoji not from this server!")
 
+        if role > ctx.author.top_role:
+            raise BadArgument('Cannot give roles higher than your top role!')
+
+        if role > ctx.me.top_role:
+            raise BadArgument('Cannot give roles higher than my top role!')
+
+        if role == ctx.guild.default_role:
+            raise BadArgument("Cannot give @\N{ZERO WIDTH SPACE}everyone for a level")
+
+        if role.managed:
+            raise BadArgument("I am not allowed to assign that role!")
+
         reaction_role = ReactionRole(
             message_id=message_id,
             role_id=role.id,
             reaction=str(emoji)
         )
 
-        menu = await RoleMenu.get_by(message_id=message_id)
-        if not len(menu):
-            try:
-                message = await ctx.message.channel.fetch_message(message_id)
-            except discord.HTTPException:
-                raise BadArgument("That message is not in this channel!")
-            old_reaction = await ReactionRole.get_by(message_id=message_id, role_id=role.id)
-            if len(old_reaction):
-                await self.del_from_message(message, old_reaction[0])
-            await self.add_to_message(message, reaction_role)
-        else:
-            await self.add_to_menu(ctx.guild, menu[0], reaction_role)
+        menu_return = await RoleMenu.get_by(guild_id=ctx.guild.id, message_id=message_id)
+        menu = menu_return[0] if len(menu_return) else None
+        message = await self.safe_message_fetch(ctx, menu=menu, message_id=message_id)
+
+        old_reaction = await ReactionRole.get_by(message_id=message.id, role_id=role.id)
+        if len(old_reaction):
+            await self.del_from_message(message, old_reaction[0])
+        await self.add_to_message(message, reaction_role)
+
+        if menu:
+            await self.update_role_menu(ctx, menu)
 
     @rolemenu.command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
-    async def delrole(self, ctx, menu_id: int, role: discord.Role):
+    async def delrole(self, ctx, message_id: int, role: discord.Role):
         """Removes a reaction role from a message or a role menu"""
-        pass
+
+        menu_return = await RoleMenu.get_by(guild_id=ctx.guild.id, message_id=message_id)
+        menu = menu_return[0] if len(menu_return) else None
+        message = await self.safe_message_fetch(ctx, menu=menu, message_id=message_id)
+
+        reaction = await ReactionRole.get_by(message_id=message.id, role_id=role.id)
+        if len(reaction):
+            await self.del_from_message(message, reaction[0])
+            await ReactionRole.delete(message_id=message.id, role_id=role.id)
+        if menu:
+            await self.update_role_menu(ctx, menu)
 
 
 class RoleMenu(db.DatabaseTable):
