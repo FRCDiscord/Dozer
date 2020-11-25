@@ -486,7 +486,14 @@ class Roles(Cog):
     @has_permissions(manage_roles=True)
     @guild_only()
     async def rolemenu(self, ctx):
+        """Base command for setting up reaction roles"""
         pass
+
+    rolemenu.example_usage = """
+    `{prefix}rolemenu createmenu #roles Example role menu`: Creates an empty role menu embed
+    `{prefix}rolemenu addrole <message id> @robots 🤖:` adds the reaction role 'robots' to the target message 
+    `{prefix}rolemenu delrole <message id> @robots:` removes the reaction role 'robots' from the target message
+    """
 
     @rolemenu.command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
