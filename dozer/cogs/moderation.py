@@ -365,6 +365,8 @@ class Moderation(Cog):
         except KeyError:
             content = None
         author = payload.data.get("author")
+        if not author:
+            return
         guild_id = guild.id
         channel_id = payload.channel_id
         user_id = author['id']

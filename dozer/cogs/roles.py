@@ -472,13 +472,13 @@ class Roles(Cog):
 
         menu_message = await self.safe_message_fetch(ctx, menu=menu)
 
-        menu_embed = discord.Embed(title=f"Role Menu: {menu.name}", description="React to get a role")
+        menu_embed = discord.Embed(title=f"Role Menu: {menu.name}")
         menu_entries = await ReactionRole.get_by(message_id=menu.message_id)
 
         for entry in menu_entries:
             role = ctx.guild.get_role(entry.role_id)
             menu_embed.add_field(name=f"Role: {role}", value=f"{entry.reaction}: {role.mention}", inline=False)
-        menu_embed.set_footer(text=f"Menu ID: {menu_message.id}, Total roles: {len(menu_entries)}")
+        menu_embed.set_footer(text=f"React to get a role\nMenu ID: {menu_message.id}, Total roles: {len(menu_entries)}")
         await menu_message.edit(embed=menu_embed)
 
     @group(invoke_without_command=True, aliases=["reactionrole", "reactionroles"])
@@ -506,6 +506,12 @@ class Roles(Cog):
 
         menu_embed.set_footer(text=f"Menu ID: {message.id}, Total roles: {0}")
         await message.edit(embed=menu_embed)
+
+        e = discord.Embed(color=blurple)
+        link = f"https://discordapp.com/channels/{ctx.guild.id}/{message.channel.id}/{message.id}"
+        e.add_field(name='Success!', value=f"I added created role menu [\"{name}\"]({link}) in channel {channel.mention}")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
 
     @rolemenu.command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
@@ -545,6 +551,12 @@ class Roles(Cog):
         if menu:
             await self.update_role_menu(ctx, menu)
 
+        e = discord.Embed(color=blurple)
+        link = f"https://discordapp.com/channels/{ctx.guild.id}/{message.channel.id}/{message_id}"
+        e.add_field(name='Success!', value=f"I added {role.mention} to message [{message_id}]({link}) with reaction {emoji}")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
+
     @rolemenu.command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
@@ -561,6 +573,12 @@ class Roles(Cog):
             await ReactionRole.delete(message_id=message.id, role_id=role.id)
         if menu:
             await self.update_role_menu(ctx, menu)
+
+        e = discord.Embed(color=blurple)
+        link = f"https://discordapp.com/channels/{ctx.guild.id}/{ctx.channel.id}/{message_id}"
+        e.add_field(name='Success!', value=f"I removed {role.mention} to message [{message_id}]({link})")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
 
 
 class RoleMenu(db.DatabaseTable):
