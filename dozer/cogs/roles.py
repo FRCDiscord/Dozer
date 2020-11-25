@@ -4,7 +4,8 @@ import time
 
 import discord
 import discord.utils
-from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgument
+import typing
+from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgument, guild_only
 from ..db import *
 
 from ._utils import *
@@ -39,6 +40,38 @@ class Roles(Cog):
         q = await TempRoleTimerRecords.get_by()  # no filters: all
         for record in q:
             self.bot.loop.create_task(self.removal_timer(record))
+
+    @Cog.listener()
+    async def on_raw_message_delete(self, payload):
+        """Used to remove dead reaction role entries"""
+        message_id = payload.message_id
+        await ReactionRole.delete(message_id=message_id)
+        await RoleMenu.delete(message_id=message_id)
+
+    @Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        """Raw API event for reaction add, passes event to action handler"""
+        await self.on_raw_reaction_action(payload)
+
+    @Cog.listener()
+    async def on_raw_reaction_remove(self, payload):
+        """Raw API event for reaction remove, passes event to action handler"""
+        await self.on_raw_reaction_action(payload)
+
+    async def on_raw_reaction_action(self, payload):
+        """Called whenever a reaction is added or removed"""
+        message_id = payload.message_id
+        reaction = str(payload.emoji)
+        reaction_roles = await ReactionRole.get_by(message_id=message_id, reaction=reaction)
+        if len(reaction_roles):
+            guild = self.bot.get_guild(payload.guild_id)
+            member = guild.get_member(payload.user_id)
+            role = guild.get_role(reaction_roles[0].role_id)
+            if role:
+                if payload.event_type == "REACTION_ADD":
+                    await member.add_roles(role, reason="Automatic Reaction Role")
+                elif payload.event_type == "REACTION_REMOVE":
+                    await member.remove_roles(role, reason="Automatic Reaction Role")
 
     async def removal_timer(self, record):
         """Asynchronous task that sleeps for a set time to remove a role from a member after a set period of time."""
@@ -409,6 +442,166 @@ class Roles(Cog):
     take.example_usage = """
     `{prefix}take cooldude#1234 Java` - takes any role named Java, giveable or not, from cooldude
     """
+
+    async def add_to_message(self, message, entry):
+        """Adds a reaction role to a message"""
+        await message.add_reaction(entry.reaction)
+        await entry.update_or_add()
+        return
+
+    async def del_from_message(self, message, entry):
+        """Removes a reaction from a message"""
+        await message.clear_reaction(entry.reaction)
+
+    async def add_to_menu(self, guild, menu, entry):
+        """Adds a reaction role to a menu"""
+        channel = guild.get_channel(menu.channel_id)
+        menu_message = await channel.fetch_message(menu.message_id)
+
+        old_reaction = await ReactionRole.get_by(message_id=menu.message_id, role_id=entry.role_id)
+        if len(old_reaction):
+            await self.del_from_message(menu_message, old_reaction[0])
+        await self.add_to_message(menu_message, entry)
+
+        if menu:
+            menu_embed = discord.Embed(title=f"Role Menu: {menu.name}", description="React to get a role")
+            menu_entries = await ReactionRole.get_by(message_id=menu.message_id)
+
+            for entry in menu_entries:
+                role = guild.get_role(entry.role_id)
+                menu_embed.add_field(name=f"Role: {role}", value=f"{entry.reaction}: {role.mention}", inline=False)
+            menu_embed.set_footer(text=f"Menu ID: {menu_message.id}, Total roles: {len(menu_entries)}")
+            await menu_message.edit(embed=menu_embed)
+
+    @group(invoke_without_command=True, aliases=["reactionrole"])
+    @bot_has_permissions(manage_roles=True, embed_links=True)
+    @has_permissions(manage_roles=True)
+    @guild_only()
+    async def rolemenu(self, ctx):
+        pass
+
+    @rolemenu.command()
+    @bot_has_permissions(manage_roles=True, embed_links=True)
+    @has_permissions(manage_roles=True)
+    async def createmenu(self, ctx, channel: discord.TextChannel, *, name):
+        """Creates a blank reaction role menu"""
+        menu_embed = discord.Embed(title=f"Role Menu: {name}", description="React to get a role")
+        message = await channel.send(embed=menu_embed)
+
+        e = RoleMenu(
+            guild_id=ctx.guild.id,
+            channel_id=channel.id,
+            message_id=message.id,
+            name=name
+        )
+        await e.update_or_add()
+
+        menu_embed.set_footer(text=f"Menu ID: {message.id}, Total roles: {0}")
+        await message.edit(embed=menu_embed)
+
+    @rolemenu.command()
+    @bot_has_permissions(manage_roles=True, embed_links=True)
+    @has_permissions(manage_roles=True)
+    async def addrole(self, ctx, message_id: int, role: discord.Role, emoji: typing.Union[discord.Emoji, str]):
+        """Adds a reaction role to a message or a role menu"""
+        if isinstance(emoji, discord.Emoji) and emoji.guild_id != ctx.guild.id:
+            raise BadArgument(f"The emoji {emoji} is a custom emoji not from this server!")
+
+        reaction_role = ReactionRole(
+            message_id=message_id,
+            role_id=role.id,
+            reaction=str(emoji)
+        )
+
+        menu = await RoleMenu.get_by(message_id=message_id)
+        if not len(menu):
+            try:
+                message = await ctx.message.channel.fetch_message(message_id)
+            except discord.HTTPException:
+                raise BadArgument("That message is not in this channel!")
+            old_reaction = await ReactionRole.get_by(message_id=message_id, role_id=role.id)
+            if len(old_reaction):
+                await self.del_from_message(message, old_reaction[0])
+            await self.add_to_message(message, reaction_role)
+        else:
+            await self.add_to_menu(ctx.guild, menu[0], reaction_role)
+
+    @rolemenu.command()
+    @bot_has_permissions(manage_roles=True, embed_links=True)
+    @has_permissions(manage_roles=True)
+    async def delrole(self, ctx, menu_id: int, role: discord.Role):
+        """Removes a reaction role from a message or a role menu"""
+        pass
+
+
+class RoleMenu(db.DatabaseTable):
+    """Contains a role menu, used for editing and initial create"""
+    __tablename__ = 'role_menus'
+    __uniques__ = 'message_id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            guild_id bigint NOT NULL,
+            channel_id bigint NOT NULL,
+            message_id bigint NOT NULL,
+            name text NOT NULL,
+            PRIMARY KEY (message_id)
+            )""")
+
+    def __init__(self, guild_id, channel_id, message_id, name):
+        super().__init__()
+        self.guild_id = guild_id
+        self.channel_id = channel_id
+        self.message_id = message_id
+        self.name = name
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = RoleMenu(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
+                           message_id=result.get("message_id"), name=result.get("name"))
+            result_list.append(obj)
+        return result_list
+
+
+class ReactionRole(db.DatabaseTable):
+    """Contains a role menu entry"""
+    __tablename__ = 'reaction_roles'
+    __uniques__ = 'message_id, role_id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            message_id bigint NOT NULL,
+            role_id bigint NOT NULL,
+            reaction varchar NOT NULL,
+            PRIMARY KEY (message_id, role_id)
+            )""")
+
+    def __init__(self, message_id, role_id, reaction):
+        super().__init__()
+        self.message_id = message_id
+        self.role_id = role_id
+        self.reaction = reaction
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = ReactionRole(message_id=result.get("message_id"), role_id=result.get("role_id"),
+                               reaction=result.get("reaction"))
+            result_list.append(obj)
+        return result_list
 
 
 class GiveableRole(db.DatabaseTable):
