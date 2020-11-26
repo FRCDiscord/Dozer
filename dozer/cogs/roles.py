@@ -489,19 +489,17 @@ class Roles(Cog):
     async def rolemenu(self, ctx):
         """Base command for setting up and tracking reaction roles"""
         rolemenus = await RoleMenu.get_by(guild_id=ctx.guild.id)
-        embed = discord.Embed(title="Reaction Role Messages", description=f"Dozer is tracking ({len(rolemenus)}) reaction role message(s) in"
-                                                                          f" **{ctx.guild}**", color=blurple)
-        boundroles = "("
+        embed = discord.Embed(title="Reaction Role Messages", color=blurple)
+        boundroles = []
         for rolemenu in rolemenus:
             menu_entries = await ReactionRole.get_by(message_id=rolemenu.message_id)
             for role in menu_entries:
-                boundroles = f"{boundroles}{role.message_id},"
+                boundroles.append(role.message_id)
             link = f"https://discordapp.com/channels/{rolemenu.guild_id}/{rolemenu.channel_id}/{rolemenu.message_id}"
             embed.add_field(name=f"Menu: {rolemenu.name}", value=f"[Contains {len(menu_entries)} role watchers]({link})", inline=False)
-        boundroles = f"{boundroles[:-1]})"
-        unbound_reactions = await db.Pool.fetch(f"""SELECT * FROM {ReactionRole.__tablename__} WHERE message_id not in {boundroles} """
-                                                f"""and guild_id = {ctx.guild.id}""")
-        combined_unbound = {}
+        unbound_reactions = await db.Pool.fetch(f"""SELECT * FROM {ReactionRole.__tablename__} WHERE message_id != all($1)"""
+                                                f""" and guild_id = $2;""", boundroles, ctx.guild.id)
+        combined_unbound = {}  # The following code is too group individual reaction role entries into the messages they are associated with
         if unbound_reactions:
             for unbound in unbound_reactions:
                 guild_id = unbound.get("guild_id")
@@ -518,6 +516,7 @@ class Roles(Cog):
             total = "total"
             link = f"https://discordapp.com/channels/{combined[gid]}/{combined[cid]}/{combined[mid]}"
             embed.add_field(name=f"Custom Message: {combined[mid]}", value=f"[Contains {combined[total]} role watchers]({link})", inline=False)
+        embed.description = f"Dozer is tracking ({len(rolemenus) + len(combined_unbound)}) reaction role message(s) in **{ctx.guild}**"
         await ctx.send(embed=embed)
 
     rolemenu.example_usage = """
@@ -600,7 +599,8 @@ class Roles(Cog):
 
         e = discord.Embed(color=blurple)
         link = f"https://discordapp.com/channels/{ctx.guild.id}/{message.channel.id}/{message_id}"
-        e.add_field(name='Success!', value=f"I added {role.mention} to message [{message_id}]({link}) with reaction {emoji}")
+        shortcut = f"[{menu.name}]({link})" if menu else f"[{message_id}]({link})"
+        e.add_field(name='Success!', value=f"I added {role.mention} to message \"{shortcut}\" with reaction {emoji}")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
@@ -625,13 +625,14 @@ class Roles(Cog):
         reaction = await ReactionRole.get_by(message_id=message.id, role_id=role.id)
         if len(reaction):
             await self.del_from_message(message, reaction[0])
-            await ReactionRole.delete(message_id=message.id, channel=channel, role_id=role.id)
+            await ReactionRole.delete(message_id=message.id, role_id=role.id)
         if menu:
             await self.update_role_menu(ctx, menu)
 
         e = discord.Embed(color=blurple)
         link = f"https://discordapp.com/channels/{ctx.guild.id}/{ctx.channel.id}/{message_id}"
-        e.add_field(name='Success!', value=f"I removed {role.mention} to message [{message_id}]({link})")
+        shortcut = f"[{menu.name}]({link})" if menu else f"[{message_id}]({link})"
+        e.add_field(name='Success!', value=f"I removed {role.mention} to message {shortcut}")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
