@@ -6,6 +6,7 @@ import discord
 import discord.utils
 from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgument, guild_only
 from ..db import *
+from .moderation import GuildMemberLog
 
 from ._utils import *
 from .. import db
@@ -149,15 +150,14 @@ class Roles(Cog):
         if cant_give:
             e.add_field(name='I couldn\'t restore these roles, as I don\'t have permission.',
                         value='\n'.join(sorted(cant_give)))
-
-        send_perms = discord.Permissions()
-        send_perms.update(send_messages=True, embed_links=True)
         try:
-            dest = next(channel for channel in member.guild.text_channels if channel.permissions_for(me) >= send_perms)
-        except StopIteration:
-            dest = await member.guild.owner.create_dm()
-
-        await dest.send(embed=e)
+            dest_id = await GuildMemberLog.get_by(guild_id=member.guild.id)
+            dest = member.guild.get_channel(dest_id[0].memberlog_channel)
+            await dest.send(embed=e)
+        except discord.Forbidden:
+            pass
+        except IndexError:
+            pass
 
     @Cog.listener('on_member_remove')
     async def on_member_remove(self, member):
