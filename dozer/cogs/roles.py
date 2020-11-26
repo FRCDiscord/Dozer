@@ -625,7 +625,7 @@ class Roles(Cog):
 
         menu_return = await RoleMenu.get_by(guild_id=ctx.guild.id, message_id=message_id)
         menu = menu_return[0] if len(menu_return) else None
-        message = await self.safe_message_fetch(ctx, menu=menu, message_id=message_id)
+        message = await self.safe_message_fetch(ctx, menu=menu, channel=channel, message_id=message_id)
 
         reaction = await ReactionRole.get_by(message_id=message.id, role_id=role.id)
         if len(reaction):
