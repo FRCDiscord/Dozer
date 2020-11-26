@@ -5,6 +5,8 @@ import typing
 import discord
 import discord.utils
 from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgument, guild_only
+
+from ..bot import DOZER_LOGGER
 from ..db import *
 from .moderation import GuildMemberLog
 
@@ -95,10 +97,13 @@ class Roles(Cog):
             member = guild.get_member(payload.user_id)
             role = guild.get_role(reaction_roles[0].role_id)
             if role:
-                if payload.event_type == "REACTION_ADD":
-                    await member.add_roles(role, reason="Automatic Reaction Role")
-                elif payload.event_type == "REACTION_REMOVE":
-                    await member.remove_roles(role, reason="Automatic Reaction Role")
+                try:
+                    if payload.event_type == "REACTION_ADD":
+                        await member.add_roles(role, reason="Automatic Reaction Role")
+                    elif payload.event_type == "REACTION_REMOVE":
+                        await member.remove_roles(role, reason="Automatic Reaction Role")
+                except discord.Forbidden:
+                    DOZER_LOGGER.debug(f"Unable to add reaction role in guild {guild} due to missing permissions")
 
     async def removal_timer(self, record):
         """Asynchronous task that sleeps for a set time to remove a role from a member after a set period of time."""
