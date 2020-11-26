@@ -34,14 +34,17 @@ class Roles(Cog):
         return time_release
 
     @staticmethod
-    async def safe_message_fetch(ctx, menu=None, message_id=None):
+    async def safe_message_fetch(ctx, menu=None, channel=None, message_id=None):
         """Used to safely get a message and raise an error message cannot be found"""
         try:
             if menu:
                 channel = ctx.guild.get_channel(menu.channel_id)
                 return await channel.fetch_message(menu.message_id)
             else:
-                return await ctx.message.channel.fetch_message(message_id)
+                if channel:
+                    return await channel.fetch_message(message_id)
+                else:
+                    return await ctx.message.channel.fetch_message(message_id)
         except discord.HTTPException:
             raise BadArgument("That message does not exist or is not in this channel!")
 
@@ -485,7 +488,16 @@ class Roles(Cog):
     @has_permissions(manage_roles=True)
     @guild_only()
     async def rolemenu(self, ctx):
-        """Base command for setting up reaction roles"""
+        """Base command for setting up and tracking reaction roles"""
+        rolemenus = await RoleMenu.get_by(guild_id=ctx.guild.id)
+        embed = discord.Embed(title="Reaction Role Messages", description=f"Dozer is tracking ({len(rolemenus)}) reaction role message(s) in"
+                                                                          f" **{ctx.guild}**", color=blurple)
+        for rolemenu in rolemenus:
+            menu_entries = await ReactionRole.get_by(message_id=rolemenu.message_id)
+            link = f"https://discordapp.com/channels/{rolemenu.guild_id}/{rolemenu.channel_id}/{rolemenu.message_id}"
+            embed.add_field(name=f"Menu: {rolemenu.name}", value=f"[Contains {len(menu_entries)} role watchers]({link})", inline=False)
+
+        await ctx.send(embed=embed)
 
     rolemenu.example_usage = """
     `{prefix}rolemenu createmenu #roles Example role menu`: Creates an empty role menu embed
@@ -522,10 +534,11 @@ class Roles(Cog):
     `{prefix}rolemenu createmenu #roles Example role menu`: Creates an empty role menu embed
     """
 
-    @rolemenu.command()
+    @rolemenu.command(aliases=["add"])
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
-    async def addrole(self, ctx, message_id: int, role: discord.Role, emoji: typing.Union[discord.Emoji, str]):
+    async def addrole(self, ctx, channel: typing.Optional[discord.TextChannel], message_id: int, role: discord.Role,
+                      emoji: typing.Union[discord.Emoji, str]):
         """Adds a reaction role to a message or a role menu"""
         if isinstance(emoji, discord.Emoji) and emoji.guild_id != ctx.guild.id:
             raise BadArgument(f"The emoji {emoji} is a custom emoji not from this server!")
@@ -550,7 +563,7 @@ class Roles(Cog):
 
         menu_return = await RoleMenu.get_by(guild_id=ctx.guild.id, message_id=message_id)
         menu = menu_return[0] if len(menu_return) else None
-        message = await self.safe_message_fetch(ctx, menu=menu, message_id=message_id)
+        message = await self.safe_message_fetch(ctx, menu=menu, channel=channel, message_id=message_id)
 
         old_reaction = await ReactionRole.get_by(message_id=message.id, role_id=role.id)
         if len(old_reaction):
@@ -567,13 +580,16 @@ class Roles(Cog):
         await ctx.send(embed=e)
 
     addrole.example_usage = """
-    `{prefix}rolemenu addrole <message id> @robots 🤖:` adds the reaction role 'robots' to the target message or menu
+    -----To target a role menu use this format-----
+    `{prefix}rolemenu addrole <message id> @robots 🤖`
+   -----To target a custom message use this format-----
+    `{prefix}rolemenu addrole <channel> <message id> @robots 🤖`
     """
 
     @rolemenu.command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
-    async def delrole(self, ctx, message_id: int, role: discord.Role):
+    async def delrole(self, ctx, channel: typing.Optional[discord.TextChannel], message_id: int, role: discord.Role):
         """Removes a reaction role from a message or a role menu"""
 
         menu_return = await RoleMenu.get_by(guild_id=ctx.guild.id, message_id=message_id)
@@ -583,7 +599,7 @@ class Roles(Cog):
         reaction = await ReactionRole.get_by(message_id=message.id, role_id=role.id)
         if len(reaction):
             await self.del_from_message(message, reaction[0])
-            await ReactionRole.delete(message_id=message.id, role_id=role.id)
+            await ReactionRole.delete(message_id=message.id, channel=channel, role_id=role.id)
         if menu:
             await self.update_role_menu(ctx, menu)
 
@@ -594,7 +610,10 @@ class Roles(Cog):
         await ctx.send(embed=e)
 
     delrole.example_usage = """
-    `{prefix}rolemenu delrole <message id> @robots:` removes the reaction role 'robots' from the target message
+    -----To target a role menu use this format-----
+    `{prefix}rolemenu delrole <message id> @robots`
+    -----To target a custom message use this format-----
+    `{prefix}rolemenu delrole <channel> <message id> @robots`
     """
 
 
@@ -645,6 +664,7 @@ class ReactionRole(db.DatabaseTable):
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
+            guild_id bigint NOT NUll,
             message_id bigint NOT NULL,
             role_id bigint NOT NULL,
             reaction varchar NOT NULL,
