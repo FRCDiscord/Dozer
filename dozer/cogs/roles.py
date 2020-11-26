@@ -471,7 +471,6 @@ class Roles(Cog):
 
     async def update_role_menu(self, ctx, menu):
         """Updates a reaction role menu"""
-
         menu_message = await self.safe_message_fetch(ctx, menu=menu)
 
         menu_embed = discord.Embed(title=f"Role Menu: {menu.name}")
@@ -492,11 +491,33 @@ class Roles(Cog):
         rolemenus = await RoleMenu.get_by(guild_id=ctx.guild.id)
         embed = discord.Embed(title="Reaction Role Messages", description=f"Dozer is tracking ({len(rolemenus)}) reaction role message(s) in"
                                                                           f" **{ctx.guild}**", color=blurple)
+        boundroles = "("
         for rolemenu in rolemenus:
             menu_entries = await ReactionRole.get_by(message_id=rolemenu.message_id)
+            for role in menu_entries:
+                boundroles = f"{boundroles}{role.message_id},"
             link = f"https://discordapp.com/channels/{rolemenu.guild_id}/{rolemenu.channel_id}/{rolemenu.message_id}"
             embed.add_field(name=f"Menu: {rolemenu.name}", value=f"[Contains {len(menu_entries)} role watchers]({link})", inline=False)
-
+        boundroles = f"{boundroles[:-1]})"
+        unbound_reactions = await db.Pool.fetch(f"""SELECT * FROM {ReactionRole.__tablename__} WHERE message_id not in {boundroles} """
+                                                f"""and guild_id = {ctx.guild.id}""")
+        combined_unbound = {}
+        if unbound_reactions:
+            for unbound in unbound_reactions:
+                guild_id = unbound.get("guild_id")
+                channel_id = unbound.get("channel_id")
+                message_id = unbound.get("message_id")
+                if combined_unbound.get(message_id):
+                    combined_unbound[message_id]["total"] += 1
+                else:
+                    combined_unbound[message_id] = {"guild_id": guild_id, "channel_id": channel_id, "message_id": message_id, "total": 1}
+        for combined in combined_unbound.values():
+            gid = "guild_id"  # I had to make individual variables for these because you cannot use quotes in an f string
+            cid = "channel_id"
+            mid = "message_id"
+            total = "total"
+            link = f"https://discordapp.com/channels/{combined[gid]}/{combined[cid]}/{combined[mid]}"
+            embed.add_field(name=f"Custom Message: {combined[mid]}", value=f"[Contains {combined[total]} role watchers]({link})", inline=False)
         await ctx.send(embed=embed)
 
     rolemenu.example_usage = """
@@ -508,6 +529,7 @@ class Roles(Cog):
     @rolemenu.command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
+    @guild_only()
     async def createmenu(self, ctx, channel: discord.TextChannel, *, name):
         """Creates a blank reaction role menu"""
         menu_embed = discord.Embed(title=f"Role Menu: {name}", description="React to get a role")
@@ -537,6 +559,7 @@ class Roles(Cog):
     @rolemenu.command(aliases=["add"])
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
+    @guild_only()
     async def addrole(self, ctx, channel: typing.Optional[discord.TextChannel], message_id: int, role: discord.Role,
                       emoji: typing.Union[discord.Emoji, str]):
         """Adds a reaction role to a message or a role menu"""
@@ -555,15 +578,17 @@ class Roles(Cog):
         if role.managed:
             raise BadArgument("I am not allowed to assign that role!")
 
-        reaction_role = ReactionRole(
-            message_id=message_id,
-            role_id=role.id,
-            reaction=str(emoji)
-        )
-
         menu_return = await RoleMenu.get_by(guild_id=ctx.guild.id, message_id=message_id)
         menu = menu_return[0] if len(menu_return) else None
         message = await self.safe_message_fetch(ctx, menu=menu, channel=channel, message_id=message_id)
+
+        reaction_role = ReactionRole(
+            guild_id=ctx.guild.id,
+            channel_id=message.channel.id,
+            message_id=message.id,
+            role_id=role.id,
+            reaction=str(emoji)
+        )
 
         old_reaction = await ReactionRole.get_by(message_id=message.id, role_id=role.id)
         if len(old_reaction):
@@ -589,6 +614,7 @@ class Roles(Cog):
     @rolemenu.command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
+    @guild_only()
     async def delrole(self, ctx, channel: typing.Optional[discord.TextChannel], message_id: int, role: discord.Role):
         """Removes a reaction role from a message or a role menu"""
 
@@ -665,14 +691,17 @@ class ReactionRole(db.DatabaseTable):
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
             guild_id bigint NOT NUll,
+            channel_id bigint NOT NULL,
             message_id bigint NOT NULL,
             role_id bigint NOT NULL,
             reaction varchar NOT NULL,
             PRIMARY KEY (message_id, role_id)
             )""")
 
-    def __init__(self, message_id, role_id, reaction):
+    def __init__(self, guild_id, channel_id, message_id, role_id, reaction):
         super().__init__()
+        self.guild_id = guild_id
+        self.channel_id = channel_id
         self.message_id = message_id
         self.role_id = role_id
         self.reaction = reaction
@@ -682,8 +711,8 @@ class ReactionRole(db.DatabaseTable):
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
-            obj = ReactionRole(message_id=result.get("message_id"), role_id=result.get("role_id"),
-                               reaction=result.get("reaction"))
+            obj = ReactionRole(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"), message_id=result.get("message_id"),
+                               role_id=result.get("role_id"), reaction=result.get("reaction"))
             result_list.append(obj)
         return result_list
 
