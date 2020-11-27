@@ -515,12 +515,12 @@ class Roles(Cog):
                 else:
                     combined_unbound[message_id] = {"guild_id": guild_id, "channel_id": channel_id, "message_id": message_id, "total": 1}
         for combined in combined_unbound.values():
-            gid = "guild_id"  # I had to make individual variables for these because you cannot use quotes in an f string
-            cid = "channel_id"
-            mid = "message_id"
-            total = "total"
-            link = f"https://discordapp.com/channels/{combined[gid]}/{combined[cid]}/{combined[mid]}"
-            embed.add_field(name=f"Custom Message: {combined[mid]}", value=f"[Contains {combined[total]} role watchers]({link})", inline=False)
+            gid = combined["guild_id"]
+            cid = combined["channel_id"]
+            mid = combined["message_id"]
+            total = combined["total"]
+            link = f"https://discordapp.com/channels/{gid}/{cid}/{mid}"
+            embed.add_field(name=f"Custom Message: {mid}", value=f"[Contains {total} role watchers]({link})", inline=False)
         embed.description = f"Dozer is tracking ({len(rolemenus) + len(combined_unbound)}) reaction role message(s) in **{ctx.guild}**"
         await ctx.send(embed=embed)
 
