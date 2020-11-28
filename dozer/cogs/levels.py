@@ -293,19 +293,26 @@ class Levels(Cog):
     async def checkrolelevels(self, ctx):
         """Displays all level associated roles"""
         unsorted = self._level_roles.get(ctx.guild.id)
-        e = discord.Embed(title=f"Level roles for {ctx.guild}", color=blurple)
+        embed = discord.Embed(title=f"Level roles for {ctx.guild}", color=blurple)
         if unsorted:
             roles = sorted(unsorted, key=lambda entry: entry.level)  # Sort roles based on level
-            e.description = f"This server has {len(roles)} level roles"
-            for level_role in roles.__reversed__():
-                role = ctx.guild.get_role(level_role.role_id)
-                if_unavailable = f"Deleted role"
-                e.add_field(name=f"Level: {level_role.level}", value=rf"{role.mention if role else if_unavailable}", inline=False)
-        else:
-            e.description = "This server has no level roles assigned"
+            embeds = []
 
-        e.set_footer(text='Triggered by ' + ctx.author.display_name)
-        await ctx.send(embed=e)
+            for page_num, page in enumerate(chunk(roles.__reversed__(), 10)):
+                e = discord.Embed(title=f"Level roles for {ctx.guild}", color=blurple)
+                e.description = f"This server has {len(roles)} level roles"
+                for level_role in page:
+                    role = ctx.guild.get_role(level_role.role_id)
+                    if_unavailable = f"Deleted role"
+                    e.add_field(name=f"Level: {level_role.level}", value=rf"{role.mention if role else if_unavailable}", inline=False)
+
+                e.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(roles) / 10)}")
+                embeds.append(e)
+            await paginate(ctx, embeds)
+        else:
+            embed.description = "This server has no level roles assigned"
+
+        await ctx.send(embed=embed)
 
     checkrolelevels.example_usage = """
     `{prefix}checkrolelevels`: Returns an embed of all the role levels 
