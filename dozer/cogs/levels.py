@@ -93,7 +93,7 @@ class Levels(Cog):
     async def check_new_roles(self, guild, member, cached_member, guild_settings):
         """Check and see if a member has qualified to get a new role"""
         current_level = self.level_for_total_xp(cached_member.total_xp)
-        roles = sorted(self._level_roles.get(guild.id), key=lambda entry: entry.level)
+        roles = sorted(self._level_roles.get(guild.id) if self._level_roles.get(guild.id) else [], key=lambda entry: entry.level)
 
         if roles:
             add_roles = []
