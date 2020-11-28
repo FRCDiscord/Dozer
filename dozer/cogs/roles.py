@@ -611,9 +611,9 @@ class Roles(Cog):
 
     addrole.example_usage = """
     -----To target a role menu use this format-----
-    `{prefix}rolemenu addrole <message id> @robots 🤖`
+    `{prefix}rolemenu addrole <message id> <@robots or "Robots"> 🤖`
    -----To target a custom message use this format-----
-    `{prefix}rolemenu addrole <channel> <message id> @robots 🤖`
+    `{prefix}rolemenu addrole <channel> <message id> <@robots or "Robots"> 🤖`
     """
 
     @rolemenu.command()
@@ -643,9 +643,9 @@ class Roles(Cog):
 
     delrole.example_usage = """
     -----To target a role menu use this format-----
-    `{prefix}rolemenu delrole <message id> @robots`
+    `{prefix}rolemenu delrole <message id> <@robots or "Robots">`
     -----To target a custom message use this format-----
-    `{prefix}rolemenu delrole <channel> <message id> @robots`
+    `{prefix}rolemenu delrole <channel> <message id> <@robots or "Robots">`
     """
 
 
