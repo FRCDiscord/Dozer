@@ -345,6 +345,7 @@ class Levels(Cog):
     `{prefix}configureranks xprange 5 15`: Sets the xp range
     `{prefix}configureranks setcooldown 15`: Sets the cooldown time in seconds
     `{prefix}configureranks toggle`: Toggles levels
+    `{prefix}configureranks keeproles`: Toggles whenever old level role roles will be kept on level up
     `{prefix}configureranks notificationchannel channel`: Sets level up message channel
     `{prefix}configureranks notificationsoff`: Turns off notification channel
     `{prefix}configureranks setrolelevel role level`: Adds a level role
@@ -382,7 +383,7 @@ class Levels(Cog):
     @guild_only()
     @has_permissions(manage_guild=True)
     async def keeproles(self, ctx):
-        """Toggle dozer ranks"""
+        """Toggles whenever old level role roles will be kept on level up"""
         await self._cfg_guild_setting(ctx, keep_old_roles_toggle=True)
 
     @configureranks.command(aliases=["notifications"])
