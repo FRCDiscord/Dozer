@@ -276,9 +276,10 @@ class Levels(Cog):
     @guild_only()
     async def checkrolelevels(self, ctx):
         """Displays all level associated roles"""
-        roles = sorted(self._level_roles.get(ctx.guild.id), key=lambda entry: entry.level)  # Sort roles based on level
+        unsorted = self._level_roles.get(ctx.guild.id)
         e = discord.Embed(title=f"Level roles for {ctx.guild}", color=blurple)
-        if roles:
+        if unsorted:
+            roles = sorted(unsorted, key=lambda entry: entry.level)  # Sort roles based on level
             e.description = f"This server has {len(roles)} level roles"
             for level_role in roles.__reversed__():
                 role = ctx.guild.get_role(level_role.role_id)
@@ -294,7 +295,7 @@ class Levels(Cog):
     `{prefix}checkrolelevels`: Returns an embed of all the role levels 
     """
 
-    @group(invoke_without_command=True, aliases=["configurelevels"])
+    @group(invoke_without_command=True, aliases=["configurelevels", "levelconfig", "rankconfig"])
     @guild_only()
     async def configureranks(self, ctx):
         """Configures dozer ranks:tm:"""
