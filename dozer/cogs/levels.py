@@ -90,18 +90,34 @@ class Levels(Cog):
             else:
                 self._level_roles[role.guild_id] = [role]
 
-    async def check_new_roles(self, guild, member, cached_member):
+    async def check_new_roles(self, guild, member, cached_member, guild_settings):
         """Check and see if a member has qualified to get a new role"""
-        roles = self._level_roles.get(guild.id)
-        to_add = []
-        if roles:
-            for level_role in roles:
-                if self.level_for_total_xp(cached_member.total_xp) >= level_role.level:
-                    add_role = guild.get_role(level_role.role_id)
-                    if add_role not in member.roles:
-                        to_add.append(add_role)
+        current_level = self.level_for_total_xp(cached_member.total_xp)
+        unsorted = self._level_roles.get(guild.id)
+
+        if unsorted:
+            roles = sorted(unsorted, key=lambda entry: entry.level)
+            add_roles = []
+            del_roles = []
+
+            to_do = [level_role for level_role in roles if level_role.level <= current_level]
+
+            to_add = to_do if guild_settings.keep_old_roles or not len(to_do) else [to_do[-1]]
+
+            for level_role in to_add:
+                add_role = guild.get_role(level_role.role_id)
+                if add_role not in member.roles:
+                    add_roles.append(add_role)
+
+            for level_role in to_do[:-1]:
+                del_role = guild.get_role(level_role.role_id)
+                if del_role in member.roles:
+                    del_roles.append(del_role)
+
             try:
-                await member.add_roles(*to_add, reason="Level Up")
+                await member.add_roles(*add_roles, reason="Level Up")
+                if not guild_settings.keep_old_roles:
+                    await member.remove_roles(*del_roles, reason="Level Up")
             except discord.Forbidden:
                 DOZER_LOGGER.debug(f"Unable to add roles to {member} in guild {guild} Reason: Forbidden")
 
@@ -215,7 +231,7 @@ class Levels(Cog):
             return
 
         cached_member = await self._load_member(message.guild.id, message.author.id)
-        await self.check_new_roles(message.guild, message.author, cached_member)
+        await self.check_new_roles(message.guild, message.author, cached_member, guild_settings)
         old_xp = cached_member.total_xp
 
         timestamp = message.created_at.replace(tzinfo=timezone.utc)
@@ -277,19 +293,26 @@ class Levels(Cog):
     async def checkrolelevels(self, ctx):
         """Displays all level associated roles"""
         unsorted = self._level_roles.get(ctx.guild.id)
-        e = discord.Embed(title=f"Level roles for {ctx.guild}", color=blurple)
+        embed = discord.Embed(title=f"Level roles for {ctx.guild}", color=blurple)
         if unsorted:
             roles = sorted(unsorted, key=lambda entry: entry.level)  # Sort roles based on level
-            e.description = f"This server has {len(roles)} level roles"
-            for level_role in roles.__reversed__():
-                role = ctx.guild.get_role(level_role.role_id)
-                if_unavailable = "Deleted role"
-                e.add_field(name=f"Level: {level_role.level}", value=rf"{role.mention if role else if_unavailable}", inline=False)
-        else:
-            e.description = "This server has no level roles assigned"
+            embeds = []
 
-        e.set_footer(text='Triggered by ' + ctx.author.display_name)
-        await ctx.send(embed=e)
+            for page_num, page in enumerate(chunk(roles.__reversed__(), 10)):
+                e = discord.Embed(title=f"Level roles for {ctx.guild}", color=blurple)
+                e.description = f"This server has {len(roles)} level roles"
+                for level_role in page:
+                    role = ctx.guild.get_role(level_role.role_id)
+                    if_unavailable = f"Deleted role"
+                    e.add_field(name=f"Level: {level_role.level}", value=rf"{role.mention if role else if_unavailable}", inline=False)
+
+                e.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(roles) / 10)}")
+                embeds.append(e)
+            await paginate(ctx, embeds)
+        else:
+            embed.description = "This server has no level roles assigned"
+
+        await ctx.send(embed=embed)
 
     checkrolelevels.example_usage = """
     `{prefix}checkrolelevels`: Returns an embed of all the role levels 
@@ -311,6 +334,7 @@ class Levels(Cog):
             embed.add_field(name=f"Levels are {enabled} for {ctx.guild}", value=f"XP min: {settings.xp_min}\n"
                                                                                 f"XP max: {settings.xp_max}\n"
                                                                                 f"Cooldown: {settings.xp_cooldown} Seconds\n"
+                                                                                f"Keep old roles: {settings.keep_old_roles}\n"
                                                                                 f"Notification channel: {notify_channel}")
             await ctx.send(embed=embed)
         else:
@@ -321,6 +345,7 @@ class Levels(Cog):
     `{prefix}configureranks xprange 5 15`: Sets the xp range
     `{prefix}configureranks setcooldown 15`: Sets the cooldown time in seconds
     `{prefix}configureranks toggle`: Toggles levels
+    `{prefix}configureranks keeproles`: Toggles whenever old level role roles will be kept on level up
     `{prefix}configureranks notificationchannel channel`: Sets level up message channel
     `{prefix}configureranks notificationsoff`: Turns off notification channel
     `{prefix}configureranks setrolelevel role level`: Adds a level role
@@ -353,6 +378,13 @@ class Levels(Cog):
     async def toggle(self, ctx):
         """Toggle dozer ranks"""
         await self._cfg_guild_setting(ctx, toggle_enabled=True)
+
+    @configureranks.command()
+    @guild_only()
+    @has_permissions(manage_guild=True)
+    async def keeproles(self, ctx):
+        """Toggles whenever old level role roles will be kept on level up"""
+        await self._cfg_guild_setting(ctx, keep_old_roles_toggle=True)
 
     @configureranks.command(aliases=["notifications"])
     @guild_only()
@@ -428,7 +460,8 @@ class Levels(Cog):
     `{prefix}removerolelevel level 2 `: Will remove role "level 2" from level roles
     """
 
-    async def _cfg_guild_setting(self, ctx, xp_min=None, xp_max=None, xp_cooldown=None, lvl_up_msgs_id=None, toggle_enabled=None, no_lvl_up=False):
+    async def _cfg_guild_setting(self, ctx, xp_min=None, xp_max=None, xp_cooldown=None, lvl_up_msgs_id=None, toggle_enabled=None, no_lvl_up=False,
+                                 keep_old_roles_toggle=False):
         """Basic Database entry updater"""
         async with ctx.channel.typing():  # Send typing to show that the bot is thinking and not stalled
             results = await GuildXPSettings.get_by(guild_id=int(ctx.guild.id))
@@ -443,6 +476,7 @@ class Levels(Cog):
                     xp_cooldown=15,
                     entropy_value=0,  # Is in table but is not used yet
                     lvl_up_msgs=GuildXPSettings.nullify,
+                    keep_old_roles=True,
                     enabled=False
                 )
 
@@ -453,6 +487,7 @@ class Levels(Cog):
                 xp_cooldown=int(xp_cooldown) if xp_cooldown is not None else old_ent.xp_cooldown,
                 entropy_value=0,  # Is in table but is not used yet
                 lvl_up_msgs=int(lvl_up_msgs_id) if lvl_up_msgs_id else old_ent.lvl_up_msgs if not no_lvl_up else GuildXPSettings.nullify,
+                keep_old_roles=not old_ent.keep_old_roles if keep_old_roles_toggle else old_ent.keep_old_roles,
                 enabled=not old_ent.enabled if toggle_enabled else old_ent.enabled
             )
             await ent.update_or_add()
@@ -465,6 +500,7 @@ class Levels(Cog):
             embed.add_field(name=f"Levels are {enabled} for {ctx.guild}", value=f"XP min: {ent.xp_min}\n"
                                                                                 f"XP max: {ent.xp_max}\n"
                                                                                 f"Cooldown: {ent.xp_cooldown} Seconds\n"
+                                                                                f"Keep old roles: {ent.keep_old_roles}\n"
                                                                                 f"Notification channel: {lvl_up_msgs}")
             await ctx.send(embed=embed)
 
@@ -662,10 +698,11 @@ class GuildXPSettings(db.DatabaseTable):
             xp_cooldown int NOT NULL,
             entropy_value int NOT NULL,
             lvl_up_msgs bigint NULL,
+            keep_old_roles boolean NOT NULL,
             enabled boolean NOT NULL
             )""")
 
-    def __init__(self, guild_id, xp_min, xp_max, xp_cooldown, entropy_value, enabled, lvl_up_msgs):
+    def __init__(self, guild_id, xp_min, xp_max, xp_cooldown, entropy_value, enabled, lvl_up_msgs, keep_old_roles):
         super().__init__()
         self.guild_id = guild_id
         self.xp_min = xp_min
@@ -674,6 +711,7 @@ class GuildXPSettings(db.DatabaseTable):
         self.entropy_value = entropy_value
         self.enabled = enabled
         self.lvl_up_msgs = lvl_up_msgs
+        self.keep_old_roles = keep_old_roles
 
     @classmethod
     async def get_by(cls, **kwargs):
@@ -682,7 +720,7 @@ class GuildXPSettings(db.DatabaseTable):
         for result in results:
             obj = GuildXPSettings(guild_id=result.get("guild_id"), xp_min=result.get("xp_min"), xp_max=result.get("xp_max"),
                                   xp_cooldown=result.get("xp_cooldown"), entropy_value=result.get("entropy_value"), enabled=result.get("enabled"),
-                                  lvl_up_msgs=result.get("lvl_up_msgs"))
+                                  lvl_up_msgs=result.get("lvl_up_msgs"), keep_old_roles=result.get("keep_old_roles"))
             result_list.append(obj)
         return result_list
 
