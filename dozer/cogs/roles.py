@@ -523,7 +523,8 @@ class Roles(Cog):
             total = combined["total"]
             link = f"https://discordapp.com/channels/{gid}/{cid}/{mid}"
             embed.add_field(name=f"Custom Message: {mid}", value=f"[Contains {total} role watchers]({link})", inline=False)
-        embed.description = f"{ctx.bot.user.display_name} is tracking ({len(rolemenus) + len(combined_unbound)}) reaction role message(s) in **{ctx.guild}**"
+        embed.description = f"{ctx.bot.user.display_name} is tracking ({len(rolemenus) + len(combined_unbound)}) " \
+                            f"reaction role message(s) in **{ctx.guild}**"
         await ctx.send(embed=embed)
 
     rolemenu.example_usage = """
