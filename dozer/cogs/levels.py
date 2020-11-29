@@ -303,7 +303,7 @@ class Levels(Cog):
                 e.description = f"This server has {len(roles)} level roles"
                 for level_role in page:
                     role = ctx.guild.get_role(level_role.role_id)
-                    if_unavailable = f"Deleted role"
+                    if_unavailable = "Deleted role"
                     e.add_field(name=f"Level: {level_role.level}", value=rf"{role.mention if role else if_unavailable}", inline=False)
 
                 e.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(roles) / 10)}")
