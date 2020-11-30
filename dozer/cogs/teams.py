@@ -220,7 +220,7 @@ class AutoAssociation(db.DatabaseTable):
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
-            obj = GeneralGuildConfigs(guild_id=result.get("guild_id"), team_on_join=result.get("team_on_join"))
+            obj = AutoAssociation(guild_id=result.get("guild_id"), team_on_join=result.get("team_on_join"))
             result_list.append(obj)
         return result_list
 
