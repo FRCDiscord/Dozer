@@ -174,23 +174,6 @@ class General(Cog):
             perms |= cmd.required_permissions.value
         await ctx.send('<{}>'.format(discord.utils.oauth_url(ctx.me.id, discord.Permissions(perms))))
 
-    @command()
-    @has_permissions(administrator=True)
-    async def welcomeconfig(self, ctx, *, welcome_channel: discord.TextChannel):
-        """
-        Sets the new member channel for this guild.
-        """
-        if welcome_channel.guild != ctx.guild:
-            await ctx.send("That channel is not in this guild.")
-            return
-        settings = WelcomeChannel(ctx.guild.id, welcome_channel.id)
-        await settings.update_or_add()
-        await ctx.send("Welcome channel set to {}".format(welcome_channel.mention))
-
-    welcomeconfig.example_usage = """
-    `{prefix}welcomeconfig #new-members` - Sets the invite channel to #new-members.
-    """
-
     @command(aliases=["setprefix"])
     @guild_only()
     @has_permissions(manage_guild=True)
@@ -214,31 +197,4 @@ def setup(bot):
     bot.add_cog(General(bot))
 
 
-class WelcomeChannel(db.DatabaseTable):
-    """Welcome channel object class"""
-    __tablename__ = 'welcome_channel'
-    __uniques__ = 'guild_id'
 
-    @classmethod
-    async def initial_create(cls):
-        """Create the table in the database"""
-        async with db.Pool.acquire() as conn:
-            await conn.execute(f"""
-            CREATE TABLE {cls.__tablename__} (
-            guild_id bigint PRIMARY KEY NOT NULL,
-            channel_id bigint null
-            )""")
-
-    def __init__(self, guild_id, channel_id):
-        super().__init__()
-        self.guild_id = guild_id
-        self.channel_id = channel_id
-
-    @classmethod
-    async def get_by(cls, **kwargs):
-        results = await super().get_by(**kwargs)
-        result_list = []
-        for result in results:
-            obj = WelcomeChannel(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"))
-            result_list.append(obj)
-        return result_list
