@@ -176,6 +176,8 @@ class General(Cog):
 
     @has_permissions(create_instant_invite=True)
     @bot_has_permissions(create_instant_invite=True)
+    @discord.ext.commands.max_concurrency(1, wait=True, per=discord.ext.commands.BucketType.guild)
+    @discord.ext.commands.cooldown(rate=1, per=30, type=discord.ext.commands.BucketType.user)
     @command()
     async def invites(self, ctx, num, hours=24):
         """
@@ -183,6 +185,13 @@ class General(Cog):
         """
 
         settings = await WelcomeChannel.get_by(guild_id=ctx.guild.id)
+
+        length_settings = await GeneralGuildConfigs.get_by(guild_id=ctx.guild.id)
+        max_length = length_settings[0].invite_length if len(length_settings) else None
+        print(max_length)
+        if hours > max_length:
+            raise BadArgument(f"The request invite time is longer than allowed({max_length} hours) in this server ")
+
         if len(settings) == 0:
             await ctx.send(
                 "There is no welcome channel set. Please set one using `{0}welcomeconfig channel` and try again.".format(

@@ -4,7 +4,7 @@ import collections
 import json
 import discord
 from aiotba.http import AioTBAError
-from discord.ext.commands import BadArgument, guild_only
+from discord.ext.commands import BadArgument, guild_only, has_permissions
 
 from ._utils import *
 from .general import GeneralGuildConfigs
@@ -169,6 +169,7 @@ class Teams(Cog):
 
     @command()
     @guild_only()
+    @has_permissions(manage_guild=True)
     async def toggleautoteam(self, ctx):
         """Toggles automatic adding of team association to member nicknames"""
         settings = await GeneralGuildConfigs.get_by(guild_id=ctx.guild.id)
