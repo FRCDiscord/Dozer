@@ -247,6 +247,40 @@ def setup(bot):
     bot.add_cog(General(bot))
 
 
+class GeneralGuildConfigs(db.DatabaseTable):
+    """Contains Basic misc guild settings"""
+    __tablename__ = 'general_guild_config'
+    __uniques__ = 'guild_id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            guild_id bigint NOT NULL,
+            max_invite_length int NULL,
+            team_on_join boolean NULL,
+            PRIMARY KEY (guild_id)
+            )""")
+
+    def __init__(self, guild_id, invite_length=None, team_on_join=True):
+        super().__init__()
+        self.guild_id = guild_id
+        self.invite_length = invite_length
+        self.team_on_join = team_on_join
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = GeneralGuildConfigs(guild_id=result.get("guild_id"), invite_length=result.get("max_invite_length"),
+                                      team_on_join=result.get("team_on_join"))
+            result_list.append(obj)
+        return result_list
+
+
 class WelcomeChannel(db.DatabaseTable):
     """Welcome channel object class"""
     __tablename__ = 'welcome_channel'

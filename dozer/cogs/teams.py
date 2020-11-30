@@ -7,6 +7,8 @@ from aiotba.http import AioTBAError
 from discord.ext.commands import BadArgument, guild_only
 
 from ._utils import *
+from .general import GeneralGuildConfigs
+from .info import blurple
 from .. import db
 
 
@@ -165,10 +167,25 @@ class Teams(Cog):
     `{prefix}onteam top` - List the 10 teams with the most members in this guild
     """
 
+    @command()
+    @guild_only()
+    async def toggleautoteam(self, ctx):
+        settings = await GeneralGuildConfigs.get_by(guild_id=ctx.guild.id)
+        enabled = settings[0].team_on_join if settings else True
+        settings[0].team_on_join = not enabled
+        await settings[0].update_or_add()
+        e = discord.Embed(color=blurple)
+        modetext = "Enabled" if enabled else "Disabled"
+        e.add_field(name='Success!', value=f"Automatic adding of team association is currently: **{modetext}**")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
+
     @Cog.listener('on_member_join')
     async def on_member_join(self, member):
         """Adds a user's team association to their name when they join (if exactly 1 association)"""
-        if member.guild.me.guild_permissions.manage_nicknames:
+        settings = await GeneralGuildConfigs.get_by(guild_id=member.guild.id)
+        enabled = settings[0].team_on_join if settings else True
+        if member.guild.me.guild_permissions.manage_nicknames and enabled:
             query = await TeamNumbers.get_by(user_id=member.id)
             if len(query) == 1:
                 nick = "{} {}{}".format(member.display_name, query[0].team_type, query[0].team_number)
