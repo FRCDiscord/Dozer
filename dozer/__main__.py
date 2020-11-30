@@ -13,6 +13,7 @@ from . import db
 
 config = {
     'prefix': '&', 'developers': [],
+    'cache_size': 20000,
     'tba': {
         'key': ''
     },
@@ -61,7 +62,7 @@ intents = discord.Intents.default()
 intents.members = True
 intents.presences = True
 
-bot = Dozer(config, intents=intents, max_messages=5000)
+bot = Dozer(config, intents=intents, max_messages=config['cache_size'])
 
 for ext in os.listdir('dozer/cogs'):
     if not ext.startswith(('_', '.')):
