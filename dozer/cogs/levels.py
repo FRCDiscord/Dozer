@@ -311,8 +311,7 @@ class Levels(Cog):
             await paginate(ctx, embeds)
         else:
             embed.description = "This server has no level roles assigned"
-
-        await ctx.send(embed=embed)
+            await ctx.send(embed=embed)
 
     checkrolelevels.example_usage = """
     `{prefix}checkrolelevels`: Returns an embed of all the role levels 
