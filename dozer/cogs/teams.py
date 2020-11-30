@@ -170,6 +170,7 @@ class Teams(Cog):
     @command()
     @guild_only()
     async def toggleautoteam(self, ctx):
+        """Toggles automatic adding of team association to member nicknames"""
         settings = await GeneralGuildConfigs.get_by(guild_id=ctx.guild.id)
         enabled = settings[0].team_on_join if settings else True
         settings[0].team_on_join = not enabled
