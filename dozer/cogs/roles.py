@@ -222,11 +222,11 @@ class Roles(Cog):
                         value='Use `{0.prefix}{0.invoked_with} list` to find valid giveable roles!'.format(ctx),
                         inline=False)
         msg = await ctx.send(embed=e)
-        await msg.add_reaction("🔒")
+        await msg.add_reaction("❌")
         try:
             react, user = await self.bot.wait_for('reaction_add', timeout=30,
                                                   check=lambda reaction, reactor:
-                                                  reaction.emoji == "🔒" and reactor == ctx.author and reaction.message == msg)
+                                                  reaction.emoji == "❌" and reactor == ctx.author and reaction.message == msg)
             await msg.delete()
             await ctx.message.delete()
         except asyncio.TimeoutError:
