@@ -224,9 +224,8 @@ class Roles(Cog):
         msg = await ctx.send(embed=e)
         await msg.add_reaction("❌")
         try:
-            react, user = await self.bot.wait_for('reaction_add', timeout=30,
-                                                  check=lambda reaction, reactor:
-                                                  reaction.emoji == "❌" and reactor == ctx.author and reaction.message == msg)
+            await self.bot.wait_for('reaction_add', timeout=30, check=lambda reaction, reactor:
+                                    reaction.emoji == "❌" and reactor == ctx.author and reaction.message == msg)
             await msg.delete()
             await ctx.message.delete()
         except asyncio.TimeoutError:
