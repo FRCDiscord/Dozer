@@ -46,7 +46,7 @@ class Levels(Cog):
         # > your current level as lvl
         needed = 0
         for lvl in range(level):
-            needed += 5 * lvl ** 2 + 50 * lvl + 100
+            needed += 5 * (lvl ** 2) + 50 * lvl + 100
         return needed
 
     @staticmethod
@@ -170,13 +170,16 @@ class Levels(Cog):
             DOZER_LOGGER.debug("Sync task skipped, nothing to do")
             return
         # Query written manually to insert all records at once
-        async with db.Pool.acquire() as conn:
-            await conn.executemany(f"INSERT INTO {MemberXP.__tablename__} (guild_id, user_id, total_xp, total_messages, last_given_at)"
-                                   f" VALUES ($1, $2, $3, $4, $5) ON CONFLICT ({MemberXP.__uniques__}) DO UPDATE"
-                                   f" SET total_xp = EXCLUDED.total_xp, total_messages = EXCLUDED.total_messages, last_given_at = "
-                                   f"EXCLUDED.last_given_at",
-                                   to_write)
-        DOZER_LOGGER.debug(f"Inserted/updated {len(to_write)} record(s); Evicted {evicted} records(s)")
+        try:
+            async with db.Pool.acquire() as conn:
+                await conn.executemany(f"INSERT INTO {MemberXP.__tablename__} (guild_id, user_id, total_xp, total_messages, last_given_at)"
+                                       f" VALUES ($1, $2, $3, $4, $5) ON CONFLICT ({MemberXP.__uniques__}) DO UPDATE"
+                                       f" SET total_xp = EXCLUDED.total_xp, total_messages = EXCLUDED.total_messages, last_given_at = "
+                                       f"EXCLUDED.last_given_at",
+                                       to_write)
+            DOZER_LOGGER.debug(f"Inserted/updated {len(to_write)} record(s); Evicted {evicted} records(s)")
+        except Exception as e:
+            DOZER_LOGGER.error(f"Failed to sync levels cache to db, Reason:{e}")
 
     @loop(minutes=2.5)
     async def sync_task(self):
@@ -316,6 +319,45 @@ class Levels(Cog):
     checkrolelevels.example_usage = """
     `{prefix}checkrolelevels`: Returns an embed of all the role levels 
     """
+
+    @group(invoke_without_command=True, aliases=["moderatelevels", "levelsmoderation"])
+    @guild_only()
+    async def adjustlevels(self, ctx):
+        """Allows for moderators to adjust a members rank/xp"""
+        pass
+
+    @adjustlevels.command()
+    @guild_only()
+    @has_permissions(manage_messages=True)
+    async def setlevel(self, ctx, member: discord.Member, level: int):
+        """Changes a members level to requested level"""
+        entry = await self._load_member(ctx.guild.id, member.id)
+        xp = self.total_xp_for_level(level)
+        DOZER_LOGGER.debug(f"Adjusting level for user {member.id} to {xp}")
+        entry.total_xp = xp
+        entry.dirty = True
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value=f"I set {member}'s level to {level}")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
+
+    @adjustlevels.command()
+    @guild_only()
+    @has_permissions(manage_messages=True)
+    async def changexp(self, ctx, member: discord.Member, xp_amount: int):
+        """Changes a members xp by a certain amount"""
+        entry = await self._load_member(ctx.guild.id, member.id)
+        entry.total_xp += xp_amount
+        entry.dirty = True
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value=f"I adjusted {member}'s xp by {xp_amount} points")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
+
+    @adjustlevels.command()
+    @guild_only()
+    @has_permissions(manage_messages=True)
+
 
     @group(invoke_without_command=True, aliases=["configurelevels", "levelconfig", "rankconfig"])
     @guild_only()
