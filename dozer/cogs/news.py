@@ -55,7 +55,7 @@ class News(Cog):
 
             DOZER_LOGGER.debug(f"Getting source {source.full_name}")
             subs = await NewsSubscription.get_by(source=source.short_name)
-            0 / 0
+
             if not subs:
                 DOZER_LOGGER.debug(f"Skipping source {source.full_name} due to no subscriptions")
                 continue
