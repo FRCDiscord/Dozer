@@ -134,7 +134,7 @@ class Starboard(Cog):
             return
 
         time_waiting = 0
-        while msg in self.locked_messages or time_waiting > FORCE_TRY_TIME:
+        while msg in self.locked_messages and time_waiting < FORCE_TRY_TIME:
             await asyncio.sleep(LOCK_TIME)
             time_waiting += LOCK_TIME
         self.locked_messages.add(msg)
