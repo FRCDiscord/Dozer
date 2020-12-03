@@ -10,6 +10,8 @@ from ._utils import *
 from .. import db
 
 MAX_EMBED = 1024
+LOCK_TIME = .1
+FORCE_TRY_TIME = 1
 DOZER_LOGGER = logging.getLogger('dozer')
 VIDEO_FORMATS = ['.mp4', '.mov', 'webm']
 
@@ -127,8 +129,10 @@ class Starboard(Cog):
         if not msg.guild:
             return
 
-        while msg in self.locked_messages:
-            await asyncio.sleep(.1)
+        time_waiting = 0
+        while msg in self.locked_messages or time_waiting > FORCE_TRY_TIME:
+            await asyncio.sleep(LOCK_TIME)
+            time_waiting += LOCK_TIME
         self.locked_messages.add(msg)
 
         config = await self.config_cache.query_one(guild_id=msg.guild.id)
