@@ -331,6 +331,8 @@ class Levels(Cog):
     @has_permissions(manage_messages=True)
     async def setlevel(self, ctx, member: discord.Member, level: int):
         """Changes a members level to requested level"""
+        if level >= 100000:
+            raise BadArgument("Requested level is too high!")
         entry = await self._load_member(ctx.guild.id, member.id)
         xp = self.total_xp_for_level(level)
         DOZER_LOGGER.debug(f"Adjusting level for user {member.id} to {xp}")
@@ -357,7 +359,28 @@ class Levels(Cog):
     @adjustlevels.command()
     @guild_only()
     @has_permissions(manage_messages=True)
+    async def swapxp(self, ctx, take_member: discord.Member, give_member: discord.Member):
+        """Swap xp stats between two members in a guild"""
+        take = await self._load_member(ctx.guild.id, take_member.id)
+        give = await self._load_member(ctx.guild.id, give_member.id)
+        temp = take.total_xp
+        take.total_xp = give.total_xp
+        give.total_xp = temp
+        temp = take.total_messages
+        take.total_messages = give.total_messages
+        give.total_messages = temp
+        give.dirty = True
+        take.dirty = True
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value=f"I swaped {take_member}'s xp with {give_member}")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
 
+    @adjustlevels.command()
+    @guild_only()
+    @has_permissions(manage_messages=True)
+    async def transferxp(self, ctx, take_member: discord.Member, give_member: discord.Member):
+        """Adds xp from one member to another member"""
 
     @group(invoke_without_command=True, aliases=["configurelevels", "levelconfig", "rankconfig"])
     @guild_only()
