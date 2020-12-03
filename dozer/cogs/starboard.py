@@ -129,15 +129,15 @@ class Starboard(Cog):
         if not msg.guild:
             return
 
+        config = await self.config_cache.query_one(guild_id=msg.guild.id)
+        if config is None:
+            return
+
         time_waiting = 0
         while msg in self.locked_messages or time_waiting > FORCE_TRY_TIME:
             await asyncio.sleep(LOCK_TIME)
             time_waiting += LOCK_TIME
         self.locked_messages.add(msg)
-
-        config = await self.config_cache.query_one(guild_id=msg.guild.id)
-        if config is None:
-            return
 
         self_react = 0
         if await is_cancelled(config.star_emoji, msg, msg.guild.me, msg.guild.me):
