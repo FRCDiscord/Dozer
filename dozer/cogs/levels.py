@@ -44,6 +44,8 @@ class Levels(Cog):
         # https://github.com/Mee6/Mee6-documentation/blob/9d98a8fe8ab494fd85ec27750592fc9f8ef82472/docs/levels_xp.md
         # > The formula to calculate how many xp you need for the next level is 5 * (lvl ^ 2) + 50 * lvl + 100 with
         # > your current level as lvl
+        if level >= 1000000:
+            return
         needed = 0
         for lvl in range(level):
             needed += 5 * (lvl ** 2) + 50 * lvl + 100
@@ -132,7 +134,7 @@ class Levels(Cog):
                 if channel:
                     await channel.send(f"{member.mention}, you have reached level {new_level}!")
 
-    async def _load_member(self, guild_id, member_id):
+    async def load_member(self, guild_id, member_id):
         """Check to see if a member is in the level cache and if not load from the database"""
         cached_member = self._xp_cache.get((guild_id, member_id))
         if cached_member is None:
@@ -146,6 +148,17 @@ class Levels(Cog):
                 cached_member = MemberXPCache(0, datetime.now(tz=timezone.utc), 0, True)
             self._xp_cache[(guild_id, member_id)] = cached_member
         return cached_member
+
+    async def sync_member(self, guild_id, member_id):
+        """Sync an individual member to the database"""
+        cached_member = self._xp_cache.get((guild_id, member_id))
+        if cached_member:
+            e = MemberXP(guild_id, member_id, cached_member.total_xp, cached_member.total_messages, cached_member.last_given_at)
+            await e.update_or_add()
+            cached_member.dirty = False
+            return True
+        else:
+            return False
 
     async def sync_to_database(self):
         """Sync dirty records to the database, and evict others from the cache."""
@@ -233,7 +246,7 @@ class Levels(Cog):
         if guild_settings is None or not guild_settings.enabled:
             return
 
-        cached_member = await self._load_member(message.guild.id, message.author.id)
+        cached_member = await self.load_member(message.guild.id, message.author.id)
         await self.check_new_roles(message.guild, message.author, cached_member, guild_settings)
         old_xp = cached_member.total_xp
 
@@ -333,11 +346,11 @@ class Levels(Cog):
         """Changes a members level to requested level"""
         if level >= 100000:
             raise BadArgument("Requested level is too high!")
-        entry = await self._load_member(ctx.guild.id, member.id)
+        entry = await self.load_member(ctx.guild.id, member.id)
         xp = self.total_xp_for_level(level)
         DOZER_LOGGER.debug(f"Adjusting level for user {member.id} to {xp}")
         entry.total_xp = xp
-        entry.dirty = True
+        await self.sync_member(ctx.guild.id, member.id)
         e = discord.Embed(color=blurple)
         e.add_field(name='Success!', value=f"I set {member}'s level to {level}")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
@@ -348,9 +361,9 @@ class Levels(Cog):
     @has_permissions(manage_messages=True)
     async def changexp(self, ctx, member: discord.Member, xp_amount: int):
         """Changes a members xp by a certain amount"""
-        entry = await self._load_member(ctx.guild.id, member.id)
+        entry = await self.load_member(ctx.guild.id, member.id)
         entry.total_xp += xp_amount
-        entry.dirty = True
+        await self.sync_member(ctx.guild.id, member.id)
         e = discord.Embed(color=blurple)
         e.add_field(name='Success!', value=f"I adjusted {member}'s xp by {xp_amount} points")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
@@ -361,16 +374,12 @@ class Levels(Cog):
     @has_permissions(manage_messages=True)
     async def swapxp(self, ctx, take_member: discord.Member, give_member: discord.Member):
         """Swap xp stats between two members in a guild"""
-        take = await self._load_member(ctx.guild.id, take_member.id)
-        give = await self._load_member(ctx.guild.id, give_member.id)
-        temp = take.total_xp
-        take.total_xp = give.total_xp
-        give.total_xp = temp
-        temp = take.total_messages
-        take.total_messages = give.total_messages
-        give.total_messages = temp
-        give.dirty = True
-        take.dirty = True
+        take = await self.load_member(ctx.guild.id, take_member.id)
+        give = await self.load_member(ctx.guild.id, give_member.id)
+        self._xp_cache[take_member.id] = give
+        self._xp_cache[give_member.id] = take
+        await self.sync_member(ctx.guild.id, take_member.id)
+        await self.sync_member(ctx.guild.id, give_member.id)
         e = discord.Embed(color=blurple)
         e.add_field(name='Success!', value=f"I swaped {take_member}'s xp with {give_member}")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
@@ -583,7 +592,7 @@ class Levels(Cog):
         if guild_settings is None or not guild_settings.enabled:
             embed.description = "Levels are not enabled in this server"
         else:
-            cache_record = await self._load_member(ctx.guild.id, member.id)
+            cache_record = await self.load_member(ctx.guild.id, member.id)
 
             # Make Postgres compute the rank for us (need WITH-query so rank() sees records for every user)
             db_record = await db.Pool.fetchrow(f"""
