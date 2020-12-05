@@ -68,8 +68,9 @@ class Roles(Cog):
     async def on_raw_message_delete(self, payload):
         """Used to remove dead reaction role entries"""
         message_id = payload.message_id
+        entry = await ReactionRole.get_by(message_id=message_id)
         await ReactionRole.delete(message_id=message_id)
-        self.reaction_roles.invalidate_entry(message_id=message_id)
+        self.remove_from_cache(entry[0])
         await RoleMenu.delete(message_id=message_id)
 
     @Cog.listener()
@@ -86,11 +87,14 @@ class Roles(Cog):
         """Called whenever a reaction is added or removed"""
         message_id = payload.message_id
         reaction = str(payload.emoji)
-        reaction_roles = await self.reaction_roles.query_all(message_id=message_id, reaction=reaction)
-        if len(reaction_roles):
+        reaction_roles = await self.reaction_roles.query_all(message_id=message_id)
+        reaction_role = [role for role in reaction_roles if role.reaction == reaction]
+        if len(reaction_role):
             guild = self.bot.get_guild(payload.guild_id)
             member = guild.get_member(payload.user_id)
-            role = guild.get_role(reaction_roles[0].role_id)
+            role = guild.get_role(reaction_role[0].role_id)
+            if member.bot:
+                return
             if role:
                 try:
                     if payload.event_type == "REACTION_ADD":
@@ -490,7 +494,6 @@ class Roles(Cog):
 
         menu_embed = discord.Embed(title=f"Role Menu: {menu.name}")
         menu_entries = await self.reaction_roles.query_all(message_id=menu.message_id)
-
         for entry in menu_entries:
             role = ctx.guild.get_role(entry.role_id)
             menu_embed.add_field(name=f"Role: {role}", value=f"{entry.reaction}: {role.mention}", inline=False)
@@ -500,9 +503,13 @@ class Roles(Cog):
     async def add_to_message(self, message, entry):
         """Adds a reaction role to a message"""
         await message.add_reaction(entry.reaction)
+        self.remove_from_cache(entry)
         await entry.update_or_add()
+
+    def remove_from_cache(self, entry):
+        """Remove a reaction role from the cache in all possible forms"""
+        self.reaction_roles.invalidate_entry(message_id=entry.message_id)
         self.reaction_roles.invalidate_entry(message_id=entry.message_id, role_id=entry.role_id)
-        return
 
     @group(invoke_without_command=True, aliases=["reactionrole", "reactionroles"])
     @bot_has_permissions(manage_roles=True, embed_links=True)
@@ -648,12 +655,13 @@ class Roles(Cog):
         reaction = await self.reaction_roles.query_one(message_id=message.id, role_id=role.id)
         if reaction:
             await self.del_from_message(message, reaction)
+            self.remove_from_cache(reaction)
             await ReactionRole.delete(message_id=message.id, role_id=role.id)
         if menu:
             await self.update_role_menu(ctx, menu)
 
         e = discord.Embed(color=blurple)
-        link = f"https://discordapp.com/channels/{ctx.guild.id}/{ctx.channel.id}/{message_id}"
+        link = f"https://discordapp.com/channels/{ctx.guild.id}/{message.channel.id}/{message_id}"
         shortcut = f"[{menu.name}]({link})" if menu else f"[{message_id}]({link})"
         e.add_field(name='Success!', value=f"I removed {role.mention} from message {shortcut}")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
