@@ -4,9 +4,10 @@ import collections
 import json
 import discord
 from aiotba.http import AioTBAError
-from discord.ext.commands import BadArgument, guild_only
+from discord.ext.commands import BadArgument, guild_only, has_permissions
 
 from ._utils import *
+from .info import blurple
 from .. import db
 
 
@@ -165,15 +166,63 @@ class Teams(Cog):
     `{prefix}onteam top` - List the 10 teams with the most members in this guild
     """
 
+    @command()
+    @guild_only()
+    @has_permissions(manage_guild=True)
+    async def toggleautoteam(self, ctx):
+        """Toggles automatic adding of team association to member nicknames"""
+        settings = await AutoAssociation.get_by(guild_id=ctx.guild.id)
+        enabled = settings[0].team_on_join if settings else True
+        settings[0].team_on_join = not enabled
+        await settings[0].update_or_add()
+        e = discord.Embed(color=blurple)
+        modetext = "Enabled" if enabled else "Disabled"
+        e.add_field(name='Success!', value=f"Automatic adding of team association is currently: **{modetext}**")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
+
     @Cog.listener('on_member_join')
     async def on_member_join(self, member):
         """Adds a user's team association to their name when they join (if exactly 1 association)"""
-        if member.guild.me.guild_permissions.manage_nicknames:
+        settings = await AutoAssociation.get_by(guild_id=member.guild.id)
+        enabled = settings[0].team_on_join if settings else True
+        if member.guild.me.guild_permissions.manage_nicknames and enabled:
             query = await TeamNumbers.get_by(user_id=member.id)
             if len(query) == 1:
                 nick = "{} {}{}".format(member.display_name, query[0].team_type, query[0].team_number)
                 if len(nick) <= 32:
                     await member.edit(nick=nick)
+
+
+class AutoAssociation(db.DatabaseTable):
+    """Contains Basic misc guild settings"""
+    __tablename__ = 'auto_associations'
+    __uniques__ = 'guild_id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            guild_id bigint NOT NULL,
+            team_on_join boolean NOT NULL,
+            PRIMARY KEY (guild_id)
+            )""")
+
+    def __init__(self, guild_id, team_on_join=True):
+        super().__init__()
+        self.guild_id = guild_id
+        self.team_on_join = team_on_join
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = AutoAssociation(guild_id=result.get("guild_id"), team_on_join=result.get("team_on_join"))
+            result_list.append(obj)
+        return result_list
 
 
 class TeamNumbers(db.DatabaseTable):
