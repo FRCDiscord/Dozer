@@ -225,7 +225,22 @@ class Roles(Cog):
             e.add_field(name='{} role(s) could not be found!'.format(extra),
                         value='Use `{0.prefix}{0.invoked_with} list` to find valid giveable roles!'.format(ctx),
                         inline=False)
-        await ctx.send(embed=e)
+        msg = await ctx.send(embed=e)
+        try:
+            await msg.add_reaction("❌")
+        except discord.Forbidden:
+            return
+        try:
+            await self.bot.wait_for('reaction_add', timeout=30, check=lambda reaction, reactor:
+                                    reaction.emoji == "❌" and reactor == ctx.author and reaction.message == msg)
+            await msg.delete()
+            try:
+                await ctx.message.delete()
+            except discord.Forbidden:
+                pass
+        except asyncio.TimeoutError:
+            await msg.clear_reactions()
+            return
 
     giveme.example_usage = """
     `{prefix}giveme Java` - gives you the role called Java, if it exists
