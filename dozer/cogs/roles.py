@@ -86,11 +86,14 @@ class Roles(Cog):
         """Called whenever a reaction is added or removed"""
         message_id = payload.message_id
         reaction = str(payload.emoji)
-        reaction_roles = await self.reaction_roles.query_all(message_id=message_id, reaction=reaction)
-        if len(reaction_roles):
+        reaction_roles = await self.reaction_roles.query_all(message_id=message_id)
+        reaction_role = [role for role in reaction_roles if role.reaction == reaction]
+        if len(reaction_role):
             guild = self.bot.get_guild(payload.guild_id)
             member = guild.get_member(payload.user_id)
-            role = guild.get_role(reaction_roles[0].role_id)
+            role = guild.get_role(reaction_role[0].role_id)
+            if member.bot:
+                return
             if role:
                 try:
                     if payload.event_type == "REACTION_ADD":
@@ -475,7 +478,7 @@ class Roles(Cog):
 
         menu_embed = discord.Embed(title=f"Role Menu: {menu.name}")
         menu_entries = await self.reaction_roles.query_all(message_id=menu.message_id)
-
+        print(len(menu_entries))
         for entry in menu_entries:
             role = ctx.guild.get_role(entry.role_id)
             menu_embed.add_field(name=f"Role: {role}", value=f"{entry.reaction}: {role.mention}", inline=False)
@@ -485,9 +488,8 @@ class Roles(Cog):
     async def add_to_message(self, message, entry):
         """Adds a reaction role to a message"""
         await message.add_reaction(entry.reaction)
+        self.reaction_roles.invalidate_entry(message_id=entry.message_id)
         await entry.update_or_add()
-        self.reaction_roles.invalidate_entry(message_id=entry.message_id, role_id=entry.role_id)
-        return
 
     @group(invoke_without_command=True, aliases=["reactionrole", "reactionroles"])
     @bot_has_permissions(manage_roles=True, embed_links=True)
