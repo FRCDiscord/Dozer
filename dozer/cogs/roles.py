@@ -478,7 +478,6 @@ class Roles(Cog):
 
         menu_embed = discord.Embed(title=f"Role Menu: {menu.name}")
         menu_entries = await self.reaction_roles.query_all(message_id=menu.message_id)
-        print(len(menu_entries))
         for entry in menu_entries:
             role = ctx.guild.get_role(entry.role_id)
             menu_embed.add_field(name=f"Role: {role}", value=f"{entry.reaction}: {role.mention}", inline=False)
@@ -488,8 +487,13 @@ class Roles(Cog):
     async def add_to_message(self, message, entry):
         """Adds a reaction role to a message"""
         await message.add_reaction(entry.reaction)
-        self.reaction_roles.invalidate_entry(message_id=entry.message_id)
+        self.remove_from_cache(entry)
         await entry.update_or_add()
+
+    def remove_from_cache(self, entry):
+        """Remove a reaction role from the cache in all possible forms"""
+        self.reaction_roles.invalidate_entry(message_id=entry.message_id)
+        self.reaction_roles.invalidate_entry(message_id=entry.message_id, role_id=entry.role_id)
 
     @group(invoke_without_command=True, aliases=["reactionrole", "reactionroles"])
     @bot_has_permissions(manage_roles=True, embed_links=True)
@@ -635,12 +639,13 @@ class Roles(Cog):
         reaction = await self.reaction_roles.query_one(message_id=message.id, role_id=role.id)
         if reaction:
             await self.del_from_message(message, reaction)
+            self.remove_from_cache(reaction)
             await ReactionRole.delete(message_id=message.id, role_id=role.id)
         if menu:
             await self.update_role_menu(ctx, menu)
 
         e = discord.Embed(color=blurple)
-        link = f"https://discordapp.com/channels/{ctx.guild.id}/{ctx.channel.id}/{message_id}"
+        link = f"https://discordapp.com/channels/{ctx.guild.id}/{message.channel.id}/{message_id}"
         shortcut = f"[{menu.name}]({link})" if menu else f"[{message_id}]({link})"
         e.add_field(name='Success!', value=f"I removed {role.mention} from message {shortcut}")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
