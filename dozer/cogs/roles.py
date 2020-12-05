@@ -68,8 +68,9 @@ class Roles(Cog):
     async def on_raw_message_delete(self, payload):
         """Used to remove dead reaction role entries"""
         message_id = payload.message_id
+        entry = await ReactionRole.get_by(message_id=message_id)
         await ReactionRole.delete(message_id=message_id)
-        self.reaction_roles.invalidate_entry(message_id=message_id)
+        self.remove_from_cache(entry[0])
         await RoleMenu.delete(message_id=message_id)
 
     @Cog.listener()
