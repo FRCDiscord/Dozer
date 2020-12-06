@@ -54,6 +54,8 @@ class Moderation(Cog):
         entries = await NewMemPurgeConfig.get_by()
         for entry in entries:
             guild = self.bot.get_guild(entry.guild_id)
+            if guild is None:
+                continue
             for mem in guild.members:
                 if guild.get_role(entry.member_role) not in mem.roles:
                     delta = datetime.datetime.now() - mem.joined_at
@@ -723,13 +725,7 @@ class Moderation(Cog):
     @has_permissions(administrator=True)
     async def nmpurgeconfig(self, ctx, role: discord.Role, days: int):
         """Sets the config for the new members purge"""
-        config = await NewMemPurgeConfig.get_by(guild_id=ctx.guild.id)
-        if len(config) != 0:
-            config = config[0]
-            config.member_role = role.id
-            config.days = days
-        else:
-            config = NewMemPurgeConfig(guild_id=ctx.guild.id, member_role=role.id, days=days)
+        config = NewMemPurgeConfig(guild_id=ctx.guild.id, member_role=role.id, days=days)
         await config.update_or_add()
 
         await ctx.send("Settings saved!")
