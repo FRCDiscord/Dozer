@@ -195,6 +195,3 @@ def setup(bot):
     """Adds the general cog to the bot"""
     bot.remove_command('help')
     bot.add_cog(General(bot))
-
-
-

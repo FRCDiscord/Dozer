@@ -21,7 +21,6 @@ class Roles(Cog):
 
     def __init__(self, bot):
         super().__init__(bot)
-        self.reaction_roles = db.ConfigCache(ReactionRole)
         for command in self.giveme.walk_commands():
             @command.before_invoke
             async def givemeautopurge(self, ctx):
@@ -53,6 +52,12 @@ class Roles(Cog):
             raise BadArgument("That message does not exist or is not in this channel!")
 
     @staticmethod
+    async def add_to_message(message, entry):
+        """Adds a reaction role to a message"""
+        await message.add_reaction(entry.reaction)
+        await entry.update_or_add()
+
+    @staticmethod
     async def del_from_message(message, entry):
         """Removes a reaction from a message"""
         await message.clear_reaction(entry.reaction)
@@ -69,7 +74,6 @@ class Roles(Cog):
         """Used to remove dead reaction role entries"""
         message_id = payload.message_id
         await ReactionRole.delete(message_id=message_id)
-        self.reaction_roles.invalidate_entry(message_id=message_id)
         await RoleMenu.delete(message_id=message_id)
 
     @Cog.listener()
@@ -86,11 +90,13 @@ class Roles(Cog):
         """Called whenever a reaction is added or removed"""
         message_id = payload.message_id
         reaction = str(payload.emoji)
-        reaction_roles = await self.reaction_roles.query_all(message_id=message_id, reaction=reaction)
+        reaction_roles = await ReactionRole.get_by(message_id=message_id, reaction=reaction)
         if len(reaction_roles):
             guild = self.bot.get_guild(payload.guild_id)
             member = guild.get_member(payload.user_id)
             role = guild.get_role(reaction_roles[0].role_id)
+            if member.bot:
+                return
             if role:
                 try:
                     if payload.event_type == "REACTION_ADD":
@@ -221,7 +227,22 @@ class Roles(Cog):
             e.add_field(name='{} role(s) could not be found!'.format(extra),
                         value='Use `{0.prefix}{0.invoked_with} list` to find valid giveable roles!'.format(ctx),
                         inline=False)
-        await ctx.send(embed=e)
+        msg = await ctx.send(embed=e)
+        try:
+            await msg.add_reaction("❌")
+        except discord.Forbidden:
+            return
+        try:
+            await self.bot.wait_for('reaction_add', timeout=30, check=lambda reaction, reactor:
+                                    reaction.emoji == "❌" and reactor == ctx.author and reaction.message == msg)
+            await msg.delete()
+            try:
+                await ctx.message.delete()
+            except discord.Forbidden:
+                pass
+        except asyncio.TimeoutError:
+            await msg.clear_reactions()
+            return
 
     giveme.example_usage = """
     `{prefix}giveme Java` - gives you the role called Java, if it exists
@@ -474,20 +495,12 @@ class Roles(Cog):
         menu_message = await self.safe_message_fetch(ctx, menu=menu)
 
         menu_embed = discord.Embed(title=f"Role Menu: {menu.name}")
-        menu_entries = await self.reaction_roles.query_all(message_id=menu.message_id)
-
+        menu_entries = await ReactionRole.get_by(message_id=menu.message_id)
         for entry in menu_entries:
             role = ctx.guild.get_role(entry.role_id)
             menu_embed.add_field(name=f"Role: {role}", value=f"{entry.reaction}: {role.mention}", inline=False)
         menu_embed.set_footer(text=f"React to get a role\nMenu ID: {menu_message.id}, Total roles: {len(menu_entries)}")
         await menu_message.edit(embed=menu_embed)
-
-    async def add_to_message(self, message, entry):
-        """Adds a reaction role to a message"""
-        await message.add_reaction(entry.reaction)
-        await entry.update_or_add()
-        self.reaction_roles.invalidate_entry(message_id=entry.message_id, role_id=entry.role_id)
-        return
 
     @group(invoke_without_command=True, aliases=["reactionrole", "reactionroles"])
     @bot_has_permissions(manage_roles=True, embed_links=True)
@@ -499,7 +512,7 @@ class Roles(Cog):
         embed = discord.Embed(title="Reaction Role Messages", color=blurple)
         boundroles = []
         for rolemenu in rolemenus:
-            menu_entries = await self.reaction_roles.query_all(message_id=rolemenu.message_id)
+            menu_entries = await ReactionRole.get_by(message_id=rolemenu.message_id)
             for role in menu_entries:
                 boundroles.append(role.message_id)
             link = f"https://discordapp.com/channels/{rolemenu.guild_id}/{rolemenu.channel_id}/{rolemenu.message_id}"
@@ -597,9 +610,9 @@ class Roles(Cog):
             reaction=str(emoji)
         )
 
-        old_reaction = await self.reaction_roles.query_one(message_id=message.id, role_id=role.id)
-        if old_reaction:
-            await self.del_from_message(message, old_reaction)
+        old_reaction = await ReactionRole.get_by(message_id=message.id, role_id=role.id)
+        if len(old_reaction):
+            await self.del_from_message(message, old_reaction[0])
         await self.add_to_message(message, reaction_role)
 
         if menu:
@@ -630,15 +643,15 @@ class Roles(Cog):
         menu = menu_return[0] if len(menu_return) else None
         message = await self.safe_message_fetch(ctx, menu=menu, channel=channel, message_id=message_id)
 
-        reaction = await self.reaction_roles.query_one(message_id=message.id, role_id=role.id)
-        if reaction:
-            await self.del_from_message(message, reaction)
+        reaction = await ReactionRole.get_by(message_id=message.id, role_id=role.id)
+        if len(reaction):
+            await self.del_from_message(message, reaction[0])
             await ReactionRole.delete(message_id=message.id, role_id=role.id)
         if menu:
             await self.update_role_menu(ctx, menu)
 
         e = discord.Embed(color=blurple)
-        link = f"https://discordapp.com/channels/{ctx.guild.id}/{ctx.channel.id}/{message_id}"
+        link = f"https://discordapp.com/channels/{ctx.guild.id}/{message.channel.id}/{message_id}"
         shortcut = f"[{menu.name}]({link})" if menu else f"[{message_id}]({link})"
         e.add_field(name='Success!', value=f"I removed {role.mention} from message {shortcut}")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
