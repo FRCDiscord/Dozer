@@ -44,7 +44,8 @@ class Levels(Cog):
         # https://github.com/Mee6/Mee6-documentation/blob/9d98a8fe8ab494fd85ec27750592fc9f8ef82472/docs/levels_xp.md
         # > The formula to calculate how many xp you need for the next level is 5 * (lvl ^ 2) + 50 * lvl + 100 with
         # > your current level as lvl
-        if level >= 1000000:
+        if level >= 1000000:  # If the level gets too big, dozer will hang trying to calculate the level. A better way needs to be found to calculate
+            DOZER_LOGGER.warning("Member XP exceeded maximum calculation limit")  # level's but this is the best for now
             return
         needed = 0
         for lvl in range(level):
@@ -61,7 +62,7 @@ class Levels(Cog):
         # > The formula to calculate how many xp you need for the next level is 5 * (lvl ^ 2) + 50 * lvl + 100 with
         # > your current level as lvl
         lvl = 0
-        while xp >= 0:
+        while xp >= 0 and lvl <= 1000000:  # The same limitation is applied here
             xp -= 5 * lvl ** 2 + 50 * lvl + 100
             lvl += 1
         return lvl - 1
@@ -336,8 +337,15 @@ class Levels(Cog):
     @group(invoke_without_command=True, aliases=["moderatelevels", "levelsmoderation"])
     @guild_only()
     async def adjustlevels(self, ctx):
-        """Allows for moderators to adjust a members rank/xp"""
-        pass
+        """Allows for moderators to adjust a members level/xp"""
+        await ctx.send(f"Invalid subcommand\nFor help with adjustlevels use `{ctx.prefix}help adjustlevels`")
+
+    adjustlevels.example_usage = """
+    `{prefix}adjustlevels setlevel <@Snowplow or "Snowplow"> 15`:\n Sets member Snowplow's level to 15 
+    `{prefix}adjustlevels changexp <@Snowplow or "Snowplow"> -1500`:\n Changes member Snowplow's xp by -1500xp 
+    `{prefix}adjustlevels swapxp <@Snowplow or "Snowplow"> <@Dozer or "Dozer">`:\n Swaps Snowplow's xp with Dozer's xp
+    `{prefix}adjustlevels transferxp <@Snowplow or "Snowplow"> <@Dozer or "Dozer">`:\n Adds Snowplow's xp to dozer's xp
+    """
 
     @adjustlevels.command()
     @guild_only()
@@ -348,7 +356,7 @@ class Levels(Cog):
             raise BadArgument("Requested level is too high!")
         entry = await self.load_member(ctx.guild.id, member.id)
         xp = self.total_xp_for_level(level)
-        DOZER_LOGGER.debug(f"Adjusting level for user {member.id} to {xp}")
+        DOZER_LOGGER.debug(f"Adjusting xp for user {member.id} to {xp}")
         entry.total_xp = xp
         await self.sync_member(ctx.guild.id, member.id)
         e = discord.Embed(color=blurple)
@@ -356,11 +364,13 @@ class Levels(Cog):
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
-    @adjustlevels.command()
+    @adjustlevels.command(aliases=["addxp"])
     @guild_only()
     @has_permissions(manage_messages=True)
     async def changexp(self, ctx, member: discord.Member, xp_amount: int):
         """Changes a members xp by a certain amount"""
+        if abs(xp_amount) >= 2147483647:
+            raise BadArgument("You cannot change a members xp more than the 32bit limit will allow!")
         entry = await self.load_member(ctx.guild.id, member.id)
         entry.total_xp += xp_amount
         await self.sync_member(ctx.guild.id, member.id)
@@ -376,12 +386,12 @@ class Levels(Cog):
         """Swap xp stats between two members in a guild"""
         take = await self.load_member(ctx.guild.id, take_member.id)
         give = await self.load_member(ctx.guild.id, give_member.id)
-        self._xp_cache[take_member.id] = give
-        self._xp_cache[give_member.id] = take
+        self._xp_cache[(ctx.guild.id, take_member.id)] = give
+        self._xp_cache[(ctx.guild.id, give_member.id)] = take
         await self.sync_member(ctx.guild.id, take_member.id)
         await self.sync_member(ctx.guild.id, give_member.id)
         e = discord.Embed(color=blurple)
-        e.add_field(name='Success!', value=f"I swaped {take_member}'s xp with {give_member}")
+        e.add_field(name='Success!', value=f"I swapped {take_member}'s xp with {give_member}")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
@@ -390,6 +400,15 @@ class Levels(Cog):
     @has_permissions(manage_messages=True)
     async def transferxp(self, ctx, take_member: discord.Member, give_member: discord.Member):
         """Adds xp from one member to another member"""
+        take = await self.load_member(ctx.guild.id, take_member.id)
+        give = await self.load_member(ctx.guild.id, give_member.id)
+        give.total_xp += take.total_xp
+        give.total_messages += take.total_messages
+        await self.sync_member(ctx.guild.id, give_member.id)
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value=f"I added {take_member}'s xp to {give_member}")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
 
     @group(invoke_without_command=True, aliases=["configurelevels", "levelconfig", "rankconfig"])
     @guild_only()
@@ -434,6 +453,8 @@ class Levels(Cog):
             raise BadArgument("XP_min cannot be greater than XP_max!")
         if xp_min < 0:
             raise BadArgument("XP_min cannot be below zero!")
+        if xp_max >= 2147483647:
+            raise BadArgument("You cannot set per message xp to more than the 32bit limit will allow!")
         await self._cfg_guild_setting(ctx, xp_min=xp_min, xp_max=xp_max)
 
     @configureranks.command(aliases=["cooldown"])
