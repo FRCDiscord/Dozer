@@ -21,7 +21,6 @@ class Roles(Cog):
 
     def __init__(self, bot):
         super().__init__(bot)
-        self.reaction_roles = db.ConfigCache(ReactionRole)
         for command in self.giveme.walk_commands():
             @command.before_invoke
             async def givemeautopurge(self, ctx):
@@ -53,6 +52,12 @@ class Roles(Cog):
             raise BadArgument("That message does not exist or is not in this channel!")
 
     @staticmethod
+    async def add_to_message(message, entry):
+        """Adds a reaction role to a message"""
+        await message.add_reaction(entry.reaction)
+        await entry.update_or_add()
+
+    @staticmethod
     async def del_from_message(message, entry):
         """Removes a reaction from a message"""
         await message.clear_reaction(entry.reaction)
@@ -68,9 +73,7 @@ class Roles(Cog):
     async def on_raw_message_delete(self, payload):
         """Used to remove dead reaction role entries"""
         message_id = payload.message_id
-        entry = await ReactionRole.get_by(message_id=message_id)
         await ReactionRole.delete(message_id=message_id)
-        self.remove_from_cache(entry[0])
         await RoleMenu.delete(message_id=message_id)
 
     @Cog.listener()
@@ -87,12 +90,11 @@ class Roles(Cog):
         """Called whenever a reaction is added or removed"""
         message_id = payload.message_id
         reaction = str(payload.emoji)
-        reaction_roles = await self.reaction_roles.query_all(message_id=message_id)
-        reaction_role = [role for role in reaction_roles if role.reaction == reaction]
-        if len(reaction_role):
+        reaction_roles = await ReactionRole.get_by(message_id=message_id, reaction=reaction)
+        if len(reaction_roles):
             guild = self.bot.get_guild(payload.guild_id)
             member = guild.get_member(payload.user_id)
-            role = guild.get_role(reaction_role[0].role_id)
+            role = guild.get_role(reaction_roles[0].role_id)
             if member.bot:
                 return
             if role:
@@ -493,23 +495,12 @@ class Roles(Cog):
         menu_message = await self.safe_message_fetch(ctx, menu=menu)
 
         menu_embed = discord.Embed(title=f"Role Menu: {menu.name}")
-        menu_entries = await self.reaction_roles.query_all(message_id=menu.message_id)
+        menu_entries = await ReactionRole.get_by(message_id=menu.message_id)
         for entry in menu_entries:
             role = ctx.guild.get_role(entry.role_id)
             menu_embed.add_field(name=f"Role: {role}", value=f"{entry.reaction}: {role.mention}", inline=False)
         menu_embed.set_footer(text=f"React to get a role\nMenu ID: {menu_message.id}, Total roles: {len(menu_entries)}")
         await menu_message.edit(embed=menu_embed)
-
-    async def add_to_message(self, message, entry):
-        """Adds a reaction role to a message"""
-        await message.add_reaction(entry.reaction)
-        self.remove_from_cache(entry)
-        await entry.update_or_add()
-
-    def remove_from_cache(self, entry):
-        """Remove a reaction role from the cache in all possible forms"""
-        self.reaction_roles.invalidate_entry(message_id=entry.message_id)
-        self.reaction_roles.invalidate_entry(message_id=entry.message_id, role_id=entry.role_id)
 
     @group(invoke_without_command=True, aliases=["reactionrole", "reactionroles"])
     @bot_has_permissions(manage_roles=True, embed_links=True)
@@ -521,7 +512,7 @@ class Roles(Cog):
         embed = discord.Embed(title="Reaction Role Messages", color=blurple)
         boundroles = []
         for rolemenu in rolemenus:
-            menu_entries = await self.reaction_roles.query_all(message_id=rolemenu.message_id)
+            menu_entries = await ReactionRole.get_by(message_id=rolemenu.message_id)
             for role in menu_entries:
                 boundroles.append(role.message_id)
             link = f"https://discordapp.com/channels/{rolemenu.guild_id}/{rolemenu.channel_id}/{rolemenu.message_id}"
@@ -619,9 +610,9 @@ class Roles(Cog):
             reaction=str(emoji)
         )
 
-        old_reaction = await self.reaction_roles.query_one(message_id=message.id, role_id=role.id)
-        if old_reaction:
-            await self.del_from_message(message, old_reaction)
+        old_reaction = await ReactionRole.get_by(message_id=message.id, role_id=role.id)
+        if len(old_reaction):
+            await self.del_from_message(message, old_reaction[0])
         await self.add_to_message(message, reaction_role)
 
         if menu:
@@ -652,10 +643,9 @@ class Roles(Cog):
         menu = menu_return[0] if len(menu_return) else None
         message = await self.safe_message_fetch(ctx, menu=menu, channel=channel, message_id=message_id)
 
-        reaction = await self.reaction_roles.query_one(message_id=message.id, role_id=role.id)
-        if reaction:
-            await self.del_from_message(message, reaction)
-            self.remove_from_cache(reaction)
+        reaction = await ReactionRole.get_by(message_id=message.id, role_id=role.id)
+        if len(reaction):
+            await self.del_from_message(message, reaction[0])
             await ReactionRole.delete(message_id=message.id, role_id=role.id)
         if menu:
             await self.update_role_menu(ctx, menu)
