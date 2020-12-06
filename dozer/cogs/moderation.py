@@ -49,10 +49,12 @@ class Moderation(Cog):
 
     @discord.ext.tasks.loop(hours=168)
     async def nm_kick(self):
+        """Kicks people who have not done the new member process within a set amount of time."""
+        getLogger("dozer").debug("Starting nm_kick cycle...")
         entries = await NewMemPurgeConfig.get_by()
         for entry in entries:
             guild = self.bot.get_guild(entry.guild_id)
-            for mem in guild:
+            for mem in guild.members:
                 if guild.get_role(entry.member_role) not in mem.roles:
                     delta = datetime.datetime.now() - mem.joined_at
                     if delta.days >= entry.days:
@@ -251,7 +253,7 @@ class Moderation(Cog):
     @Cog.listener('on_ready')
     async def on_ready(self):
         """Restore punishment timers on bot startup and trigger the nm purge cycle"""
-        await self.nm_kick()
+        await self.nm_kick.start()
         q = await PunishmentTimerRecords.get_by()  # no filters: all
         for r in q:
             guild = self.bot.get_guild(r.guild_id)
@@ -727,7 +729,7 @@ class Moderation(Cog):
             config.member_role = role.id
             config.days = days
         else:
-            config = NewMemPurgeConfig(guild_id=ctx.guild.id, member_role=role, days=days)
+            config = NewMemPurgeConfig(guild_id=ctx.guild.id, member_role=role.id, days=days)
         await config.update_or_add()
 
         await ctx.send("Settings saved!")
