@@ -19,6 +19,10 @@ from .. import db
 
 DOZER_LOGGER = logging.getLogger(__name__)
 
+ADD_LIMIT = 2147483647
+LEVEL_SET_LIMIT = 100000
+LEVEL_CALC_LIMIT = 1000000
+
 
 class Levels(Cog):
     """Commands and event handlers for managing levels and XP."""
@@ -44,9 +48,12 @@ class Levels(Cog):
         # https://github.com/Mee6/Mee6-documentation/blob/9d98a8fe8ab494fd85ec27750592fc9f8ef82472/docs/levels_xp.md
         # > The formula to calculate how many xp you need for the next level is 5 * (lvl ^ 2) + 50 * lvl + 100 with
         # > your current level as lvl
+        if level >= LEVEL_CALC_LIMIT:  # If the level gets too big, dozer will hang trying to calculate the level. A better way needs to
+            DOZER_LOGGER.critical("Member XP exceeded maximum calculation limit")  # be found to calculate level's but this is the best for now
+            return
         needed = 0
         for lvl in range(level):
-            needed += 5 * lvl ** 2 + 50 * lvl + 100
+            needed += 5 * (lvl ** 2) + 50 * lvl + 100
         return needed
 
     @staticmethod
@@ -59,7 +66,7 @@ class Levels(Cog):
         # > The formula to calculate how many xp you need for the next level is 5 * (lvl ^ 2) + 50 * lvl + 100 with
         # > your current level as lvl
         lvl = 0
-        while xp >= 0:
+        while xp >= 0 and lvl <= LEVEL_CALC_LIMIT:  # The same limitation is applied here
             xp -= 5 * lvl ** 2 + 50 * lvl + 100
             lvl += 1
         return lvl - 1
@@ -132,7 +139,7 @@ class Levels(Cog):
                 if channel:
                     await channel.send(f"{member.mention}, you have reached level {new_level}!")
 
-    async def _load_member(self, guild_id, member_id):
+    async def load_member(self, guild_id, member_id):
         """Check to see if a member is in the level cache and if not load from the database"""
         cached_member = self._xp_cache.get((guild_id, member_id))
         if cached_member is None:
@@ -146,6 +153,17 @@ class Levels(Cog):
                 cached_member = MemberXPCache(0, datetime.now(tz=timezone.utc), 0, True)
             self._xp_cache[(guild_id, member_id)] = cached_member
         return cached_member
+
+    async def sync_member(self, guild_id, member_id):
+        """Sync an individual member to the database"""
+        cached_member = self._xp_cache.get((guild_id, member_id))
+        if cached_member:
+            e = MemberXP(guild_id, member_id, cached_member.total_xp, cached_member.total_messages, cached_member.last_given_at)
+            await e.update_or_add()
+            cached_member.dirty = False
+            return True
+        else:
+            return False
 
     async def sync_to_database(self):
         """Sync dirty records to the database, and evict others from the cache."""
@@ -170,13 +188,16 @@ class Levels(Cog):
             DOZER_LOGGER.debug("Sync task skipped, nothing to do")
             return
         # Query written manually to insert all records at once
-        async with db.Pool.acquire() as conn:
-            await conn.executemany(f"INSERT INTO {MemberXP.__tablename__} (guild_id, user_id, total_xp, total_messages, last_given_at)"
-                                   f" VALUES ($1, $2, $3, $4, $5) ON CONFLICT ({MemberXP.__uniques__}) DO UPDATE"
-                                   f" SET total_xp = EXCLUDED.total_xp, total_messages = EXCLUDED.total_messages, last_given_at = "
-                                   f"EXCLUDED.last_given_at",
-                                   to_write)
-        DOZER_LOGGER.debug(f"Inserted/updated {len(to_write)} record(s); Evicted {evicted} records(s)")
+        try:
+            async with db.Pool.acquire() as conn:
+                await conn.executemany(f"INSERT INTO {MemberXP.__tablename__} (guild_id, user_id, total_xp, total_messages, last_given_at)"
+                                       f" VALUES ($1, $2, $3, $4, $5) ON CONFLICT ({MemberXP.__uniques__}) DO UPDATE"
+                                       f" SET total_xp = EXCLUDED.total_xp, total_messages = EXCLUDED.total_messages, last_given_at = "
+                                       f"EXCLUDED.last_given_at",
+                                       to_write)
+            DOZER_LOGGER.debug(f"Inserted/updated {len(to_write)} record(s); Evicted {evicted} records(s)")
+        except Exception as e:
+            DOZER_LOGGER.error(f"Failed to sync levels cache to db, Reason:{e}")
 
     @loop(minutes=2.5)
     async def sync_task(self):
@@ -230,7 +251,7 @@ class Levels(Cog):
         if guild_settings is None or not guild_settings.enabled:
             return
 
-        cached_member = await self._load_member(message.guild.id, message.author.id)
+        cached_member = await self.load_member(message.guild.id, message.author.id)
         await self.check_new_roles(message.guild, message.author, cached_member, guild_settings)
         old_xp = cached_member.total_xp
 
@@ -317,6 +338,85 @@ class Levels(Cog):
     `{prefix}checkrolelevels`: Returns an embed of all the role levels 
     """
 
+    @group(invoke_without_command=True, aliases=["moderatelevels", "levelsmoderation"])
+    @guild_only()
+    async def adjustlevels(self, ctx):
+        """Allows for moderators to adjust a members level/xp"""
+        await ctx.send(f"Invalid subcommand\nFor help with adjustlevels use `{ctx.prefix}help adjustlevels`")
+
+    adjustlevels.example_usage = """
+    `{prefix}adjustlevels setlevel <@Snowplow or "Snowplow"> 15`:\n Sets member Snowplow's level to 15 
+    `{prefix}adjustlevels changexp <@Snowplow or "Snowplow"> -1500`:\n Changes member Snowplow's xp by -1500xp 
+    `{prefix}adjustlevels swapxp <@Snowplow or "Snowplow"> <@Dozer or "Dozer">`:\n Swaps Snowplow's xp with Dozer's xp
+    `{prefix}adjustlevels transferxp <@Snowplow or "Snowplow"> <@Dozer or "Dozer">`:\n Adds Snowplow's xp to dozer's xp
+    """
+
+    @adjustlevels.command()
+    @guild_only()
+    @has_permissions(manage_messages=True)
+    async def setlevel(self, ctx, member: discord.Member, level: int):
+        """Changes a members level to requested level"""
+        if level >= LEVEL_SET_LIMIT:
+            raise BadArgument("Requested level is too high!")
+        entry = await self.load_member(ctx.guild.id, member.id)
+        xp = self.total_xp_for_level(level)
+        DOZER_LOGGER.debug(f"Adjusting xp for user {member.id} to {xp}")
+        entry.total_xp = xp
+        await self.sync_member(ctx.guild.id, member.id)
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value=f"I set {member}'s level to {level}")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
+
+    @adjustlevels.command(aliases=["addxp"])
+    @guild_only()
+    @has_permissions(manage_messages=True)
+    async def adjustxp(self, ctx, member: discord.Member, xp_amount: int):
+        """Adjusts a members xp by a certain amount"""
+        if abs(xp_amount) >= ADD_LIMIT:
+            raise BadArgument("You cannot change a members xp more than the 32bit limit will allow!")
+        entry = await self.load_member(ctx.guild.id, member.id)
+        entry.total_xp += xp_amount
+        await self.sync_member(ctx.guild.id, member.id)
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value=f"I adjusted {member}'s xp by {xp_amount} points")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
+
+    @adjustlevels.command()
+    @guild_only()
+    @has_permissions(manage_messages=True)
+    async def swapxp(self, ctx, take_member: discord.Member, give_member: discord.Member):
+        """Swap xp stats between two members in a guild"""
+        take = await self.load_member(ctx.guild.id, take_member.id)
+        give = await self.load_member(ctx.guild.id, give_member.id)
+        self._xp_cache[(ctx.guild.id, take_member.id)] = give
+        self._xp_cache[(ctx.guild.id, give_member.id)] = take
+        await self.sync_member(ctx.guild.id, take_member.id)
+        await self.sync_member(ctx.guild.id, give_member.id)
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value=f"I swapped {take_member}'s xp with {give_member}")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
+
+    @adjustlevels.command()
+    @guild_only()
+    @has_permissions(manage_messages=True)
+    async def transferxp(self, ctx, take_member: discord.Member, give_member: discord.Member):
+        """Adds xp from one member to another member"""
+        take = await self.load_member(ctx.guild.id, take_member.id)
+        give = await self.load_member(ctx.guild.id, give_member.id)
+        give.total_xp += take.total_xp
+        give.total_messages += take.total_messages
+        take.total_xp = 0
+        take.total_messages = 0
+        await self.sync_member(ctx.guild.id, give_member.id)
+        await self.sync_member(ctx.guild.id, take_member.id)
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value=f"I added {take_member}'s xp to {give_member}")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
+
     @group(invoke_without_command=True, aliases=["configurelevels", "levelconfig", "rankconfig"])
     @guild_only()
     async def configureranks(self, ctx):
@@ -360,6 +460,8 @@ class Levels(Cog):
             raise BadArgument("XP_min cannot be greater than XP_max!")
         if xp_min < 0:
             raise BadArgument("XP_min cannot be below zero!")
+        if xp_max >= ADD_LIMIT:
+            raise BadArgument("You cannot set per message xp to more than the 32bit limit will allow!")
         await self._cfg_guild_setting(ctx, xp_min=xp_min, xp_max=xp_max)
 
     @configureranks.command(aliases=["cooldown"])
@@ -518,7 +620,7 @@ class Levels(Cog):
         if guild_settings is None or not guild_settings.enabled:
             embed.description = "Levels are not enabled in this server"
         else:
-            cache_record = await self._load_member(ctx.guild.id, member.id)
+            cache_record = await self.load_member(ctx.guild.id, member.id)
 
             # Make Postgres compute the rank for us (need WITH-query so rank() sees records for every user)
             db_record = await db.Pool.fetchrow(f"""

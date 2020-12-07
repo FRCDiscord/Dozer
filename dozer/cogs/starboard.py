@@ -45,7 +45,7 @@ def make_starboard_embed(msg: discord.Message, reaction_count):
     if len(msg.attachments) > 1:
         e.add_field(name="Attachments:", value="\n".join([f"[{a.filename}]({a.url})" for a in msg.attachments]))
     elif len(msg.attachments) == 1:
-        if msg.attachments[0].width is not None and msg.attachments[0].filename[-4:] not in VIDEO_FORMATS:
+        if msg.attachments[0].width is not None and msg.attachments[0].filename[-4:] not in VIDEO_FORMATS and not msg.attachments[0].is_spoiler():
             e.set_image(url=msg.attachments[0].url)
         else:
             e.add_field(name="Attachment:", value=f"[{msg.attachments[0].filename}]({msg.attachments[0].url})")
@@ -251,6 +251,9 @@ class Starboard(Cog):
                      threshold: int,
                      cancel_emoji: typing.Union[discord.Emoji, str] = None):
         """Modify the settings for this server's starboard"""
+        if str(star_emoji) == str(cancel_emoji):
+            await ctx.send("The Star Emoji and Cancel Emoji cannot be the same!")
+            return
         for emoji in [emoji for emoji in [star_emoji, cancel_emoji] if emoji is not None]:
             try:
                 # try adding it to make sure it's a real emoji. This covers both custom emoijs & unicode emojis
