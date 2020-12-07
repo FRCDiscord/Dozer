@@ -63,15 +63,6 @@ class Starboard(Cog):
         self.config_cache = db.ConfigCache(StarboardConfig)
         self.locked_messages = set()
 
-    @staticmethod
-    def compare_reacts(reaction, emoji):
-        """Compares custom and default emojis"""
-        if not emoji.find("<") and hasattr(reaction.emoji, "id"):
-            react_id = emoji.split(":", 2)[2][:-1]
-            return reaction.emoji.id == int(react_id)
-        else:
-            return reaction.emoji == emoji
-
     def make_config_embed(self, ctx, title, config):
         """Makes a config embed."""
         channel = self.bot.get_channel(config.channel_id)
@@ -214,7 +205,7 @@ class Starboard(Cog):
             message = await channel.fetch_message(payload.message_id)
 
         emoji = str(payload.emoji)
-        matching_reaction = [reaction for reaction in message.reactions if self.compare_reacts(reaction, emoji)]
+        matching_reaction = [reaction for reaction in message.reactions if str(reaction.emoji) == str(emoji)]
 
         member = message.author
         if len(matching_reaction):
