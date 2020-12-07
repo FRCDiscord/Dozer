@@ -185,14 +185,34 @@ class Starboard(Cog):
         self.locked_messages.remove(msg)
 
     @Cog.listener()
-    async def on_reaction_add(self, reaction, user):
-        """Pass the reaction add event onto our handler"""
-        await self.starboard_check(reaction, user)
+    async def on_raw_reaction_add(self, payload):
+        """Raw API event for reaction add, passes event to action handler"""
+        await self.on_raw_reaction_action(payload)
 
     @Cog.listener()
-    async def on_reaction_remove(self, reaction, user):
-        """Pass the reaction remove event onto our handler"""
-        await self.starboard_check(reaction, user)
+    async def on_raw_reaction_remove(self, payload):
+        """Raw API event for reaction remove, passes event to action handler"""
+        await self.on_raw_reaction_action(payload)
+
+    async def on_raw_reaction_action(self, payload):
+        """Convert the payload into a reaction event and pass the reaction event onto our handler"""
+        message = None
+        for msg in self.bot.cached_messages:
+            if msg.id == payload.message_id:
+                message = msg
+                break
+        if not message:
+            channel = self.bot.get_channel(payload.channel_id)
+            message = await channel.fetch_message(payload.message_id)
+
+        emoji = str(payload.emoji)
+        matching_reaction = [reaction for reaction in message.reactions if reaction.emoji == emoji]
+
+        member = message.author
+        if len(matching_reaction):
+            await self.starboard_check(matching_reaction[0], member)
+        else:
+            DOZER_LOGGER.info(f"Unable to find reaction for message({message.id})")
 
     @guild_only()
     @group(invoke_without_command=True, aliases=['hof'])
