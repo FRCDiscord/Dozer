@@ -460,7 +460,7 @@ class Levels(Cog):
             raise BadArgument("XP_min cannot be greater than XP_max!")
         if xp_min < 0:
             raise BadArgument("XP_min cannot be below zero!")
-        if xp_max >= 2147483647:
+        if xp_max >= ADD_LIMIT:
             raise BadArgument("You cannot set per message xp to more than the 32bit limit will allow!")
         await self._cfg_guild_setting(ctx, xp_min=xp_min, xp_max=xp_max)
 
