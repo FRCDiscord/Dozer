@@ -79,7 +79,7 @@ class Starboard(Cog):
         e.set_footer(text=f"For more information, try {ctx.prefix}help starboard")
         return e
 
-    async def send_to_starboard(self, config, message, reaction_count, add_react = True):
+    async def send_to_starboard(self, config, message, reaction_count, add_react=True):
         """Given a message which may or may not exist, send it to the starboard"""
         starboard_channel = message.guild.get_channel(config.channel_id)
         if starboard_channel is None:
@@ -107,7 +107,7 @@ class Starboard(Cog):
                 fake_msg = discord.Object(db_msgs[0].starboard_message_id)
                 await self.remove_from_starboard(config, fake_msg, True)
                 return
-            await sent_msg.edit(embed=make_starboard_embed(message, reaction_count-1))
+            await sent_msg.edit(embed=make_starboard_embed(message, reaction_count - 1))
 
     async def remove_from_starboard(self, config, starboard_message, cancel=False):
         """Given a starboard message or snowflake, remove that message and remove it from the DB"""
@@ -155,7 +155,7 @@ class Starboard(Cog):
             if len(db_msgs):
                 DOZER_LOGGER.debug("Under starboard threshold, removing starboard")
                 try:
-                    starboard_msg = await self.bot.get_channel(config.channel_id).\
+                    starboard_msg = await self.bot.get_channel(config.channel_id). \
                         fetch_message(db_msgs[0].starboard_message_id)
                 except discord.NotFound:
                     DOZER_LOGGER.warning(f"Cannot find Starboard Message {db_msgs[0].starboard_message_id} to remove")
@@ -196,17 +196,16 @@ class Starboard(Cog):
 
     async def on_raw_reaction_action(self, payload):
         """Convert the payload into a reaction event and pass the reaction event onto our handler"""
-        message = None
         for msg in self.bot.cached_messages:
             if msg.id == payload.message_id:
                 message = msg
                 break
-        if not message:
+        else:
             channel = self.bot.get_channel(payload.channel_id)
             message = await channel.fetch_message(payload.message_id)
 
         emoji = str(payload.emoji)
-        matching_reaction = [reaction for reaction in message.reactions if reaction.emoji == emoji]
+        matching_reaction = [reaction for reaction in message.reactions if str(reaction.emoji) == emoji]
 
         member = message.author
         if len(matching_reaction):
