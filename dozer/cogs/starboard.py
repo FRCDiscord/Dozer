@@ -196,12 +196,11 @@ class Starboard(Cog):
 
     async def on_raw_reaction_action(self, payload):
         """Convert the payload into a reaction event and pass the reaction event onto our handler"""
-        message = None
         for msg in self.bot.cached_messages:
             if msg.id == payload.message_id:
                 message = msg
                 break
-        if not message:
+        else:
             channel = self.bot.get_channel(payload.channel_id)
             message = await channel.fetch_message(payload.message_id)
 
