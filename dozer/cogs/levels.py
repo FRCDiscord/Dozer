@@ -368,11 +368,11 @@ class Levels(Cog):
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
-    @adjustlevels.command()
+    @adjustlevels.command(aliases=["addxp"])
     @guild_only()
     @has_permissions(manage_messages=True)
-    async def addxp(self, ctx, member: discord.Member, xp_amount: int):
-        """Changes a members xp by a certain amount"""
+    async def adjustxp(self, ctx, member: discord.Member, xp_amount: int):
+        """Adjusts a members xp by a certain amount"""
         if abs(xp_amount) >= add_limit:
             raise BadArgument("You cannot change a members xp more than the 32bit limit will allow!")
         entry = await self.load_member(ctx.guild.id, member.id)
