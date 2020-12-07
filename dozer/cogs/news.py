@@ -55,6 +55,7 @@ class News(Cog):
 
             DOZER_LOGGER.debug(f"Getting source {source.full_name}")
             subs = await NewsSubscription.get_by(source=source.short_name)
+
             if not subs:
                 DOZER_LOGGER.debug(f"Skipping source {source.full_name} due to no subscriptions")
                 continue
@@ -114,12 +115,16 @@ class News(Cog):
     @get_new_posts.error
     async def log_exception(self, _exception):
         """Catch error in the news loop and attempt to restart"""
-        self.get_new_posts.start()
+        DOZER_LOGGER.error(f"News fetch encountered an error: \"{_exception}\", attempting to restart")
+        self.get_new_posts.restart()
+        DOZER_LOGGER.debug("News fetch successfully restarted")
 
     @get_new_posts.before_loop
     async def startup(self):
         """Initialize sources and start the loop after initialization"""
         self.sources = {}
+        if self.http_source:
+            await self.http_source.close()
         self.http_source = aiohttp.ClientSession(headers={'Connection': 'keep-alive', 'User-Agent': 'Dozer RSS Feed Reader'})
         # JVN's blog will 403 you if you use the default user agent, so replacing it with this will yield a parsable result.
         for source in self.enabled_sources:
@@ -161,6 +166,7 @@ class News(Cog):
                         value=f"To see all of your server's subscriptions, use `{ctx.prefix}news "
                               f"subscriptions`")
         await ctx.send(embed=embed)
+
     news.example_usage = "`{prefix}news` - Get a small guide on using the News system"
 
     @news.command()
@@ -238,6 +244,7 @@ class News(Cog):
         embed.colour = discord.colour.Color.green()
 
         await ctx.send(embed=embed)
+
     add.example_usage = """`{prefix}news add #news cd` - Make new Chief Delphi posts appear in #news
     `{prefix}news add #announcements frc plain` - Add new FRC blog posts in plain text to #announcements
     `{prefix}news add #reddit reddit embed frc` - Add new posts from /r/FRC to #reddit"""
@@ -303,6 +310,7 @@ class News(Cog):
         embed.colour = discord.colour.Color.red()
 
         await ctx.send(embed=embed)
+
     remove.example_usage = """`{prefix}news remove #news cd` - Remove the subscription of Chief Delphi to #news
      `{prefix}news remove #reddit reddit frc` - Remove the subscription of /r/FRC to #reddit"""
 
@@ -321,6 +329,7 @@ class News(Cog):
                             inline=True)
 
         await ctx.send(embed=embed)
+
     list_sources.example_usage = "`{prefix}`news sources` - Get all available sources"
 
     @news.command(name='subscriptions', aliases=('subs', 'channels'))
@@ -334,7 +343,7 @@ class News(Cog):
 
         if not results:
             embed = discord.Embed(title="News Subscriptions for {}".format(ctx.guild.name))
-            embed.description = f"No news subscriptions found for this guild! Add one using `{self.bot.command_prefix}"\
+            embed.description = f"No news subscriptions found for this guild! Add one using `{self.bot.command_prefix}" \
                                 f"news add <channel> <source>`"
             embed.colour = discord.Color.red()
             await ctx.send(embed=embed)
@@ -364,6 +373,7 @@ class News(Cog):
                 subs += "\n"
             embed.add_field(name=f"#{found_channel.name}", value=subs)
         await ctx.send(embed=embed)
+
     list_subscriptions.example_usage = """`{prefix}news subs` - Check all subscriptions in the current server
     `{prefix}news subs #news` - See all the subscriptions for #news"""
 
@@ -375,6 +385,7 @@ class News(Cog):
         self.get_new_posts.change_interval(minutes=self.bot.config['news']['check_interval'])
         self.get_new_posts.start()
         await ctx.send("Loop restarted.")
+
     restart_loop.example_usage = "`{prefix}news restart_loop` - Restart the news loop if you are a developer"
 
     @news.command()
@@ -389,6 +400,7 @@ class News(Cog):
         else:
             await ctx.send(f"Next run in "
                            f"{(next_run - datetime.datetime.now(datetime.timezone.utc)).total_seconds()} seconds.")
+
     next_run.example_usage = "`{prefix}news next_run` - Check the next time the loop runs if you are a developer"
 
     @news.command()
@@ -407,6 +419,7 @@ class News(Cog):
         except InvalidStateError:
             await ctx.send("Task has not yet completed. This likely means the loop is continuing just fine. You can"
                            f"determine the next time it's running with {ctx.prefix}news next_run")
+
     get_exception.example_usage = "`{prefix}news get_exception` - Get the exception that the loop failed with"
 
 
