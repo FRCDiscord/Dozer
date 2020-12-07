@@ -205,7 +205,7 @@ class Starboard(Cog):
             message = await channel.fetch_message(payload.message_id)
 
         emoji = str(payload.emoji)
-        matching_reaction = [reaction for reaction in message.reactions if str(reaction.emoji) == str(emoji)]
+        matching_reaction = [reaction for reaction in message.reactions if str(reaction.emoji) == emoji]
 
         member = message.author
         if len(matching_reaction):
