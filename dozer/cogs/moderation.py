@@ -47,8 +47,32 @@ class Moderation(Cog):
         except Forbidden:
             return None
 
+    async def nm_kick_internal(self, guild=None):
+        """Kicks people who have not done the new member process within a set amount of time."""
+        getLogger("dozer").debug("Starting nm_kick cycle...")
+        if not guild:
+            entries = await NewMemPurgeConfig.get_by()
+        else:
+            entries = await NewMemPurgeConfig.get_by(guild_id=guild.id)
+        count = 0
+        for entry in entries:
+            guild = self.bot.get_guild(entry.guild_id)
+            if guild is None:
+                continue
+            for mem in guild.members:
+                if guild.get_role(entry.member_role) not in mem.roles:
+                    delta = datetime.datetime.now() - mem.joined_at
+                    if delta.days >= entry.days:
+                        await mem.kick(reason="New member purge cycle")
+                        count += 1
+        return count
+
+    @discord.ext.tasks.loop(hours=168)
+    async def nm_kick(self):
+        await self.nm_kick_internal()
+
     async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member, None], reason, orig_channel=None,
-                      embed_color=discord.Color.red(), global_modlog=True):
+                      embed_color=discord.Color.red(), global_modlog=True, duration=None):
         """Generates a modlog embed"""
 
         if target is None:
@@ -66,6 +90,8 @@ class Moderation(Cog):
         modlog_embed.add_field(name="Requested by", value=f"{actor.mention} ({actor} | {actor.id})", inline=False)
         modlog_embed.add_field(name="Reason", value=reason or "No reason specified", inline=False)
         modlog_embed.timestamp = datetime.datetime.utcnow()
+        if duration:
+            modlog_embed.add_field(name="Duration", value=duration)
         if target is not None:
             try:
                 await target.send(embed=modlog_embed)
@@ -239,7 +265,8 @@ class Moderation(Cog):
 
     @Cog.listener('on_ready')
     async def on_ready(self):
-        """Restore punishment timers on bot startup"""
+        """Restore punishment timers on bot startup and trigger the nm purge cycle"""
+        await self.nm_kick.start()
         q = await PunishmentTimerRecords.get_by()  # no filters: all
         for r in q:
             guild = self.bot.get_guild(r.guild_id)
@@ -564,9 +591,10 @@ class Moderation(Cog):
         """Mute a user to prevent them from sending messages"""
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
-            reason = self.hm_regex.sub(reason, "") or "No reason provided"
+            reason = self.hm_regex.sub("", reason) or "No reason provided"
             if await self._mute(member_mentions, reason=reason, seconds=seconds, actor=ctx.author, orig_channel=ctx.channel):
-                await self.mod_log(ctx.author, "muted", member_mentions, reason, ctx.channel, discord.Color.red())
+                await self.mod_log(ctx.author, "muted", member_mentions, reason, ctx.channel, discord.Color.red(),
+                                   duration=datetime.timedelta(seconds=seconds))
             else:
                 await ctx.send("Member is already muted!")
 
@@ -597,9 +625,10 @@ class Moderation(Cog):
         """Deafen a user to prevent them from both sending messages but also reading messages."""
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
-            reason = self.hm_regex.sub(reason, "") or "No reason provided"
+            reason = self.hm_regex.sub("", reason) or "No reason provided"
             if await self._deafen(member_mentions, reason, seconds=seconds, self_inflicted=False, actor=ctx.author, orig_channel=ctx.channel):
-                await self.mod_log(ctx.author, "deafened", member_mentions, reason, ctx.channel, discord.Color.red())
+                await self.mod_log(ctx.author, "deafened", member_mentions, reason, ctx.channel, discord.Color.red(),
+                                   duration=datetime.timedelta(seconds=seconds))
             else:
                 await ctx.send("Member is already deafened!")
 
@@ -613,9 +642,10 @@ class Moderation(Cog):
         """Deafen yourself for a given time period to prevent you from reading or sending messages; useful as a study tool."""
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
-            reason = self.hm_regex.sub(reason, "") or "No reason provided"
+            reason = self.hm_regex.sub("", reason) or "No reason provided"
             if await self._deafen(ctx.author, reason, seconds=seconds, self_inflicted=True, actor=ctx.author, orig_channel=ctx.channel):
-                await self.mod_log(ctx.author, "deafened", ctx.author, reason, ctx.channel, discord.Color.red(), global_modlog=False)
+                await self.mod_log(ctx.author, "deafened", ctx.author, reason, ctx.channel, discord.Color.red(), global_modlog=False,
+                                   duration=datetime.timedelta(seconds=seconds))
             else:
                 await ctx.send("You are already deafened!")
 
@@ -660,6 +690,14 @@ class Moderation(Cog):
     `{prefix}voicekick @user reason` - kick @user out of voice
     """
 
+    @has_permissions(kick_members=True)
+    @bot_has_permissions(kick_members=True)
+    @command()
+    async def purgenm(self, ctx):
+        """Manually run a new member purge"""
+        memcount = await self.nm_kick_internal(guild=ctx.guild)
+        await ctx.send(f"Kicked {memcount} members due to inactivity!")
+
     """=== Configuration commands ==="""
 
     @command()
@@ -703,6 +741,19 @@ class Moderation(Cog):
     nmconfig.example_usage = """
     `{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel 
     so if someone types "I have read the rules and regulations" it assigns them the Member role. 
+    """
+
+    @command()
+    @has_permissions(administrator=True)
+    async def nmpurgeconfig(self, ctx, role: discord.Role, days: int):
+        """Sets the config for the new members purge"""
+        config = NewMemPurgeConfig(guild_id=ctx.guild.id, member_role=role.id, days=days)
+        await config.update_or_add()
+
+        await ctx.send("Settings saved!")
+
+    nmpurgeconfig.example_usage = """
+    `{prefix}nmpurgeconfig Members 90: Kicks everyone who doesn't have the members role 90 days after they join.
     """
 
     @command()
@@ -949,6 +1000,40 @@ class MemberRole(db.DatabaseTable):
         result_list = []
         for result in results:
             obj = MemberRole(member_role=result.get("member_role"), guild_id=result.get("guild_id"))
+            result_list.append(obj)
+        return result_list
+
+
+class NewMemPurgeConfig(db.DatabaseTable):
+    """Holds info on member purge routines"""
+    __tablename__ = 'member_purge_configs'
+    __uniques__ = 'guild_id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            guild_id bigint PRIMARY KEY NOT NULL,
+            member_role bigint not null,
+            days int not null
+            )""")
+
+    def __init__(self, guild_id, member_role, days):
+        super().__init__()
+        self.guild_id = guild_id
+        self.member_role = member_role
+        self.days = days
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = NewMemPurgeConfig(member_role=result.get("member_role"),
+                                    guild_id=result.get("guild_id"),
+                                    days=result.get("days"))
             result_list.append(obj)
         return result_list
 
