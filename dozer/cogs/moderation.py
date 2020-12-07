@@ -47,11 +47,14 @@ class Moderation(Cog):
         except Forbidden:
             return None
 
-    @discord.ext.tasks.loop(hours=168)
-    async def nm_kick(self):
+    async def nm_kick_internal(self, guild=None):
         """Kicks people who have not done the new member process within a set amount of time."""
         getLogger("dozer").debug("Starting nm_kick cycle...")
-        entries = await NewMemPurgeConfig.get_by()
+        if not guild:
+            entries = await NewMemPurgeConfig.get_by()
+        else:
+            entries = await NewMemPurgeConfig.get_by(guild_id=guild.id)
+        count = 0
         for entry in entries:
             guild = self.bot.get_guild(entry.guild_id)
             if guild is None:
@@ -61,6 +64,12 @@ class Moderation(Cog):
                     delta = datetime.datetime.now() - mem.joined_at
                     if delta.days >= entry.days:
                         await mem.kick(reason="New member purge cycle")
+                        count += 1
+        return count
+
+    @discord.ext.tasks.loop(hours=168)
+    async def nm_kick(self):
+        await self.nm_kick_internal()
 
     async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member, None], reason, orig_channel=None,
                       embed_color=discord.Color.red(), global_modlog=True):
@@ -675,6 +684,14 @@ class Moderation(Cog):
     voicekick.example_usage = """
     `{prefix}voicekick @user reason` - kick @user out of voice
     """
+
+    @has_permissions(kick_members=True)
+    @bot_has_permissions(kick_members=True)
+    @command()
+    async def purgenm(self, ctx):
+        """Manually run a new member purge"""
+        memcount = await self.nm_kick_internal(guild=ctx.guild)
+        await ctx.send(f"Kicked {memcount} members due to inactivity!")
 
     """=== Configuration commands ==="""
 
