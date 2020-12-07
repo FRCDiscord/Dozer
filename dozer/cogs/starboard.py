@@ -243,6 +243,9 @@ class Starboard(Cog):
                      threshold: int,
                      cancel_emoji: typing.Union[discord.Emoji, str] = None):
         """Modify the settings for this server's starboard"""
+        if str(star_emoji) == str(cancel_emoji):
+            await ctx.send("The Star Emoji and Cancel Emoji cannot be the same!")
+            return
         for emoji in [emoji for emoji in [star_emoji, cancel_emoji] if emoji is not None]:
             try:
                 # try adding it to make sure it's a real emoji. This covers both custom emoijs & unicode emojis
