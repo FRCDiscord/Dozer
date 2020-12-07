@@ -48,7 +48,7 @@ class Moderation(Cog):
             return None
 
     async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member, None], reason, orig_channel=None,
-                      embed_color=discord.Color.red(), global_modlog=True):
+                      embed_color=discord.Color.red(), global_modlog=True, duration=None):
         """Generates a modlog embed"""
 
         if target is None:
@@ -66,6 +66,8 @@ class Moderation(Cog):
         modlog_embed.add_field(name="Requested by", value=f"{actor.mention} ({actor} | {actor.id})", inline=False)
         modlog_embed.add_field(name="Reason", value=reason or "No reason specified", inline=False)
         modlog_embed.timestamp = datetime.datetime.utcnow()
+        if duration:
+            modlog_embed.add_field(name="Duration", value=duration)
         if target is not None:
             try:
                 await target.send(embed=modlog_embed)
@@ -566,7 +568,8 @@ class Moderation(Cog):
             seconds = self.hm_to_seconds(reason)
             reason = self.hm_regex.sub("", reason) or "No reason provided"
             if await self._mute(member_mentions, reason=reason, seconds=seconds, actor=ctx.author, orig_channel=ctx.channel):
-                await self.mod_log(ctx.author, "muted", member_mentions, reason, ctx.channel, discord.Color.red())
+                await self.mod_log(ctx.author, "muted", member_mentions, reason, ctx.channel, discord.Color.red(),
+                                   duration=datetime.timedelta(seconds=seconds))
             else:
                 await ctx.send("Member is already muted!")
 
@@ -599,7 +602,8 @@ class Moderation(Cog):
             seconds = self.hm_to_seconds(reason)
             reason = self.hm_regex.sub("", reason) or "No reason provided"
             if await self._deafen(member_mentions, reason, seconds=seconds, self_inflicted=False, actor=ctx.author, orig_channel=ctx.channel):
-                await self.mod_log(ctx.author, "deafened", member_mentions, reason, ctx.channel, discord.Color.red())
+                await self.mod_log(ctx.author, "deafened", member_mentions, reason, ctx.channel, discord.Color.red(),
+                                   duration=datetime.timedelta(seconds=seconds))
             else:
                 await ctx.send("Member is already deafened!")
 
@@ -615,7 +619,8 @@ class Moderation(Cog):
             seconds = self.hm_to_seconds(reason)
             reason = self.hm_regex.sub("", reason) or "No reason provided"
             if await self._deafen(ctx.author, reason, seconds=seconds, self_inflicted=True, actor=ctx.author, orig_channel=ctx.channel):
-                await self.mod_log(ctx.author, "deafened", ctx.author, reason, ctx.channel, discord.Color.red(), global_modlog=False)
+                await self.mod_log(ctx.author, "deafened", ctx.author, reason, ctx.channel, discord.Color.red(), global_modlog=False,
+                                   duration=datetime.timedelta(seconds=seconds))
             else:
                 await ctx.send("You are already deafened!")
 
