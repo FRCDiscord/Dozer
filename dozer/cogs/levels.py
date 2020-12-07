@@ -19,6 +19,10 @@ from .. import db
 
 DOZER_LOGGER = logging.getLogger(__name__)
 
+add_limit = 2147483647
+level_set_limit = 100000
+level_calc_limit = 1000000
+
 
 class Levels(Cog):
     """Commands and event handlers for managing levels and XP."""
@@ -44,8 +48,8 @@ class Levels(Cog):
         # https://github.com/Mee6/Mee6-documentation/blob/9d98a8fe8ab494fd85ec27750592fc9f8ef82472/docs/levels_xp.md
         # > The formula to calculate how many xp you need for the next level is 5 * (lvl ^ 2) + 50 * lvl + 100 with
         # > your current level as lvl
-        if level >= 1000000:  # If the level gets too big, dozer will hang trying to calculate the level. A better way needs to be found to calculate
-            DOZER_LOGGER.warning("Member XP exceeded maximum calculation limit")  # level's but this is the best for now
+        if level >= level_calc_limit:  # If the level gets too big, dozer will hang trying to calculate the level. A better way needs to
+            DOZER_LOGGER.critical("Member XP exceeded maximum calculation limit")  # be found to calculate level's but this is the best for now
             return
         needed = 0
         for lvl in range(level):
@@ -62,7 +66,7 @@ class Levels(Cog):
         # > The formula to calculate how many xp you need for the next level is 5 * (lvl ^ 2) + 50 * lvl + 100 with
         # > your current level as lvl
         lvl = 0
-        while xp >= 0 and lvl <= 1000000:  # The same limitation is applied here
+        while xp >= 0 and lvl <= level_calc_limit:  # The same limitation is applied here
             xp -= 5 * lvl ** 2 + 50 * lvl + 100
             lvl += 1
         return lvl - 1
@@ -352,7 +356,7 @@ class Levels(Cog):
     @has_permissions(manage_messages=True)
     async def setlevel(self, ctx, member: discord.Member, level: int):
         """Changes a members level to requested level"""
-        if level >= 100000:
+        if level >= level_set_limit:
             raise BadArgument("Requested level is too high!")
         entry = await self.load_member(ctx.guild.id, member.id)
         xp = self.total_xp_for_level(level)
@@ -364,12 +368,12 @@ class Levels(Cog):
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
-    @adjustlevels.command(aliases=["addxp"])
+    @adjustlevels.command()
     @guild_only()
     @has_permissions(manage_messages=True)
-    async def changexp(self, ctx, member: discord.Member, xp_amount: int):
+    async def addxp(self, ctx, member: discord.Member, xp_amount: int):
         """Changes a members xp by a certain amount"""
-        if abs(xp_amount) >= 2147483647:
+        if abs(xp_amount) >= add_limit:
             raise BadArgument("You cannot change a members xp more than the 32bit limit will allow!")
         entry = await self.load_member(ctx.guild.id, member.id)
         entry.total_xp += xp_amount
@@ -404,7 +408,10 @@ class Levels(Cog):
         give = await self.load_member(ctx.guild.id, give_member.id)
         give.total_xp += take.total_xp
         give.total_messages += take.total_messages
+        take.total_xp = 0
+        take.total_messages = 0
         await self.sync_member(ctx.guild.id, give_member.id)
+        await self.sync_member(ctx.guild.id, take_member.id)
         e = discord.Embed(color=blurple)
         e.add_field(name='Success!', value=f"I added {take_member}'s xp to {give_member}")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
