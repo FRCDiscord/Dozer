@@ -13,7 +13,7 @@ from discord.ext.commands import BadArgument, has_permissions, RoleConverter
 from ._utils import *
 from .. import db
 
-MAX_PURGE = 10000
+MAX_PURGE = 1000
 
 class SafeRoleConverter(RoleConverter):
     """Allows for @everyone to be specified without pinging everyone"""
@@ -542,7 +542,7 @@ class Moderation(Cog):
         """Bulk delete a set number of messages from the current channel."""
         try:
             msg = await ctx.message.channel.fetch_message(num)
-            deleted = await ctx.message.channel.purge(after=msg)
+            deleted = await ctx.message.channel.purge(after=msg, limit=MAX_PURGE)
             await ctx.send(
                 f"Deleted {len(deleted)} messages under request of {ctx.message.author.mention}",
                 delete_after=5)
