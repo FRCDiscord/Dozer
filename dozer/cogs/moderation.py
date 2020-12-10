@@ -13,6 +13,7 @@ from discord.ext.commands import BadArgument, has_permissions, RoleConverter
 from ._utils import *
 from .. import db
 
+MAX_PURGE = 1000
 
 class SafeRoleConverter(RoleConverter):
     """Allows for @everyone to be specified without pinging everyone"""
@@ -537,15 +538,26 @@ class Moderation(Cog):
     @command(aliases=["purge"])
     @has_permissions(manage_messages=True)
     @bot_has_permissions(manage_messages=True, read_message_history=True)
-    async def prune(self, ctx, num_to_delete: int):
+    async def prune(self, ctx, num: int):
         """Bulk delete a set number of messages from the current channel."""
-        await ctx.message.channel.purge(limit=num_to_delete + 1)
-        await ctx.send(
-            "Deleted {n} messages under request of {user}".format(n=num_to_delete, user=ctx.message.author.mention),
-            delete_after=5)
+        try:
+            msg = await ctx.message.channel.fetch_message(num)
+            deleted = await ctx.message.channel.purge(after=msg, limit=MAX_PURGE)
+            await ctx.send(
+                f"Deleted {len(deleted)} messages under request of {ctx.message.author.mention}",
+                delete_after=5)
+        except discord.NotFound:
+            if num > MAX_PURGE:
+                await ctx.send("Message cannot be found or you're trying to purge too many messages.")
+                return
+            deleted = await ctx.message.channel.purge(limit=num + 1)
+            await ctx.send(
+                f"Deleted {len(deleted) - 1} messages under request of {ctx.message.author.mention}",
+                delete_after=5)
 
     prune.example_usage = """
     `{prefix}prune 10` - Delete the last 10 messages in the current channel.
+    `{prefix}prune 786324930378727484` - Deletes all messages up to that message ID
     """
 
     @command()
