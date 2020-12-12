@@ -173,8 +173,11 @@ class Teams(Cog):
         """Toggles automatic adding of team association to member nicknames"""
         settings = await AutoAssociation.get_by(guild_id=ctx.guild.id)
         enabled = settings[0].team_on_join if settings else True
-        settings[0].team_on_join = not enabled
-        await settings[0].update_or_add()
+        new_settings = AutoAssociation(
+            guild_id=ctx.guild.id,
+            team_on_join=not enabled
+        )
+        await new_settings.update_or_add()
         e = discord.Embed(color=blurple)
         modetext = "Enabled" if enabled else "Disabled"
         e.add_field(name='Success!', value=f"Automatic adding of team association is currently: **{modetext}**")
