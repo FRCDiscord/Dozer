@@ -1,5 +1,6 @@
 """Provides moderation commands for Dozer."""
 import asyncio
+import math
 import re
 import datetime
 import time
@@ -14,6 +15,7 @@ from ._utils import *
 from .. import db
 
 MAX_PURGE = 1000
+
 
 class SafeRoleConverter(RoleConverter):
     """Allows for @everyone to be specified without pinging everyone"""
@@ -333,6 +335,38 @@ class Moderation(Cog):
             await message.author.add_roles(message.guild.get_role(role_id))
 
     @Cog.listener()
+    async def on_raw_bulk_message_delete(self, payload):
+        """Log bulk message deletes"""
+        guild = self.bot.get_guild(int(payload.guild_id))
+        message_channel = self.bot.get_channel(int(payload.channel_id))
+        message_ids = payload.message_ids
+        cached_messages = payload.cached_messages
+        pages = []
+        message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
+        if message_log_channel is not None:
+            channel = guild.get_channel(message_log_channel.messagelog_channel)
+            if channel is None:
+                return
+        else:
+            return
+        header_embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000)
+        header_embed.description = f"{len(message_ids)} Messages Deleted In: {message_channel.mention}\n" \
+                                   f"Messages cached: {len(cached_messages)}/{len(message_ids)} \n" \
+                                   f"Messages displayed: *Currently Sending*"
+        header_message = await channel.send(embed=header_embed)
+        link = f"https://discordapp.com/channels/{header_message.guild.id}/{header_message.channel.id}/{header_message.id}"
+        for page_num, page in enumerate(chunk(cached_messages, 20)):
+            embed = discord.Embed(title="Bulk Message Delete",
+                                  description=f"Messages {page_num * 20 + 1}-{page_num * 20 + len(page)} of [bulk delete]({link})",
+                                  color=0xFF0000, timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
+            for message in page:
+                formatted_time = message.created_at.strftime("%b %d %Y %H:%M:%S")
+                embed.add_field(name=f"{formatted_time}: {message.author}", value=
+                                message.content if len(message.content) < 512 else f"{message.content[0:512]}...", inline=False)
+            embed.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(cached_messages) / 20)}")
+            await channel.send(embed=embed)
+
+    @Cog.listener()
     async def on_raw_message_delete(self, payload):
         """When a message is deleted and its not in the bot cache, log it anyway."""
         if payload.cached_message:
@@ -406,7 +440,7 @@ class Moderation(Cog):
         avatar_link = f"http://cdn.discordapp.com/avatars/{user_id}/{author['avatar']}.webp?size=1024"
         embed = discord.Embed(title="Message Edited",
                               description=f"[MESSAGE]({link}) From {mention}\nEdited In: {mchannel.mention}", color=0xFFC400)
-        embed.set_author(name=f"{author['username']}#{author['discriminator']}",icon_url=avatar_link)
+        embed.set_author(name=f"{author['username']}#{author['discriminator']}", icon_url=avatar_link)
         embed.add_field(name="Original", value="N/A", inline=False)
         if content:
             embed.add_field(name="Edited", value=content[0:1023], inline=False)
