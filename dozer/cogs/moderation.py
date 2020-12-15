@@ -1,5 +1,6 @@
 """Provides moderation commands for Dozer."""
 import asyncio
+import logging
 import math
 import re
 import datetime
@@ -16,6 +17,7 @@ from .. import db
 
 MAX_PURGE = 1000
 
+DOZER_LOGGER = logging.getLogger(__name__)
 
 class SafeRoleConverter(RoleConverter):
     """Allows for @everyone to be specified without pinging everyone"""
@@ -337,11 +339,12 @@ class Moderation(Cog):
     @Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
         """Log bulk message deletes"""
+
         guild = self.bot.get_guild(int(payload.guild_id))
         message_channel = self.bot.get_channel(int(payload.channel_id))
         message_ids = payload.message_ids
         cached_messages = payload.cached_messages
-        pages = []
+        message_count = 0
         message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
         if message_log_channel is not None:
             channel = guild.get_channel(message_log_channel.messagelog_channel)
@@ -349,22 +352,51 @@ class Moderation(Cog):
                 return
         else:
             return
+
         header_embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000)
         header_embed.description = f"{len(message_ids)} Messages Deleted In: {message_channel.mention}\n" \
                                    f"Messages cached: {len(cached_messages)}/{len(message_ids)} \n" \
-                                   f"Messages displayed: *Currently Sending*"
+                                   f"Messages logged: *Currently Logging*"
         header_message = await channel.send(embed=header_embed)
         link = f"https://discordapp.com/channels/{header_message.guild.id}/{header_message.channel.id}/{header_message.id}"
-        for page_num, page in enumerate(chunk(cached_messages, 20)):
-            embed = discord.Embed(title="Bulk Message Delete",
-                                  description=f"Messages {page_num * 20 + 1}-{page_num * 20 + len(page)} of [bulk delete]({link})",
-                                  color=0xFF0000, timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
-            for message in page:
-                formatted_time = message.created_at.strftime("%b %d %Y %H:%M:%S")
-                embed.add_field(name=f"{formatted_time}: {message.author}", value=
-                                message.content if len(message.content) < 512 else f"{message.content[0:512]}...", inline=False)
-            embed.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(cached_messages) / 20)}")
+        cap = len(cached_messages) if len(cached_messages) <= 200 else 200
+        current_page = 1
+        page_character_count = 0
+        page_message_count = 0
+        embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000, timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
+        for message in cached_messages[-cap:]:
+            page_character_count += len(message.content[0:512]) + 3
+
+            if page_character_count >= 5000 or page_message_count >= 20:
+                embed.description = f"Messages {message_count}-{message_count + page_message_count} of [bulk delete]({link})"
+                embed.set_footer(text=f"Page {current_page}")
+                current_page += 1
+                try:
+                    await channel.send(embed=embed)
+                except discord.HTTPException as e:
+                    print(e)
+                embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000, timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
+                page_character_count = len(message.content)
+                message_count += page_message_count
+                page_message_count = 0
+
+            formatted_time = message.created_at.strftime("%b %d %Y %H:%M:%S")
+            embed.add_field(name=f"{formatted_time}: {message.author}", value=
+                            "Message contained no content" if len(message.content) == 0 else message.content
+                            if len(message.content) < 512 else f"{message.content[0:512]}...", inline=False)
+            page_message_count += 1
+
+        message_count += page_message_count
+        embed.description = f"Messages {message_count}-{message_count + page_message_count} of [bulk delete]({link})"
+        embed.set_footer(text=f"Page {current_page}")
+        try:
             await channel.send(embed=embed)
+        except discord.HTTPException as e:
+            print(e)
+        header_embed.description = f"{len(message_ids)} Messages Deleted In: {message_channel.mention}\n" \
+                                   f"Messages cached: {len(cached_messages)}/{len(message_ids)} \n" \
+                                   f"Messages logged: {message_count}/{len(message_ids)}"
+        await header_message.edit(embed=header_embed)
 
     @Cog.listener()
     async def on_raw_message_delete(self, payload):
