@@ -40,6 +40,7 @@ class Moderation(Cog):
         super().__init__(bot)
         self.edit_delete_config = db.ConfigCache(GuildMessageLog)
         self.links_config = db.ConfigCache(GuildMessageLinks)
+        self.bulk_delete_buffer = {}
 
     """=== Helper functions ==="""
 
@@ -74,6 +75,7 @@ class Moderation(Cog):
 
     @discord.ext.tasks.loop(hours=168)
     async def nm_kick(self):
+        """New member kick"""
         await self.nm_kick_internal()
 
     async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member, None], reason, orig_channel=None,
@@ -344,7 +346,7 @@ class Moderation(Cog):
         message_channel = self.bot.get_channel(int(payload.channel_id))
         message_ids = payload.message_ids
         cached_messages = payload.cached_messages
-        message_count = 0
+
         message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
         if message_log_channel is not None:
             channel = guild.get_channel(message_log_channel.messagelog_channel)
@@ -352,22 +354,58 @@ class Moderation(Cog):
                 return
         else:
             return
+        buffer = self.bulk_delete_buffer.get(message_channel.id)
+        if buffer:
+            self.bulk_delete_buffer[message_channel.id]["last_payload"] = time.time()
+            self.bulk_delete_buffer[message_channel.id]["msg_ids"] += message_ids
+            self.bulk_delete_buffer[message_channel.id]["msgs"] += cached_messages
+            header_message = self.bulk_delete_buffer[message_channel.id]["header_message"]
+            header_embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000)
+            deleted = self.bulk_delete_buffer[message_channel.id]["msg_ids"]
+            cached = self.bulk_delete_buffer[message_channel.id]["msgs"]
+            header_embed.description = f"{len(deleted)} Messages Deleted In: {message_channel.mention}\n" \
+                                       f"Messages cached: {len(cached)}/{len(deleted)} \n" \
+                                       f"Messages logged: *Currently Purging*"
+            await header_message.edit(embed=header_embed)
+        else:
+            header_embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000)
+            header_embed.description = f"{len(message_ids)} Messages Deleted In: {message_channel.mention}\n" \
+                                       f"Messages cached: {len(cached_messages)}/{len(message_ids)} \n" \
+                                       f"Messages logged: *Currently Purging*"
+            header_message = await channel.send(embed=header_embed)
 
+            self.bulk_delete_buffer[message_channel.id] = {"last_payload": time.time(), "msg_ids": list(message_ids), "msgs": list(cached_messages),
+                                                           "log_channel": channel, "header_message": header_message}
+
+        await self.bulk_delete_log(message_channel)
+
+    async def bulk_delete_log(self, message_channel):
+        """Logs a bulk delete after the bot is finished the bulk delete"""
+        buffer_entry = self.bulk_delete_buffer[message_channel.id]
+        await asyncio.sleep(15)
+        if buffer_entry["last_payload"] > time.time() - 15:
+            return
+        self.bulk_delete_buffer.pop(message_channel.id)
+        message_ids = buffer_entry["msg_ids"]
+        cached_messages = buffer_entry["msgs"]
+        channel = buffer_entry["log_channel"]
+        header_message = buffer_entry["header_message"]
+
+        message_count = 0
         header_embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000)
         header_embed.description = f"{len(message_ids)} Messages Deleted In: {message_channel.mention}\n" \
                                    f"Messages cached: {len(cached_messages)}/{len(message_ids)} \n" \
                                    f"Messages logged: *Currently Logging*"
-        header_message = await channel.send(embed=header_embed)
+        await header_message.edit(embed=header_embed)
         link = f"https://discordapp.com/channels/{header_message.guild.id}/{header_message.channel.id}/{header_message.id}"
-        cap = len(cached_messages) if len(cached_messages) <= 200 else 200
         current_page = 1
         page_character_count = 0
         page_message_count = 0
         embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000, timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
-        for message in cached_messages[-cap:]:
+        for message in sorted(cached_messages, key=lambda msg: msg.created_at):
             page_character_count += len(message.content[0:512]) + 3
 
-            if page_character_count >= 5000 or page_message_count >= 20:
+            if page_character_count >= 5000 or page_message_count >= 25:
                 embed.description = f"Messages {message_count}-{message_count + page_message_count} of [bulk delete]({link})"
                 embed.set_footer(text=f"Page {current_page}")
                 current_page += 1
@@ -385,8 +423,9 @@ class Moderation(Cog):
                             "Message contained no content" if len(message.content) == 0 else message.content
                             if len(message.content) < 512 else f"{message.content[0:512]}...", inline=False)
             page_message_count += 1
+            if current_page > 15:
+                break
 
-        message_count += page_message_count
         embed.description = f"Messages {message_count}-{message_count + page_message_count} of [bulk delete]({link})"
         embed.set_footer(text=f"Page {current_page}")
         try:
