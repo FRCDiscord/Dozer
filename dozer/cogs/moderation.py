@@ -341,7 +341,6 @@ class Moderation(Cog):
     @Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
         """Log bulk message deletes"""
-
         guild = self.bot.get_guild(int(payload.guild_id))
         message_channel = self.bot.get_channel(int(payload.channel_id))
         message_ids = payload.message_ids
