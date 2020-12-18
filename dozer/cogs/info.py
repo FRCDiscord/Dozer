@@ -5,6 +5,7 @@ import discord
 from discord.ext.commands import cooldown, BucketType, guild_only
 
 from ._utils import *
+from .levels import MemberXP
 
 blurple = discord.Color.blurple()
 datetime_format = '%Y-%m-%d %I:%M %p'
@@ -36,10 +37,11 @@ class Info(Cog):
         embed = discord.Embed(title=member.display_name, description=f'{member!s} ({member.id})', color=member.color)
         embed.add_field(name='Bot Created' if member.bot else 'Account Created',
                         value=member.created_at.strftime(self.datetime_format), inline=True)
+        await MemberXP.get_by(guild_id=ctx.guild.id, user_id=member.id)
+        # embed.add_field(name='Color/Icon', value=str(member.color).upper() + f"\n[Icon Link]({icon_url})", inline=True)
         embed.add_field(name='Member Joined', value=member.joined_at.strftime(self.datetime_format), inline=True)
         if member.premium_since is not None:
             embed.add_field(name='Member Boosted', value=member.premium_since.strftime(self.datetime_format), inline=True)
-        embed.add_field(name='Color', value=str(member.color).upper(), inline=True)
 
         status = 'DND' if member.status is discord.Status.dnd else member.status.name.title()
         if member.status is not discord.Status.offline:
@@ -47,10 +49,9 @@ class Info(Cog):
                                         getattr(member, f'{platform}_status') is not discord.Status.offline])
             status = f'{status} on {platforms}'
         activities = '\n'.join(self._format_activities(member.activities))
-        embed.add_field(name='Status and Activity', value=f'{status}\n{activities}', inline=True)
+        embed.add_field(name='Status and Activity', value=f'{status}\n{activities}', inline=False)
 
-        embed.add_field(name='Roles', value=', '.join(role.name for role in member.roles[:0:-1]) or 'None')
-        embed.add_field(name='Icon URL', value=icon_url)
+        embed.add_field(name='Roles', value=', '.join(role.mention for role in member.roles[:0:-1]) or 'None', inline=False)
         embed.set_thumbnail(url=icon_url)
         await ctx.send(embed=embed)
 
