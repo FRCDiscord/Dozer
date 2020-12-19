@@ -411,7 +411,7 @@ class Moderation(Cog):
                 try:
                     await channel.send(embed=embed)
                 except discord.HTTPException as e:
-                    print(e)
+                    DOZER_LOGGER.debug(f"Bulk delete embed failed to send: {e}")
                 embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000, timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
                 page_character_count = len(message.content)
                 message_count += page_message_count
@@ -430,7 +430,7 @@ class Moderation(Cog):
         try:
             await channel.send(embed=embed)
         except discord.HTTPException as e:
-            print(e)
+            DOZER_LOGGER.debug(f"Bulk delete embed failed to send: {e}")
         header_embed.description = f"{len(message_ids)} Messages Deleted In: {message_channel.mention}\n" \
                                    f"Messages cached: {len(cached_messages)}/{len(message_ids)} \n" \
                                    f"Messages logged: {message_count}/{len(message_ids)}"
