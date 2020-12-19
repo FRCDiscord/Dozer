@@ -49,7 +49,7 @@ class Info(Cog):
             footers.append(f"Total Messages: {levels_data[0].total_messages}")
         else:
             embed.add_field(name="Last Seen Here At", value="Not available")
-            footers.append(f"Total Messages: N/A")
+            footers.append("Total Messages: N/A")
 
         embed.add_field(name='Member Joined', value=member.joined_at.strftime(datetime_format), inline=True)
         if member.premium_since is not None:
