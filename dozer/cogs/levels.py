@@ -14,7 +14,7 @@ from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
 
 from ._utils import *
-from .info import blurple
+blurple = discord.Color.blurple()
 from .. import db
 
 DOZER_LOGGER = logging.getLogger(__name__)
@@ -50,7 +50,7 @@ class Levels(Cog):
         # > your current level as lvl
         if level >= LEVEL_CALC_LIMIT:  # If the level gets too big, dozer will hang trying to calculate the level. A better way needs to
             DOZER_LOGGER.critical("Member XP exceeded maximum calculation limit")  # be found to calculate level's but this is the best for now
-            return
+            return LEVEL_CALC_LIMIT
         needed = 0
         for lvl in range(level):
             needed += 5 * (lvl ** 2) + 50 * lvl + 100
