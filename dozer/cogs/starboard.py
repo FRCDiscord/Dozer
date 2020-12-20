@@ -206,6 +206,9 @@ class Starboard(Cog):
 
         emoji = str(payload.emoji)
         matching_reaction = [reaction for reaction in message.reactions if str(reaction.emoji) == emoji]
+        reactor = self.bot.get_user(payload.user_id)
+        reactor_str = f"{reactor} reacted to {message.id} with {emoji}"
+        DOZER_LOGGER.debug(reactor_str)
 
         member = message.author
         if len(matching_reaction):
