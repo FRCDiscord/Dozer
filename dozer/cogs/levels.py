@@ -14,7 +14,7 @@ from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
 
 from ._utils import *
-from .info import blurple
+blurple = discord.Color.blurple()
 from .. import db
 
 DOZER_LOGGER = logging.getLogger(__name__)

@@ -75,7 +75,7 @@ class Moderation(Cog):
 
     @discord.ext.tasks.loop(hours=168)
     async def nm_kick(self):
-        """New member kick"""
+        """Kicks new members"""
         await self.nm_kick_internal()
 
     async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member, None], reason, orig_channel=None,

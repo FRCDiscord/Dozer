@@ -5,7 +5,7 @@ import discord
 from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions, NotOwner, guild_only
 
 from ._utils import *
-from .info import blurple
+blurple = discord.Color.blurple()
 from .. import db
 
 
