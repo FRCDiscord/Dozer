@@ -146,7 +146,8 @@ class Starboard(Cog):
         # Starboard check
         if str(reaction) == config.star_emoji and (reaction.count - self_react) >= config.threshold and \
                 member != msg.guild.me and not await is_cancelled(config.cancel_emoji, msg, msg.guild.me):
-            DOZER_LOGGER.debug(f"Starboard threshold reached on message {reaction.message.id} in {reaction.message.guild.name} from user {member.id}, sending to starboard")
+            DOZER_LOGGER.debug(f"Starboard threshold reached on message {reaction.message.id} in "
+                               f"{reaction.message.guild.name} from user {member.id}, sending to starboard")
             await self.send_to_starboard(config, msg, reaction.count)
 
         # check if it's gone under the limit
@@ -207,7 +208,7 @@ class Starboard(Cog):
         emoji = str(payload.emoji)
         matching_reaction = [reaction for reaction in message.reactions if str(reaction.emoji) == emoji]
 
-        member = message.author
+        member = payload.member or message.author
         if len(matching_reaction):
             await self.starboard_check(matching_reaction[0], member)
         else:
