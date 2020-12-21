@@ -3,6 +3,7 @@ import logging
 import asyncio
 import datetime
 import time
+import re
 
 import discord
 from discord.ext.commands import has_permissions
@@ -19,7 +20,6 @@ class Actionlog(Cog):
     def __init__(self, bot):
         super().__init__(bot)
         self.edit_delete_config = db.ConfigCache(GuildMessageLog)
-        self.links_config = db.ConfigCache(GuildMessageLinks)
         self.bulk_delete_buffer = {}
 
     @staticmethod
@@ -30,29 +30,6 @@ class Actionlog(Cog):
                 return entry
         except discord.Forbidden:
             return None
-
-    @staticmethod
-    async def _check_links_warn(msg, role):
-        """Warns a user that they can't send links."""
-        warn_msg = await msg.channel.send(f"{msg.author.mention}, you need the `{role.name}` role to post links!")
-        await asyncio.sleep(3)
-        await warn_msg.delete()
-
-    async def check_links(self, msg):
-        """Checks messages for the links role if necessary, then checks if the author is allowed to send links in the server"""
-        if msg.guild is None or not isinstance(msg.author, discord.Member) or not msg.guild.me.guild_permissions.manage_messages:
-            return
-        config = await self.links_config.query_one(guild_id=msg.guild.id)
-        if config is None:
-            return
-        role = msg.guild.get_role(config.role_id)
-        if role is None:
-            return
-        if role not in msg.author.roles and re.search("https?://", msg.content):
-            await msg.delete()
-            self.bot.loop.create_task(self._check_links_warn(msg, role))
-            return True
-        return False
 
     @Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
@@ -244,7 +221,6 @@ class Actionlog(Cog):
     @Cog.listener('on_message_edit')
     async def on_message_edit(self, before, after):
         """Logs message edits."""
-        await self.check_links(after)
         if before.author.bot:
             return
         if after.edited_at is not None or before.edited_at is not None:

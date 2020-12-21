@@ -329,6 +329,11 @@ class Moderation(Cog):
                 return
             await message.author.add_roles(message.guild.get_role(role_id))
 
+    @Cog.listener('on_message_edit')
+    async def on_message_edit(self, before, after):
+        """Checks for links"""
+        await self.check_links(after)
+
     """=== Direct moderation commands ==="""
 
     @command()
