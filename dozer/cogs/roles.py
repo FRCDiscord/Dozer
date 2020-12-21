@@ -8,7 +8,7 @@ from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgum
 
 from ..bot import DOZER_LOGGER
 from ..db import *
-from .moderation import GuildMemberLog
+from .actionlogs import CustomJoinLeaveMessages
 
 from ._utils import *
 from .. import db
@@ -157,8 +157,8 @@ class Roles(Cog):
             e.add_field(name='I couldn\'t restore these roles, as I don\'t have permission.',
                         value='\n'.join(sorted(cant_give)))
         try:
-            dest_id = await GuildMemberLog.get_by(guild_id=member.guild.id)
-            dest = member.guild.get_channel(dest_id[0].memberlog_channel)
+            dest_id = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
+            dest = member.guild.get_channel(dest_id[0].channel_id)
             await dest.send(embed=e)
         except discord.Forbidden:
             pass

@@ -31,6 +31,22 @@ class Actionlog(Cog):
         except discord.Forbidden:
             return None
 
+    @Cog.listener('on_member_join')
+    async def on_member_join(self, member):
+        """Logs that a member joined."""
+        join = discord.Embed(type='rich', color=0x00FF00)
+        join.set_author(name='Member Joined', icon_url=member.avatar_url_as(format='png', size=32))
+        join.description = "{0.mention}\n{0} ({0.id})".format(member)
+        join.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
+
+    @Cog.listener('on_member_remove')
+    async def on_member_remove(self, member):
+        """Logs that a member left."""
+        leave = discord.Embed(type='rich', color=0xFF0000)
+        leave.set_author(name='Member Left', icon_url=member.avatar_url_as(format='png', size=32))
+        leave.description = "{0.mention}\n{0} ({0.id})".format(member)
+        leave.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
+
     @Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
         """Log bulk message deletes"""
@@ -272,6 +288,42 @@ class Actionlog(Cog):
     messagelogconfig.example_usage = """
         `{prefix}messagelogconfig #orwellian-dystopia` - set a channel named #orwellian-dystopia to log message edits/deletions
         """
+
+
+class CustomJoinLeaveMessages(db.DatabaseTable):
+    """Holds custom join leave messages"""
+    __tablename__ = 'joinleavemessages'
+    __uniques__ = 'guild_id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            guild_id bigint NOT NULL,
+            channel_id bigint,
+            join_message text NULL,
+            leave_message text NULL,
+            PRIMARY KEY (guild_id)
+            )""")
+
+    def __init__(self, guild_id, channel_id, join_message=None, leave_message=None):
+        super().__init__()
+        self.guild_id = guild_id
+        self.channel_id = channel_id
+        self.join_message = join_message
+        self.leave_message = leave_message
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = CustomJoinLeaveMessages(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
+                                          join_message=result.get("join_message"), leave_message=result.get("leave_message"))
+            result_list.append(obj)
+        return result_list
 
 
 class GuildMessageLog(db.DatabaseTable):
