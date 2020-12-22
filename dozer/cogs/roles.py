@@ -8,7 +8,7 @@ from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgum
 
 from ..bot import DOZER_LOGGER
 from ..db import *
-from .moderation import GuildMemberLog
+from .actionlogs import GuildMemberLog
 
 from ._utils import *
 from .. import db

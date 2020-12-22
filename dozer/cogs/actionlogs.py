@@ -31,6 +31,30 @@ class Actionlog(Cog):
         except discord.Forbidden:
             return None
 
+    @Cog.listener('on_member_join')
+    async def on_member_join(self, member):
+        """Logs that a member joined."""
+        join = discord.Embed(type='rich', color=0x00FF00)
+        join.set_author(name='Member Joined', icon_url=member.avatar_url_as(format='png', size=32))
+        join.description = "{0.mention}\n{0} ({0.id})".format(member)
+        join.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
+        member_log_channel = await GuildMemberLog.get_by(guild_id=member.guild.id)
+        if len(member_log_channel) != 0:
+            channel = member.guild.get_channel(member_log_channel[0].memberlog_channel)
+            await channel.send(embed=join)
+
+    @Cog.listener('on_member_remove')
+    async def on_member_remove(self, member):
+        """Logs that a member left."""
+        leave = discord.Embed(type='rich', color=0xFF0000)
+        leave.set_author(name='Member Left', icon_url=member.avatar_url_as(format='png', size=32))
+        leave.description = "{0.mention}\n{0} ({0.id})".format(member)
+        leave.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
+        member_log_channel = await GuildMemberLog.get_by(guild_id=member.guild.id)
+        if len(member_log_channel) != 0:
+            channel = member.guild.get_channel(member_log_channel[0].memberlog_channel)
+            await channel.send(embed=leave)
+
     @Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
         """Log bulk message deletes"""
@@ -272,6 +296,57 @@ class Actionlog(Cog):
     messagelogconfig.example_usage = """
         `{prefix}messagelogconfig #orwellian-dystopia` - set a channel named #orwellian-dystopia to log message edits/deletions
         """
+
+    @command()
+    @has_permissions(administrator=True)
+    async def memberlogconfig(self, ctx, channel_mentions: discord.TextChannel):
+        """Set the join/leave channel for a server by passing a channel mention"""
+        config = await GuildMemberLog.get_by(guild_id=ctx.guild.id)
+        if len(config) != 0:
+            config = config[0]
+            config.name = ctx.guild.name
+            config.memberlog_channel = channel_mentions.id
+        else:
+            config = GuildMemberLog(guild_id=ctx.guild.id, memberlog_channel=channel_mentions.id, name=ctx.guild.name)
+        await config.update_or_add()
+        await ctx.send(ctx.message.author.mention + ', memberlog settings configured!')
+
+    memberlogconfig.example_usage = """
+        `{prefix}memberlogconfig #join-leave-logs` - set a channel named #join-leave-logs to log joins/leaves 
+        """
+
+
+class GuildMemberLog(db.DatabaseTable):
+    """Holds information for member logs"""
+    __tablename__ = 'memberlogconfig'
+    __uniques__ = 'guild_id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            guild_id bigint PRIMARY KEY NOT NULL,
+            memberlog_channel bigint NOT NULL,
+            name varchar NOT NULL
+            )""")
+
+    def __init__(self, guild_id, memberlog_channel, name):
+        super().__init__()
+        self.guild_id = guild_id
+        self.memberlog_channel = memberlog_channel
+        self.name = name
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = GuildMemberLog(guild_id=result.get("guild_id"), memberlog_channel=result.get("memberlog_channel"),
+                                 name=result.get("name"))
+            result_list.append(obj)
+        return result_list
 
 
 class GuildMessageLog(db.DatabaseTable):
