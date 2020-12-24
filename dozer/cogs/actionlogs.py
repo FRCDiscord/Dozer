@@ -328,7 +328,6 @@ class Actionlog(Cog):
     @has_permissions(administrator=True)
     async def memberlogconfig(self, ctx):
         """E"""
-        pass
 
     @memberlogconfig.command()
     @has_permissions(administrator=True)
@@ -338,7 +337,12 @@ class Actionlog(Cog):
 
     @memberlogconfig.command()
     @has_permissions(administrator=True)
-    async def setjoinmessage(self, ctx,  *, template):
+    async def toggleping(self, ctx):
+        """Toggles whenever a new member gets pinged on join"""
+
+    @memberlogconfig.command()
+    @has_permissions(administrator=True)
+    async def setjoinmessage(self, ctx, *, template):
         """Configure custom join message template"""
         pass
 
