@@ -2,7 +2,7 @@ FROM debian
 WORKDIR /app
 COPY . /app
 RUN apt update
-RUN apt install -y postgresql build-essential libssl-dev zlib1g-dev libbz2-dev \
+RUN apt install -y build-essential libssl-dev zlib1g-dev libbz2-dev \
     libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
     xz-utils tk-dev libffi-dev liblzma-dev python-openssl git
 RUN curl https://pyenv.run | bash
