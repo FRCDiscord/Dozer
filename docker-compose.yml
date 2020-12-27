@@ -1,6 +1,12 @@
 version: '3'
 services:
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: simplepass
+      POSTGRES_USER: dozer
   dozer:
     build: .
     volumes:
       - ".:/app"
+
