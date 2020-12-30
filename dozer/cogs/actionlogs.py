@@ -162,9 +162,9 @@ class Actionlog(Cog):
                 page_message_count = 0
 
             formatted_time = message.created_at.strftime("%b %d %Y %H:%M:%S")
-            embed.add_field(name=f"{formatted_time}: {message.author}", value=
-            "Message contained no content" if len(message.content) == 0 else message.content
-            if len(message.content) < 512 else f"{message.content[0:512]}...", inline=False)
+            embed.add_field(name=f"{formatted_time}: {message.author}",
+                            value="Message contained no content" if len(message.content) == 0 else message.content if len(message.content) < 512
+                            else f"{message.content[0:512]}...", inline=False)
             page_message_count += 1
             if current_page > 15:
                 break
