@@ -10,6 +10,7 @@ import random
 import time
 import aiohttp
 import discord
+import typing
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
 
@@ -655,7 +656,7 @@ class Levels(Cog):
 
     @command(aliases=["ranks", "leaderboard"])
     @guild_only()
-    async def levels(self, ctx):
+    async def levels(self, ctx, start: typing.Optional[discord.Member]):
         """Show the XP leaderboard for this server. Scoreboard refreshes every 5 minutes or so"""
 
         # Order by total_xp needs a tiebreaker, otherwise all records with equal XP have the same rank
@@ -666,6 +667,17 @@ class Levels(Cog):
             WHERE guild_id = $1 ORDER BY rank;
         """, ctx.guild.id)
 
+        start_point = 0
+
+        if start:
+            target_filter = filter(lambda record: record['user_id'] == start.id, records)
+            targets = list(target_filter)
+            if len(targets):
+                target = targets[0]
+                start_point = round(target['rank'] / 10)
+            else:
+                return BadArgument("User was not found in the leaderboard")
+
         if len(records):
             embeds = []
             for page_num, page in enumerate(chunk(records, 10)):
@@ -675,7 +687,7 @@ class Levels(Cog):
                                               for (user_id, total_xp, rank) in page)
                 embed.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(records) / 10)}")
                 embeds.append(embed)
-            await paginate(ctx, embeds)
+            await paginate(ctx, embeds, start=start_point)
         else:
             embed = discord.Embed(title=f"Rankings for {ctx.guild}", color=discord.Color.red())
             embed.description = f"Rankings currently unavailable for {ctx.guild}"
