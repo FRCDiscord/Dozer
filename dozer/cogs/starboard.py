@@ -212,7 +212,7 @@ class Starboard(Cog):
         if len(matching_reaction):
             await self.starboard_check(matching_reaction[0], member)
         else:
-            DOZER_LOGGER.info(f"Unable to find reaction for message({message.id})")
+            DOZER_LOGGER.debug(f"Unable to find reaction for message({message.id})")
 
     @guild_only()
     @group(invoke_without_command=True, aliases=['hof'])
