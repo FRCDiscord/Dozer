@@ -696,6 +696,7 @@ class Levels(Cog):
 
     levels.example_usage = """
     `{prefix}levels`: show the XP leaderboard
+    `{prefix}levels SnowPlow[>]#5196`: Jump to Snowplow's position on the leaderboard
     """
 
 
