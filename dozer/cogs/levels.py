@@ -681,7 +681,7 @@ class Levels(Cog):
             targets = list(target_filter)
             if len(targets):
                 target = targets[0]
-                start_point = round(target['rank'] / 10)
+                start_point = int(target['rank'] / 10)
             else:
                 return BadArgument("User was not found in the leaderboard")
 
