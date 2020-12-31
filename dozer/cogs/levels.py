@@ -108,6 +108,8 @@ class Levels(Cog):
             add_roles = []
             del_roles = []
 
+            to_undo = [level_role for level_role in roles if level_role.level > current_level]
+
             to_do = [level_role for level_role in roles if level_role.level <= current_level]
 
             to_add = to_do if guild_settings.keep_old_roles or not len(to_do) else [to_do[-1]]
@@ -117,15 +119,20 @@ class Levels(Cog):
                 if add_role not in member.roles:
                     add_roles.append(add_role)
 
-            for level_role in to_do[:-1]:
+            if not guild_settings.keep_old_roles:
+                for level_role in to_do[:-1]:
+                    del_role = guild.get_role(level_role.role_id)
+                    if del_role in member.roles:
+                        del_roles.append(del_role)
+
+            for level_role in to_undo:
                 del_role = guild.get_role(level_role.role_id)
                 if del_role in member.roles:
                     del_roles.append(del_role)
 
             try:
                 await member.add_roles(*add_roles, reason="Level Up")
-                if not guild_settings.keep_old_roles:
-                    await member.remove_roles(*del_roles, reason="Level Up")
+                await member.remove_roles(*del_roles, reason="Level Up")
             except discord.Forbidden:
                 DOZER_LOGGER.debug(f"Unable to add roles to {member} in guild {guild} Reason: Forbidden")
 
