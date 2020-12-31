@@ -107,25 +107,25 @@ class Levels(Cog):
             roles = sorted(unsorted, key=lambda entry: entry.level)
             add_roles = []
             del_roles = []
-
+            # Find roles that the member hasn't earned yet
             to_undo = [level_role for level_role in roles if level_role.level > current_level]
-
+            # Find all roles that the member has earned
             to_do = [level_role for level_role in roles if level_role.level <= current_level]
-
+            # Determine if we should add all roles or just top role
             to_add = to_do if guild_settings.keep_old_roles or not len(to_do) else [to_do[-1]]
 
-            for level_role in to_add:
+            for level_role in to_add:  # Go through all roles that should be added and see if the member already has those roles
                 add_role = guild.get_role(level_role.role_id)
                 if add_role not in member.roles:
                     add_roles.append(add_role)
 
-            if not guild_settings.keep_old_roles:
-                for level_role in to_do[:-1]:
+            if not guild_settings.keep_old_roles:  # Check if a guild wants all old roles removed
+                for level_role in to_do[:-1]:  # Go through all roles that should be removed and make sure the member already has those roles
                     del_role = guild.get_role(level_role.role_id)
                     if del_role in member.roles:
                         del_roles.append(del_role)
 
-            for level_role in to_undo:
+            for level_role in to_undo:  # Go through all roles the member shouldn't have, and make sure they don't have them
                 del_role = guild.get_role(level_role.role_id)
                 if del_role in member.roles:
                     del_roles.append(del_role)
@@ -175,7 +175,6 @@ class Levels(Cog):
 
     async def sync_to_database(self):
         """Sync dirty records to the database, and evict others from the cache."""
-        # logger.info("Syncing XP to database")
 
         # Deleting from a dict while iterating will error, so collect the keys up front and iterate that
         # Note that all mutation of `self._xp_cache` happens before the first yield point to prevent race conditions
@@ -333,7 +332,7 @@ class Levels(Cog):
                 for level_role in page:
                     role = ctx.guild.get_role(level_role.role_id)
                     if_unavailable = "Deleted role"
-                    e.add_field(name=f"Level: {level_role.level}", value=rf"{role.mention if role else if_unavailable}", inline=False)
+                    e.add_field(name=f"Level: {level_role.level}", value=f"{role.mention if role else if_unavailable}", inline=False)
 
                 e.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(roles) / 10)}")
                 embeds.append(e)
@@ -364,13 +363,13 @@ class Levels(Cog):
     @has_permissions(manage_messages=True)
     async def setlevel(self, ctx, member: discord.Member, level: int):
         """Changes a members level to requested level"""
-        if level >= LEVEL_SET_LIMIT:
+        if level >= LEVEL_SET_LIMIT:  # Make sure level doesn't get close to LEVEL_CALC_LIMIT
             raise BadArgument("Requested level is too high!")
         entry = await self.load_member(ctx.guild.id, member.id)
         xp = self.total_xp_for_level(level)
         DOZER_LOGGER.debug(f"Adjusting xp for user {member.id} to {xp}")
         entry.total_xp = xp
-        await self.sync_member(ctx.guild.id, member.id)
+        await self.sync_member(ctx.guild.id, member.id)  # Sync just this member to the db
         e = discord.Embed(color=blurple)
         e.add_field(name='Success!', value=f"I set {member}'s level to {level}")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
@@ -578,7 +577,7 @@ class Levels(Cog):
             if len(results):  # Get the old values to merge with the new ones
                 old_ent = results[0]
             else:
-                old_ent = GuildXPSettings(  # Create a entry containing default values
+                old_ent = GuildXPSettings(  # If old values do not exist, create an entry containing default values
                     guild_id=int(ctx.guild.id),
                     xp_min=5,
                     xp_max=15,
@@ -628,7 +627,7 @@ class Levels(Cog):
         if guild_settings is None or not guild_settings.enabled:
             embed.description = "Levels are not enabled in this server"
         else:
-            cache_record = await self.load_member(ctx.guild.id, member.id)
+            cache_record = await self.load_member(ctx.guild.id, member.id)  # Grab member from cache to make sure we have the most up to date values
 
             # Make Postgres compute the rank for us (need WITH-query so rank() sees records for every user)
             db_record = await db.Pool.fetchrow(f"""
@@ -646,7 +645,7 @@ class Levels(Cog):
             level_floor = self.total_xp_for_level(level)
             level_xp = self.total_xp_for_level(level + 1) - level_floor
 
-            if db_record:
+            if db_record:  # If member does not exist in the db, then return rank as the lowest rank
                 rank = db_record.get("rank")
             else:
                 rank = count
@@ -664,7 +663,7 @@ class Levels(Cog):
     @command(aliases=["ranks", "leaderboard"])
     @guild_only()
     async def levels(self, ctx, start: typing.Optional[discord.Member]):
-        """Show the XP leaderboard for this server. Scoreboard refreshes every 5 minutes or so"""
+        """Show the XP leaderboard for this server. Leaderboard refreshes every 5 minutes or so"""
 
         # Order by total_xp needs a tiebreaker, otherwise all records with equal XP have the same rank
         # This causes rankings like #1, #1, #1, #4, #4, #6, ...
