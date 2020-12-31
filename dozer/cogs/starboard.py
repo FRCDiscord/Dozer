@@ -212,7 +212,7 @@ class Starboard(Cog):
         if len(matching_reaction):
             await self.starboard_check(matching_reaction[0], member)
         else:
-            DOZER_LOGGER.info(f"Unable to find reaction for message({message.id})")
+            DOZER_LOGGER.debug(f"Unable to find reaction for message({message.id})")
 
     @guild_only()
     @group(invoke_without_command=True, aliases=['hof'])
@@ -297,7 +297,7 @@ class Starboard(Cog):
         config = await self.config_cache.query_one(guild_id=ctx.guild.id)
         if config is None:
             await ctx.send(f"There is not a Starboard configured for this server. Set one up with "
-                           f"`{ctx.bot.config}starboard config`")
+                           f"`{ctx.prefix}starboard config`")
             return
         if channel is None:
             channel = ctx.channel
