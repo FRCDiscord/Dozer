@@ -3,12 +3,12 @@ import logging
 import asyncio
 import datetime
 import time
-import re
 
 import discord
 from discord.ext.commands import has_permissions
 
 from ._utils import *
+from .general import blurple
 from .. import db
 
 DOZER_LOGGER = logging.getLogger(__name__)
@@ -40,23 +40,24 @@ class Actionlog(Cog):
         {user_mention} = user's mention
         {user_id} = user's ID
         """
-        return template.format(guild=member.guild, user=str(member), user_name=member.name,
-                               user_mention=member.mention, user_id=member.id)
+        if template:
+            return template.format(guild=member.guild, user=str(member), user_name=member.name,
+                                   user_mention=member.mention, user_id=member.id)
+        else:
+            return "{user_mention}\n{user} ({user_id})".format(guild=member.guild, user=str(member), user_name=member.name,
+                                                               user_mention=member.mention, user_id=member.id)
 
     @Cog.listener('on_member_join')
     async def on_member_join(self, member):
         """Logs that a member joined, with optional custom message"""
         config = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
         if len(config):
-            embed = discord.Embed(color=0x00FF00)
-            embed.set_author(name='Member Joined', icon_url=member.avatar_url_as(format='png', size=32))
-            if config[0].join_message:
-                embed.description = self.format_join_leave(config[0].join_message, member)
-            else:
-                embed.description = self.format_join_leave("{user_mention}\n{user} ({user_id})", member)
-            embed.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
             channel = member.guild.get_channel(config[0].channel_id)
             if channel:
+                embed = discord.Embed(color=0x00FF00)
+                embed.set_author(name='Member Joined', icon_url=member.avatar_url_as(format='png', size=32))
+                embed.description = self.format_join_leave(config[0].join_message, member)
+                embed.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
                 try:
                     await channel.send(content=member.mention if config[0].ping else None, embed=embed)
                 except discord.Forbidden:
@@ -65,18 +66,15 @@ class Actionlog(Cog):
     @Cog.listener('on_member_remove')
     async def on_member_remove(self, member):
         """Logs that a member left."""
-        "{user_mention}\n{user} ({user_id})"
         config = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
         if len(config):
-            embed = discord.Embed(color=0xFF0000)
-            embed.set_author(name='Member Left', icon_url=member.avatar_url_as(format='png', size=32))
-            if config[0].leave_message:
-                embed.description = self.format_join_leave(config[0].leave_message, member)
-            else:
-                embed.description = self.format_join_leave("{user_mention}\n{user} ({user_id})", member)
-            embed.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
             channel = member.guild.get_channel(config[0].channel_id)
             if channel:
+                embed = discord.Embed(color=0xFF0000)
+                embed.set_author(name='Member Left', icon_url=member.avatar_url_as(format='png', size=32))
+                embed.description = self.format_join_leave(config[0].leave_message, member)
+                embed.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
+
                 try:
                     await channel.send(embed=embed)
                 except discord.Forbidden:
@@ -324,33 +322,118 @@ class Actionlog(Cog):
         `{prefix}messagelogconfig #orwellian-dystopia` - set a channel named #orwellian-dystopia to log message edits/deletions
         """
 
-    @group()
+    @group(invoke_without_command=True)
     @has_permissions(administrator=True)
     async def memberlogconfig(self, ctx):
-        """E"""
+        """Command group to configure Join/Leave logs"""
+        config = await CustomJoinLeaveMessages.get_by(guild_id=ctx.guild.id)
+        embed = discord.Embed(title=f"Join/Leave configuration for {ctx.guild}", color=blurple)
+        if len(config):
+            channel = ctx.guild.get_channel(config[0].channel_id)
+            embed.add_field(name="Message Channel", value=channel.mention)
+            embed.add_field(name="Ping on join", value=config[0].ping)
+            embed.add_field(name="Join template", value=config[0].join_message, inline=False)
+            embed.add_field(name="Join Example", value=self.format_join_leave(config[0].join_message, ctx.author))
+            embed.add_field(name="Leave template", value=config[0].leave_message, inline=False)
+            embed.add_field(name="Leave Example", value=self.format_join_leave(config[0].leave_message, ctx.author))
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("This guild has no member log configured")
+
+    memberlogconfig.example_usage = """
+    `{prefix}memberlogconfig setchannel channel`: Sets the member log channel 
+    `{prefix}memberlogconfig toggleping`: Toggles whenever members are pinged upon joining the guild
+    `{prefix}memberlogconfig setjoinmessage template`: Sets join template
+    `{prefix}memberlogconfig setleavemessage template`: Sets leave template
+    `{prefix}memberlogconfig help`: Returns the template formatting key
+    """
 
     @memberlogconfig.command()
-    @has_permissions(administrator=True)
+    @has_permissions(manage_guild=True)
     async def setchannel(self, ctx, channel: discord.TextChannel):
         """Configure join/leave channel"""
-        pass
+        config = CustomJoinLeaveMessages(
+            guild_id=ctx.guild.id,
+            channel_id=channel.id
+        )
+        await config.update_or_add()
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value=f"Join/Leave log channel has been set to {channel.mention}")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
 
     @memberlogconfig.command()
-    @has_permissions(administrator=True)
+    @has_permissions(manage_guild=True)
     async def toggleping(self, ctx):
         """Toggles whenever a new member gets pinged on join"""
+        config = await CustomJoinLeaveMessages.get_by(guild_id=ctx.guild.id)
+        if len(config):
+            config[0].ping = not config[0].ping
+        else:
+            config[0] = CustomJoinLeaveMessages(guild_id=ctx.guild.id, ping=True)
+        await config[0].update_or_add()
+
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value=f"Ping on join is set to: {config[0].ping}")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
 
     @memberlogconfig.command()
-    @has_permissions(administrator=True)
-    async def setjoinmessage(self, ctx, *, template):
+    @has_permissions(manage_guild=True)
+    async def setjoinmessage(self, ctx, *, template: str = None):
         """Configure custom join message template"""
-        pass
+        e = discord.Embed(color=blurple)
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        if template:
+            config = CustomJoinLeaveMessages(
+                guild_id=ctx.guild.id,
+                join_message=template
+            )
+            e.add_field(name='Success!', value=f"Join message template has been set too\n{template}")
+        else:
+            config = CustomJoinLeaveMessages(
+                guild_id=ctx.guild.id,
+                join_message=CustomJoinLeaveMessages.nullify
+            )
+            e.add_field(name='Success!', value=f"Join message has been set to default")
+        await config.update_or_add()
+        await ctx.send(embed=e)
 
     @memberlogconfig.command()
-    @has_permissions(administrator=True)
-    async def setleavemessage(self, ctx, *, template):
+    @has_permissions(manage_guild=True)
+    async def setleavemessage(self, ctx, *, template=None):
         """Configure custom leave message template"""
-        pass
+        e = discord.Embed(color=blurple)
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        if template:
+            config = CustomJoinLeaveMessages(
+                guild_id=ctx.guild.id,
+                leave_message=template
+            )
+            e.add_field(name='Success!', value=f"Leave message template has been set too\n{template}")
+        else:
+            config = CustomJoinLeaveMessages(
+                guild_id=ctx.guild.id,
+                leave_message=CustomJoinLeaveMessages.nullify
+            )
+            e.add_field(name='Success!', value=f"Leave message has been set to default")
+        await config.update_or_add()
+        await ctx.send(embed=e)
+
+    @memberlogconfig.command()
+    @has_permissions(manage_guild=True)
+    async def help(self, ctx):  # I cannot put formatting example in example_usage because then it trys to format the example
+        """Displays message formatting key"""
+        e = discord.Embed(color=blurple)
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        e.description = """
+        `{guild}` = guild name
+        `{user}` = user's name plus discriminator ex. SnowPlow#5196
+        `{user_name}` = user's name without discriminator
+        `{user_mention}` = user's mention
+        `{user_id}` = user's ID
+        """
+        await ctx.send(embed=e)
 
 
 class CustomJoinLeaveMessages(db.DatabaseTable):
@@ -365,14 +448,14 @@ class CustomJoinLeaveMessages(db.DatabaseTable):
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
             guild_id bigint NOT NULL,
-            channel_id bigint NOT NULL,
-            ping boolean NOT NULL,
+            channel_id bigint NULL,
+            ping boolean default False,
             join_message text NULL,
             leave_message text NULL,
             PRIMARY KEY (guild_id)
             )""")
 
-    def __init__(self, guild_id, channel_id, ping=False, join_message=None, leave_message=None):
+    def __init__(self, guild_id, channel_id=None, ping=None, join_message=None, leave_message=None):
         super().__init__()
         self.guild_id = guild_id
         self.channel_id = channel_id
