@@ -44,8 +44,7 @@ class Actionlog(Cog):
             return template.format(guild=member.guild, user=str(member), user_name=member.name,
                                    user_mention=member.mention, user_id=member.id)
         else:
-            return "{user_mention}\n{user} ({user_id})".format(guild=member.guild, user=str(member), user_name=member.name,
-                                                               user_mention=member.mention, user_id=member.id)
+            return "{user_mention}\n{user} ({user_id})".format(user=str(member), user_mention=member.mention, user_id=member.id)
 
     @Cog.listener('on_member_join')
     async def on_member_join(self, member):
@@ -395,7 +394,7 @@ class Actionlog(Cog):
                 guild_id=ctx.guild.id,
                 join_message=CustomJoinLeaveMessages.nullify
             )
-            e.add_field(name='Success!', value=f"Join message has been set to default")
+            e.add_field(name='Success!', value="Join message has been set to default")
         await config.update_or_add()
         await ctx.send(embed=e)
 
@@ -416,7 +415,7 @@ class Actionlog(Cog):
                 guild_id=ctx.guild.id,
                 leave_message=CustomJoinLeaveMessages.nullify
             )
-            e.add_field(name='Success!', value=f"Leave message has been set to default")
+            e.add_field(name='Success!', value="Leave message has been set to default")
         await config.update_or_add()
         await ctx.send(embed=e)
 

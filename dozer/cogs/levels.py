@@ -8,9 +8,10 @@ import math
 from datetime import timedelta, timezone, datetime
 import random
 import time
+import typing
 import aiohttp
 import discord
-import typing
+
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
 
