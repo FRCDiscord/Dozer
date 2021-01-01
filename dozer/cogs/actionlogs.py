@@ -328,7 +328,7 @@ class Actionlog(Cog):
         embed = discord.Embed(title=f"Join/Leave configuration for {ctx.guild}", color=blurple)
         if len(config):
             channel = ctx.guild.get_channel(config[0].channel_id)
-            embed.add_field(name="Message Channel", value=channel.mention)
+            embed.add_field(name="Message Channel", value=channel.mention if channel else "None")
             embed.add_field(name="Ping on join", value=config[0].ping)
             embed.add_field(name="Join template", value=config[0].join_message, inline=False)
             embed.add_field(name="Join Example", value=self.format_join_leave(config[0].join_message, ctx.author))
@@ -416,6 +416,20 @@ class Actionlog(Cog):
             )
             e.add_field(name='Success!', value="Leave message has been set to default")
         await config.update_or_add()
+        await ctx.send(embed=e)
+
+    @memberlogconfig.command()
+    @has_permissions(manage_guild=True)
+    async def disable(self, ctx):
+        """Disables Join/Leave logging"""
+        e = discord.Embed(color=blurple)
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        config = CustomJoinLeaveMessages(
+            guild_id=ctx.guild.id,
+            channel_id=CustomJoinLeaveMessages.nullify
+        )
+        await config.update_or_add()
+        e.add_field(name='Success!', value="Join/Leave logs have been disabled")
         await ctx.send(embed=e)
 
     @memberlogconfig.command()
