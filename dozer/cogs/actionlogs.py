@@ -82,7 +82,7 @@ class Actionlog(Cog):
     async def on_raw_bulk_message_delete(self, payload):
         """Log bulk message deletes"""
         guild = self.bot.get_guild(int(payload.guild_id))
-        message_channel = self.bot.get_channel(int(payload.memberlog_channel))
+        message_channel = self.bot.get_channel(int(payload.channel_id))
         message_ids = payload.message_ids
         cached_messages = payload.cached_messages
 
@@ -182,7 +182,7 @@ class Actionlog(Cog):
         if payload.cached_message:
             return
         guild = self.bot.get_guild(int(payload.guild_id))
-        message_channel = self.bot.get_channel(int(payload.memberlog_channel))
+        message_channel = self.bot.get_channel(int(payload.channel_id))
         message_id = int(payload.message_id)
         message_created = discord.Object(message_id).created_at
         embed = discord.Embed(title="Message Deleted",
@@ -230,7 +230,7 @@ class Actionlog(Cog):
         """Logs message edits that are not currently in the bots message cache"""
         if payload.cached_message:
             return
-        mchannel = self.bot.get_channel(int(payload.memberlog_channel))
+        mchannel = self.bot.get_channel(int(payload.channel_id))
         guild = mchannel.guild
         try:
             content = payload.data['content']
@@ -240,12 +240,12 @@ class Actionlog(Cog):
         if not author:
             return
         guild_id = guild.id
-        memberlog_channel = payload.memberlog_channel
+        channel_id = payload.channel_id
         user_id = author['id']
         if (self.bot.get_user(int(user_id))).bot:
             return  # Breakout if the user is a bot
         message_id = payload.message_id
-        link = f"https://discordapp.com/channels/{guild_id}/{memberlog_channel}/{message_id}"
+        link = f"https://discordapp.com/channels/{guild_id}/{channel_id}/{message_id}"
         mention = f"<@!{user_id}>"
         avatar_link = f"http://cdn.discordapp.com/avatars/{user_id}/{author['avatar']}.webp?size=1024"
         embed = discord.Embed(title="Message Edited",
@@ -273,10 +273,10 @@ class Actionlog(Cog):
         if after.edited_at is not None or before.edited_at is not None:
             # There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
             guild_id = before.guild.id
-            memberlog_channel = before.channel.id
+            channel_id = before.channel.id
             user_id = before.author.id
             message_id = before.id
-            link = f"https://discordapp.com/channels/{guild_id}/{memberlog_channel}/{message_id}"
+            link = f"https://discordapp.com/channels/{guild_id}/{channel_id}/{message_id}"
             embed = discord.Embed(title="Message Edited",
                                   description=f"[MESSAGE]({link}) From {before.author.mention}"
                                               f"\nEdited In: {before.channel.mention}", color=0xFFC400,
