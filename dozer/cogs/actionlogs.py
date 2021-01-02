@@ -51,7 +51,7 @@ class Actionlog(Cog):
         """Logs that a member joined, with optional custom message"""
         config = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
         if len(config):
-            channel = member.guild.get_channel(config[0].channel_id)
+            channel = member.guild.get_channel(config[0].memberlog_channel)
             if channel:
                 embed = discord.Embed(color=0x00FF00)
                 embed.set_author(name='Member Joined', icon_url=member.avatar_url_as(format='png', size=32))
@@ -67,7 +67,7 @@ class Actionlog(Cog):
         """Logs that a member left."""
         config = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
         if len(config):
-            channel = member.guild.get_channel(config[0].channel_id)
+            channel = member.guild.get_channel(config[0].memberlog_channel)
             if channel:
                 embed = discord.Embed(color=0xFF0000)
                 embed.set_author(name='Member Left', icon_url=member.avatar_url_as(format='png', size=32))
@@ -82,7 +82,7 @@ class Actionlog(Cog):
     async def on_raw_bulk_message_delete(self, payload):
         """Log bulk message deletes"""
         guild = self.bot.get_guild(int(payload.guild_id))
-        message_channel = self.bot.get_channel(int(payload.channel_id))
+        message_channel = self.bot.get_channel(int(payload.memberlog_channel))
         message_ids = payload.message_ids
         cached_messages = payload.cached_messages
 
@@ -182,7 +182,7 @@ class Actionlog(Cog):
         if payload.cached_message:
             return
         guild = self.bot.get_guild(int(payload.guild_id))
-        message_channel = self.bot.get_channel(int(payload.channel_id))
+        message_channel = self.bot.get_channel(int(payload.memberlog_channel))
         message_id = int(payload.message_id)
         message_created = discord.Object(message_id).created_at
         embed = discord.Embed(title="Message Deleted",
@@ -230,7 +230,7 @@ class Actionlog(Cog):
         """Logs message edits that are not currently in the bots message cache"""
         if payload.cached_message:
             return
-        mchannel = self.bot.get_channel(int(payload.channel_id))
+        mchannel = self.bot.get_channel(int(payload.memberlog_channel))
         guild = mchannel.guild
         try:
             content = payload.data['content']
@@ -240,12 +240,12 @@ class Actionlog(Cog):
         if not author:
             return
         guild_id = guild.id
-        channel_id = payload.channel_id
+        memberlog_channel = payload.memberlog_channel
         user_id = author['id']
         if (self.bot.get_user(int(user_id))).bot:
             return  # Breakout if the user is a bot
         message_id = payload.message_id
-        link = f"https://discordapp.com/channels/{guild_id}/{channel_id}/{message_id}"
+        link = f"https://discordapp.com/channels/{guild_id}/{memberlog_channel}/{message_id}"
         mention = f"<@!{user_id}>"
         avatar_link = f"http://cdn.discordapp.com/avatars/{user_id}/{author['avatar']}.webp?size=1024"
         embed = discord.Embed(title="Message Edited",
@@ -273,10 +273,10 @@ class Actionlog(Cog):
         if after.edited_at is not None or before.edited_at is not None:
             # There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
             guild_id = before.guild.id
-            channel_id = before.channel.id
+            memberlog_channel = before.channel.id
             user_id = before.author.id
             message_id = before.id
-            link = f"https://discordapp.com/channels/{guild_id}/{channel_id}/{message_id}"
+            link = f"https://discordapp.com/channels/{guild_id}/{memberlog_channel}/{message_id}"
             embed = discord.Embed(title="Message Edited",
                                   description=f"[MESSAGE]({link}) From {before.author.mention}"
                                               f"\nEdited In: {before.channel.mention}", color=0xFFC400,
@@ -327,7 +327,7 @@ class Actionlog(Cog):
         config = await CustomJoinLeaveMessages.get_by(guild_id=ctx.guild.id)
         embed = discord.Embed(title=f"Join/Leave configuration for {ctx.guild}", color=blurple)
         if len(config):
-            channel = ctx.guild.get_channel(config[0].channel_id)
+            channel = ctx.guild.get_channel(config[0].memberlog_channel)
             embed.add_field(name="Message Channel", value=channel.mention if channel else "None")
             embed.add_field(name="Ping on join", value=config[0].ping)
             embed.add_field(name="Join template", value=config[0].join_message, inline=False)
@@ -352,7 +352,7 @@ class Actionlog(Cog):
         """Configure join/leave channel"""
         config = CustomJoinLeaveMessages(
             guild_id=ctx.guild.id,
-            channel_id=channel.id
+            memberlog_channel=channel.id
         )
         await config.update_or_add()
         e = discord.Embed(color=blurple)
@@ -426,7 +426,7 @@ class Actionlog(Cog):
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         config = CustomJoinLeaveMessages(
             guild_id=ctx.guild.id,
-            channel_id=CustomJoinLeaveMessages.nullify
+            memberlog_channel=CustomJoinLeaveMessages.nullify
         )
         await config.update_or_add()
         e.add_field(name='Success!', value="Join/Leave logs have been disabled")
@@ -460,17 +460,17 @@ class CustomJoinLeaveMessages(db.DatabaseTable):
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
             guild_id bigint NOT NULL,
-            channel_id bigint NULL,
+            memberlog_channel bigint NULL,
             ping boolean default False,
             join_message text NULL,
             leave_message text NULL,
             PRIMARY KEY (guild_id)
             )""")
 
-    def __init__(self, guild_id, channel_id=None, ping=None, join_message=None, leave_message=None):
+    def __init__(self, guild_id, memberlog_channel=None, ping=None, join_message=None, leave_message=None):
         super().__init__()
         self.guild_id = guild_id
-        self.channel_id = channel_id
+        self.memberlog_channel = memberlog_channel
         self.ping = ping
         self.join_message = join_message
         self.leave_message = leave_message
@@ -480,7 +480,7 @@ class CustomJoinLeaveMessages(db.DatabaseTable):
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
-            obj = CustomJoinLeaveMessages(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"), ping=result.get("ping"),
+            obj = CustomJoinLeaveMessages(guild_id=result.get("guild_id"), memberlog_channel=result.get("memberlog_channel"), ping=result.get("ping"),
                                           join_message=result.get("join_message"), leave_message=result.get("leave_message"))
             result_list.append(obj)
         return result_list
