@@ -387,7 +387,7 @@ class Actionlog(Cog):
                 guild_id=ctx.guild.id,
                 join_message=template
             )
-            e.add_field(name='Success!', value=f"Join message template has been set too\n{template}")
+            e.add_field(name='Success!', value=f"Join message template has been set to\n{template}")
         else:
             config = CustomJoinLeaveMessages(
                 guild_id=ctx.guild.id,
@@ -408,7 +408,7 @@ class Actionlog(Cog):
                 guild_id=ctx.guild.id,
                 leave_message=template
             )
-            e.add_field(name='Success!', value=f"Leave message template has been set too\n{template}")
+            e.add_field(name='Success!', value=f"Leave message template has been set to\n{template}")
         else:
             config = CustomJoinLeaveMessages(
                 guild_id=ctx.guild.id,
