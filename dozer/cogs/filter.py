@@ -95,7 +95,7 @@ class Filter(Cog):
         if not results:
             embed = discord.Embed(title="Filters for {}".format(ctx.guild.name))
             embed.description = "No filters found for this guild! Add one using `{}filter add <regex> [name]`".format(
-                ctx.bot.command_prefix)
+                ctx.prefix)
             embed.color = discord.Color.red()
             await ctx.send(embed=embed)
             return

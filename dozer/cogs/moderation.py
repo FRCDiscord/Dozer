@@ -1,5 +1,7 @@
 """Provides moderation commands for Dozer."""
 import asyncio
+import logging
+import math
 import re
 import datetime
 import time
@@ -12,6 +14,10 @@ from discord.ext.commands import BadArgument, has_permissions, RoleConverter
 
 from ._utils import *
 from .. import db
+
+MAX_PURGE = 1000
+
+DOZER_LOGGER = logging.getLogger(__name__)
 
 
 class SafeRoleConverter(RoleConverter):
@@ -33,22 +39,38 @@ class Moderation(Cog):
 
     def __init__(self, bot):
         super().__init__(bot)
-        self.edit_delete_config = db.ConfigCache(GuildMessageLog)
         self.links_config = db.ConfigCache(GuildMessageLinks)
+        self.bulk_delete_buffer = {}
 
     """=== Helper functions ==="""
 
-    @staticmethod
-    async def check_audit(guild, event_time=None):
-        """Method for checking the audit log for events"""
-        try:
-            async for entry in guild.audit_logs(limit=1, before=event_time, action=discord.AuditLogAction.message_delete):
-                return entry
-        except Forbidden:
-            return None
+    async def nm_kick_internal(self, guild=None):
+        """Kicks people who have not done the new member process within a set amount of time."""
+        getLogger("dozer").debug("Starting nm_kick cycle...")
+        if not guild:
+            entries = await NewMemPurgeConfig.get_by()
+        else:
+            entries = await NewMemPurgeConfig.get_by(guild_id=guild.id)
+        count = 0
+        for entry in entries:
+            guild = self.bot.get_guild(entry.guild_id)
+            if guild is None:
+                continue
+            for mem in guild.members:
+                if guild.get_role(entry.member_role) not in mem.roles:
+                    delta = datetime.datetime.now() - mem.joined_at
+                    if delta.days >= entry.days:
+                        await mem.kick(reason="New member purge cycle")
+                        count += 1
+        return count
+
+    @discord.ext.tasks.loop(hours=168)
+    async def nm_kick(self):
+        """Kicks new members"""
+        await self.nm_kick_internal()
 
     async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member, None], reason, orig_channel=None,
-                      embed_color=discord.Color.red(), global_modlog=True):
+                      embed_color=discord.Color.red(), global_modlog=True, duration=None):
         """Generates a modlog embed"""
 
         if target is None:
@@ -66,6 +88,8 @@ class Moderation(Cog):
         modlog_embed.add_field(name="Requested by", value=f"{actor.mention} ({actor} | {actor.id})", inline=False)
         modlog_embed.add_field(name="Reason", value=reason or "No reason specified", inline=False)
         modlog_embed.timestamp = datetime.datetime.utcnow()
+        if duration:
+            modlog_embed.add_field(name="Duration", value=duration)
         if target is not None:
             try:
                 await target.send(embed=modlog_embed)
@@ -188,6 +212,7 @@ class Moderation(Cog):
         results = await Mute.get_by(guild_id=member.guild.id, member_id=member.id)
         if results:
             await Mute.delete(member_id=member.id, guild_id=member.guild.id)
+            await PunishmentTimerRecords.delete(target_id=member.id, guild_id=member.guild.id, type_of_punishment=Mute.type)
             await self.perm_override(member, send_messages=None, add_reactions=None, speak=None)
             return True
         else:
@@ -227,6 +252,7 @@ class Moderation(Cog):
         results = await Deafen.get_by(guild_id=member.guild.id, member_id=member.id)
         if results:
             await self.perm_override(member=member, read_messages=None)
+            await PunishmentTimerRecords.delete(target_id=member.id, guild_id=member.guild.id, type_of_punishment=Deafen.type)
             await Deafen.delete(member_id=member.id, guild_id=member.guild.id)
             truths = [True, results[0].self_inflicted]
             return truths
@@ -237,7 +263,8 @@ class Moderation(Cog):
 
     @Cog.listener('on_ready')
     async def on_ready(self):
-        """Restore punishment timers on bot startup"""
+        """Restore punishment timers on bot startup and trigger the nm purge cycle"""
+        await self.nm_kick.start()
         q = await PunishmentTimerRecords.get_by()  # no filters: all
         for r in q:
             guild = self.bot.get_guild(r.guild_id)
@@ -255,32 +282,12 @@ class Moderation(Cog):
     @Cog.listener('on_member_join')
     async def on_member_join(self, member):
         """Logs that a member joined."""
-        join = discord.Embed(type='rich', color=0x00FF00)
-        join.set_author(name='Member Joined', icon_url=member.avatar_url_as(format='png', size=32))
-        join.description = "{0.mention}\n{0} ({0.id})".format(member)
-        join.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
-        member_log_channel = await GuildMemberLog.get_by(guild_id=member.guild.id)
-        if len(member_log_channel) != 0:
-            channel = member.guild.get_channel(member_log_channel[0].memberlog_channel)
-            await channel.send(embed=join)
         users = await Mute.get_by(guild_id=member.guild.id, member_id=member.id)
         if users:
             await self.perm_override(member, add_reactions=False, send_messages=False)
         users = await Deafen.get_by(guild_id=member.guild.id, member_id=member.id)
         if users:
             await self.perm_override(member, read_messages=False)
-
-    @Cog.listener('on_member_remove')
-    async def on_member_remove(self, member):
-        """Logs that a member left."""
-        leave = discord.Embed(type='rich', color=0xFF0000)
-        leave.set_author(name='Member Left', icon_url=member.avatar_url_as(format='png', size=32))
-        leave.description = "{0.mention}\n{0} ({0.id})".format(member)
-        leave.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
-        member_log_channel = await GuildMemberLog.get_by(guild_id=member.guild.id)
-        if len(member_log_channel) != 0:
-            channel = member.guild.get_channel(member_log_channel[0].memberlog_channel)
-            await channel.send(embed=leave)
 
     @Cog.listener('on_message')
     async def on_message(self, message):
@@ -302,129 +309,10 @@ class Moderation(Cog):
                 return
             await message.author.add_roles(message.guild.get_role(role_id))
 
-    @Cog.listener()
-    async def on_raw_message_delete(self, payload):
-        """When a message is deleted and its not in the bot cache, log it anyway."""
-        if payload.cached_message:
-            return
-        guild = self.bot.get_guild(int(payload.guild_id))
-        message_channel = self.bot.get_channel(int(payload.channel_id))
-        message_id = int(payload.message_id)
-        message_created = discord.Object(message_id).created_at
-        embed = discord.Embed(title="Message Deleted",
-                              description=f"Message Deleted In: {message_channel.mention}",
-                              color=0xFF00F0, timestamp=message_created)
-        embed.add_field(name="Message", value="N/A", inline=False)
-        embed.set_footer(text=f"MessageID: {message_id}; Sent at")
-        message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
-        if message_log_channel is not None:
-            channel = guild.get_channel(message_log_channel.messagelog_channel)
-            if channel is not None:
-                await channel.send(embed=embed)
-
-    @Cog.listener('on_message_delete')
-    async def on_message_delete(self, message):
-        """When a message is deleted, log it."""
-        if message.author == self.bot.user:
-            return
-        audit = await self.check_audit(message.guild)
-        embed = discord.Embed(title="Message Deleted",
-                              description=f"Message Deleted In: {message.channel.mention}\nSent by: {message.author.mention}",
-                              color=0xFF0000, timestamp=message.created_at)
-        embed.set_author(name=message.author, icon_url=message.author.avatar_url)
-        if audit:
-            if audit.target == message.author:
-                audit_member = await message.guild.fetch_member(audit.user.id)
-                embed.add_field(name="Message Deleted By: ", value=str(audit_member.mention), inline=False)
-        if message.content:
-            embed.add_field(name="Message Content:", value=message.content[0:1023], inline=False)
-            if len(message.content) > 1024:
-                embed.add_field(name="Message Content Continued:", value=message.content[1024:2000], inline=False)
-        else:
-            embed.add_field(name="Message Content:", value="N/A", inline=False)
-        embed.set_footer(text=f"UserID: {message.author.id}")
-        if message.attachments:
-            embed.add_field(name="Attachments", value=", ".join([i.url for i in message.attachments]))
-        message_log_channel = await self.edit_delete_config.query_one(guild_id=message.guild.id)
-        if message_log_channel is not None:
-            channel = message.guild.get_channel(message_log_channel.messagelog_channel)
-            if channel is not None:
-                await channel.send(embed=embed)
-
-    @Cog.listener()
-    async def on_raw_message_edit(self, payload):
-        """Logs message edits that are not currently in the bots message cache"""
-        if payload.cached_message:
-            return
-        mchannel = self.bot.get_channel(int(payload.channel_id))
-        guild = mchannel.guild
-        try:
-            content = payload.data['content']
-        except KeyError:
-            content = None
-        author = payload.data['author']
-        guild_id = guild.id
-        channel_id = payload.channel_id
-        user_id = author['id']
-        if (self.bot.get_user(int(user_id))).bot:
-            return  # Breakout if the user is a bot
-        message_id = payload.message_id
-        link = f"https://discordapp.com/channels/{guild_id}/{channel_id}/{message_id}"
-        mention = f"<@!{user_id}>"
-        avatar_link = f"http://cdn.discordapp.com/avatars/{user_id}/{author['avatar']}.webp?size=1024"
-        embed = discord.Embed(title="Message Edited",
-                              description=f"[MESSAGE]({link}) From {mention}\nEdited In: {mchannel.mention}", color=0xFFC400)
-        embed.set_author(name=f"{author['username']}#{author['discriminator']}",icon_url=avatar_link)
-        embed.add_field(name="Original", value="N/A", inline=False)
-        if content:
-            embed.add_field(name="Edited", value=content[0:1023], inline=False)
-            if len(content) > 1024:
-                embed.add_field(name="Edited Continued", value=content[1024:2000], inline=False)
-        else:
-            embed.add_field(name="Edited", value="N/A", inline=False)
-        embed.set_footer(text=f"UserID: {user_id}")
-        message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
-        if message_log_channel is not None:
-            channel = guild.get_channel(message_log_channel.messagelog_channel)
-            if channel is not None:
-                await channel.send(embed=embed)
-
     @Cog.listener('on_message_edit')
     async def on_message_edit(self, before, after):
-        """Logs message edits."""
+        """Checks for links"""
         await self.check_links(after)
-        if before.author.bot:
-            return
-        if after.edited_at is not None or before.edited_at is not None:
-            # There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
-            guild_id = before.guild.id
-            channel_id = before.channel.id
-            user_id = before.author.id
-            message_id = before.id
-            link = f"https://discordapp.com/channels/{guild_id}/{channel_id}/{message_id}"
-            embed = discord.Embed(title="Message Edited",
-                                  description=f"[MESSAGE]({link}) From {before.author.mention}"
-                                              f"\nEdited In: {before.channel.mention}", color=0xFFC400,
-                                  timestamp=after.edited_at)
-            embed.set_author(name=before.author, icon_url=before.author.avatar_url)
-            if before.content:
-                embed.add_field(name="Original", value=before.content[0:1023], inline=False)
-                if len(before.content) > 1024:
-                    embed.add_field(name="Original Continued", value=before.content[1024:2000], inline=False)
-                embed.add_field(name="Edited", value=after.content[0:1023], inline=False)
-                if len(after.content) > 1024:
-                    embed.add_field(name="Edited Continued", value=after.content[1024:2000], inline=False)
-            else:
-                embed.add_field(name="Original", value="N/A", inline=False)
-                embed.add_field(name="Edited", value="N/A", inline=False)
-            embed.set_footer(text=f"UserID: {user_id}")
-            if after.attachments:
-                embed.add_field(name="Attachments", value=", ".join([i.url for i in before.attachments]))
-            message_log_channel = await self.edit_delete_config.query_one(guild_id=before.guild.id)
-            if message_log_channel is not None:
-                channel = before.guild.get_channel(message_log_channel.messagelog_channel)
-                if channel is not None:
-                    await channel.send(embed=embed)
 
     """=== Direct moderation commands ==="""
 
@@ -455,7 +343,7 @@ class Moderation(Cog):
         """Set a timeout (no sending messages or adding reactions) on the current channel."""
         settings = await MemberRole.get_by(guild_id=ctx.guild.id)
         if len(settings) == 0:
-            settings = MemberRole(guild_id=ctx.guild.id)
+            settings = MemberRole(guild_id=ctx.guild.id, member_role=MemberRole.nullify)
             await settings.update_or_add()
         else:
             settings = settings[0]
@@ -506,15 +394,26 @@ class Moderation(Cog):
     @command(aliases=["purge"])
     @has_permissions(manage_messages=True)
     @bot_has_permissions(manage_messages=True, read_message_history=True)
-    async def prune(self, ctx, num_to_delete: int):
+    async def prune(self, ctx, num: int):
         """Bulk delete a set number of messages from the current channel."""
-        await ctx.message.channel.purge(limit=num_to_delete + 1)
-        await ctx.send(
-            "Deleted {n} messages under request of {user}".format(n=num_to_delete, user=ctx.message.author.mention),
-            delete_after=5)
+        try:
+            msg = await ctx.message.channel.fetch_message(num)
+            deleted = await ctx.message.channel.purge(after=msg, limit=MAX_PURGE)
+            await ctx.send(
+                f"Deleted {len(deleted)} messages under request of {ctx.message.author.mention}",
+                delete_after=5)
+        except discord.NotFound:
+            if num > MAX_PURGE:
+                await ctx.send("Message cannot be found or you're trying to purge too many messages.")
+                return
+            deleted = await ctx.message.channel.purge(limit=num + 1)
+            await ctx.send(
+                f"Deleted {len(deleted) - 1} messages under request of {ctx.message.author.mention}",
+                delete_after=5)
 
     prune.example_usage = """
     `{prefix}prune 10` - Delete the last 10 messages in the current channel.
+    `{prefix}prune 786324930378727484` - Deletes all messages up to that message ID
     """
 
     @command()
@@ -560,9 +459,10 @@ class Moderation(Cog):
         """Mute a user to prevent them from sending messages"""
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
-            reason = self.hm_regex.sub(reason, "") or "No reason provided"
+            reason = self.hm_regex.sub("", reason) or "No reason provided"
             if await self._mute(member_mentions, reason=reason, seconds=seconds, actor=ctx.author, orig_channel=ctx.channel):
-                await self.mod_log(ctx.author, "muted", member_mentions, reason, ctx.channel, discord.Color.red())
+                await self.mod_log(ctx.author, "muted", member_mentions, reason, ctx.channel, discord.Color.red(),
+                                   duration=datetime.timedelta(seconds=seconds))
             else:
                 await ctx.send("Member is already muted!")
 
@@ -593,9 +493,10 @@ class Moderation(Cog):
         """Deafen a user to prevent them from both sending messages but also reading messages."""
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
-            reason = self.hm_regex.sub(reason, "") or "No reason provided"
+            reason = self.hm_regex.sub("", reason) or "No reason provided"
             if await self._deafen(member_mentions, reason, seconds=seconds, self_inflicted=False, actor=ctx.author, orig_channel=ctx.channel):
-                await self.mod_log(ctx.author, "deafened", member_mentions, reason, ctx.channel, discord.Color.red())
+                await self.mod_log(ctx.author, "deafened", member_mentions, reason, ctx.channel, discord.Color.red(),
+                                   duration=datetime.timedelta(seconds=seconds))
             else:
                 await ctx.send("Member is already deafened!")
 
@@ -609,9 +510,10 @@ class Moderation(Cog):
         """Deafen yourself for a given time period to prevent you from reading or sending messages; useful as a study tool."""
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
-            reason = self.hm_regex.sub(reason, "") or "No reason provided"
+            reason = self.hm_regex.sub("", reason) or "No reason provided"
             if await self._deafen(ctx.author, reason, seconds=seconds, self_inflicted=True, actor=ctx.author, orig_channel=ctx.channel):
-                await self.mod_log(ctx.author, "deafened", ctx.author, reason, ctx.channel, discord.Color.red(), global_modlog=False)
+                await self.mod_log(ctx.author, "deafened", ctx.author, reason, ctx.channel, discord.Color.red(), global_modlog=False,
+                                   duration=datetime.timedelta(seconds=seconds))
             else:
                 await ctx.send("You are already deafened!")
 
@@ -656,6 +558,14 @@ class Moderation(Cog):
     `{prefix}voicekick @user reason` - kick @user out of voice
     """
 
+    @has_permissions(kick_members=True)
+    @bot_has_permissions(kick_members=True)
+    @command()
+    async def purgenm(self, ctx):
+        """Manually run a new member purge"""
+        memcount = await self.nm_kick_internal(guild=ctx.guild)
+        await ctx.send(f"Kicked {memcount} members due to inactivity!")
+
     """=== Configuration commands ==="""
 
     @command()
@@ -699,6 +609,19 @@ class Moderation(Cog):
     nmconfig.example_usage = """
     `{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel 
     so if someone types "I have read the rules and regulations" it assigns them the Member role. 
+    """
+
+    @command()
+    @has_permissions(administrator=True)
+    async def nmpurgeconfig(self, ctx, role: discord.Role, days: int):
+        """Sets the config for the new members purge"""
+        config = NewMemPurgeConfig(guild_id=ctx.guild.id, member_role=role.id, days=days)
+        await config.update_or_add()
+
+        await ctx.send("Settings saved!")
+
+    nmpurgeconfig.example_usage = """
+    `{prefix}nmpurgeconfig Members 90: Kicks everyone who doesn't have the members role 90 days after they join.
     """
 
     @command()
@@ -757,43 +680,6 @@ class Moderation(Cog):
     `{prefix}linkscrubconfig @ everyone` - set the default role as the link role (ping-safe)
     `{prefix}linkscrubconfig @.everyone` - set the default role as the link role (ping-safe)
     `{prefix}linkscrubconfig @/everyone` - set the default role as the link role (ping-safe)
-    """
-
-    @command()
-    @has_permissions(administrator=True)
-    async def memberlogconfig(self, ctx, channel_mentions: discord.TextChannel):
-        """Set the join/leave channel for a server by passing a channel mention"""
-        config = await GuildMemberLog.get_by(guild_id=ctx.guild.id)
-        if len(config) != 0:
-            config = config[0]
-            config.name = ctx.guild.name
-            config.memberlog_channel = channel_mentions.id
-        else:
-            config = GuildMemberLog(guild_id=ctx.guild.id, memberlog_channel=channel_mentions.id, name=ctx.guild.name)
-        await config.update_or_add()
-        await ctx.send(ctx.message.author.mention + ', memberlog settings configured!')
-
-    memberlogconfig.example_usage = """
-    `{prefix}memberlogconfig #join-leave-logs` - set a channel named #join-leave-logs to log joins/leaves 
-    """
-
-    @command()
-    @has_permissions(administrator=True)
-    async def messagelogconfig(self, ctx, channel_mentions: discord.TextChannel):
-        """Set the modlog channel for a server by passing the channel id"""
-        config = await GuildMessageLog.get_by(guild_id=ctx.guild.id)
-        if len(config) != 0:
-            config = config[0]
-            config.name = ctx.guild.name
-            config.messagelog_channel = channel_mentions.id
-        else:
-            config = GuildMessageLog(guild_id=ctx.guild.id, messagelog_channel=channel_mentions.id, name=ctx.guild.name)
-        await config.update_or_add()
-        self.edit_delete_config.invalidate_entry(id=ctx.guild.id)
-        await ctx.send(ctx.message.author.mention + ', messagelog settings configured!')
-
-    messagelogconfig.example_usage = """
-    `{prefix}messagelogconfig #orwellian-dystopia` - set a channel named #orwellian-dystopia to log message edits/deletions
     """
 
 
@@ -949,6 +835,40 @@ class MemberRole(db.DatabaseTable):
         return result_list
 
 
+class NewMemPurgeConfig(db.DatabaseTable):
+    """Holds info on member purge routines"""
+    __tablename__ = 'member_purge_configs'
+    __uniques__ = 'guild_id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            guild_id bigint PRIMARY KEY NOT NULL,
+            member_role bigint not null,
+            days int not null
+            )""")
+
+    def __init__(self, guild_id, member_role, days):
+        super().__init__()
+        self.guild_id = guild_id
+        self.member_role = member_role
+        self.days = days
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = NewMemPurgeConfig(member_role=result.get("member_role"),
+                                    guild_id=result.get("guild_id"),
+                                    days=result.get("days"))
+            result_list.append(obj)
+        return result_list
+
+
 class GuildNewMember(db.DatabaseTable):
     """Holds new member info"""
     __tablename__ = 'new_members'
@@ -980,72 +900,6 @@ class GuildNewMember(db.DatabaseTable):
         for result in results:
             obj = GuildNewMember(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
                                  role_id=result.get("role_id"), message=result.get("message"))
-            result_list.append(obj)
-        return result_list
-
-
-class GuildMemberLog(db.DatabaseTable):
-    """Holds information for member logs"""
-    __tablename__ = 'memberlogconfig'
-    __uniques__ = 'guild_id'
-
-    @classmethod
-    async def initial_create(cls):
-        """Create the table in the database"""
-        async with db.Pool.acquire() as conn:
-            await conn.execute(f"""
-            CREATE TABLE {cls.__tablename__} (
-            guild_id bigint PRIMARY KEY NOT NULL,
-            memberlog_channel bigint NOT NULL,
-            name varchar NOT NULL
-            )""")
-
-    def __init__(self, guild_id, memberlog_channel, name):
-        super().__init__()
-        self.guild_id = guild_id
-        self.memberlog_channel = memberlog_channel
-        self.name = name
-
-    @classmethod
-    async def get_by(cls, **kwargs):
-        results = await super().get_by(**kwargs)
-        result_list = []
-        for result in results:
-            obj = GuildMemberLog(guild_id=result.get("guild_id"), memberlog_channel=result.get("memberlog_channel"),
-                                 name=result.get("name"))
-            result_list.append(obj)
-        return result_list
-
-
-class GuildMessageLog(db.DatabaseTable):
-    """Holds config info for message logs"""
-    __tablename__ = 'messagelogconfig'
-    __uniques__ = 'guild_id'
-
-    @classmethod
-    async def initial_create(cls):
-        """Create the table in the database"""
-        async with db.Pool.acquire() as conn:
-            await conn.execute(f"""
-            CREATE TABLE {cls.__tablename__} (
-            guild_id bigint PRIMARY KEY NOT NULL,
-            name varchar NOT NULL,
-            messagelog_channel bigint NOT NULL
-            )""")
-
-    def __init__(self, guild_id, name, messagelog_channel):
-        super().__init__()
-        self.guild_id = guild_id
-        self.name = name
-        self.messagelog_channel = messagelog_channel
-
-    @classmethod
-    async def get_by(cls, **kwargs):
-        results = await super().get_by(**kwargs)
-        result_list = []
-        for result in results:
-            obj = GuildMessageLog(guild_id=result.get("guild_id"), name=result.get("name"),
-                                  messagelog_channel=result.get("messagelog_channel"))
             result_list.append(obj)
         return result_list
 

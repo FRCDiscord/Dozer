@@ -1,18 +1,19 @@
 """Provides commands for pulling certain information."""
+import math
 from difflib import SequenceMatcher
 import typing
 import discord
 from discord.ext.commands import cooldown, BucketType, guild_only
 
 from ._utils import *
+from .levels import MemberXP, GuildXPSettings
 
 blurple = discord.Color.blurple()
-datetime_format = '%Y-%m-%d %I:%M %p'
+datetime_format = '%Y-%m-%d %H:%M:%S\nUTC'
 
 
 class Info(Cog):
     """Commands for getting information about people and things on Discord."""
-    datetime_format = '%Y-%m-%d %H:%M:%S UTC'
 
     @command(aliases=['user', 'memberinfo', 'userinfo'])
     @guild_only()
@@ -30,16 +31,29 @@ class Info(Cog):
          """
         if member is None:
             member = ctx.author
+        footers = []
 
-        icon_url = member.avatar_url_as(static_format='png')
+        levels_data = await MemberXP.get_by(guild_id=ctx.guild.id, user_id=member.id)
+        levels_settings = await GuildXPSettings.get_by(guild_id=ctx.guild.id)
+        levels_enabled = levels_settings[0].enabled if len(levels_settings) else False
 
         embed = discord.Embed(title=member.display_name, description=f'{member!s} ({member.id})', color=member.color)
+        embed.set_thumbnail(url=member.avatar_url)
         embed.add_field(name='Bot Created' if member.bot else 'Account Created',
-                        value=member.created_at.strftime(self.datetime_format), inline=True)
-        embed.add_field(name='Member Joined', value=member.joined_at.strftime(self.datetime_format), inline=True)
+                        value=member.created_at.strftime(datetime_format), inline=True)
+
+        if not levels_enabled:
+            embed.add_field(name="Last Seen Here At", value="Levels Disabled")
+        elif len(levels_data):
+            embed.add_field(name="Last Seen Here At", value=levels_data[0].last_given_at.strftime(datetime_format))
+            footers.append(f"Total Messages: {levels_data[0].total_messages}")
+        else:
+            embed.add_field(name="Last Seen Here At", value="Not available")
+            footers.append("Total Messages: N/A")
+
+        embed.add_field(name='Member Joined', value=member.joined_at.strftime(datetime_format), inline=True)
         if member.premium_since is not None:
-            embed.add_field(name='Member Boosted', value=member.premium_since.strftime(self.datetime_format), inline=True)
-        embed.add_field(name='Color', value=str(member.color).upper(), inline=True)
+            embed.add_field(name='Member Boosted', value=member.premium_since.strftime(datetime_format), inline=True)
 
         status = 'DND' if member.status is discord.Status.dnd else member.status.name.title()
         if member.status is not discord.Status.offline:
@@ -47,11 +61,11 @@ class Info(Cog):
                                         getattr(member, f'{platform}_status') is not discord.Status.offline])
             status = f'{status} on {platforms}'
         activities = '\n'.join(self._format_activities(member.activities))
-        embed.add_field(name='Status and Activity', value=f'{status}\n{activities}', inline=True)
-
-        embed.add_field(name='Roles', value=', '.join(role.name for role in member.roles[:0:-1]) or 'None')
-        embed.add_field(name='Icon URL', value=icon_url)
-        embed.set_thumbnail(url=icon_url)
+        embed.add_field(name='Status and Activity', value=f'{status}\n{activities}', inline=False)
+        for field_number, roles in enumerate(chunk(member.roles[:0:-1], 35)):
+            embed.add_field(name='Roles', value=', '.join(role.mention for role in roles) or 'None', inline=False)
+        footers.append(f"Color: {str(member.color).upper()}")
+        embed.set_footer(text="; ".join(footers))
         await ctx.send(embed=embed)
 
     member.example_usage = """
@@ -68,7 +82,7 @@ class Info(Cog):
             if isinstance(activity, discord.CustomActivity):
                 return f"{activity.emoji} {activity.name}"
             elif isinstance(activity, discord.Spotify):
-                return f'Listening to {activity.title} by {activity.artist} on Spotify'
+                return f"Listening to [{activity.title} by {activity.artist}](https://open.spotify.com/track/{activity.track_id}) on Spotify"
             elif activity.type is discord.ActivityType.listening:
                 return f'Listening to {activity.name}'  # Special-cased to insert " to"
             else:
@@ -100,6 +114,30 @@ class Info(Cog):
         else:
             return f'{", ".join(values[:-1])}, and {values[-1]}'
 
+    @command()
+    @guild_only()
+    @cooldown(1, 10, BucketType.channel)
+    async def role(self, ctx, role: discord.Role):
+        """Retrieve info about a role in this guild"""
+        embed = discord.Embed(title=f"Info for role: {role.name}", description=f"{role.mention} ({role.id})", color=role.color)
+        embed.add_field(name="Created on", value=role.created_at.strftime(datetime_format))
+        embed.add_field(name="Position", value=role.position)
+        embed.add_field(name="Color", value=str(role.color).upper())
+        embed.add_field(name="Assigned members", value=f"{len(role.members)}", inline=False)
+        await ctx.send(embed=embed)
+
+    @command()
+    @guild_only()
+    async def rolemembers(self, ctx, role: discord.Role):
+        """Retrieve members who have this role"""
+        embeds = []
+        for page_num, page in enumerate(chunk(role.members, 10)):
+            embed = discord.Embed(title=f"Members for role: {role.name}", color=role.color)
+            embed.description = "\n".join(f"{member.mention}({member.id})" for member in page)
+            embed.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(role.members) / 10)}")
+            embeds.append(embed)
+        await paginate(ctx, embeds)
+
     @guild_only()
     @cooldown(1, 10, BucketType.channel)
     @command(aliases=['server', 'guildinfo', 'serverinfo'])
@@ -108,24 +146,22 @@ class Info(Cog):
         guild = ctx.guild
         static_emoji = sum(not e.animated for e in ctx.guild.emojis)
         animated_emoji = sum(e.animated for e in ctx.guild.emojis)
-        e = discord.Embed(color=blurple)
-        e.set_thumbnail(url=guild.icon_url)
-        e.add_field(name='Name', value=guild.name)
-        e.add_field(name='ID', value=guild.id)
-        e.add_field(name='Created at', value=guild.created_at.strftime(datetime_format))
-        e.add_field(name='Owner', value=guild.owner)
-        e.add_field(name='Members', value=guild.member_count)
-        e.add_field(name='Channels', value=str(len(guild.channels)))
-        e.add_field(name='Roles', value=str(len(guild.roles) - 1))  # Remove @everyone
-        e.add_field(name='Emoji', value="{} static, {} animated".format(static_emoji, animated_emoji))
-        e.add_field(name='Region', value=guild.region.name)
-        e.add_field(name='Icon URL', value=guild.icon_url or 'This guild has no icon.')
-        e.add_field(name='Nitro Boost', value=f'Level {ctx.guild.premium_tier}, '
-                                              f'{ctx.guild.premium_subscription_count} booster(s)\n'
-                                              f'{ctx.guild.filesize_limit // 1024**2}MiB files, '
-                                              f'{ctx.guild.bitrate_limit / 1000:0.1f}kbps voice')
+        embed = discord.Embed(title=f"Info for guild: {guild.name}", description=f"Members: {guild.member_count}", color=blurple)
 
-        await ctx.send(embed=e)
+        embed.set_thumbnail(url=guild.icon_url)
+
+        embed.add_field(name='Created at', value=guild.created_at.strftime(datetime_format))
+        embed.add_field(name='Owner', value=guild.owner)
+        embed.add_field(name='Region', value=guild.region.name)
+        embed.add_field(name='Emoji', value="{} static, {} animated".format(static_emoji, animated_emoji))
+        embed.add_field(name='Roles', value=str(len(guild.roles) - 1))  # Remove @everyone
+        embed.add_field(name='Channels', value=str(len(guild.channels)))
+        embed.add_field(name='Nitro Boost Info', value=f'Level {ctx.guild.premium_tier}, '
+                                                       f'{ctx.guild.premium_subscription_count} booster(s), '
+                                                       f'{ctx.guild.filesize_limit // 1024 ** 2}MiB files, '
+                                                       f'{ctx.guild.bitrate_limit / 1000:0.1f}kbps voice')
+
+        await ctx.send(embed=embed)
 
     guild.example_usage = """
     `{prefix}guild` - get information about this guild
