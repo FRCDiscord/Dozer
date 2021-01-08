@@ -8,9 +8,9 @@ import math
 from datetime import timedelta, timezone, datetime
 import random
 import time
+import typing
 import aiohttp
 import discord
-import typing
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
 
@@ -846,6 +846,7 @@ class GuildXPSettings(db.DatabaseTable):
         return result_list
 
     async def version_1(self):
+        """DB migration v1"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             ALTER TABLE {self.__tablename__} ALTER COLUMN lvl_up_msgs DROP NOT NULL;
