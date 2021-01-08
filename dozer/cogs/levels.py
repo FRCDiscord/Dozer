@@ -15,6 +15,7 @@ from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
 
 from ._utils import *
+
 blurple = discord.Color.blurple()
 from .. import db
 
@@ -843,6 +844,15 @@ class GuildXPSettings(db.DatabaseTable):
                                   lvl_up_msgs=result.get("lvl_up_msgs"), keep_old_roles=result.get("keep_old_roles"))
             result_list.append(obj)
         return result_list
+
+    async def version_1(self):
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            ALTER TABLE {self.__tablename__} ALTER COLUMN lvl_up_msgs DROP NOT NULL;
+            ALTER TABLE {self.__tablename__} ADD COLUMN IF NOT EXISTS keep_old_roles boolean NOT NULL default TRUE;
+            """)
+
+    __versions__ = [version_1]
 
 
 def setup(bot):
