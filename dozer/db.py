@@ -33,8 +33,8 @@ async def db_migrate():
             if version is None:
                 # Migration/creation required, go to the function in the subclass for it
                 await cls.initial_migrate()
-                DOZER_LOGGER.warning(f"Initial migrate preformed on table {cls.__tablename__}, please restart bot to allow for table migration")
-            elif int(version["version_num"]) < len(cls.__versions__):
+                version = {"version_num": 0}
+            if int(version["version_num"]) < len(cls.__versions__):
                 # the version in the DB is less than the version in the bot, run all the migrate scripts necessary
                 DOZER_LOGGER.info(f"Table {cls.__tablename__} is out of date attempting to migrate")
                 for i in range(int(version["version_num"]), len(cls.__versions__)):
@@ -45,6 +45,7 @@ async def db_migrate():
                     await conn.execute("""UPDATE versions SET version_num = $1 WHERE table_name = $2""", len(cls.__versions__), cls.__tablename__)
         else:
             await cls.initial_create()
+            await cls.initial_migrate()
 
 
 class DatabaseTable:

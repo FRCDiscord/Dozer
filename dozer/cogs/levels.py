@@ -818,8 +818,7 @@ class GuildXPSettings(db.DatabaseTable):
             xp_max int NOT NULL,
             xp_cooldown int NOT NULL,
             entropy_value int NOT NULL,
-            lvl_up_msgs bigint NULL,
-            keep_old_roles boolean NOT NULL,
+            lvl_up_msgs bigint NOT NULL,
             enabled boolean NOT NULL
             )""")
 
