@@ -1,12 +1,26 @@
 version: '3'
 services:
-  postgres:
-    image: postgres
+  postgres_ip:
+    image: postgres:alpine
     environment:
       POSTGRES_PASSWORD: simplepass
       POSTGRES_USER: dozer
+    ports:
+      - "5432:5432"
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dozer"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
   dozer:
+    depends_on: 
+      postgres_ip:
+        condition: service_healthy
     build: .
     volumes:
       - ".:/app"
-
+      
+volumes:
+  database:
