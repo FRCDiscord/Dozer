@@ -37,7 +37,8 @@ config = {
 
     },
     'debug': False,
-    'is_backup': False
+    'is_backup': False,
+    'invite_override': ""
 }
 config_file = 'config.json'
 

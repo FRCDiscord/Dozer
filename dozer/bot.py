@@ -59,6 +59,10 @@ class Dozer(commands.Bot):
         """Things to run when the bot has initialized and signed in"""
         DOZER_LOGGER.info('Signed in as {}#{} ({})'.format(self.user.name, self.user.discriminator, self.user.id))
         await self.dynamic_prefix.refresh()
+        perms = 0
+        for cmd in self.walk_commands():
+            perms |= cmd.required_permissions.value
+        DOZER_LOGGER.debug('Bot Invite: {}'.format(discord.utils.oauth_url(self.user.id, discord.Permissions(perms))))
         if self.config['is_backup']:
             status = discord.Status.dnd
         else:

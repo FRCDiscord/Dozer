@@ -169,6 +169,12 @@ class General(Cog):
         Display the bot's invite link.
         The generated link gives all permissions the bot requires. If permissions are removed, some commands will be unusable.
         """
+        bot_info = await self.bot.application_info()
+        if not bot_info.bot_public or self.bot.config['invite_override'] != "":
+            await ctx.send(self.bot.config['invite_override'] or "The bot is not able to be publicly invited. Please "
+                                                                 "contact the bot developer. If you are the bot "
+                                                                 "developer, please check the bot console. ")
+            return
         perms = 0
         for cmd in ctx.bot.walk_commands():
             perms |= cmd.required_permissions.value
