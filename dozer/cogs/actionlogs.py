@@ -51,7 +51,7 @@ class Actionlog(Cog):
         """Logs that a member joined, with optional custom message"""
         config = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
         if len(config):
-            channel = member.guild.get_channel(config[0].memberlog_channel)
+            channel = member.guild.get_channel(config[0].channel_id)
             if channel:
                 embed = discord.Embed(color=0x00FF00)
                 embed.set_author(name='Member Joined', icon_url=member.avatar_url_as(format='png', size=32))
@@ -67,7 +67,7 @@ class Actionlog(Cog):
         """Logs that a member left."""
         config = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
         if len(config):
-            channel = member.guild.get_channel(config[0].memberlog_channel)
+            channel = member.guild.get_channel(config[0].channel_id)
             if channel:
                 embed = discord.Embed(color=0xFF0000)
                 embed.set_author(name='Member Left', icon_url=member.avatar_url_as(format='png', size=32))
@@ -327,7 +327,7 @@ class Actionlog(Cog):
         config = await CustomJoinLeaveMessages.get_by(guild_id=ctx.guild.id)
         embed = discord.Embed(title=f"Join/Leave configuration for {ctx.guild}", color=blurple)
         if len(config):
-            channel = ctx.guild.get_channel(config[0].memberlog_channel)
+            channel = ctx.guild.get_channel(config[0].channel_id)
             embed.add_field(name="Message Channel", value=channel.mention if channel else "None")
             embed.add_field(name="Ping on join", value=config[0].ping)
             embed.add_field(name="Join template", value=config[0].join_message, inline=False)
@@ -352,7 +352,7 @@ class Actionlog(Cog):
         """Configure join/leave channel"""
         config = CustomJoinLeaveMessages(
             guild_id=ctx.guild.id,
-            memberlog_channel=channel.id
+            channel_id=channel.id
         )
         await config.update_or_add()
         e = discord.Embed(color=blurple)
@@ -426,7 +426,7 @@ class Actionlog(Cog):
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         config = CustomJoinLeaveMessages(
             guild_id=ctx.guild.id,
-            memberlog_channel=CustomJoinLeaveMessages.nullify
+            channel_id=CustomJoinLeaveMessages.nullify
         )
         await config.update_or_add()
         e.add_field(name='Success!', value="Join/Leave logs have been disabled")
@@ -459,18 +459,16 @@ class CustomJoinLeaveMessages(db.DatabaseTable):
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            guild_id bigint NOT NULL,
-            memberlog_channel bigint NULL,
-            ping boolean default False,
-            join_message text NULL,
-            leave_message text NULL,
+            guild_id bigint PRIMARY KEY NOT NULL,	            
+            memberlog_channel bigint NOT NULL,	   
+            name varchar NOT NULL,
             PRIMARY KEY (guild_id)
             )""")
 
-    def __init__(self, guild_id, memberlog_channel=None, ping=None, join_message=None, leave_message=None):
+    def __init__(self, guild_id, channel_id=None, ping=None, join_message=None, leave_message=None):
         super().__init__()
         self.guild_id = guild_id
-        self.memberlog_channel = memberlog_channel
+        self.channel_id = channel_id
         self.ping = ping
         self.join_message = join_message
         self.leave_message = leave_message
@@ -480,10 +478,27 @@ class CustomJoinLeaveMessages(db.DatabaseTable):
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
-            obj = CustomJoinLeaveMessages(guild_id=result.get("guild_id"), memberlog_channel=result.get("memberlog_channel"), ping=result.get("ping"),
+            obj = CustomJoinLeaveMessages(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"), ping=result.get("ping"),
                                           join_message=result.get("join_message"), leave_message=result.get("leave_message"))
             result_list.append(obj)
         return result_list
+
+    async def version_1(self):
+        """DB migration v1"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            alter table memberlogconfig rename column memberlog_channel to channel_id;
+            alter table memberlogconfig alter column channel_id drop not null;
+            alter table {self.__tablename__} drop column IF EXISTS name;
+            alter table {self.__tablename__}
+                add IF NOT EXISTS ping boolean default False;
+            alter table {self.__tablename__}
+                add IF NOT EXISTS join_message text default null;
+            alter table {self.__tablename__}
+                add IF NOT EXISTS leave_message text default null;
+            """)
+            
+    __versions__ = [version_1]
 
 
 class GuildMessageLog(db.DatabaseTable):
