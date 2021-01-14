@@ -1,6 +1,9 @@
 """Provides database storage for the Dozer Discord bot"""
+import logging
 
 import asyncpg
+
+DOZER_LOGGER = logging.getLogger(__name__)
 
 Pool = None
 
@@ -18,6 +21,7 @@ async def db_migrate():
         table_name text PRIMARY KEY,
         version_num int NOT NULL
         )""")
+    DOZER_LOGGER.info("Checking for db migrations")
     for cls in DatabaseTable.__subclasses__():
         exists = await Pool.fetchrow("""SELECT EXISTS(
         SELECT 1
@@ -29,18 +33,25 @@ async def db_migrate():
             if version is None:
                 # Migration/creation required, go to the function in the subclass for it
                 await cls.initial_migrate()
-            elif int(version["version_num"]) < len(cls.__versions__):
+                version = {"version_num": 0}
+            if int(version["version_num"]) < len(cls.__versions__):
                 # the version in the DB is less than the version in the bot, run all the migrate scripts necessary
-                for i in range(int(version["version_num"]) + 1, len(cls.__versions__)-2):
+                DOZER_LOGGER.info(f"Table {cls.__tablename__} is out of date attempting to migrate")
+                for i in range(int(version["version_num"]), len(cls.__versions__)):
                     # Run the update script for this version!
-                    cls.__versions__[i]()
+                    await cls.__versions__[i](cls)
+                    DOZER_LOGGER.info(f"Successfully updated table {cls.__tablename__} from version {i} to {i + 1}")
+                async with Pool.acquire() as conn:
+                    await conn.execute("""UPDATE versions SET version_num = $1 WHERE table_name = $2""", len(cls.__versions__), cls.__tablename__)
         else:
             await cls.initial_create()
+            await cls.initial_migrate()
 
 
 class DatabaseTable:
     """Defines a database table"""
     __tablename__ = None
+    __versions__ = []
     __uniques__ = []
 
     # Declare the migrate/create functions
@@ -51,8 +62,9 @@ class DatabaseTable:
 
     @classmethod
     async def initial_migrate(cls):
-        """Migrate the table from the SQLalchemy based system to the asyncpg system. Define this yourself, or leave it
-        blank if no migration is necessary."""
+        """Create a version entry in the versions table"""
+        async with Pool.acquire() as conn:
+            await conn.execute("""INSERT INTO versions VALUES ($1, 0)""", cls.__tablename__)
 
     @staticmethod
     def nullify():
