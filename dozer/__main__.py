@@ -21,7 +21,7 @@ config = {
         'key': 'Put TOA API key here',
         'app_name': 'Dozer',
     },
-    'db_url': 'postgres://POSTGRES URL HERE',
+    'db_url': 'postgres://dozer_user:simplepass@postgres_ip',
     'gmaps_key': "PUT GOOGLE MAPS API KEY HERE",
     'discord_token': "Put Discord API Token here.",
     'news': {

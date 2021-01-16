@@ -1,0 +1,20 @@
+version: '3'
+services:
+  postgres_ip:
+    image: postgres:alpine
+    environment:
+      POSTGRES_PASSWORD: simplepass
+      POSTGRES_USER: dozer_user
+    ports:
+      - "5432:5432"
+    volumes:
+      - database:/var/lib/postgresql/data
+  dozer:
+    depends_on: 
+      - postgres_ip
+    build: .
+    volumes:
+      - ".:/app"
+      
+volumes:
+  database:
