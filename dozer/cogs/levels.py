@@ -633,7 +633,7 @@ class Levels(Cog):
             # Make Postgres compute the rank for us (need WITH-query so rank() sees records for every user)
             db_record = await db.Pool.fetchrow(f"""
                 WITH ranked_xp AS (
-                    SELECT user_id, rank() OVER (ORDER BY total_xp DESC) FROM {MemberXP.__tablename__}
+                    SELECT user_id, rank() OVER (ORDER BY total_xp DESC, user_id) FROM {MemberXP.__tablename__}
                     WHERE guild_id = $1
                 ) SELECT rank FROM ranked_xp WHERE user_id = $2;
             """, ctx.guild.id, member.id)
