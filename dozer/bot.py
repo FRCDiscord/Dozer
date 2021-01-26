@@ -112,7 +112,7 @@ class Dozer(commands.Bot):
                                    context.channel.recipient, context.message.content)
             DOZER_LOGGER.error(''.join(traceback.format_exception(type(exception), exception, exception.__traceback__)))
 
-    async def on_error(event, *args, **kwargs):
+    async def on_error(self, event, *args, **kwargs):
         """Don't ignore the error, causing Sentry to capture it."""
         raise
 
