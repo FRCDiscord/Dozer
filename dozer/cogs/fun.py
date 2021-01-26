@@ -24,7 +24,18 @@ class Fun(Cog):
             "was run over with a robot by",
             "had their IQ dropped 15 points by",
             "had a heavy object dropped on them by",
-            "was beat up by"
+            "was beat up by",
+            "was told to read the manual by",
+            "was told to use windows by",
+            "was forced to update windows by",
+            "was E-stopped by",
+            "was hit by a snowplow driven by",
+            "had their api token leaked by",
+            "had a satellite dropped on them by",
+            "lost connection to the field courtesy of",
+            "was knocked off the hab by",
+            "had the scale dropped on them by",
+            "had `git rm --force` executed on them by"
         ]
 
         damages = [100, 150, 200, 300, 50, 250, 420]
