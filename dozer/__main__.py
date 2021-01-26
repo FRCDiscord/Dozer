@@ -51,6 +51,12 @@ if os.path.isfile(config_file):
 with open('config.json', 'w') as f:
     json.dump(config, f, indent='\t')
 
+if config['sentry_url'] != "":
+    sentry_sdk.init(
+        config['sentry_url'],
+        traces_sample_rate=1.0,
+    )
+
 asyncio.get_event_loop().run_until_complete(db_init(config['db_url']))
 
 if 'discord_token' not in config:
@@ -58,12 +64,6 @@ if 'discord_token' not in config:
 
 if sys.version_info < (3, 6):
     sys.exit('Dozer requires Python 3.6 or higher to run. This is version %s.' % '.'.join(sys.version_info[:3]))
-
-if config['sentry_url'] != "":
-    sentry_sdk.init(
-        config['sentry_url'],
-        traces_sample_rate=1.0,
-    )
 
 from . import Dozer  # After version check
 
