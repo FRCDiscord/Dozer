@@ -6,6 +6,7 @@ import sys
 import asyncio
 
 import discord
+import sentry_sdk
 
 from .db import db_init, db_migrate
 
@@ -38,7 +39,8 @@ config = {
     },
     'debug': False,
     'is_backup': False,
-    'invite_override': ""
+    'invite_override': "",
+    "sentry_url": ""
 }
 config_file = 'config.json'
 
@@ -48,6 +50,12 @@ if os.path.isfile(config_file):
 
 with open('config.json', 'w') as f:
     json.dump(config, f, indent='\t')
+
+if config['sentry_url'] != "":
+    sentry_sdk.init(
+        config['sentry_url'],
+        traces_sample_rate=1.0,
+    )
 
 asyncio.get_event_loop().run_until_complete(db_init(config['db_url']))
 

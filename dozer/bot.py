@@ -6,6 +6,7 @@ import sys
 import traceback
 import discord
 from discord.ext import commands
+from sentry_sdk import capture_exception
 
 from . import utils
 from .cogs import _utils
@@ -111,6 +112,12 @@ class Dozer(commands.Bot):
                 DOZER_LOGGER.error('Error in command <%d> (DM %d(%d.id) %d)', context.command, context.channel.recipient,
                                    context.channel.recipient, context.message.content)
             DOZER_LOGGER.error(''.join(traceback.format_exception(type(exception), exception, exception.__traceback__)))
+
+    async def on_error(self, event_method, *args, **kwargs):
+        """Don't ignore the error, causing Sentry to capture it."""
+        print('Ignoring exception in {}'.format(event_method), file=sys.stderr)
+        traceback.print_exc()
+        capture_exception()
 
     @staticmethod
     def format_error(ctx, err, *, word_re=re.compile('[A-Z][a-z]+')):
