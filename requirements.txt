@@ -8,3 +8,4 @@ geopy
 fuzzywuzzy
 python-Levenshtein
 python-dateutil
+sentry-sdk

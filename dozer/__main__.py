@@ -6,6 +6,7 @@ import sys
 import asyncio
 
 import discord
+import sentry_sdk
 
 from .db import db_init, db_migrate
 
@@ -38,7 +39,8 @@ config = {
     },
     'debug': False,
     'is_backup': False,
-    'invite_override': ""
+    'invite_override': "",
+    "sentry_url": ""
 }
 config_file = 'config.json'
 
@@ -56,6 +58,12 @@ if 'discord_token' not in config:
 
 if sys.version_info < (3, 6):
     sys.exit('Dozer requires Python 3.6 or higher to run. This is version %s.' % '.'.join(sys.version_info[:3]))
+
+if config['sentry_url'] != "":
+    sentry_sdk.init(
+        config['sentry_url'],
+        traces_sample_rate=1.0,
+    )
 
 from . import Dozer  # After version check
 
