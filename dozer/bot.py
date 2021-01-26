@@ -112,6 +112,10 @@ class Dozer(commands.Bot):
                                    context.channel.recipient, context.message.content)
             DOZER_LOGGER.error(''.join(traceback.format_exception(type(exception), exception, exception.__traceback__)))
 
+    async def on_error(event, *args, **kwargs):
+        """Don't ignore the error, causing Sentry to capture it."""
+        raise
+
     @staticmethod
     def format_error(ctx, err, *, word_re=re.compile('[A-Z][a-z]+')):
         """Turns an exception into a user-friendly (or -friendlier, at least) error message."""
