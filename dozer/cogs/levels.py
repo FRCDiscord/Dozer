@@ -8,13 +8,14 @@ import math
 from datetime import timedelta, timezone, datetime
 import random
 import time
+import typing
 import aiohttp
 import discord
-import typing
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
 
 from ._utils import *
+
 blurple = discord.Color.blurple()
 from .. import db
 
@@ -632,7 +633,7 @@ class Levels(Cog):
             # Make Postgres compute the rank for us (need WITH-query so rank() sees records for every user)
             db_record = await db.Pool.fetchrow(f"""
                 WITH ranked_xp AS (
-                    SELECT user_id, rank() OVER (ORDER BY total_xp DESC) FROM {MemberXP.__tablename__}
+                    SELECT user_id, rank() OVER (ORDER BY total_xp DESC, user_id) FROM {MemberXP.__tablename__}
                     WHERE guild_id = $1
                 ) SELECT rank FROM ranked_xp WHERE user_id = $2;
             """, ctx.guild.id, member.id)
@@ -817,8 +818,7 @@ class GuildXPSettings(db.DatabaseTable):
             xp_max int NOT NULL,
             xp_cooldown int NOT NULL,
             entropy_value int NOT NULL,
-            lvl_up_msgs bigint NULL,
-            keep_old_roles boolean NOT NULL,
+            lvl_up_msgs bigint NOT NULL,
             enabled boolean NOT NULL
             )""")
 
@@ -843,6 +843,16 @@ class GuildXPSettings(db.DatabaseTable):
                                   lvl_up_msgs=result.get("lvl_up_msgs"), keep_old_roles=result.get("keep_old_roles"))
             result_list.append(obj)
         return result_list
+
+    async def version_1(self):
+        """DB migration v1"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            ALTER TABLE {self.__tablename__} ALTER COLUMN lvl_up_msgs DROP NOT NULL;
+            ALTER TABLE {self.__tablename__} ADD COLUMN IF NOT EXISTS keep_old_roles boolean NOT NULL default TRUE;
+            """)
+
+    __versions__ = [version_1]
 
 
 def setup(bot):
