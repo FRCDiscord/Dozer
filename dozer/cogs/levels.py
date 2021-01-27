@@ -354,7 +354,7 @@ class Levels(Cog):
 
     adjustlevels.example_usage = """
     `{prefix}adjustlevels setlevel <@Snowplow or "Snowplow"> 15`:\n Sets member Snowplow's level to 15 
-    `{prefix}adjustlevels changexp <@Snowplow or "Snowplow"> -1500`:\n Changes member Snowplow's xp by -1500xp 
+    `{prefix}adjustlevels adjustxp <@Snowplow or "Snowplow"> -1500`:\n Adjusts member Snowplow's xp by -1500xp 
     `{prefix}adjustlevels swapxp <@Snowplow or "Snowplow"> <@Dozer or "Dozer">`:\n Swaps Snowplow's xp with Dozer's xp
     `{prefix}adjustlevels transferxp <@Snowplow or "Snowplow"> <@Dozer or "Dozer">`:\n Adds Snowplow's xp to dozer's xp
     """
