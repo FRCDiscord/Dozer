@@ -461,8 +461,7 @@ class CustomJoinLeaveMessages(db.DatabaseTable):
             CREATE TABLE {cls.__tablename__} (
             guild_id bigint PRIMARY KEY NOT NULL,	            
             memberlog_channel bigint NOT NULL,	   
-            name varchar NOT NULL,
-            PRIMARY KEY (guild_id)
+            name varchar NOT NULL
             )""")
 
     def __init__(self, guild_id, channel_id=None, ping=None, join_message=None, leave_message=None):
