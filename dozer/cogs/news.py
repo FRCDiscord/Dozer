@@ -140,6 +140,16 @@ class News(Cog):
                 del self.sources[source.short_name]
                 DOZER_LOGGER.error(f"Parsing error in source {source.short_name}: {err}")
 
+    @Cog.listener()
+    async def on_guild_channel_delete(self, channel):
+        """Called when a channel is deleted, so it can be removed from the newsfeed"""
+
+        channels_subs = await NewsSubscription.get_by(channel_id=channel.id)
+
+        if len(channels_subs) > 0:
+            for sub in channels_subs:
+                await sub.delete()
+
     @group(invoke_without_command=True)
     @guild_only()
     async def news(self, ctx):
