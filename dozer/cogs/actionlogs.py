@@ -1,7 +1,7 @@
 """Provides guild logging functions for Dozer."""
-import logging
 import asyncio
 import datetime
+import logging
 import time
 
 import discord
@@ -26,7 +26,8 @@ class Actionlog(Cog):
     async def check_audit(guild, event_time=None):
         """Method for checking the audit log for events"""
         try:
-            async for entry in guild.audit_logs(limit=1, before=event_time, action=discord.AuditLogAction.message_delete):
+            async for entry in guild.audit_logs(limit=1, before=event_time,
+                                                action=discord.AuditLogAction.message_delete):
                 return entry
         except discord.Forbidden:
             return None
@@ -44,7 +45,8 @@ class Actionlog(Cog):
             return template.format(guild=member.guild, user=str(member), user_name=member.name,
                                    user_mention=member.mention, user_id=member.id)
         else:
-            return "{user_mention}\n{user} ({user_id})".format(user=str(member), user_mention=member.mention, user_id=member.id)
+            return "{user_mention}\n{user} ({user_id})".format(user=str(member), user_mention=member.mention,
+                                                               user_id=member.id)
 
     @Cog.listener('on_member_join')
     async def on_member_join(self, member):
@@ -60,7 +62,8 @@ class Actionlog(Cog):
                 try:
                     await channel.send(content=member.mention if config[0].ping else None, embed=embed)
                 except discord.Forbidden:
-                    DOZER_LOGGER.warning(f"Guild {member.guild}({member.guild.id}) has invalid permissions for join/leave logs")
+                    DOZER_LOGGER.warning(
+                        f"Guild {member.guild}({member.guild.id}) has invalid permissions for join/leave logs")
 
     @Cog.listener('on_member_remove')
     async def on_member_remove(self, member):
@@ -76,7 +79,8 @@ class Actionlog(Cog):
                 try:
                     await channel.send(embed=embed)
                 except discord.Forbidden:
-                    DOZER_LOGGER.warning(f"Guild {member.guild}({member.guild.id}) has invalid permissions for join/leave logs")
+                    DOZER_LOGGER.warning(
+                        f"Guild {member.guild}({member.guild.id}) has invalid permissions for join/leave logs")
 
     @Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
@@ -113,7 +117,8 @@ class Actionlog(Cog):
                                        f"Messages logged: *Currently Purging*"
             header_message = await channel.send(embed=header_embed)
 
-            self.bulk_delete_buffer[message_channel.id] = {"last_payload": time.time(), "msg_ids": list(message_ids), "msgs": list(cached_messages),
+            self.bulk_delete_buffer[message_channel.id] = {"last_payload": time.time(), "msg_ids": list(message_ids),
+                                                           "msgs": list(cached_messages),
                                                            "log_channel": channel, "header_message": header_message}
 
         await self.bulk_delete_log(message_channel)
@@ -140,7 +145,8 @@ class Actionlog(Cog):
         current_page = 1
         page_character_count = 0
         page_message_count = 0
-        embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000, timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
+        embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000,
+                              timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
         for message in sorted(cached_messages, key=lambda msg: msg.created_at):
             page_character_count += len(message.content[0:512]) + 3
 
@@ -152,14 +158,16 @@ class Actionlog(Cog):
                     await channel.send(embed=embed)
                 except discord.HTTPException as e:
                     DOZER_LOGGER.debug(f"Bulk delete embed failed to send: {e}")
-                embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000, timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
+                embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000,
+                                      timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
                 page_character_count = len(message.content)
                 message_count += page_message_count
                 page_message_count = 0
 
             formatted_time = message.created_at.strftime("%b %d %Y %H:%M:%S")
             embed.add_field(name=f"{formatted_time}: {message.author}",
-                            value="Message contained no content" if len(message.content) == 0 else message.content if len(message.content) < 512
+                            value="Message contained no content" if len(
+                                message.content) == 0 else message.content if len(message.content) < 512
                             else f"{message.content[0:512]}...", inline=False)
             page_message_count += 1
             if current_page > 15:
@@ -249,7 +257,8 @@ class Actionlog(Cog):
         mention = f"<@!{user_id}>"
         avatar_link = f"http://cdn.discordapp.com/avatars/{user_id}/{author['avatar']}.webp?size=1024"
         embed = discord.Embed(title="Message Edited",
-                              description=f"[MESSAGE]({link}) From {mention}\nEdited In: {mchannel.mention}", color=0xFFC400)
+                              description=f"[MESSAGE]({link}) From {mention}\nEdited In: {mchannel.mention}",
+                              color=0xFFC400)
         embed.set_author(name=f"{author['username']}#{author['discriminator']}", icon_url=avatar_link)
         embed.add_field(name="Original", value="N/A", inline=False)
         if content:
@@ -434,7 +443,8 @@ class Actionlog(Cog):
 
     @memberlogconfig.command()
     @has_permissions(manage_guild=True)
-    async def help(self, ctx):  # I cannot put formatting example in example_usage because then it trys to format the example
+    async def help(self,
+                   ctx):  # I cannot put formatting example in example_usage because then it trys to format the example
         """Displays message formatting key"""
         e = discord.Embed(color=blurple)
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
@@ -477,8 +487,10 @@ class CustomJoinLeaveMessages(db.DatabaseTable):
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
-            obj = CustomJoinLeaveMessages(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"), ping=result.get("ping"),
-                                          join_message=result.get("join_message"), leave_message=result.get("leave_message"))
+            obj = CustomJoinLeaveMessages(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
+                                          ping=result.get("ping"),
+                                          join_message=result.get("join_message"),
+                                          leave_message=result.get("leave_message"))
             result_list.append(obj)
         return result_list
 
@@ -496,7 +508,7 @@ class CustomJoinLeaveMessages(db.DatabaseTable):
             alter table {self.__tablename__}
                 add IF NOT EXISTS leave_message text default null;
             """)
-            
+
     __versions__ = [version_1]
 
 

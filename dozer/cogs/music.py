@@ -29,16 +29,17 @@ This example uses the following whihch must be installed prior to running:
 --------------------------------------------------------------------------------
 """
 import asyncio
-import async_timeout
 import copy
 import datetime
-import discord
 import math
 import random
 import re
 import typing
+
+import async_timeout
+import discord
 import wavelink
-from discord.ext import commands, menus # TODO switch to Dozer pagination
+from discord.ext import commands, menus  # TODO switch to Dozer pagination
 
 # URL matching REGEX...
 URL_REG = re.compile(r'https?://(?:www\.)?.+')
@@ -46,18 +47,18 @@ URL_REG = re.compile(r'https?://(?:www\.)?.+')
 
 class NoChannelProvided(commands.CommandError):
     """Error raised when no suitable voice channel was supplied."""
-    pass
+#    pass
 
 
 class IncorrectChannelError(commands.CommandError):
     """Error raised when commands are issued outside of the players session channel."""
-    pass
+#    pass
 
 
 class Track(wavelink.Track):
     """Wavelink Track object with a requester attribute."""
 
-    __slots__ = ('requester', )
+    __slots__ = ('requester',)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args)
@@ -88,6 +89,7 @@ class Player(wavelink.Player):
         self.stop_votes = set()
 
     async def do_next(self) -> None:
+        """Handles reaching the end of the queue"""
         if self.is_playing or self.waiting:
             return
 
@@ -347,7 +349,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                           'password': '',
                           'identifier': 'MAIN',
                           'region': 'us_central'
-                          }} # TODO make this configurable
+                          }}  # TODO make this configurable
 
         for n in nodes.values():
             await self.bot.wavelink.initiate_node(**n)
@@ -360,10 +362,13 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     @wavelink.WavelinkMixin.listener('on_track_end')
     @wavelink.WavelinkMixin.listener('on_track_exception')
     async def on_player_stop(self, node: wavelink.Node, payload):
+        """Calls do_next when player stops"""
         await payload.player.do_next()
 
     @commands.Cog.listener()
-    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState,
+                                    after: discord.VoiceState):
+        """Handle members joining and leaving"""
         if member.bot:
             return
 
@@ -411,7 +416,8 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         if player.context:
             if player.context.channel != ctx.channel:
-                await ctx.send(f'{ctx.author.mention}, you must be in {player.context.channel.mention} for this session.')
+                await ctx.send(
+                    f'{ctx.author.mention}, you must be in {player.context.channel.mention} for this session.')
                 raise IncorrectChannelError
 
         if ctx.command.name == 'connect' and not player.context:
@@ -755,4 +761,5 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
 
 def setup(bot: commands.Bot):
+    """Adds the cog to the bot"""
     bot.add_cog(Music(bot))
