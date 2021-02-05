@@ -339,19 +339,23 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         """Connect and intiate nodes."""
         await self.bot.wait_until_ready()
 
+        if not self.bot.config['lavalink']['enabled']:
+            return
+
         if self.bot.wavelink.nodes:
             previous = self.bot.wavelink.nodes.copy()
 
             for node in previous.values():
                 await node.destroy()
 
-        nodes = {'MAIN': {'host': '',
-                          'port': 2333,
-                          'rest_uri': 'http://:2333',
-                          'password': '',
-                          'identifier': 'MAIN',
-                          'region': 'us_central'
-                          }}  # TODO make this configurable
+        llconfig = self.bot.config['lavalink']
+        nodes = {'MAIN': {'host': llconfig['host'],
+                          'port': llconfig['port'],
+                          'rest_uri': f"http://{llconfig['host']}:{llconfig['port']}",
+                          'password': llconfig['password'],
+                          'identifier': llconfig['identifier'],
+                          'region': llconfig['region']
+                          }}
 
         for n in nodes.values():
             await self.bot.wavelink.initiate_node(**n)
