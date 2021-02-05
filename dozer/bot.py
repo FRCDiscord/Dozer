@@ -62,7 +62,11 @@ class Dozer(commands.Bot):
         await self.dynamic_prefix.refresh()
         perms = 0
         for cmd in self.walk_commands():
-            perms |= cmd.required_permissions.value
+            # TODO revert this
+            try:
+                perms |= cmd.required_permissions.value
+            except AttributeError:
+                continue
         DOZER_LOGGER.debug('Bot Invite: {}'.format(discord.utils.oauth_url(self.user.id, discord.Permissions(perms))))
         if self.config['is_backup']:
             status = discord.Status.dnd
