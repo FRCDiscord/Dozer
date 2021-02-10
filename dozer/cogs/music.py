@@ -161,7 +161,7 @@ class Player(wavelink.Player):
         embed.add_field(name='Queue Length', value=str(qsize))
         embed.add_field(name='Volume', value=f'**`{self.volume}%`**')
         embed.add_field(name='Requested By', value=track.requester.mention)
-        embed.add_field(name='DJ', value=self.dj.mention)
+        embed.add_field(name='DJ', value=self.dj.mention if self.dj else None)
         embed.add_field(name='Video URL', value=f'[Click Here!]({track.uri})')
 
         return embed
@@ -388,11 +388,10 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         if member == player.dj and after.channel is None:
             for m in channel.members:
-                if m.bot:
-                    continue
-                else:
+                if not m.bot and m.guild_permissions.kick_members:
                     player.dj = m
                     return
+            player.dj = None # no DJ if no mods in channel
 
         elif after.channel == channel and player.dj not in channel.members:
             player.dj = member
