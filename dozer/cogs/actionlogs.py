@@ -216,7 +216,7 @@ class Actionlog(Cog):
                 embed.add_field(name="Message Content Continued:", value=message.content[1024:2000], inline=False)
         else:
             embed.add_field(name="Message Content:", value="N/A", inline=False)
-        embed.set_footer(text=f"UserID: {message.author.id}")
+        embed.set_footer(text=f"UserID: {message.author.id}\nMessageID: {message.id}")
         if message.attachments:
             embed.add_field(name="Attachments", value=", ".join([i.url for i in message.attachments]))
         message_log_channel = await self.edit_delete_config.query_one(guild_id=message.guild.id)
