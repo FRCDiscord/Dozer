@@ -23,10 +23,10 @@ class Actionlog(Cog):
         self.bulk_delete_buffer = {}
 
     @staticmethod
-    async def check_audit(guild, event_time=None):
+    async def check_audit(guild, event_time):
         """Method for checking the audit log for events"""
         try:
-            async for entry in guild.audit_logs(limit=1, before=event_time, action=discord.AuditLogAction.message_delete):
+            async for entry in guild.audit_logs(limit=1, after=event_time, action=discord.AuditLogAction.message_delete, oldest_first=True):
                 return entry
         except discord.Forbidden:
             return None
@@ -201,7 +201,7 @@ class Actionlog(Cog):
         """When a message is deleted, log it."""
         if message.author == self.bot.user:
             return
-        audit = await self.check_audit(message.guild)
+        audit = await self.check_audit(message.guild, message.id)
         embed = discord.Embed(title="Message Deleted",
                               description=f"Message Deleted In: {message.channel.mention}\nSent by: {message.author.mention}",
                               color=0xFF0000, timestamp=message.created_at)
