@@ -1,6 +1,7 @@
 """Provides moderation commands for Dozer."""
 import asyncio
 import logging
+import typing
 import math
 import re
 import datetime
@@ -396,11 +397,18 @@ class Moderation(Cog):
     @command(aliases=["purge"])
     @has_permissions(manage_messages=True)
     @bot_has_permissions(manage_messages=True, read_message_history=True)
-    async def prune(self, ctx, num: int):
+    async def prune(self, ctx, target: typing.Optional[discord.Member], num: int):
         """Bulk delete a set number of messages from the current channel."""
+
+        def check_target(message):
+            if target is None:
+                return True
+            else:
+                return message.author == target
+
         try:
             msg = await ctx.message.channel.fetch_message(num)
-            deleted = await ctx.message.channel.purge(after=msg, limit=MAX_PURGE)
+            deleted = await ctx.message.channel.purge(after=msg, limit=MAX_PURGE, check=check_target)
             await ctx.send(
                 f"Deleted {len(deleted)} messages under request of {ctx.message.author.mention}",
                 delete_after=5)
@@ -408,7 +416,7 @@ class Moderation(Cog):
             if num > MAX_PURGE:
                 await ctx.send("Message cannot be found or you're trying to purge too many messages.")
                 return
-            deleted = await ctx.message.channel.purge(limit=num + 1)
+            deleted = await ctx.message.channel.purge(limit=num + 1, check=check_target)
             await ctx.send(
                 f"Deleted {len(deleted) - 1} messages under request of {ctx.message.author.mention}",
                 delete_after=5)
