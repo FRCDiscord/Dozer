@@ -124,10 +124,12 @@ class Moderation(Cog):
     def hm_to_seconds(self, hm_str):
         """Converts an hour-minute string to seconds. For example, '1h15m' returns 4500"""
         matches = re.match(self.hm_regex, hm_str).groupdict()
+        weeks = int(matches.get('weeks') or 0)
+        days = int(matches.get('days') or 0)
         hours = int(matches.get('hours') or 0)
         minutes = int(matches.get('minutes') or 0)
         seconds = int(matches.get('seconds') or 0)
-        return (hours * 3600) + (minutes * 60) + seconds
+        return (weeks * 604800) + (days * 86400) + (hours * 3600) + (minutes * 60) + seconds
 
     async def punishment_timer(self, seconds, target: discord.Member, punishment, reason, actor: discord.Member, orig_channel=None,
                                global_modlog=True):
