@@ -85,7 +85,7 @@ class Moderation(Cog):
         )
         if target is not None:
             modlog_embed.add_field(name=f"{action.capitalize()} user", value=f"{target.mention} ({target} | {target.id})", inline=False)
-        modlog_embed.add_field(name="Preformed by", value=f"{actor.mention} ({actor} | {actor.id})", inline=False)
+        modlog_embed.add_field(name="Performed by", value=f"{actor.mention} ({actor} | {actor.id})", inline=False)
         modlog_embed.add_field(name="Reason", value=reason or "No reason specified", inline=False)
         modlog_embed.timestamp = datetime.datetime.utcnow()
         if duration:
