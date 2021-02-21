@@ -85,7 +85,7 @@ class Moderation(Cog):
         )
         if target is not None:
             modlog_embed.add_field(name=f"{action.capitalize()} user", value=f"{target.mention} ({target} | {target.id})", inline=False)
-        modlog_embed.add_field(name="Requested by", value=f"{actor.mention} ({actor} | {actor.id})", inline=False)
+        modlog_embed.add_field(name="Preformed by", value=f"{actor.mention} ({actor} | {actor.id})", inline=False)
         modlog_embed.add_field(name="Reason", value=reason or "No reason specified", inline=False)
         modlog_embed.timestamp = datetime.datetime.utcnow()
         if duration:
@@ -119,7 +119,7 @@ class Moderation(Cog):
                     channel.set_permissions(target=member, overwrite=None if overwrite.is_empty() else overwrite))
         await asyncio.gather(*coros)
 
-    hm_regex = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?((?P<seconds>\d+)s)?")
+    hm_regex = re.compile(r"((?P<weeks>P>\d+)w)?((?P<days>\d+)d)?((?P<hours>\d+)h)?((?P<minutes>\d+)m)?((?P<seconds>\d+)s)?")
 
     def hm_to_seconds(self, hm_str):
         """Converts an hour-minute string to seconds. For example, '1h15m' returns 4500"""
