@@ -1,0 +1,201 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Music &#8212; Dozer  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="music">
+<h1>Music<a class="headerlink" href="#music" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="connect">
+<h2>connect<a class="headerlink" href="#connect" title="Permalink to this headline">¶</a></h2>
+<p>Connect to a voice channel.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}connect &lt;channel&gt;` - connects the music module to a given channel
+</pre></div>
+</div>
+<p><cite>{prefix}connect</cite> - connects the music module to the channel you’re in
+play
+++++
+Play or queue a song with the given query.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}play Steampowered - plays the first result for Steampowered
+</pre></div>
+</div>
+</div>
+<div class="section" id="pause">
+<h2>pause<a class="headerlink" href="#pause" title="Permalink to this headline">¶</a></h2>
+<p>Pause the currently playing song.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}pause - pauses the music
+</pre></div>
+</div>
+</div>
+<div class="section" id="resume">
+<h2>resume<a class="headerlink" href="#resume" title="Permalink to this headline">¶</a></h2>
+<p>Resume a currently paused player.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}resume - resumes the music
+</pre></div>
+</div>
+</div>
+<div class="section" id="skip">
+<h2>skip<a class="headerlink" href="#skip" title="Permalink to this headline">¶</a></h2>
+<p>Skip the currently playing song.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}skip - skips the current song
+</pre></div>
+</div>
+</div>
+<div class="section" id="stop">
+<h2>stop<a class="headerlink" href="#stop" title="Permalink to this headline">¶</a></h2>
+<p>Stop the player and clear all internal states.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}stop - stops the music and makes the bot leave
+</pre></div>
+</div>
+</div>
+<div class="section" id="volume">
+<h2>volume<a class="headerlink" href="#volume" title="Permalink to this headline">¶</a></h2>
+<p>Change the players volume, between 1 and 100.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}volume 50 - sets the volume to 50%
+</pre></div>
+</div>
+</div>
+<div class="section" id="shuffle">
+<h2>shuffle<a class="headerlink" href="#shuffle" title="Permalink to this headline">¶</a></h2>
+<p>Shuffle the players queue.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}shuffle - shuffles the music queue
+</pre></div>
+</div>
+</div>
+<div class="section" id="vol-up">
+<h2>vol_up<a class="headerlink" href="#vol-up" title="Permalink to this headline">¶</a></h2>
+<p>Command used for volume up button.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}vol_up - turns the volume up by 10
+</pre></div>
+</div>
+</div>
+<div class="section" id="vol-down">
+<h2>vol_down<a class="headerlink" href="#vol-down" title="Permalink to this headline">¶</a></h2>
+<p>Command used for volume down button.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}vol_down - brings the volume down by 10
+</pre></div>
+</div>
+</div>
+<div class="section" id="equalizer">
+<h2>equalizer<a class="headerlink" href="#equalizer" title="Permalink to this headline">¶</a></h2>
+<p>Change the players equalizer.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}equalizer piano - makes the music sound like a piano
+</pre></div>
+</div>
+<p><a href="#id1"><span class="problematic" id="id2">`</span></a>{prefix}equalizer boost - makes the music sound boosted
+<a href="#id3"><span class="problematic" id="id4">`</span></a>{prefix}equalizer metal - makes the music sound like metal
+<a href="#id5"><span class="problematic" id="id6">`</span></a>{prefix}equalizer flat - makes the music sound flat
+queue
++++++
+Display the players queued songs.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}queue - displays the queue
+</pre></div>
+</div>
+</div>
+<div class="section" id="nowplaying">
+<h2>nowplaying<a class="headerlink" href="#nowplaying" title="Permalink to this headline">¶</a></h2>
+<p>Update the player controller.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}nowplaying - shows the currently playing song
+</pre></div>
+</div>
+</div>
+<div class="section" id="swap-dj">
+<h2>swap_dj<a class="headerlink" href="#swap-dj" title="Permalink to this headline">¶</a></h2>
+<p>Swap the current DJ to another member in the voice channel.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}swap_dj - swaps the DJ to a random person in the call
+</pre></div>
+</div>
+<p><a href="#id7"><span class="problematic" id="id8">`</span></a>{prefix}swap_dj tweirtx - swaps the DJ to tweirtx (if they are in the call)</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Dozer</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Dozer Development Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/Music.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

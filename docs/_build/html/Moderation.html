@@ -1,0 +1,247 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Moderation &#8212; Dozer  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="moderation">
+<h1>Moderation<a class="headerlink" href="#moderation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="warn">
+<h2>warn<a class="headerlink" href="#warn" title="Permalink to this headline">¶</a></h2>
+<p>Sends a message to the mod log specifying the member has been warned
+without punishment.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}`warn @user reason - warns a user for &quot;reason&quot;
+</pre></div>
+</div>
+</div>
+<div class="section" id="customlog">
+<h2>customlog<a class="headerlink" href="#customlog" title="Permalink to this headline">¶</a></h2>
+<p>Sends a message to the mod log with custom text.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}`customlog reason - warns a user for &quot;reason&quot;
+</pre></div>
+</div>
+</div>
+<div class="section" id="timeout">
+<h2>timeout<a class="headerlink" href="#timeout" title="Permalink to this headline">¶</a></h2>
+<p>Set a timeout (no sending messages or adding reactions) on the current
+channel.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}timeout 60` - prevents sending messages in this channel for 1 minute (60s)
+</pre></div>
+</div>
+</div>
+<div class="section" id="prune">
+<h2>prune<a class="headerlink" href="#prune" title="Permalink to this headline">¶</a></h2>
+<p>Bulk delete a set number of messages from the current channel.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}prune 10` - Delete the last 10 messages in the current channel.
+</pre></div>
+</div>
+<p><cite>{prefix}prune 786324930378727484</cite> - Deletes all messages up to that message ID
+ban
++++
+Bans the user mentioned.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}ban @user reason - ban @user for a given (optional) reason
+</pre></div>
+</div>
+</div>
+<div class="section" id="unban">
+<h2>unban<a class="headerlink" href="#unban" title="Permalink to this headline">¶</a></h2>
+<p>Unbans the user mentioned.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}unban user_id reason - unban the user corresponding to the ID for a given (optional) reason
+</pre></div>
+</div>
+</div>
+<div class="section" id="kick">
+<h2>kick<a class="headerlink" href="#kick" title="Permalink to this headline">¶</a></h2>
+<p>Kicks the user mentioned.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}kick @user reason - kick @user for a given (optional) reason
+</pre></div>
+</div>
+</div>
+<div class="section" id="mute">
+<h2>mute<a class="headerlink" href="#mute" title="Permalink to this headline">¶</a></h2>
+<p>Mute a user to prevent them from sending messages</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}mute @user 1h reason` - mute @user for 1 hour for a given reason, the timing component (1h) and reason is optional.
+</pre></div>
+</div>
+</div>
+<div class="section" id="unmute">
+<h2>unmute<a class="headerlink" href="#unmute" title="Permalink to this headline">¶</a></h2>
+<p>Unmute a user to allow them to send messages again.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}unmute @user reason - unmute @user for a given (optional) reason
+</pre></div>
+</div>
+</div>
+<div class="section" id="deafen">
+<h2>deafen<a class="headerlink" href="#deafen" title="Permalink to this headline">¶</a></h2>
+<p>Deafen a user to prevent them from both sending messages but also
+reading messages.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}deafen @user 1h reason` - deafen @user for 1 hour for a given reason, the timing component (1h) is optional.
+</pre></div>
+</div>
+</div>
+<div class="section" id="selfdeafen">
+<h2>selfdeafen<a class="headerlink" href="#selfdeafen" title="Permalink to this headline">¶</a></h2>
+<p>Deafen yourself for a given time period to prevent you from reading or
+sending messages; useful as a study tool.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}selfdeafen time (1h5m, both optional) reason`: deafens you if you need to get work done
+</pre></div>
+</div>
+</div>
+<div class="section" id="undeafen">
+<h2>undeafen<a class="headerlink" href="#undeafen" title="Permalink to this headline">¶</a></h2>
+<p>Undeafen a user to allow them to see message and send message again.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}undeafen @user reason - undeafen @user for a given (optional) reason
+</pre></div>
+</div>
+</div>
+<div class="section" id="voicekick">
+<h2>voicekick<a class="headerlink" href="#voicekick" title="Permalink to this headline">¶</a></h2>
+<p>Kick a user from voice chat. This is most useful if their perms to
+rejoin have already been removed.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}voicekick @user reason` - kick @user out of voice
+</pre></div>
+</div>
+</div>
+<div class="section" id="purgenm">
+<h2>purgenm<a class="headerlink" href="#purgenm" title="Permalink to this headline">¶</a></h2>
+<p>Manually run a new member purge</p>
+</div>
+<div class="section" id="modlogconfig">
+<h2>modlogconfig<a class="headerlink" href="#modlogconfig" title="Permalink to this headline">¶</a></h2>
+<p>Set the modlog channel for a server by passing the channel id</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}modlogconfig #join-leave-logs` - set a channel named #join-leave-logs to log joins/leaves
+</pre></div>
+</div>
+</div>
+<div class="section" id="nmconfig">
+<h2>nmconfig<a class="headerlink" href="#nmconfig" title="Permalink to this headline">¶</a></h2>
+<p>Sets the config for the new members channel</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel
+</pre></div>
+</div>
+<p>so if someone types “I have read the rules and regulations” it assigns them the Member role.
+nmpurgeconfig
++++++++++++++
+Sets the config for the new members purge</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}nmpurgeconfig Members 90: Kicks everyone who doesn&#39;t have the members role 90 days after they join.
+</pre></div>
+</div>
+</div>
+<div class="section" id="memberconfig">
+<h2>memberconfig<a class="headerlink" href="#memberconfig" title="Permalink to this headline">¶</a></h2>
+<p>Set the member role for the guild. The member role is the role used for
+the timeout command. It should be a role that all members of the server
+have.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}memberconfig Members` - set a role called &quot;Members&quot; as the member role
+</pre></div>
+</div>
+<p><cite>{prefix}memberconfig &#64;everyone</cite> - set the default role as the member role
+<cite>{prefix}memberconfig everyone</cite> - set the default role as the member role (ping-safe)
+<cite>{prefix}memberconfig &#64; everyone</cite> - set the default role as the member role (ping-safe)
+<cite>{prefix}memberconfig &#64;.everyone</cite> - set the default role as the member role (ping-safe)
+<cite>{prefix}memberconfig &#64;/everyone</cite> - set the default role as the member role (ping-safe)
+linkscrubconfig
++++++++++++++++
+Set a role that users must have in order to post links. This accepts the
+safe default role conventions that the memberconfig command does.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}linkscrubconfig Links` - set a role called &quot;Links&quot; as the link role
+</pre></div>
+</div>
+<p><cite>{prefix}linkscrubconfig &#64;everyone</cite> - set the default role as the link role
+<cite>{prefix}linkscrubconfig everyone</cite> - set the default role as the link role (ping-safe)
+<cite>{prefix}linkscrubconfig &#64; everyone</cite> - set the default role as the link role (ping-safe)
+<cite>{prefix}linkscrubconfig &#64;.everyone</cite> - set the default role as the link role (ping-safe)
+<cite>{prefix}linkscrubconfig &#64;/everyone</cite> - set the default role as the link role (ping-safe)</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Dozer</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Dozer Development Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/Moderation.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

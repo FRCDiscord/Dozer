@@ -1,0 +1,148 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Teams &#8212; Dozer  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="teams">
+<h1>Teams<a class="headerlink" href="#teams" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="setteam">
+<h2>setteam<a class="headerlink" href="#setteam" title="Permalink to this headline">¶</a></h2>
+<p>Sets an association with your team in the database.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}setteam type team_number` - Creates an association in the database with a specified team
+</pre></div>
+</div>
+</div>
+<div class="section" id="removeteam">
+<h2>removeteam<a class="headerlink" href="#removeteam" title="Permalink to this headline">¶</a></h2>
+<p>Removes an association with a team in the database.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}removeteam type team_number` - Removes your associations with a specified team
+</pre></div>
+</div>
+</div>
+<div class="section" id="teamsfor">
+<h2>teamsfor<a class="headerlink" href="#teamsfor" title="Permalink to this headline">¶</a></h2>
+<p>Allows you to see the teams for the mentioned user. If no user is
+mentioned, your teams are displayed.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}teamsfor member` - Returns all team associations with the mentioned user. Assumes caller if blank.
+</pre></div>
+</div>
+</div>
+<div class="section" id="compcheck">
+<h2>compcheck<a class="headerlink" href="#compcheck" title="Permalink to this headline">¶</a></h2>
+<p>Allows you to see people in the Discord server that are going to a
+certain competition.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}compcheck frc 2019txaus` - Returns all members on teams registered for 2019 Austin District Event
+</pre></div>
+</div>
+<p><cite>{prefix}compcheck ftc 1920-TX-AML2</cite> - Returns all members on teams registered for the 2020 Austin Metro League Championship Dell Division
+onteam
+++++++
+Allows you to see who has associated themselves with a particular team.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}onteam type team_number` - Returns a list of users associated with a given team type and number
+</pre></div>
+</div>
+</div>
+<div class="section" id="top">
+<h2>top<a class="headerlink" href="#top" title="Permalink to this headline">¶</a></h2>
+<p>Show the top 10 teams by number of members in this guild.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}onteam top` - List the 10 teams with the most members in this guild
+</pre></div>
+</div>
+</div>
+<div class="section" id="toggleautoteam">
+<h2>toggleautoteam<a class="headerlink" href="#toggleautoteam" title="Permalink to this headline">¶</a></h2>
+<p>Toggles automatic adding of team association to member nicknames</p>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Dozer</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Dozer Development Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/Teams.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

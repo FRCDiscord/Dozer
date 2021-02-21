@@ -1,0 +1,162 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Filter &#8212; Dozer  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="filter">
+<h1>Filter<a class="headerlink" href="#filter" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="id1">
+<h2>filter<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<p>List and manage filtered words</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter add test` - Adds test as a filter.
+</pre></div>
+</div>
+<p><cite>{prefix}filter remove 1</cite> - Removes filter 1
+<cite>{prefix}filter dm true</cite> - Any messages containing a filtered word will be DMed
+<cite>{prefix}filter whitelist</cite> - See all of the whitelisted roles
+<cite>{prefix}filter whitelist add Administrators</cite> - Make the Administrators role whitelisted for the filter.
+<cite>{prefix}filter whitelist remove Moderators</cite> - Make the Moderators role no longer whitelisted.
+whitelist
++++++++++
+List all whitelisted roles for this server</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter whitelist` - Lists all the whitelisted roles
+</pre></div>
+</div>
+</div>
+<div class="section" id="add">
+<h2>add<a class="headerlink" href="#add" title="Permalink to this headline">¶</a></h2>
+<p>Add a role to the whitelist</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter whitelist add Moderators` - Makes it so that Moderators will not be caught by the filter.
+</pre></div>
+</div>
+</div>
+<div class="section" id="remove">
+<h2>remove<a class="headerlink" href="#remove" title="Permalink to this headline">¶</a></h2>
+<p>Remove a role from the whitelist</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter whitelist remove Admins` - Makes it so that Admins are caught by the filter again.
+</pre></div>
+</div>
+</div>
+<div class="section" id="id2">
+<h2>remove<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<p>Remove a pattern from the filter list.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter remove 7` - Disables filter with ID 7
+</pre></div>
+</div>
+</div>
+<div class="section" id="dm">
+<h2>dm<a class="headerlink" href="#dm" title="Permalink to this headline">¶</a></h2>
+<p>Set whether filter words should be DMed when used in bot messages</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter dm_config True` - Makes all messages containining filter lists to be sent through DMs
+</pre></div>
+</div>
+</div>
+<div class="section" id="id3">
+<h2>add<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<p>Add a pattern to the filter using RegEx. Any word can be added and is
+tested case-insensitive.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter add Swear` - Makes it so that &quot;Swear&quot; will be filtered
+</pre></div>
+</div>
+</div>
+<div class="section" id="edit">
+<h2>edit<a class="headerlink" href="#edit" title="Permalink to this headline">¶</a></h2>
+<p>Edit an already existing filter using a new pattern. A filter’s friendly
+name cannot be edited.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter edit 4 Swear` - Change filter 4 to filter out &quot;Swear&quot; instead of its previous pattern
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Dozer</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Dozer Development Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/Filter.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

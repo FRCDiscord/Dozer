@@ -1,0 +1,157 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>News &#8212; Dozer  documentation</title>
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="news">
+<h1>News<a class="headerlink" href="#news" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="id1">
+<h2>news<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+<p>Show help for news subscriptions</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}news` - Get a small guide on using the News system
+</pre></div>
+</div>
+</div>
+<div class="section" id="add">
+<h2>add<a class="headerlink" href="#add" title="Permalink to this headline">¶</a></h2>
+<p>Add a new subscription of a given source to a channel.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}news add #news cd` - Make new Chief Delphi posts appear in #news
+</pre></div>
+</div>
+<p><cite>{prefix}news add #announcements frc plain</cite> - Add new FRC blog posts in plain text to #announcements
+<cite>{prefix}news add #reddit reddit embed frc</cite> - Add new posts from /r/FRC to #reddit
+sources
++++++++
+List all available sources to subscribe to.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}`news sources` - Get all available sources
+</pre></div>
+</div>
+</div>
+<div class="section" id="restart-loop">
+<h2>restart_loop<a class="headerlink" href="#restart-loop" title="Permalink to this headline">¶</a></h2>
+<p>Restart the news check loop</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}news restart_loop` - Restart the news loop if you are a developer
+</pre></div>
+</div>
+</div>
+<div class="section" id="next-run">
+<h2>next_run<a class="headerlink" href="#next-run" title="Permalink to this headline">¶</a></h2>
+<p>Print out the next time the news check loop will run</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}news next_run` - Check the next time the loop runs if you are a developer
+</pre></div>
+</div>
+</div>
+<div class="section" id="remove">
+<h2>remove<a class="headerlink" href="#remove" title="Permalink to this headline">¶</a></h2>
+<p>Remove a subscription of a given source from a specific channel</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}news remove #news cd` - Remove the subscription of Chief Delphi to #news
+</pre></div>
+</div>
+<p><cite>{prefix}news remove #reddit reddit frc</cite> - Remove the subscription of /r/FRC to #reddit
+subscriptions
++++++++++++++
+List all subscriptions that the current server are subscribed to</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}news subs` - Check all subscriptions in the current server
+</pre></div>
+</div>
+<p><cite>{prefix}news subs #news</cite> - See all the subscriptions for #news
+get_exception
++++++++++++++
+If the news check loop has failed, print out the exception and traceback</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}news get_exception` - Get the exception that the loop failed with
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">Dozer</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Dozer Development Team.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/News.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
