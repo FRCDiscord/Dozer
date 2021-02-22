@@ -515,12 +515,16 @@ class Moderation(Cog):
     """
 
     @command()
-    @bot_has_permissions(manage_roles=True)
+    @bot_has_permissions(manage_roles=True)  # Once instance globally, don't wait instead throw exception
+    @discord.ext.commands.max_concurrency(1, wait=False, per=discord.ext.commands.BucketType.default)
+    @discord.ext.commands.cooldown(rate=10, per=2, type=discord.ext.commands.BucketType.guild)  # 10 seconds per 2 members in the guild
     async def selfdeafen(self, ctx, *, reason="No reason provided"):
         """Deafen yourself for a given time period to prevent you from reading or sending messages; useful as a study tool."""
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
             reason = self.hm_regex.sub("", reason) or "No reason provided"
+            if seconds < 300:
+                raise BadArgument("You must self deafen yourself for at least 5 minutes!")
             if await self._deafen(ctx.author, reason, seconds=seconds, self_inflicted=True, actor=ctx.author, orig_channel=ctx.channel):
                 await self.mod_log(ctx.author, "deafened", ctx.author, reason, ctx.channel, discord.Color.red(), global_modlog=False,
                                    duration=datetime.timedelta(seconds=seconds))
