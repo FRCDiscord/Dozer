@@ -479,7 +479,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
     @command()
     async def removefromqueue(self, ctx: commands.Context, *, position: int):
-        """Connect to a voice channel."""
+        """Remove a song from the queue."""
         player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
 
         if position > player.queue.qsize():
