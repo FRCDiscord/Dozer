@@ -98,8 +98,12 @@ class Dozer(commands.Bot):
             await context.send(
                 '{}, That command is on cooldown! Try again in {:.2f}s!'.format(context.author.mention, exception.retry_after))
         elif isinstance(exception, commands.MaxConcurrencyReached):
+            types = {discord.ext.commands.BucketType.default: "`Global`", discord.ext.commands.BucketType.guild: "`Guild`",
+                     discord.ext.commands.BucketType.channel: "`Channel`", discord.ext.commands.BucketType.category: "`Category`",
+                     discord.ext.commands.BucketType.member: "`Member`", discord.ext.commands.BucketType.user: "`User`"}
             await context.send(
-                '{}, That command is already running more instances than allowed! Please try again later'.format(context.author.mention))
+                '{}, That command has exceeded the max {} concurrency limit of `{}` instance! Please try again later.'.format(
+                    context.author.mention, types[exception.per], exception.number))
         elif isinstance(exception, (commands.CommandNotFound, InvalidContext)):
             pass  # Silent ignore
         else:
