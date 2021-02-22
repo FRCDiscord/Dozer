@@ -37,6 +37,14 @@ config = {
         },
 
     },
+    'lavalink': {
+        'enabled': False,
+        'host': '127.0.0.1',
+        'port': 2333,
+        'password': 'youshallnotpass',
+        'identifier': 'MAIN',
+        'region': 'us_central'
+    },
     'debug': False,
     'is_backup': False,
     'invite_override': "",
