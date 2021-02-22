@@ -1,8 +1,10 @@
 """Commands specific to development. Only approved developers can use these commands."""
 import copy
 import re
+import subprocess
 import logging
 import discord
+import rstcloth
 
 from discord.ext.commands import NotOwner
 
@@ -36,6 +38,25 @@ class Development(Cog):
 
     reload.example_usage = """
     `{prefix}reload development` - reloads the development cog
+    """
+
+    @command()
+    async def document(self, ctx):
+        """Dump documentation for Sphinx processing"""
+        for x in self.bot.cogs:
+            cog = ctx.bot.get_cog(x)
+            comrst = rstcloth.RstCloth()
+            comrst.title(x)
+            for command in cog.walk_commands():
+                comrst.h4(command.name)
+                comrst.content(command.help)
+                comrst.codeblock(command.example_usage)
+            comrst.write(f"docs/{x}.rst")
+        # make a call to Sphinx to build
+        subprocess.call("make html", shell=True, cwd='docs')
+        await ctx.send("Documentation cycle run")
+    document.example_usage = """
+    `{prefix}document` - Runs the documentation cycle
     """
 
     @command(name='eval')
