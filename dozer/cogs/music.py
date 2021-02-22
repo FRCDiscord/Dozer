@@ -42,7 +42,7 @@ import wavelink
 from discord.ext import menus, commands
 from ._utils import command
 
-from discord.ext.commands import NoPrivateMessage
+from discord.ext.commands import NoPrivateMessage, BadArgument
 
 # URL matching REGEX...
 URL_REG = re.compile(r'https?://(?:www\.)?.+')
@@ -475,6 +475,24 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
     connect.example_usage = """
     `{prefix}connect <channel>` - connects the music module to a given channel
     `{prefix}connect` - connects the music module to the channel you're in
+    """
+
+    @command()
+    async def removefromqueue(self, ctx: commands.Context, *, position: int):
+        """Connect to a voice channel."""
+        player: Player = self.bot.wavelink.get_player(guild_id=ctx.guild.id, cls=Player, context=ctx)
+
+        if position > player.queue.qsize():
+            raise BadArgument("Requested position does not exist in queue!")
+        tempqueue = []
+        while not player.queue.empty():
+            tempqueue.append(await player.queue.get())
+        removed_song = tempqueue.pop(position - 1)
+        for song in tempqueue:
+            await player.queue.put(song)
+        await ctx.send(f"Removed {removed_song} from queue")
+    removefromqueue.example_usage = """
+    `{prefix}removefromqueue 5` - removes the 5th song from the queue
     """
 
     @command()
