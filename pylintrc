@@ -154,7 +154,9 @@ disable=print-statement,
         no-else-raise,
         no-else-break,
         raise-missing-from,
-        super-with-arguments
+        super-with-arguments,
+        no-else-continue,
+        unused-argument
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -521,7 +523,7 @@ max-parents=7
 max-public-methods=40
 
 # Maximum number of return / yield for function / method body
-max-returns=6
+max-returns=10
 
 # Maximum number of statements in function / method body
 max-statements=50

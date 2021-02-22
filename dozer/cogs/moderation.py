@@ -1,6 +1,7 @@
 """Provides moderation commands for Dozer."""
 import asyncio
 import logging
+import typing
 import math
 import re
 import datetime
@@ -85,7 +86,7 @@ class Moderation(Cog):
         )
         if target is not None:
             modlog_embed.add_field(name=f"{action.capitalize()} user", value=f"{target.mention} ({target} | {target.id})", inline=False)
-        modlog_embed.add_field(name="Requested by", value=f"{actor.mention} ({actor} | {actor.id})", inline=False)
+        modlog_embed.add_field(name="Performed by", value=f"{actor.mention} ({actor} | {actor.id})", inline=False)
         modlog_embed.add_field(name="Reason", value=reason or "No reason specified", inline=False)
         modlog_embed.timestamp = datetime.datetime.utcnow()
         if duration:
@@ -119,15 +120,17 @@ class Moderation(Cog):
                     channel.set_permissions(target=member, overwrite=None if overwrite.is_empty() else overwrite))
         await asyncio.gather(*coros)
 
-    hm_regex = re.compile(r"((?P<hours>\d+)h)?((?P<minutes>\d+)m)?((?P<seconds>\d+)s)?")
+    hm_regex = re.compile(r"((?P<weeks>\d+)w)?((?P<days>\d+)d)?((?P<hours>\d+)h)?((?P<minutes>\d+)m)?((?P<seconds>\d+)s)?")
 
     def hm_to_seconds(self, hm_str):
         """Converts an hour-minute string to seconds. For example, '1h15m' returns 4500"""
         matches = re.match(self.hm_regex, hm_str).groupdict()
+        weeks = int(matches.get('weeks') or 0)
+        days = int(matches.get('days') or 0)
         hours = int(matches.get('hours') or 0)
         minutes = int(matches.get('minutes') or 0)
         seconds = int(matches.get('seconds') or 0)
-        return (hours * 3600) + (minutes * 60) + seconds
+        return (weeks * 604800) + (days * 86400) + (hours * 3600) + (minutes * 60) + seconds
 
     async def punishment_timer(self, seconds, target: discord.Member, punishment, reason, actor: discord.Member, orig_channel=None,
                                global_modlog=True):
@@ -394,11 +397,18 @@ class Moderation(Cog):
     @command(aliases=["purge"])
     @has_permissions(manage_messages=True)
     @bot_has_permissions(manage_messages=True, read_message_history=True)
-    async def prune(self, ctx, num: int):
+    async def prune(self, ctx, target: typing.Optional[discord.Member], num: int):
         """Bulk delete a set number of messages from the current channel."""
+
+        def check_target(message):
+            if target is None:
+                return True
+            else:
+                return message.author == target
+
         try:
             msg = await ctx.message.channel.fetch_message(num)
-            deleted = await ctx.message.channel.purge(after=msg, limit=MAX_PURGE)
+            deleted = await ctx.message.channel.purge(after=msg, limit=MAX_PURGE, check=check_target)
             await ctx.send(
                 f"Deleted {len(deleted)} messages under request of {ctx.message.author.mention}",
                 delete_after=5)
@@ -406,7 +416,7 @@ class Moderation(Cog):
             if num > MAX_PURGE:
                 await ctx.send("Message cannot be found or you're trying to purge too many messages.")
                 return
-            deleted = await ctx.message.channel.purge(limit=num + 1)
+            deleted = await ctx.message.channel.purge(limit=num + 1, check=check_target)
             await ctx.send(
                 f"Deleted {len(deleted) - 1} messages under request of {ctx.message.author.mention}",
                 delete_after=5)
@@ -505,12 +515,16 @@ class Moderation(Cog):
     """
 
     @command()
-    @bot_has_permissions(manage_roles=True)
+    @bot_has_permissions(manage_roles=True)  # Once instance globally, don't wait instead throw exception
+    @discord.ext.commands.max_concurrency(1, wait=False, per=discord.ext.commands.BucketType.default)
+    @discord.ext.commands.cooldown(rate=10, per=2, type=discord.ext.commands.BucketType.guild)  # 10 seconds per 2 members in the guild
     async def selfdeafen(self, ctx, *, reason="No reason provided"):
         """Deafen yourself for a given time period to prevent you from reading or sending messages; useful as a study tool."""
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
             reason = self.hm_regex.sub("", reason) or "No reason provided"
+            if seconds < 300:
+                raise BadArgument("You must self deafen yourself for at least 5 minutes!")
             if await self._deafen(ctx.author, reason, seconds=seconds, self_inflicted=True, actor=ctx.author, orig_channel=ctx.channel):
                 await self.mod_log(ctx.author, "deafened", ctx.author, reason, ctx.channel, discord.Color.red(), global_modlog=False,
                                    duration=datetime.timedelta(seconds=seconds))
