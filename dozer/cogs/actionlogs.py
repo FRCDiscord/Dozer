@@ -172,7 +172,7 @@ class Actionlog(Cog):
             page_message_count += 1
             if current_page > 15:
                 break
-
+        message_count += page_message_count
         embed.description = f"Messages {message_count}-{message_count + page_message_count} of [bulk delete]({link})"
         embed.set_footer(text=f"Page {current_page}")
         try:
