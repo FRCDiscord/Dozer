@@ -242,7 +242,10 @@ class Levels(Cog):
     def _fmt_member(self, guild, user_id):
         member = guild.get_member(user_id)
         if member:
-            return str(member.mention)
+            if member.status == discord.Status.offline:
+                return f"**{member.display_name}**#{member.discriminator}"
+            else:
+                return str(member.mention)
         else:  # Still try to see if the bot can find the user to get their name
             user = self.bot.get_user(user_id)
             if user:
