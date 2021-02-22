@@ -224,7 +224,7 @@ class Actionlog(Cog):
                 embed.add_field(name="Message Content Continued:", value=message.content[1024:2000], inline=False)
         else:
             embed.add_field(name="Message Content:", value="N/A", inline=False)
-        embed.set_footer(text=f"UserID: {message.author.id}")
+        embed.set_footer(text=f"UserID: {message.author.id}\nMessageID: {message.id}")
         if message.attachments:
             embed.add_field(name="Attachments", value=", ".join([i.url for i in message.attachments]))
         message_log_channel = await self.edit_delete_config.query_one(guild_id=message.guild.id)
@@ -267,7 +267,7 @@ class Actionlog(Cog):
                 embed.add_field(name="Edited Continued", value=content[1024:2000], inline=False)
         else:
             embed.add_field(name="Edited", value="N/A", inline=False)
-        embed.set_footer(text=f"UserID: {user_id}")
+        embed.set_footer(text=f"Channel ID: {channel_id}\nUserID: {user_id}")
         message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
         if message_log_channel is not None:
             channel = guild.get_channel(message_log_channel.messagelog_channel)
@@ -301,7 +301,7 @@ class Actionlog(Cog):
             else:
                 embed.add_field(name="Original", value="N/A", inline=False)
                 embed.add_field(name="Edited", value="N/A", inline=False)
-            embed.set_footer(text=f"UserID: {user_id}")
+            embed.set_footer(text=f"ChannelID: {channel_id}\nUserID: {user_id}")
             if after.attachments:
                 embed.add_field(name="Attachments", value=", ".join([i.url for i in before.attachments]))
             message_log_channel = await self.edit_delete_config.query_one(guild_id=before.guild.id)
