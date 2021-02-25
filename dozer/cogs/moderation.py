@@ -267,7 +267,6 @@ class Moderation(Cog):
     @Cog.listener('on_ready')
     async def on_ready(self):
         """Restore punishment timers on bot startup and trigger the nm purge cycle"""
-        await self.nm_kick.start()
         q = await PunishmentTimerRecords.get_by()  # no filters: all
         for r in q:
             guild = self.bot.get_guild(r.guild_id)
@@ -281,6 +280,7 @@ class Moderation(Cog):
             self.bot.loop.create_task(self.punishment_timer(seconds, target, PunishmentTimerRecords.type_map[punishment_type], reason, actor,
                                                             orig_channel))
             getLogger('dozer').info(f"Restarted {PunishmentTimerRecords.type_map[punishment_type].__name__} of {target} in {guild}")
+        await self.nm_kick.start()
 
     @Cog.listener('on_member_join')
     async def on_member_join(self, member):
