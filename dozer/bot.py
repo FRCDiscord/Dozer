@@ -62,7 +62,6 @@ class Dozer(commands.Bot):
         """Things to run when the bot has initialized and signed in"""
         DOZER_LOGGER.info('Signed in as {}#{} ({})'.format(self.user.name, self.user.discriminator, self.user.id))
         await self.dynamic_prefix.refresh()
-        # await self.slash.sync_all_commands()
         perms = 0
         for cmd in self.walk_commands():
             perms |= cmd.required_permissions.value
