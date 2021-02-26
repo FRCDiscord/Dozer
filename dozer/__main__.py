@@ -81,6 +81,7 @@ intents.presences = True
 
 bot = Dozer(config, intents=intents, max_messages=config['cache_size'])
 
+
 for ext in os.listdir('dozer/cogs'):
     if not ext.startswith(('_', '.')):
         bot.load_extension('dozer.cogs.' + ext[:-3])  # Remove '.py'

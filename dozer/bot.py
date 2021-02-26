@@ -6,6 +6,7 @@ import sys
 import traceback
 import discord
 from discord.ext import commands
+from discord_slash import SlashCommand
 from sentry_sdk import capture_exception
 
 from . import utils
@@ -49,6 +50,7 @@ class Dozer(commands.Bot):
     def __init__(self, config, *args, **kwargs):
         self.dynamic_prefix = _utils.PrefixHandler(config['prefix'])
         super().__init__(command_prefix=self.dynamic_prefix.handler, *args, **kwargs)
+        self.slash = SlashCommand(self, sync_commands=True, override_type=True)
         self.config = config
         if self.config['debug']:
             DOZER_LOGGER.level = logging.DEBUG
@@ -60,6 +62,7 @@ class Dozer(commands.Bot):
         """Things to run when the bot has initialized and signed in"""
         DOZER_LOGGER.info('Signed in as {}#{} ({})'.format(self.user.name, self.user.discriminator, self.user.id))
         await self.dynamic_prefix.refresh()
+        # await self.slash.sync_all_commands()
         perms = 0
         for cmd in self.walk_commands():
             perms |= cmd.required_permissions.value
