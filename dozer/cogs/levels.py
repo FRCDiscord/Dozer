@@ -616,7 +616,7 @@ class Levels(Cog):
                                                                                 f"Notification channel: {lvl_up_msgs}")
             await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="rank", description="Returns your dozer rank", guild_ids=[765325145832816662])
+    @cog_ext.cog_slash(name="rank", description="Returns your dozer rank")
     async def slash_rank(self, ctx: SlashContext, member: discord.Member = None):
         await self.rank_embed(ctx, member)
 

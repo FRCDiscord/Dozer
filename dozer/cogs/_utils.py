@@ -128,10 +128,10 @@ class Reactor:
         self.dest = ctx.channel
         self.bot = ctx.bot
         self.caller = ctx.author
-        self.me = ctx.me
+        self.me = ctx.guild.get_member(self.bot.user.id)
         self._reactions = tuple(initial_reactions)
         self._remove_reactions = auto_remove and ctx.channel.permissions_for(
-            ctx.me).manage_messages  # Check for required permissions
+            self.me).manage_messages  # Check for required permissions
         self.timeout = timeout
         self._action = None
         self.message = None
