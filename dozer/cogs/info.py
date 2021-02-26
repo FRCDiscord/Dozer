@@ -12,13 +12,11 @@ from .levels import MemberXP, GuildXPSettings
 blurple = discord.Color.blurple()
 datetime_format = '%Y-%m-%d %H:%M:%S\nUTC'
 
-guild_tests = [326749693969301506, 765325145832816662]
-
 
 class Info(Cog):
     """Commands for getting information about people and things on Discord."""
 
-    @cog_ext.cog_slash(name="user", description="Returns user information", guild_ids=guild_tests)
+    @cog_ext.cog_slash(name="user", description="Returns user information")
     async def slash_member(self, ctx: SlashContext, member: discord.Member = None):
         """Users slash handler"""
         await self.member(ctx, member=member)
@@ -122,7 +120,7 @@ class Info(Cog):
         else:
             return f'{", ".join(values[:-1])}, and {values[-1]}'
 
-    @cog_ext.cog_subcommand(base="role", name="roleinfo", description="Returns role information", guild_ids=guild_tests)
+    @cog_ext.cog_subcommand(base="role", name="roleinfo", description="Returns role information")
     async def slash_role(self, ctx: SlashContext, role: discord.Role):
         """Role slash handler"""
         await self.role(ctx, role=role)
@@ -139,7 +137,7 @@ class Info(Cog):
         embed.add_field(name="Assigned members", value=f"{len(role.members)}", inline=False)
         await ctx.send(embed=embed)
 
-    @cog_ext.cog_subcommand(base="role", name="rolemembers", description="Returns all member who have a role", guild_ids=guild_tests)
+    @cog_ext.cog_subcommand(base="role", name="rolemembers", description="Returns all member who have a role")
     async def slash_rolemember(self, ctx: SlashContext, role: discord.Role):
         """rolemembers slash handler"""
         await ctx.ack()
@@ -157,7 +155,7 @@ class Info(Cog):
             embeds.append(embed)
         await paginate(ctx, embeds)
 
-    @cog_ext.cog_slash(name="guild", description="Returns guild information", guild_ids=guild_tests)
+    @cog_ext.cog_slash(name="guild", description="Returns guild information")
     async def slash_guild(self, ctx: SlashContext):
         """Guild slash handler"""
         await self.guild(ctx)

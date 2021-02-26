@@ -25,7 +25,6 @@ ADD_LIMIT = 2147483647
 LEVEL_SET_LIMIT = 100000
 LEVEL_CALC_LIMIT = 1000000
 
-guild_tests = [326749693969301506, 765325145832816662]
 
 class Levels(Cog):
     """Commands and event handlers for managing levels and XP."""
@@ -670,7 +669,7 @@ class Levels(Cog):
     `{prefix}rank coolgal#1234`: show another user's ranking
     """
 
-    @cog_ext.cog_slash(name="leaderboard", description="Returns the guilds dozer leaderboard", guild_ids=guild_tests)
+    @cog_ext.cog_slash(name="leaderboard", description="Returns the guilds dozer leaderboard")
     async def slash_levels(self, ctx: SlashContext, start_member: discord.Member = None):
         """Leaderboard slash handler"""
         await ctx.ack()
