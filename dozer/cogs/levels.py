@@ -25,6 +25,7 @@ ADD_LIMIT = 2147483647
 LEVEL_SET_LIMIT = 100000
 LEVEL_CALC_LIMIT = 1000000
 
+guild_tests = [326749693969301506, 765325145832816662]
 
 class Levels(Cog):
     """Commands and event handlers for managing levels and XP."""
@@ -618,15 +619,13 @@ class Levels(Cog):
 
     @cog_ext.cog_slash(name="rank", description="Returns your dozer rank")
     async def slash_rank(self, ctx: SlashContext, member: discord.Member = None):
-        await self.rank_embed(ctx, member)
+        """Ranks slash handler"""
+        await self.rank(ctx, member=member)
 
     @command(aliases=["rnak", "level"])
     @guild_only()
     @discord.ext.commands.cooldown(rate=1, per=5, type=discord.ext.commands.BucketType.user)
     async def rank(self, ctx, *, member: discord.Member = None):
-        await ctx.send(ctx, self.rank_embed(ctx, member))
-
-    async def rank_embed(self, ctx, member):
         """Get a user's ranking on the XP leaderboard.
         If no member is passed, the caller's ranking is shown.
         """
@@ -670,6 +669,12 @@ class Levels(Cog):
     `{prefix}rank`: show your ranking
     `{prefix}rank coolgal#1234`: show another user's ranking
     """
+
+    @cog_ext.cog_slash(name="leaderboard", description="Returns the guilds dozer leaderboard", guild_ids=guild_tests)
+    async def slash_levels(self, ctx: SlashContext, start_member: discord.Member = None):
+        """Leaderboard slash handler"""
+        await ctx.ack()
+        await self.levels(ctx, start_member)
 
     @command(aliases=["ranks", "leaderboard"])
     @guild_only()

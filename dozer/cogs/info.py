@@ -20,6 +20,7 @@ class Info(Cog):
 
     @cog_ext.cog_slash(name="user", description="Returns user information", guild_ids=guild_tests)
     async def slash_member(self, ctx: SlashContext, member: discord.Member = None):
+        """Users slash handler"""
         await self.member(ctx, member=member)
 
     @command(aliases=['user', 'memberinfo', 'userinfo'])
@@ -123,6 +124,7 @@ class Info(Cog):
 
     @cog_ext.cog_subcommand(base="role", name="roleinfo", description="Returns role information", guild_ids=guild_tests)
     async def slash_role(self, ctx: SlashContext, role: discord.Role):
+        """Role slash handler"""
         await self.role(ctx, role=role)
 
     @command()
@@ -139,6 +141,7 @@ class Info(Cog):
 
     @cog_ext.cog_subcommand(base="role", name="rolemembers", description="Returns all member who have a role", guild_ids=guild_tests)
     async def slash_rolemember(self, ctx: SlashContext, role: discord.Role):
+        """rolemembers slash handler"""
         await ctx.ack()
         await self.rolemembers(ctx, role=role)
 
@@ -156,6 +159,7 @@ class Info(Cog):
 
     @cog_ext.cog_slash(name="guild", description="Returns guild information", guild_ids=guild_tests)
     async def slash_guild(self, ctx: SlashContext):
+        """Guild slash handler"""
         await self.guild(ctx)
 
     @guild_only()
