@@ -7,12 +7,12 @@ import logging
 import math
 from datetime import timedelta, timezone, datetime
 import random
-import time
 import typing
 import aiohttp
 import discord
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
+from discord_slash import cog_ext, SlashContext
 
 from ._utils import *
 
@@ -616,6 +616,11 @@ class Levels(Cog):
                                                                                 f"Notification channel: {lvl_up_msgs}")
             await ctx.send(embed=embed)
 
+    @cog_ext.cog_slash(name="rank", description="Returns your dozer rank")
+    async def slash_rank(self, ctx: SlashContext, member: discord.Member = None):
+        """Ranks slash handler"""
+        await self.rank(ctx, member=member)
+
     @command(aliases=["rnak", "level"])
     @guild_only()
     @discord.ext.commands.cooldown(rate=1, per=5, type=discord.ext.commands.BucketType.user)
@@ -626,7 +631,7 @@ class Levels(Cog):
         member = member or ctx.author
         embed = discord.Embed(color=member.color)
 
-        guild_settings = self._guild_settings.get(ctx.message.guild.id)
+        guild_settings = self._guild_settings.get(ctx.guild.id)
 
         if guild_settings is None or not guild_settings.enabled:
             embed.description = "Levels are not enabled in this server"
@@ -664,6 +669,12 @@ class Levels(Cog):
     `{prefix}rank coolgal#1234`: show another user's ranking
     """
 
+    @cog_ext.cog_slash(name="leaderboard", description="Returns the guilds dozer leaderboard")
+    async def slash_levels(self, ctx: SlashContext, start_member: discord.Member = None):
+        """Leaderboard slash handler"""
+        await ctx.ack()
+        await self.levels(ctx, start_member)
+
     @command(aliases=["ranks", "leaderboard"])
     @guild_only()
     async def levels(self, ctx, start: typing.Optional[discord.Member]):
@@ -673,9 +684,9 @@ class Levels(Cog):
         # This causes rankings like #1, #1, #1, #4, #4, #6, ...
         # user_id is arbitrary, chosen because it is guaranteed to be unique between two records in the same guild
         records = await db.Pool.fetch(f"""
-            SELECT user_id, total_xp, rank() OVER (ORDER BY total_xp DESC, user_id) FROM {MemberXP.__tablename__}
-            WHERE guild_id = $1 ORDER BY rank;
-        """, ctx.guild.id)
+                    SELECT user_id, total_xp, rank() OVER (ORDER BY total_xp DESC, user_id) FROM {MemberXP.__tablename__}
+                    WHERE guild_id = $1 ORDER BY rank;
+                """, ctx.guild.id)
 
         start_point = 0
 

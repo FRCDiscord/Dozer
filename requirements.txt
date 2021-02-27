@@ -12,3 +12,4 @@ sentry-sdk
 wavelink
 git+https://github.com/Rapptz/discord-ext-menus.git
 rstcloth
+discord-py-slash-command

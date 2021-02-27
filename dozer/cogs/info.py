@@ -4,6 +4,7 @@ from difflib import SequenceMatcher
 import typing
 import discord
 from discord.ext.commands import cooldown, BucketType, guild_only
+from discord_slash import cog_ext, SlashContext
 
 from ._utils import *
 from .levels import MemberXP, GuildXPSettings
@@ -14,6 +15,11 @@ datetime_format = '%Y-%m-%d %H:%M:%S\nUTC'
 
 class Info(Cog):
     """Commands for getting information about people and things on Discord."""
+
+    @cog_ext.cog_slash(name="user", description="Returns user information")
+    async def slash_member(self, ctx: SlashContext, member: discord.Member = None):
+        """Users slash handler"""
+        await self.member(ctx, member=member)
 
     @command(aliases=['user', 'memberinfo', 'userinfo'])
     @guild_only()
@@ -114,6 +120,11 @@ class Info(Cog):
         else:
             return f'{", ".join(values[:-1])}, and {values[-1]}'
 
+    @cog_ext.cog_subcommand(base="role", name="roleinfo", description="Returns role information")
+    async def slash_role(self, ctx: SlashContext, role: discord.Role):
+        """Role slash handler"""
+        await self.role(ctx, role=role)
+
     @command()
     @guild_only()
     @cooldown(1, 10, BucketType.channel)
@@ -126,6 +137,12 @@ class Info(Cog):
         embed.add_field(name="Assigned members", value=f"{len(role.members)}", inline=False)
         await ctx.send(embed=embed)
 
+    @cog_ext.cog_subcommand(base="role", name="rolemembers", description="Returns all member who have a role")
+    async def slash_rolemember(self, ctx: SlashContext, role: discord.Role):
+        """rolemembers slash handler"""
+        await ctx.ack()
+        await self.rolemembers(ctx, role=role)
+
     @command()
     @guild_only()
     async def rolemembers(self, ctx, role: discord.Role):
@@ -137,6 +154,11 @@ class Info(Cog):
             embed.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(role.members) / 10)}")
             embeds.append(embed)
         await paginate(ctx, embeds)
+
+    @cog_ext.cog_slash(name="guild", description="Returns guild information")
+    async def slash_guild(self, ctx: SlashContext):
+        """Guild slash handler"""
+        await self.guild(ctx)
 
     @guild_only()
     @cooldown(1, 10, BucketType.channel)
