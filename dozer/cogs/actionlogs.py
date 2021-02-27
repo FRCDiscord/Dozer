@@ -26,7 +26,7 @@ class Actionlog(Cog):
     async def check_audit(guild, event_time=None):
         """Method for checking the audit log for events"""
         try:
-            async for entry in guild.audit_logs(limit=1, before=event_time,
+            async for entry in guild.audit_logs(limit=1, after=event_time,
                                                 action=discord.AuditLogAction.message_delete):
                 return entry
         except discord.Forbidden:
@@ -197,7 +197,7 @@ class Actionlog(Cog):
                               description=f"Message Deleted In: {message_channel.mention}",
                               color=0xFF00F0, timestamp=message_created)
         embed.add_field(name="Message", value="N/A", inline=False)
-        embed.set_footer(text=f"MessageID: {message_id}; Sent at")
+        embed.set_footer(text=f"Message ID: {message_channel.id} - {message_id}\nSent at ")
         message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
         if message_log_channel is not None:
             channel = guild.get_channel(message_log_channel.messagelog_channel)
@@ -209,7 +209,7 @@ class Actionlog(Cog):
         """When a message is deleted, log it."""
         if message.author == self.bot.user:
             return
-        audit = await self.check_audit(message.guild)
+        audit = await self.check_audit(message.guild, message.created_at)
         embed = discord.Embed(title="Message Deleted",
                               description=f"Message Deleted In: {message.channel.mention}\nSent by: {message.author.mention}",
                               color=0xFF0000, timestamp=message.created_at)
@@ -224,7 +224,7 @@ class Actionlog(Cog):
                 embed.add_field(name="Message Content Continued:", value=message.content[1024:2000], inline=False)
         else:
             embed.add_field(name="Message Content:", value="N/A", inline=False)
-        embed.set_footer(text=f"UserID: {message.author.id}\nMessageID: {message.id}")
+        embed.set_footer(text=f"Message ID: {message.channel.id} - {message.id}\nUserID: {message.author.id}")
         if message.attachments:
             embed.add_field(name="Attachments", value=", ".join([i.url for i in message.attachments]))
         message_log_channel = await self.edit_delete_config.query_one(guild_id=message.guild.id)
@@ -267,7 +267,7 @@ class Actionlog(Cog):
                 embed.add_field(name="Edited Continued", value=content[1024:2000], inline=False)
         else:
             embed.add_field(name="Edited", value="N/A", inline=False)
-        embed.set_footer(text=f"Channel ID: {channel_id}\nUserID: {user_id}")
+        embed.set_footer(text=f"Message ID: {channel_id} - {message_id}\nUserID: {user_id}")
         message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
         if message_log_channel is not None:
             channel = guild.get_channel(message_log_channel.messagelog_channel)
@@ -301,7 +301,7 @@ class Actionlog(Cog):
             else:
                 embed.add_field(name="Original", value="N/A", inline=False)
                 embed.add_field(name="Edited", value="N/A", inline=False)
-            embed.set_footer(text=f"ChannelID: {channel_id}\nUserID: {user_id}")
+            embed.set_footer(text=f"Message ID: {channel_id} - {message_id}\nUserID: {user_id}")
             if after.attachments:
                 embed.add_field(name="Attachments", value=", ".join([i.url for i in before.attachments]))
             message_log_channel = await self.edit_delete_config.query_one(guild_id=before.guild.id)
