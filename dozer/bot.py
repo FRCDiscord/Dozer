@@ -127,6 +127,7 @@ class Dozer(commands.Bot):
         capture_exception()
 
     async def on_slash_command_error(self, ctx, ex):
+        """Passes slash command errors to primary command handler"""
         await self.on_command_error(ctx, ex)
 
     @staticmethod

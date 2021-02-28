@@ -1,6 +1,7 @@
 """Provides some useful utilities for the Discord bot, mostly to do with cleaning."""
 
 import re
+from urllib.parse import urlencode
 
 import discord
 
@@ -106,6 +107,5 @@ def oauth_url(client_id, permissions=None, guild=None, redirect_uri=None):
     if guild is not None:
         url = url + "&guild_id=" + str(guild.id)
     if redirect_uri is not None:
-        from urllib.parse import urlencode
         url = url + "&response_type=code&" + urlencode({'redirect_uri': redirect_uri})
     return url

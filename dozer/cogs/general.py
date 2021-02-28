@@ -4,8 +4,8 @@ import inspect
 import discord
 from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions, NotOwner, guild_only
 
-from utils import oauth_url
 from ._utils import *
+from ..utils import oauth_url
 
 blurple = discord.Color.blurple()
 
