@@ -1,12 +1,15 @@
 """Provides commands that pull information from The Orange Alliance, an FTC info API."""
 
+import json
 from asyncio import sleep
 from datetime import datetime
 from urllib.parse import urljoin
-import json
+
 import aiohttp
 import async_timeout
 import discord
+from discord_slash import cog_ext, SlashContext
+
 from ._utils import *
 
 embed_color = discord.Color(0xf89808)
@@ -56,6 +59,11 @@ class TOA(Cog):
         super().__init__(bot)
         self.http_session = aiohttp.ClientSession()
         self.parser = TOAParser(bot.config['toa']['key'], self.http_session, app_name=bot.config['toa']['app_name'])
+
+    @cog_ext.cog_slash(name="toa", description="Get information on an FTC team by number.")
+    async def slash_toa(self, ctx: SlashContext, team_number: int):
+        """toa slash handler"""
+        await self.team(ctx, team_num=team_number)
 
     @group(invoke_without_command=True)
     async def toa(self, ctx, team_num: int):

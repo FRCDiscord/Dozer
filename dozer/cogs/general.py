@@ -1,12 +1,13 @@
 """General, basic commands that are common for Discord bots"""
-import asyncio
 import inspect
+
 import discord
 from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions, NotOwner, guild_only
 
+from utils import oauth_url
 from ._utils import *
+
 blurple = discord.Color.blurple()
-from .. import db
 
 
 class General(Cog):
@@ -178,7 +179,7 @@ class General(Cog):
         perms = 0
         for cmd in ctx.bot.walk_commands():
             perms |= cmd.required_permissions.value
-        await ctx.send('<{}>'.format(discord.utils.oauth_url(ctx.me.id, discord.Permissions(perms))))
+        await ctx.send('<{}>'.format(oauth_url(ctx.me.id, discord.Permissions(perms))))
 
     @command(aliases=["setprefix"])
     @guild_only()
