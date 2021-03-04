@@ -4,6 +4,7 @@ import logging
 import re
 import sys
 import traceback
+
 import discord
 from discord.ext import commands
 from discord_slash import SlashCommand
@@ -65,7 +66,7 @@ class Dozer(commands.Bot):
         perms = 0
         for cmd in self.walk_commands():
             perms |= cmd.required_permissions.value
-        DOZER_LOGGER.debug('Bot Invite: {}'.format(discord.utils.oauth_url(self.user.id, discord.Permissions(perms))))
+        DOZER_LOGGER.debug('Bot Invite: {}'.format(utils.oauth_url(self.user.id, discord.Permissions(perms))))
         if self.config['is_backup']:
             status = discord.Status.dnd
         else:
@@ -124,6 +125,10 @@ class Dozer(commands.Bot):
         print('Ignoring exception in {}'.format(event_method), file=sys.stderr)
         traceback.print_exc()
         capture_exception()
+
+    async def on_slash_command_error(self, ctx, ex):
+        """Passes slash command errors to primary command handler"""
+        await self.on_command_error(ctx, ex)
 
     @staticmethod
     def format_error(ctx, err, *, word_re=re.compile('[A-Z][a-z]+')):

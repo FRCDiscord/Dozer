@@ -1,7 +1,8 @@
 """Provides commands for pulling certain information."""
 import math
-from difflib import SequenceMatcher
 import typing
+from difflib import SequenceMatcher
+
 import discord
 from discord.ext.commands import cooldown, BucketType, guild_only
 from discord_slash import cog_ext, SlashContext
@@ -19,6 +20,8 @@ class Info(Cog):
     @cog_ext.cog_slash(name="user", description="Returns user information")
     async def slash_member(self, ctx: SlashContext, member: discord.Member = None):
         """Users slash handler"""
+        if member is None:
+            member = ctx.guild.get_member(ctx.author.id)
         await self.member(ctx, member=member)
 
     @command(aliases=['user', 'memberinfo', 'userinfo'])

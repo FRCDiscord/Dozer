@@ -3,16 +3,16 @@ import datetime
 import io
 import itertools
 import json
-
 from pprint import pformat
 from urllib.parse import quote as urlquote, urljoin
 
 import aiohttp
-import discord
-from discord.ext.commands import BadArgument
-import googlemaps
-import async_timeout
 import aiotba
+import async_timeout
+import discord
+import googlemaps
+from discord.ext.commands import BadArgument
+from discord_slash import cog_ext, SlashContext
 from geopy.geocoders import Nominatim
 
 from ._utils import *
@@ -29,6 +29,11 @@ class TBA(Cog):
         # self.parser = tbapi.TBAParser(tba_config['key'], cache=False)
 
     col = discord.Color.from_rgb(63, 81, 181)
+
+    @cog_ext.cog_slash(name="tba", description="Get information on an FRC team by number.")
+    async def slash_tba(self, ctx: SlashContext, team_number: int):
+        """tba slash handler"""
+        await self.team(ctx, team_num=team_number)
 
     @group(invoke_without_command=True)
     async def tba(self, ctx, team_num: int):

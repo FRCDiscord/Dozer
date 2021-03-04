@@ -40,9 +40,9 @@ import async_timeout
 import discord
 import wavelink
 from discord.ext import menus, commands
-from ._utils import command
-
 from discord.ext.commands import NoPrivateMessage, BadArgument
+
+from ._utils import command
 
 # URL matching REGEX...
 URL_REG = re.compile(r'https?://(?:www\.)?.+')

@@ -1,10 +1,11 @@
 """Commands for making and seeing robotics team associations."""
 
-import collections
 import json
+
 import discord
 from aiotba.http import AioTBAError
 from discord.ext.commands import BadArgument, guild_only, has_permissions
+from discord_slash import cog_ext, SlashContext
 
 from ._utils import *
 from .info import blurple
@@ -13,6 +14,22 @@ from .. import db
 
 class Teams(Cog):
     """Commands for making and seeing robotics team associations."""
+
+    @cog_ext.cog_slash(name="setteam", description="Sets an association with your team in the database.")
+    async def slash_setteam(self, ctx: SlashContext, team_type: str, team_number: int):
+        """setteam slash handler"""
+        await self.setteam(ctx, team_type=team_type, team_number=team_number)
+
+    @cog_ext.cog_slash(name="removeteam", description="Removes an association with your team in the database.")
+    async def slash_removeteam(self, ctx: SlashContext, team_type: str, team_number: int):
+        """removeteamteam slash handler"""
+        await self.removeteam(ctx, team_type=team_type, team_number=team_number)
+
+    @cog_ext.cog_slash(name="teamsfor", description="Allows you to see the teams for the selected user or yourself.")
+    async def slash_teamsfor(self, ctx: SlashContext, member: discord.Member = None):
+        """Teamsfor slash handler"""
+        await self.teamsfor(ctx, user=member)
+
     @command()
     async def setteam(self, ctx, team_type, team_number: int):
         """Sets an association with your team in the database."""
