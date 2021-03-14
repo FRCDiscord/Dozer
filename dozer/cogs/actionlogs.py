@@ -254,7 +254,7 @@ class Actionlog(Cog):
             embed.add_field(name="Message Content:", value="N/A", inline=False)
         embed.set_footer(text=f"Message ID: {message.channel.id} - {message.id}\nUserID: {message.author.id}")
         if message.attachments:
-            embed.add_field(name="Attachments", value=", ".join([i.url for i in message.attachments]))
+            embed.add_field(name="Attachments", value=", ".join([i.proxy_url for i in message.attachments]))
         message_log_channel = await self.edit_delete_config.query_one(guild_id=message.guild.id)
         if message_log_channel is not None:
             channel = message.guild.get_channel(message_log_channel.messagelog_channel)
