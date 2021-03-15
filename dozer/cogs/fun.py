@@ -12,9 +12,6 @@ from ._utils import *
 class Fun(Cog):
     """Fun commands"""
 
-    def __init__(self, bot):
-        super().__init__(bot)
-
     async def battle(self, ctx, opponent: discord.Member, delete_result=True):
         """Start a fight with another user."""
         responses = [
@@ -80,10 +77,10 @@ class Fun(Cog):
 
     @guild_only()
     @discord.ext.commands.cooldown(1, 5, BucketType.channel)
-    @discord.ext.commands.max_concurrency(1, wait=False)
+    @discord.ext.commands.max_concurrency(1, per=BucketType.channel, wait=False)
     @command()
     async def fight(self, ctx, opponent: discord.Member, wager: int = 0):
-        """Battles or something"""
+        """Start a fight with another user."""
 
         levels = self.bot.get_cog("Levels")
 
@@ -94,7 +91,7 @@ class Fun(Cog):
         if not levels.guild_settings.get(ctx.guild.id).enabled:
             raise BadArgument("Levels must be enabled to fight with xp wagers")
 
-        if wager > 1000:
+        if wager > 10000:
             raise BadArgument("Wagers cannot be higher than 1000")
 
         if wager < 0:
@@ -104,7 +101,7 @@ class Fun(Cog):
         opponent_levels = await levels.load_member(ctx.guild.id, opponent.id)
 
         if author_levels.total_xp < wager:
-            raise BadArgument(f"You not have enough XP to fulfill the wager")
+            raise BadArgument("You not have enough XP to fulfill the wager")
 
         if opponent_levels.total_xp < wager:
             raise BadArgument(f"{opponent} does not have enough XP to fulfill the wager")
@@ -121,8 +118,16 @@ class Fun(Cog):
             raise MissingPermissions(f"**{ctx.bot.user}** does not have the permission to add reacts")
         try:
             await self.bot.wait_for('reaction_add', timeout=60, check=lambda reaction, reactor:
-            reaction.emoji == "✅" and reactor == opponent and reaction.message == msg)
-            embed.set_footer(text="")
+                                    reaction.emoji == "✅" and reactor == opponent and reaction.message == msg)
+
+            embed.set_footer(text="")  # Edit embed to show that fight is in progress
+            embed.colour = 0xffff00
+            try:
+                await msg.clear_reactions()
+            except discord.Forbidden:
+                pass
+            await msg.edit(content=None, embed=embed)
+
             looser, winner = await self.battle(ctx, opponent)
             embed.colour = 0x00ff00
             embed.add_field(name="Results", value=f"{winner.mention} beat {looser.mention}"
@@ -142,7 +147,8 @@ class Fun(Cog):
         await msg.edit(content=None, embed=embed)
 
     fight.example_usage = """
-        `{prefix}fight @user2#2322 - Initiates a fight with @user2#2322`
+        `{prefix}fight @user2#2322 - Initiates a fight with @user2#2322
+         {prefix}fight @Snowplow#5196 670 - Initiates a fight with @Snowplow#5196 with a wager of 670xp`
         """
 
 
