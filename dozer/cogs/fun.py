@@ -5,6 +5,7 @@ from asyncio import sleep
 
 import discord
 from discord.ext.commands import cooldown, BucketType, guild_only, BadArgument, MissingPermissions
+from discord_slash import cog_ext, SlashContext
 
 from ._utils import *
 
@@ -47,7 +48,7 @@ class Fun(Cog):
         while hps[0] > 0 and hps[1] > 0:
             opp_idx = (turn + 1) % 2
             damage = random.choice(damages)
-            if players[turn].id in ctx.bot.config['developers'] or players[turn] == ctx.me:
+            if players[turn].id in ctx.bot.config['developers'] or players[turn] == ctx.bot.user:
                 damage = damage * 2
             hps[opp_idx] = max(hps[opp_idx] - damage, 0)
             messages.append(
@@ -66,7 +67,7 @@ class Fun(Cog):
         if delete_result:
             await win_msg.delete()
         # bulk delete if we have the manage messages permission
-        if ctx.channel.permissions_for(ctx.me).manage_messages:
+        if ctx.channel.permissions_for(ctx.guild.get_member(ctx.bot.user.id)).manage_messages:
             await ctx.channel.delete_messages(messages)
         else:
             # otherwise delete manually
@@ -74,6 +75,11 @@ class Fun(Cog):
                 await msg.delete()
 
         return players[turn], players[(turn + 1) % 2]
+
+    @cog_ext.cog_slash(name="fight", description="Fight another member, with an optional wager")
+    async def slash_fight(self, ctx: SlashContext, opponent: discord.Member, wager: int = 0):
+        """Fight slash handler"""
+        await self.fight(ctx, opponent, wager)
 
     @guild_only()
     @discord.ext.commands.cooldown(1, 5, BucketType.channel)
@@ -117,8 +123,8 @@ class Fun(Cog):
         except discord.Forbidden:
             raise MissingPermissions(f"**{ctx.bot.user}** does not have the permission to add reacts")
         try:
-            await self.bot.wait_for('reaction_add', timeout=60, check=lambda reaction, reactor:
-                                    reaction.emoji == "✅" and reactor == opponent and reaction.message == msg)
+            await self.bot.wait_for('reaction_add', timeout=45, check=lambda reaction, reactor:
+            reaction.emoji == "✅" and reactor == opponent and reaction.message == msg)
 
             embed.set_footer(text="")  # Edit embed to show that fight is in progress
             embed.colour = 0xffff00
@@ -130,18 +136,20 @@ class Fun(Cog):
 
             looser, winner = await self.battle(ctx, opponent)
             embed.colour = 0x00ff00
+
+            author_levels.total_xp += wager if winner is ctx.author else -wager
+            opponent_levels.total_xp += wager if winner is opponent else -wager
+
             embed.add_field(name="Results", value=f"{winner.mention} beat {looser.mention}"
                                                   f"\n{ctx.author.mention} now is at "
                                                   f"level {levels.level_for_total_xp(author_levels.total_xp)} ({author_levels.total_xp} XP) "
                                                   f"\n{opponent.mention} now is at "
                                                   f"level {levels.level_for_total_xp(opponent_levels.total_xp)} ({opponent_levels.total_xp} XP)")
 
-            author_levels.total_xp += wager if winner is ctx.author else -wager
-            opponent_levels.total_xp += wager if winner is opponent else -wager
-
         except asyncio.TimeoutError:
             await msg.clear_reactions()
             embed.add_field(name="Results", value=f"{opponent.mention} failed to accept in time, fight canceled")
+            embed.set_footer(text="")
             embed.colour = 0xff0000
 
         await msg.edit(content=None, embed=embed)
