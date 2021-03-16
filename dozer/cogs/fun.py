@@ -147,7 +147,10 @@ class Fun(Cog):
                                                   f"level {levels.level_for_total_xp(opponent_levels.total_xp)} ({opponent_levels.total_xp} XP)")
 
         except asyncio.TimeoutError:
-            await msg.clear_reactions()
+            try:
+                await msg.clear_reactions()
+            except discord.Forbidden:
+                pass
             embed.add_field(name="Results", value=f"{opponent.mention} failed to accept in time, fight canceled")
             embed.set_footer(text="")
             embed.colour = 0xff0000
