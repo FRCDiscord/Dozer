@@ -98,9 +98,6 @@ class Fun(Cog):
         if levels_settings is None or not levels_settings.enabled:
             raise BadArgument("Levels must be enabled to fight with xp wagers")
 
-        if wager > 10000:
-            raise BadArgument("Wagers cannot be higher than 1000")
-
         if wager < 0:
             raise BadArgument("Wagers cannot be a negative amount")
 
