@@ -103,6 +103,9 @@ class Fun(Cog):
         if wager < 0:
             raise BadArgument("Wagers cannot be a negative amount")
 
+        if ctx.author == opponent:
+            raise BadArgument("You cannot fight yourself")
+
         author_levels = await levels.load_member(ctx.guild.id, ctx.author.id)
         opponent_levels = await levels.load_member(ctx.guild.id, opponent.id)
 
