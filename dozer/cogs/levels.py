@@ -34,7 +34,7 @@ class Levels(Cog):
     def __init__(self, bot):
         super().__init__(bot)
         self._loop = bot.loop
-        self._guild_settings = {}
+        self.guild_settings = {}
         self._level_roles = {}
         self._xp_cache = {}  # dct[(guild_id, user_id)] = MemberXPCache(...)
         self._loop.create_task(self.preload_cache())
@@ -79,15 +79,15 @@ class Levels(Cog):
         DOZER_LOGGER.info("Preloading guild settings")
         await self.update_server_settings_cache()
         await self.update_level_role_cache()
-        DOZER_LOGGER.info(f"Loaded settings for {len(self._guild_settings)} guilds; and {len(self._level_roles)} level roles")
+        DOZER_LOGGER.info(f"Loaded settings for {len(self.guild_settings)} guilds; and {len(self._level_roles)} level roles")
         # Load subset of member XP records here?
 
     async def update_server_settings_cache(self):
         """Updates the server settings cache from the database"""
-        self._guild_settings = {}
+        self.guild_settings = {}
         records = await GuildXPSettings.get_by()  # no filters, get all
         for record in records:
-            self._guild_settings[record.guild_id] = record
+            self.guild_settings[record.guild_id] = record
 
     async def update_level_role_cache(self):
         """Updates level role cache from the database"""
@@ -142,7 +142,7 @@ class Levels(Cog):
         old_level = self.level_for_total_xp(old_xp)
         new_level = self.level_for_total_xp(new_xp)
         if new_level > old_level:
-            settings = self._guild_settings[guild.id]
+            settings = self.guild_settings[guild.id]
             if settings.lvl_up_msgs:
                 channel = guild.get_channel(settings.lvl_up_msgs)
                 if channel:
@@ -258,7 +258,7 @@ class Levels(Cog):
         """Handle giving XP to a user for a message."""
         if message.author.bot or not message.guild:
             return
-        guild_settings = self._guild_settings.get(message.guild.id)
+        guild_settings = self.guild_settings.get(message.guild.id)
         if guild_settings is None or not guild_settings.enabled:
             return
 
@@ -286,8 +286,8 @@ class Levels(Cog):
         progress_template = "Currently syncing from Mee6 API please wait... Page: {page}"
         DOZER_LOGGER.info(f"Syncing Mee6 level data for {ctx.guild.member_count} members from guild {ctx.guild}({guild_id})")
 
-        if self._guild_settings.get(guild_id):
-            self._guild_settings[guild_id].enabled = False
+        if self.guild_settings.get(guild_id):
+            self.guild_settings[guild_id].enabled = False
 
         await self.sync_to_database()  # We sync the database twice so that the entire cache gets flushed
         await self.sync_to_database()  # This is to prevent cache entries from overwriting the new synced data
@@ -432,7 +432,7 @@ class Levels(Cog):
     @guild_only()
     async def configureranks(self, ctx):
         """Configures dozer ranks:tm:"""
-        settings = self._guild_settings.get(ctx.guild.id)
+        settings = self.guild_settings.get(ctx.guild.id)
         if settings:
             embed = discord.Embed(color=blurple)
             embed.set_footer(text='Triggered by ' + ctx.author.display_name)
@@ -631,7 +631,7 @@ class Levels(Cog):
         member = member or ctx.author
         embed = discord.Embed(color=member.color)
 
-        guild_settings = self._guild_settings.get(ctx.guild.id)
+        guild_settings = self.guild_settings.get(ctx.guild.id)
 
         if guild_settings is None or not guild_settings.enabled:
             embed.description = "Levels are not enabled in this server"
