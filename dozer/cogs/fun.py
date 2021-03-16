@@ -97,9 +97,6 @@ class Fun(Cog):
         if not levels.guild_settings.get(ctx.guild.id).enabled:
             raise BadArgument("Levels must be enabled to fight with xp wagers")
 
-        if wager > 10000:
-            raise BadArgument("Wagers cannot be higher than 1000")
-
         if wager < 0:
             raise BadArgument("Wagers cannot be a negative amount")
 
@@ -142,6 +139,9 @@ class Fun(Cog):
 
             author_levels.total_xp += wager if winner is ctx.author else -wager
             opponent_levels.total_xp += wager if winner is opponent else -wager
+            
+            await levels.sync_member(ctx.guild.id, ctx.author.id)
+            await levels.sync_member(ctx.guild.id, opponent.id)
 
             embed.add_field(name="Results", value=f"{winner.mention} beat {looser.mention}"
                                                   f"\n{ctx.author.mention} now is at "
