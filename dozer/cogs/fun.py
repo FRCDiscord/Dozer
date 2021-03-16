@@ -94,7 +94,8 @@ class Fun(Cog):
             await self.battle(ctx, opponent, delete_result=False)
             return
 
-        if not levels.guild_settings.get(ctx.guild.id).enabled:
+        levels_settings = levels.guild_settings.get(ctx.guild.id)
+        if levels_settings is None or not levels_settings.enabled:
             raise BadArgument("Levels must be enabled to fight with xp wagers")
 
         if wager < 0:
@@ -102,6 +103,9 @@ class Fun(Cog):
 
         if ctx.author == opponent:
             raise BadArgument("You cannot fight yourself")
+
+        if opponent.bot:
+            raise BadArgument("You cannot wager against a bot")
 
         author_levels = await levels.load_member(ctx.guild.id, ctx.author.id)
         opponent_levels = await levels.load_member(ctx.guild.id, opponent.id)
@@ -120,34 +124,50 @@ class Fun(Cog):
         msg = await ctx.send(embed=embed)
         try:
             await msg.add_reaction("✅")
+            await msg.add_reaction("❌")
         except discord.Forbidden:
             raise MissingPermissions(f"**{ctx.bot.user}** does not have the permission to add reacts")
         try:
-            await self.bot.wait_for('reaction_add', timeout=45, check=lambda reaction, reactor:
-            reaction.emoji == "✅" and reactor == opponent and reaction.message == msg)
+            emoji = None
 
-            embed.set_footer(text="")  # Edit embed to show that fight is in progress
-            embed.colour = 0xffff00
-            try:
-                await msg.clear_reactions()
-            except discord.Forbidden:
-                pass
-            await msg.edit(content=None, embed=embed)
+            def reaction_check(reaction, reactor):
+                if (reaction.emoji == "✅" or reaction.emoji == "❌") and reactor == opponent and reaction.message == msg:
+                    nonlocal emoji
+                    emoji = reaction.emoji
+                    return True
+                else:
+                    return False
 
-            looser, winner = await self.battle(ctx, opponent)
-            embed.colour = 0x00ff00
+            await self.bot.wait_for('reaction_add', timeout=45, check=reaction_check)
 
-            author_levels.total_xp += wager if winner is ctx.author else -wager
-            opponent_levels.total_xp += wager if winner is opponent else -wager
-            
-            await levels.sync_member(ctx.guild.id, ctx.author.id)
-            await levels.sync_member(ctx.guild.id, opponent.id)
+            if emoji == "✅":
+                embed.set_footer(text="")  # Edit embed to show that fight is in progress
+                embed.colour = 0xffff00
+                try:
+                    await msg.clear_reactions()
+                except discord.Forbidden:
+                    pass
+                await msg.edit(content=None, embed=embed)
 
-            embed.add_field(name="Results", value=f"{winner.mention} beat {looser.mention}"
-                                                  f"\n{ctx.author.mention} now is at "
-                                                  f"level {levels.level_for_total_xp(author_levels.total_xp)} ({author_levels.total_xp} XP) "
-                                                  f"\n{opponent.mention} now is at "
-                                                  f"level {levels.level_for_total_xp(opponent_levels.total_xp)} ({opponent_levels.total_xp} XP)")
+                looser, winner = await self.battle(ctx, opponent)
+                embed.colour = 0x00ff00
+
+                author_levels.total_xp += wager if winner is ctx.author else -wager
+                opponent_levels.total_xp += wager if winner is opponent else -wager
+
+                embed.add_field(name="Results", value=f"{winner.mention} beat {looser.mention}"
+                                                      f"\n{ctx.author.mention} now is at "
+                                                      f"level {levels.level_for_total_xp(author_levels.total_xp)} ({author_levels.total_xp} XP) "
+                                                      f"\n{opponent.mention} now is at "
+                                                      f"level {levels.level_for_total_xp(opponent_levels.total_xp)} ({opponent_levels.total_xp} XP)")
+            elif emoji == "❌":
+                try:
+                    await msg.clear_reactions()
+                except discord.Forbidden:
+                    pass
+                embed.add_field(name="Results", value=f"{opponent.mention} declined the fight, fight canceled")
+                embed.set_footer(text="")
+                embed.colour = 0xff0000
 
         except asyncio.TimeoutError:
             try:
