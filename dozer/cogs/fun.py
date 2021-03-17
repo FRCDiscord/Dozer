@@ -160,6 +160,10 @@ class Fun(Cog):
                                                       f"level {levels.level_for_total_xp(author_levels.total_xp)} ({author_levels.total_xp} XP) "
                                                       f"\n{opponent.mention} now is at "
                                                       f"level {levels.level_for_total_xp(opponent_levels.total_xp)} ({opponent_levels.total_xp} XP)")
+
+                levels.sync_member(ctx.guild.id, ctx.author.id)
+                levels.sync_member(ctx.guild.id, opponent.id)
+
             elif emoji == "❌":
                 try:
                     await msg.clear_reactions()
