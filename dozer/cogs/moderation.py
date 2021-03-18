@@ -444,7 +444,8 @@ class Moderation(Cog):
     async def unban(self, ctx, user_mention: discord.User, *, reason="No reason provided"):
         """Unbans the user mentioned."""
         await ctx.guild.unban(user_mention, reason=reason)
-        await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason, orig_channel=ctx.channel)
+        await self.mod_log(actor=ctx.author, action="unbanned", target=user_mention, reason=reason, 
+                           orig_channel=ctx.channel, embed_color=discord.Color.green())
 
     unban.example_usage = """
     `{prefix}unban user_id reason - unban the user corresponding to the ID for a given (optional) reason
