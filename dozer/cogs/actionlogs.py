@@ -23,11 +23,11 @@ class Actionlog(Cog):
         self.bulk_delete_buffer = {}
 
     @staticmethod
-    async def check_audit(guild, event_time=None):
+    async def check_audit(guild, event_type, event_time=None):
         """Method for checking the audit log for events"""
         try:
             async for entry in guild.audit_logs(limit=1, after=event_time,
-                                                action=discord.AuditLogAction.message_delete):
+                                                action=event_type):
                 return entry
         except discord.Forbidden:
             return None
@@ -81,6 +81,34 @@ class Actionlog(Cog):
                 except discord.Forbidden:
                     DOZER_LOGGER.warning(
                         f"Guild {member.guild}({member.guild.id}) has invalid permissions for join/leave logs")
+
+    @Cog.listener("on_member_update")
+    async def on_member_update(self, before, after):
+        """Called whenever a member gets updated"""
+        if before.nick != after.nick:
+            await self.on_nickname_change(before, after)
+
+    async def on_nickname_change(self, before, after):
+        """The log handler for when a user changes their nicknames"""
+        audit = await self.check_audit(after.guild, discord.AuditLogAction.member_update)
+
+        embed = discord.Embed(title="Nickname Changed",
+                              color=0x00FFFF)
+        embed.set_author(name=after, icon_url=after.avatar_url)
+        embed.add_field(name="Before", value=before.nick, inline=False)
+        embed.add_field(name="After", value=after.nick, inline=False)
+
+        if audit:
+            if audit.target == after:
+                audit_member = await after.guild.fetch_member(audit.user.id)
+                embed.description = f"Nickname Changed By: {audit_member.mention}"
+
+        embed.set_footer(text=f"UserID: {after.id}")
+        message_log_channel = await self.edit_delete_config.query_one(guild_id=after.guild.id)
+        if message_log_channel is not None:
+            channel = after.guild.get_channel(message_log_channel.messagelog_channel)
+            if channel is not None:
+                await channel.send(embed=embed)
 
     @Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
@@ -209,7 +237,7 @@ class Actionlog(Cog):
         """When a message is deleted, log it."""
         if message.author == self.bot.user:
             return
-        audit = await self.check_audit(message.guild, message.created_at)
+        audit = await self.check_audit(message.guild, discord.AuditLogAction.message_delete, message.created_at)
         embed = discord.Embed(title="Message Deleted",
                               description=f"Message Deleted In: {message.channel.mention}\nSent by: {message.author.mention}",
                               color=0xFF0000, timestamp=message.created_at)
@@ -226,7 +254,7 @@ class Actionlog(Cog):
             embed.add_field(name="Message Content:", value="N/A", inline=False)
         embed.set_footer(text=f"Message ID: {message.channel.id} - {message.id}\nUserID: {message.author.id}")
         if message.attachments:
-            embed.add_field(name="Attachments", value=", ".join([i.url for i in message.attachments]))
+            embed.add_field(name="Attachments", value=", ".join([i.proxy_url for i in message.attachments]))
         message_log_channel = await self.edit_delete_config.query_one(guild_id=message.guild.id)
         if message_log_channel is not None:
             channel = message.guild.get_channel(message_log_channel.messagelog_channel)
