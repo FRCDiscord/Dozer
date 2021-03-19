@@ -6,8 +6,8 @@ import traceback
 from collections import OrderedDict
 from functools import wraps
 
-import tbapi
 import discord
+import tbapi
 from discord.ext.commands import has_permissions
 from fuzzywuzzy import fuzz
 
@@ -437,7 +437,7 @@ class NameGame(Cog):
             return
         game = self.games[ctx.channel.id]
 
-        with await game.state_lock:
+        async with game.state_lock:
             added = False
             players = ctx.message.mentions or [ctx.author]
             for player in ctx.message.mentions:
@@ -470,7 +470,7 @@ class NameGame(Cog):
         """Attempt to pick a team in a game."""
         game = self.games[ctx.channel.id]
 
-        with await game.state_lock:
+        async with game.state_lock:
             if ctx.author != game.current_player:
                 if ctx.author in game.players:
                     await ctx.send(
@@ -555,7 +555,7 @@ class NameGame(Cog):
     async def drop(self, ctx):
         """Drops a player from the current game by eliminating them. Once dropped, they can no longer rejoin."""
         game = self.games[ctx.channel.id]
-        with await game.state_lock:
+        async with game.state_lock:
             if ctx.author not in game.players:
                 await ctx.send("You can't leave a game you're not in!")
                 return
@@ -576,7 +576,7 @@ class NameGame(Cog):
     async def skip(self, ctx):
         """Skips the current player if the player wishes to forfeit their turn."""
         game = self.games[ctx.channel.id]
-        with await game.state_lock:
+        async with game.state_lock:
             if ctx.author != game.current_player:
                 await ctx.send("It's not your turn! Only the current player can skip their turn!")
             else:
@@ -693,7 +693,7 @@ class NameGame(Cog):
         if reaction.message.channel.id not in self.games:
             return
         game = self.games[reaction.message.channel.id]
-        with await game.state_lock:
+        async with game.state_lock:
             if game.vote_msg is None or game.vote_time <= 0:
                 return
             await self._on_reaction(game, reaction, user, 1)
@@ -731,7 +731,7 @@ class NameGame(Cog):
             return
         game = self.games[reaction.message.channel.id]
 
-        with await game.state_lock:
+        async with game.state_lock:
             if game.vote_msg is None or game.vote_time <= 0:
                 return
             await self._on_reaction(game, reaction, user, -1)
@@ -750,7 +750,7 @@ class NameGame(Cog):
     async def game_turn_countdown(self, ctx, game):
         """Counts down the time remaining left in the turn"""
         await asyncio.sleep(1)
-        with await game.state_lock:
+        async with game.state_lock:
             if not game.running:
                 return
             if game.time > 0:
@@ -772,7 +772,7 @@ class NameGame(Cog):
     async def game_vote_countdown(self, ctx, game):
         """Counts down the time remaining left to vote"""
         await asyncio.sleep(1)
-        with await game.state_lock:
+        async with game.state_lock:
             if not (game.running and not game.vote_correct and game.vote_embed and game.vote_time > 0):
                 return
             game.vote_time -= 1
