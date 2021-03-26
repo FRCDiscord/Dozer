@@ -742,6 +742,7 @@ class Moderation(Cog):
             subscriber_id=ctx.guild.id,
             subscription_id=guild_id
         )
+        await subscription.update_or_add()
 
     @crossbans.command()
     @has_permissions(administrator=True)
