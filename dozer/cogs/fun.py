@@ -76,10 +76,11 @@ class Fun(Cog):
 
         return players[turn], players[(turn + 1) % 2]
 
-    @cog_ext.cog_slash(name="fight", description="Fight another member, with an optional wager")
-    async def slash_fight(self, ctx: SlashContext, opponent: discord.Member, wager: int = 0):
-        """Fight slash handler"""
-        await self.fight(ctx, opponent, wager)
+    # Removed until discord fixes the slash command bugs
+    # @cog_ext.cog_slash(name="fight", description="Fight another member, with an optional wager")
+    # async def slash_fight(self, ctx: SlashContext, opponent: discord.Member, wager: int = 0):
+    #     """Fight slash handler"""
+    #     await self.fight(ctx, opponent, wager)
 
     @guild_only()
     @discord.ext.commands.cooldown(1, 5, BucketType.channel)
