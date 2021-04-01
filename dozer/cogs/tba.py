@@ -260,7 +260,7 @@ class TBA(Cog):
             units = 'u'
         url = "https://wttr.in/{}".format(urlquote("{}+{}+{}_0_{}.png".format(td.city, td.state_prov, td.country, units)))
 
-        if type(ctx) == SlashContext:
+        if isinstance(ctx, SlashContext):
             async with self.http_session.get(url) as resp:
                 image_data = io.BytesIO(await resp.read())
         else:

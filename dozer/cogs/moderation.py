@@ -1,16 +1,14 @@
 """Provides moderation commands for Dozer."""
 import asyncio
-import logging
-import typing
-import math
-import re
 import datetime
+import logging
+import re
 import time
-from typing import Union
+import typing
 from logging import getLogger
+from typing import Union
 
 import discord
-from discord import Forbidden
 from discord.ext.commands import BadArgument, has_permissions, RoleConverter
 
 from ._utils import *
@@ -444,7 +442,7 @@ class Moderation(Cog):
     async def unban(self, ctx, user_mention: discord.User, *, reason="No reason provided"):
         """Unbans the user mentioned."""
         await ctx.guild.unban(user_mention, reason=reason)
-        await self.mod_log(actor=ctx.author, action="unbanned", target=user_mention, reason=reason, 
+        await self.mod_log(actor=ctx.author, action="unbanned", target=user_mention, reason=reason,
                            orig_channel=ctx.channel, embed_color=discord.Color.green())
 
     unban.example_usage = """
