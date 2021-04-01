@@ -460,7 +460,7 @@ class Moderation(Cog):
         await ctx.send(embed=embed)
 
     punishments.example_usage = """
-    `{prefix}ban @user reason - ban @user for a given (optional) reason
+    `{prefix}punishments:` Lists currently active punishments in current guild
     """
 
     @command()
