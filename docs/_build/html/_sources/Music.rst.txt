@@ -7,6 +7,11 @@ Connect to a voice channel.
 ::
    `{prefix}connect <channel>` - connects the music module to a given channel
 `{prefix}connect` - connects the music module to the channel you're in
+removefromqueue
++++++++++++++++
+Remove a song from the queue.
+::
+   `{prefix}removefromqueue 5` - removes the 5th song from the queue
 play
 ++++
 Play or queue a song with the given query.
