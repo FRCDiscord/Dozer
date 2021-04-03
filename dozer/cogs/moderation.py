@@ -11,7 +11,7 @@ from logging import getLogger
 
 import discord
 from discord import Forbidden
-from discord.ext.commands import BadArgument, has_permissions, RoleConverter
+from discord.ext.commands import BadArgument, has_permissions, RoleConverter, guild_only
 
 from ._utils import *
 from .general import blurple
@@ -427,6 +427,7 @@ class Moderation(Cog):
     """
 
     @command()
+    @guild_only()
     @has_permissions(manage_roles=True)
     async def punishments(self, ctx):
         """List currently active mutes and deafens in a guild"""
@@ -436,7 +437,7 @@ class Moderation(Cog):
         deafens = [punishment for punishment in punishments if punishment.type_of_punishment == 2 and punishment.target_id not in self_inflicted]
         self_deafens = [punishment for punishment in punishments if punishment.type_of_punishment == 2 and punishment.target_id in self_inflicted]
         mutes = [punishment for punishment in punishments if punishment.type_of_punishment == 1]
-        embed = discord.Embed(title="Active punishments", color=blurple)
+        embed = discord.Embed(title=f"Active punishments in {ctx.guild}", color=blurple)
         embed.set_footer(text='Triggered by ' + ctx.author.display_name)
 
         for field_number, punishments in enumerate(chunk(deafens, 3)):
