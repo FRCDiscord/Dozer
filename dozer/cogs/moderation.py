@@ -461,9 +461,9 @@ class Moderation(Cog):
         """Bans the user mentioned."""
         await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason, orig_channel=ctx.channel, dm=False)
         cross_guilds = await self.run_cross_ban(ctx, user_mention, reason)
-        extra_fields = []
+        extra_fields = [{"name": "Origin Guild", "value": f"**{ctx.guild}** ({ctx.guild.id})", "inline": False}]
         for field_number, guilds in enumerate(chunk(cross_guilds, 10)):
-            extra_fields.append({"name": "Cross Bans", "value": '\n'.join(f"{guild} | {guild.id}" for guild in guilds) or 'None', "inline": False})
+            extra_fields.append({"name": "Cross Banned From", "value": '\n'.join(f"**{guild}** ({guild.id})" for guild in guilds), "inline": False})
         await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason, global_modlog=False, extra_fields=extra_fields)
         # await ctx.guild.ban(user_mention, reason=reason)
 
@@ -730,7 +730,7 @@ class Moderation(Cog):
     `{prefix}linkscrubconfig @/everyone` - set the default role as the link role (ping-safe)
     """
 
-    @group()
+    @group(invoke_without_command=True)
     @has_permissions(manage_messages=True)
     async def crossbans(self, ctx):
         """Cross ban"""
@@ -749,20 +749,40 @@ class Moderation(Cog):
 
     @crossbans.command()
     @has_permissions(administrator=True)
-    @bot_has_permissions(ban=True)
+    @bot_has_permissions(ban_members=True)
     async def subscribe(self, ctx, guild_id: int):
         """Subscribe to a guild to cross ban from"""
-        subscription = CrossBanSubscriptions(
-            subscriber_id=ctx.guild.id,
-            subscription_id=guild_id
-        )
-        await subscription.update_or_add()
+        guild = self.bot.get_guild(guild_id)
+        if guild:
+            subscription = CrossBanSubscriptions(
+                subscriber_id=ctx.guild.id,
+                subscription_id=guild.id
+            )
+            await subscription.update_or_add()
+            embed = discord.Embed(color=blurple)
+            embed.add_field(name='Success!', value=f"**{ctx.guild}** is now subscribed to receive crossbans from {guild}")
+            embed.set_footer(text='Triggered by ' + ctx.author.display_name)
+            await ctx.send(embed=embed)
+        else:
+            raise BadArgument("Dozer could not find that guild! Make sure that dozer is in that guild!")
 
     @crossbans.command()
     @has_permissions(administrator=True)
     async def unsubscribe(self, ctx, guild_id: int):
         """Remove cross ban subscription"""
-        pass
+        result = await CrossBanSubscriptions.delete(
+            subscriber_id=ctx.guild.id,
+            subscription_id=guild_id
+        )
+
+        if int(result.split(" ", 1)[1]) > 0:
+            guild = self.bot.get_guild(guild_id)
+            embed = discord.Embed(color=blurple)
+            embed.add_field(name='Success!', value=f"**{ctx.guild}** is no longer subscribed to receive crossbans from {guild}")
+            embed.set_footer(text='Triggered by ' + ctx.author.display_name)
+            await ctx.send(embed=embed)
+        else:
+            raise BadArgument("Dozer could not find a subscription to that guild!")
 
 
 class Mute(db.DatabaseTable):
@@ -898,9 +918,9 @@ class CrossBanSubscriptions(db.DatabaseTable):
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__}(
-            subscriber_id bigint NOT NULL,
-            subscription_id bigint NOT NULL,
-            PRIMARY KEY (subscriber_id, subscription_id)
+                subscriber_id bigint NOT NULL,
+                subscription_id bigint NOT NULL,
+                UNIQUE (subscriber_id, subscription_id)
             )""")
 
     def __init__(self, subscriber_id, subscription_id):
