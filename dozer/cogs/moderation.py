@@ -203,8 +203,7 @@ class Moderation(Cog):
             if sub_guild:
                 modlog_channel = await GuildModLog.get_by(guild_id=sub_guild.id)
                 try:
-                    # TODO: don't forget to re enable this you dumbass
-                    # await sub_guild.ban(user, reason=f"User Cross Banned from \"{ctx.guild}\" for: {reason}")
+                    await sub_guild.ban(user, reason=f"User Cross Banned from \"{ctx.guild}\" for: {reason}")
                     if modlog_channel:
                         await self.mod_log(actor=ctx.message.author, action="crossbanned", target=user, reason=reason, dm=False,
                                            guild_override=sub_guild.id,
@@ -455,8 +454,8 @@ class Moderation(Cog):
     """
 
     @command()
-    # @has_permissions(ban_members=True)
-    # @bot_has_permissions(ban_members=True)
+    @has_permissions(ban_members=True)
+    @bot_has_permissions(ban_members=True)
     async def ban(self, ctx, user_mention: discord.User, *, reason="No reason provided"):
         """Bans the user mentioned."""
         await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason, orig_channel=ctx.channel, dm=False)
@@ -465,7 +464,7 @@ class Moderation(Cog):
         for field_number, guilds in enumerate(chunk(cross_guilds, 10)):
             extra_fields.append({"name": "Cross Banned From", "value": '\n'.join(f"**{guild}** ({guild.id})" for guild in guilds), "inline": False})
         await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason, global_modlog=False, extra_fields=extra_fields)
-        # await ctx.guild.ban(user_mention, reason=reason)
+        await ctx.guild.ban(user_mention, reason=reason)
 
     ban.example_usage = """
     `{prefix}ban @user reason - ban @user for a given (optional) reason
@@ -759,8 +758,8 @@ class Moderation(Cog):
                 subscription_id=guild.id
             )
             await subscription.update_or_add()
-            embed = discord.Embed(color=blurple)
-            embed.add_field(name='Success!', value=f"**{ctx.guild}** is now subscribed to receive crossbans from {guild}")
+            embed = discord.Embed(title='Success!', description=f"**{ctx.guild}** is now subscribed to receive crossbans from **{guild}**",
+                                  color=blurple)
             embed.set_footer(text='Triggered by ' + ctx.author.display_name)
             await ctx.send(embed=embed)
         else:
@@ -777,8 +776,8 @@ class Moderation(Cog):
 
         if int(result.split(" ", 1)[1]) > 0:
             guild = self.bot.get_guild(guild_id)
-            embed = discord.Embed(color=blurple)
-            embed.add_field(name='Success!', value=f"**{ctx.guild}** is no longer subscribed to receive crossbans from {guild}")
+            embed = discord.Embed(title='Success!', description=f"**{ctx.guild}** is no longer subscribed to receive crossbans from **{guild}**",
+                                  color=blurple)
             embed.set_footer(text='Triggered by ' + ctx.author.display_name)
             await ctx.send(embed=embed)
         else:

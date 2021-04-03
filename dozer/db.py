@@ -108,7 +108,6 @@ class DatabaseTable:
                 VALUES({','.join(f'${i + 1}' for i in range(len(values)))})
                 ON CONFLICT ({self.__uniques__}) DO NOTHING;
                 """
-            print(statement)
             await conn.execute(statement, *values)
 
     def __repr__(self):
