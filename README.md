@@ -40,8 +40,6 @@ Instructions for installing are located [here](https://github.com/pyenv/pyenv-in
 2. `pyenv global 3.8.2` sets 3.8.2 as the primary version for the current user
 3. run `python -V` to ensure that version 3.8 or newer is installed. 
 
-If you are on macOS, there may be more steps to complete involving SSL certificates to connect to Discord correctly. Please see [this thread](https://github.com/Rapptz/discord.py/issues/423) for more info.
-
 Through the rest of this README, we will assume that you have found the correct `python` executable for your setup and are using it accordingly.
 
 ### Installing PostgreSQL
@@ -52,15 +50,21 @@ machine for development or production. You can install PostgreSQL for your platf
 
 ### Getting your Discord Bot Token
 
-1. Go to the [Discord Developer Portal](https://discordapp.com/developers/applications/me) and create a new application.
-
+1. Go to the [Discord Developer Portal](https://discordapp.com/developers/applications/me) and create a new application by clicking the button. Enter a name for the application when prompted.
     ![creating a new discord app](static/newapp.png)
 
 2. Create a bot user inside of your application. 
+   In the settings menu, go to the "Bot" menu.
+   ![creating a bot user 1](static/createbot1.png)
+   Within the bot menu, select the "create bot user" option.
+   ![creating a bot user 2](static/createbot2.png)
 
-   ![creating a bot user](static/createbot.png)
-3. Copy the bot user token - We'll need that later!
+3. Copy the bot user token (seen in the image below) - We'll need that later!
    Do not share your token with anyone. If someone obtains your bot user token, they gain full control of your bot. Be careful!
+   ![token](static/tokens.png)
+
+4. Within your bot user settings, make sure both "intents" settings are enabled.
+   ![enabling intents](static/intents.png)
 
 ### Getting a Google Maps API Key
 
@@ -95,15 +99,14 @@ machine for development or production. You can install PostgreSQL for your platf
 
 ### Adding the bot to your server
 
-Note: This process will eventually be replaced by an `invite` command.
+1. Within the scopes menu under OAuth2, select the "bot" scope
+   ![selecting scopes](static/invite1_scopes.png)
 
-1. To add the bot to your server, paste the following link into your browser.  Your client ID can be found on the applications page in the [Discord Developer Portal](https://discordapp.com/developers/applications/me)
+2. A new "permissions" menu should appear below. Select all the permissions that you want your instance of Dozer to have. If you want all permissions and you trust your instance wholeheartedly, select "Administrator"
+   ![permissions](static/invite2_permissions.png)
 
-   `https://discordapp.com/oauth2/authorize?client_id=YOUR_CLIENT_ID&scope=bot`
-
-2. Select the server that you would like to add the bot to.
-
-3. Try it out! `[prefix]help` to see what Dozer can do.
+3. The bottom of the scopes menu should have a URL. Copy and paste that URL into a new tab in your browser. It'll open a page where you can invite a bot to your server.
+   ![oauthInvite](static/invite3_oauthurl.png)
 
 ### Setting up the database systems
 If you want just a database file with no replication, Dozer will work using SQLite without needing any extra work on your end.
