@@ -62,6 +62,10 @@ machine for development or production. You can install PostgreSQL for your platf
 3. Copy the bot user token - We'll need that later!
    Do not share your token with anyone. If someone obtains your bot user token, they gain full control of your bot. Be careful!
 
+4. Within your bot user settings, make sure both "intents" settings are enabled.
+
+   ![enabling intents](static/intents.png)
+
 ### Getting a Google Maps API Key
 
 1. Go to the [Google Map APIs Docs](https://developers.google.com/maps/documentation/javascript/get-api-key) and request an API key
