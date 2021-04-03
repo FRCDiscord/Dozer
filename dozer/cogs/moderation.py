@@ -14,6 +14,7 @@ from discord import Forbidden
 from discord.ext.commands import BadArgument, has_permissions, RoleConverter
 
 from ._utils import *
+from .general import blurple
 from .. import db
 
 MAX_PURGE = 1000
@@ -105,7 +106,8 @@ class Moderation(Cog):
             await orig_channel.send(embed=modlog_embed)
         if len(modlog_channel) != 0:
             if global_modlog:
-                channel = actor.guild.get_channel(modlog_channel[0].modlog_channel)
+                channel = self.bot.get_guild(actor.guild.id if guild_override is None else guild_override).\
+                    get_channel(modlog_channel[0].modlog_channel)
                 if channel is not None and channel != orig_channel:  # prevent duplicate embeds
                     await channel.send(embed=modlog_embed)
         else:
@@ -197,15 +199,16 @@ class Moderation(Cog):
         subscriptions = await CrossBanSubscriptions.get_by(subscription_id=ctx.guild.id)
         bans = []
         for subscription in subscriptions:
-            sub_guild = self.bot.get_guild(subscription)
+            sub_guild = self.bot.get_guild(subscription.subscriber_id)
             if sub_guild:
                 modlog_channel = await GuildModLog.get_by(guild_id=sub_guild.id)
                 try:
-                    await sub_guild.ban(user, reason=f"User Cross Banned from \"{ctx.guild}\" for: {reason}")
+                    # TODO: don't forget to re enable this you dumbass
+                    # await sub_guild.ban(user, reason=f"User Cross Banned from \"{ctx.guild}\" for: {reason}")
                     if modlog_channel:
                         await self.mod_log(actor=ctx.message.author, action="crossbanned", target=user, reason=reason, dm=False,
                                            guild_override=sub_guild.id,
-                                           extra_fields=[{"name": "Origin Guild", "value": f"**{ctx.guild}**({ctx.guild.id})", "inline": False}])
+                                           extra_fields=[{"name": "Origin Guild", "value": f"**{ctx.guild}** ({ctx.guild.id})", "inline": False}])
                 except discord.Forbidden:
                     continue
 
@@ -452,17 +455,17 @@ class Moderation(Cog):
     """
 
     @command()
-    @has_permissions(ban_members=True)
-    @bot_has_permissions(ban_members=True)
+    # @has_permissions(ban_members=True)
+    # @bot_has_permissions(ban_members=True)
     async def ban(self, ctx, user_mention: discord.User, *, reason="No reason provided"):
         """Bans the user mentioned."""
         await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason, orig_channel=ctx.channel, dm=False)
         cross_guilds = await self.run_cross_ban(ctx, user_mention, reason)
         extra_fields = []
         for field_number, guilds in enumerate(chunk(cross_guilds, 10)):
-            extra_fields.append({"name": "Cross Bans", "value": '\n'.join(guild for guild in guilds) or 'None', "inline": False})
+            extra_fields.append({"name": "Cross Bans", "value": '\n'.join(f"{guild} | {guild.id}" for guild in guilds) or 'None', "inline": False})
         await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason, global_modlog=False, extra_fields=extra_fields)
-        await ctx.guild.ban(user_mention, reason=reason)
+        # await ctx.guild.ban(user_mention, reason=reason)
 
     ban.example_usage = """
     `{prefix}ban @user reason - ban @user for a given (optional) reason
@@ -730,8 +733,19 @@ class Moderation(Cog):
     @group()
     @has_permissions(manage_messages=True)
     async def crossbans(self, ctx):
-        """Cross ban """
-        pass
+        """Cross ban"""
+        subscriptions = await CrossBanSubscriptions.get_by(subscriber_id=ctx.guild.id)
+        subscribers = await CrossBanSubscriptions.get_by(subscription_id=ctx.guild.id)
+        embed = discord.Embed(title="Cross ban subscriptions", color=blurple)
+        for field_number, target_ids in enumerate(chunk(subscriptions, 10)):
+            embed.add_field(name='Subscriptions', value='\n'.join(f"{self.bot.get_guild(sub_id.subscription_id)} | {sub_id.subscription_id}"
+                                                                  for sub_id in target_ids) or 'None', inline=False)
+        for field_number, target_ids in enumerate(chunk(subscribers, 10)):
+            embed.add_field(name='Subscribers', value='\n'.join(f"{self.bot.get_guild(sub_id.subscriber_id)} | {sub_id.subscriber_id}"
+                                                                for sub_id in target_ids) or 'None', inline=False)
+        embed.set_footer(text='Triggered by ' + ctx.author.display_name)
+
+        await ctx.send(embed=embed)
 
     @crossbans.command()
     @has_permissions(administrator=True)
