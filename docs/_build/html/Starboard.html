@@ -44,26 +44,27 @@ a starboard, use the <cite>starboard config</cite> subcommand.</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="add">
-<h2>add<a class="headerlink" href="#add" title="Permalink to this headline">¶</a></h2>
-<p>Add a message to the starboard manually</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}starboard add 1285719825125 #channel` - add message with id `1285719825125` in `#channel` to the starboard
+<div class="section" id="disable">
+<h2>disable<a class="headerlink" href="#disable" title="Permalink to this headline">¶</a></h2>
+<p>Turn off the starboard if it is enabled</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}starboard disable` - disables the starboard for the current server
 </pre></div>
 </div>
-<p>manually.
-config
-++++++
-Modify the settings for this server’s starboard</p>
+</div>
+<div class="section" id="config">
+<h2>config<a class="headerlink" href="#config" title="Permalink to this headline">¶</a></h2>
+<p>Modify the settings for this server’s starboard</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}starboard config #hall-of-fame 🌟 5` - Set the bot to repost messages that have 5 star reactions to `#hall-of-fame
 </pre></div>
 </div>
 <p><cite>{prefix}starboard config #hall-of-fame 🌟 5 ❌</cite> - Same as above, but with a extra X cancel emoji
-disable
-+++++++
-Turn off the starboard if it is enabled</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}starboard disable` - disables the starboard for the current server
+add
++++
+Add a message to the starboard manually</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}starboard add 1285719825125 #channel` - add message with id `1285719825125` in `#channel` to the starboard
 </pre></div>
 </div>
+<p>manually.</p>
 </div>
 </div>
 
@@ -101,7 +102,8 @@ Turn off the starboard if it is enabled</p>
 <li class="toctree-l1"><a class="reference internal" href="Roles.html"> Roles</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#"> Starboard</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#id1">starboard</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#add">add</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#disable">disable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#config">config</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="TBA.html"> TBA</a></li>
@@ -145,7 +147,7 @@ Turn off the starboard if it is enabled</p>
       &copy;2021, Dozer Development Team.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

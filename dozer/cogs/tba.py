@@ -229,9 +229,14 @@ class TBA(Cog):
         state_prov: str
         city: str
 
+    @cog_ext.cog_slash(name="weather", description="Get the weather for a given team.")
+    async def slash_weather(self, ctx: SlashContext, team_program, team_number: int):
+        """weather slash handler"""
+        await self.weather(ctx, team_program=team_program, team_num=team_number)
+
     @command()
     @bot_has_permissions(embed_links=True)
-    async def weather(self, ctx, team_num: int, team_program="frc"):
+    async def weather(self, ctx, team_program, team_num:int):
         """Finds the current weather for a given team."""
 
         if team_program.lower() == "frc":
@@ -255,8 +260,12 @@ class TBA(Cog):
             units = 'u'
         url = "https://wttr.in/{}".format(urlquote("{}+{}+{}_0_{}.png".format(td.city, td.state_prov, td.country, units)))
 
-        async with ctx.typing(), self.http_session.get(url) as resp:
-            image_data = io.BytesIO(await resp.read())
+        if isinstance(ctx, SlashContext):
+            async with self.http_session.get(url) as resp:
+                image_data = io.BytesIO(await resp.read())
+        else:
+            async with ctx.typing(), self.http_session.get(url) as resp:
+                image_data = io.BytesIO(await resp.read())
 
         file_name = f"weather_{team_program.lower()}{team_num}.png"
         e = discord.Embed(title=f"Current weather for {team_program.upper()} Team {team_num}:", url=url)
@@ -265,12 +274,17 @@ class TBA(Cog):
         await ctx.send(embed=e, file=discord.File(image_data, file_name))
 
     weather.example_usage = """
-    `{prefix}weather 5052` - show the current weather for FRC team 5052, The RoboLobos
-    `{prefix}weather 15470 ftc` - show the current weather for FTC team 15470 
+    `{prefix}weather frc 5052` - show the current weather for FRC team 5052, The RoboLobos
+    `{prefix}weather ftc 15470` - show the current weather for FTC team 15470 
     """
 
+    @cog_ext.cog_slash(name="timezone", description="Get the local time of a team")
+    async def slash_timezone(self, ctx: SlashContext, team_program, team_number: int):
+        """timezone slash handler"""
+        await self.timezone(ctx, team_program=team_program, team_num=team_number)
+
     @command()
-    async def timezone(self, ctx, team_num: int, team_program="frc"):
+    async def timezone(self, ctx, team_program, team_num: int):
         """
         Get the timezone of a team based on the team number.
         """
@@ -320,8 +334,8 @@ class TBA(Cog):
         await ctx.send("Timezone: {} UTC{}\n{}".format(tzname, utc_offset, current_time.strftime("Current Time: %I:%M:%S %p (%H:%M:%S)")))
 
     timezone.example_usage = """
-    `{prefix}timezone 5052` - show the local time of FRC team 5052, The RoboLobos
-    `{prefix}timezone 15470 ftc` - show the local time of FTC team 15470
+    `{prefix}timezone frc 5052` - show the local time of FRC team 5052, The RoboLobos
+    `{prefix}timezone ftc 15470` - show the local time of FTC team 15470
     """
 
 

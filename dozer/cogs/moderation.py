@@ -1,16 +1,14 @@
 """Provides moderation commands for Dozer."""
 import asyncio
-import logging
-import typing
-import math
-import re
 import datetime
+import logging
+import re
 import time
-from typing import Union
+import typing
 from logging import getLogger
+from typing import Union
 
 import discord
-from discord import Forbidden
 from discord.ext.commands import BadArgument, has_permissions, RoleConverter
 
 from ._utils import *
