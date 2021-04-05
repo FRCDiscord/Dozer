@@ -45,15 +45,30 @@
 <cite>{prefix}filter whitelist</cite> - See all of the whitelisted roles
 <cite>{prefix}filter whitelist add Administrators</cite> - Make the Administrators role whitelisted for the filter.
 <cite>{prefix}filter whitelist remove Moderators</cite> - Make the Moderators role no longer whitelisted.
-whitelist
-+++++++++
-List all whitelisted roles for this server</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter whitelist` - Lists all the whitelisted roles
+dm
+++
+Set whether filter words should be DMed when used in bot messages</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter dm_config True` - Makes all messages containining filter lists to be sent through DMs
 </pre></div>
 </div>
 </div>
 <div class="section" id="add">
 <h2>add<a class="headerlink" href="#add" title="Permalink to this headline">¶</a></h2>
+<p>Add a pattern to the filter using RegEx. Any word can be added and is
+tested case-insensitive.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter add Swear` - Makes it so that &quot;Swear&quot; will be filtered
+</pre></div>
+</div>
+</div>
+<div class="section" id="whitelist">
+<h2>whitelist<a class="headerlink" href="#whitelist" title="Permalink to this headline">¶</a></h2>
+<p>List all whitelisted roles for this server</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter whitelist` - Lists all the whitelisted roles
+</pre></div>
+</div>
+</div>
+<div class="section" id="id2">
+<h2>add<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
 <p>Add a role to the whitelist</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter whitelist add Moderators` - Makes it so that Moderators will not be caught by the filter.
 </pre></div>
@@ -66,33 +81,18 @@ List all whitelisted roles for this server</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="id2">
-<h2>remove<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
-<p>Remove a pattern from the filter list.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter remove 7` - Disables filter with ID 7
-</pre></div>
-</div>
-</div>
-<div class="section" id="dm">
-<h2>dm<a class="headerlink" href="#dm" title="Permalink to this headline">¶</a></h2>
-<p>Set whether filter words should be DMed when used in bot messages</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter dm_config True` - Makes all messages containining filter lists to be sent through DMs
-</pre></div>
-</div>
-</div>
-<div class="section" id="id3">
-<h2>add<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
-<p>Add a pattern to the filter using RegEx. Any word can be added and is
-tested case-insensitive.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter add Swear` - Makes it so that &quot;Swear&quot; will be filtered
-</pre></div>
-</div>
-</div>
 <div class="section" id="edit">
 <h2>edit<a class="headerlink" href="#edit" title="Permalink to this headline">¶</a></h2>
 <p>Edit an already existing filter using a new pattern. A filter’s friendly
 name cannot be edited.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter edit 4 Swear` - Change filter 4 to filter out &quot;Swear&quot; instead of its previous pattern
+</pre></div>
+</div>
+</div>
+<div class="section" id="id3">
+<h2>remove<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
+<p>Remove a pattern from the filter list.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}filter remove 7` - Disables filter with ID 7
 </pre></div>
 </div>
 </div>
@@ -122,11 +122,11 @@ name cannot be edited.</p>
 <li class="toctree-l1 current"><a class="current reference internal" href="#"> Filter</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#id1">filter</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#add">add</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#whitelist">whitelist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">add</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#remove">remove</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id2">remove</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#dm">dm</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#id3">add</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#edit">edit</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id3">remove</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="Fun.html"> Fun</a></li>
@@ -181,7 +181,7 @@ name cannot be edited.</p>
       &copy;2021, Dozer Development Team.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

@@ -11,6 +11,17 @@ List and manage filtered words
 `{prefix}filter whitelist` - See all of the whitelisted roles
 `{prefix}filter whitelist add Administrators` - Make the Administrators role whitelisted for the filter.
 `{prefix}filter whitelist remove Moderators` - Make the Moderators role no longer whitelisted.
+dm
+++
+Set whether filter words should be DMed when used in bot messages
+::
+   `{prefix}filter dm_config True` - Makes all messages containining filter lists to be sent through DMs
+add
++++
+Add a pattern to the filter using RegEx. Any word can be added and is
+tested case-insensitive.
+::
+   `{prefix}filter add Swear` - Makes it so that "Swear" will be filtered
 whitelist
 +++++++++
 List all whitelisted roles for this server
@@ -26,25 +37,14 @@ remove
 Remove a role from the whitelist
 ::
    `{prefix}filter whitelist remove Admins` - Makes it so that Admins are caught by the filter again.
-remove
-++++++
-Remove a pattern from the filter list.
-::
-   `{prefix}filter remove 7` - Disables filter with ID 7
-dm
-++
-Set whether filter words should be DMed when used in bot messages
-::
-   `{prefix}filter dm_config True` - Makes all messages containining filter lists to be sent through DMs
-add
-+++
-Add a pattern to the filter using RegEx. Any word can be added and is
-tested case-insensitive.
-::
-   `{prefix}filter add Swear` - Makes it so that "Swear" will be filtered
 edit
 ++++
 Edit an already existing filter using a new pattern. A filter's friendly
 name cannot be edited.
 ::
    `{prefix}filter edit 4 Swear` - Change filter 4 to filter out "Swear" instead of its previous pattern
+remove
+++++++
+Remove a pattern from the filter list.
+::
+   `{prefix}filter remove 7` - Disables filter with ID 7

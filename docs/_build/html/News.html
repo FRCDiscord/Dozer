@@ -41,6 +41,27 @@
 </pre></div>
 </div>
 </div>
+<div class="section" id="next-run">
+<h2>next_run<a class="headerlink" href="#next-run" title="Permalink to this headline">¶</a></h2>
+<p>Print out the next time the news check loop will run</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}news next_run` - Check the next time the loop runs if you are a developer
+</pre></div>
+</div>
+</div>
+<div class="section" id="remove">
+<h2>remove<a class="headerlink" href="#remove" title="Permalink to this headline">¶</a></h2>
+<p>Remove a subscription of a given source from a specific channel</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}news remove #news cd` - Remove the subscription of Chief Delphi to #news
+</pre></div>
+</div>
+<p><cite>{prefix}news remove #reddit reddit frc</cite> - Remove the subscription of /r/FRC to #reddit
+get_exception
++++++++++++++
+If the news check loop has failed, print out the exception and traceback</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}news get_exception` - Get the exception that the loop failed with
+</pre></div>
+</div>
+</div>
 <div class="section" id="add">
 <h2>add<a class="headerlink" href="#add" title="Permalink to this headline">¶</a></h2>
 <p>Add a new subscription of a given source to a channel.</p>
@@ -56,38 +77,17 @@ List all available sources to subscribe to.</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="restart-loop">
-<h2>restart_loop<a class="headerlink" href="#restart-loop" title="Permalink to this headline">¶</a></h2>
-<p>Restart the news check loop</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}news restart_loop` - Restart the news loop if you are a developer
-</pre></div>
-</div>
-</div>
-<div class="section" id="next-run">
-<h2>next_run<a class="headerlink" href="#next-run" title="Permalink to this headline">¶</a></h2>
-<p>Print out the next time the news check loop will run</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}news next_run` - Check the next time the loop runs if you are a developer
-</pre></div>
-</div>
-</div>
-<div class="section" id="remove">
-<h2>remove<a class="headerlink" href="#remove" title="Permalink to this headline">¶</a></h2>
-<p>Remove a subscription of a given source from a specific channel</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}news remove #news cd` - Remove the subscription of Chief Delphi to #news
-</pre></div>
-</div>
-<p><cite>{prefix}news remove #reddit reddit frc</cite> - Remove the subscription of /r/FRC to #reddit
-subscriptions
-+++++++++++++
-List all subscriptions that the current server are subscribed to</p>
+<div class="section" id="subscriptions">
+<h2>subscriptions<a class="headerlink" href="#subscriptions" title="Permalink to this headline">¶</a></h2>
+<p>List all subscriptions that the current server are subscribed to</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}news subs` - Check all subscriptions in the current server
 </pre></div>
 </div>
 <p><cite>{prefix}news subs #news</cite> - See all the subscriptions for #news
-get_exception
-+++++++++++++
-If the news check loop has failed, print out the exception and traceback</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}news get_exception` - Get the exception that the loop failed with
+restart_loop
+++++++++++++
+Restart the news check loop</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}news restart_loop` - Restart the news loop if you are a developer
 </pre></div>
 </div>
 </div>
@@ -125,10 +125,10 @@ If the news check loop has failed, print out the exception and traceback</p>
 <li class="toctree-l1"><a class="reference internal" href="NameGame.html"> NameGame</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#"> News</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#id1">news</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#add">add</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#restart-loop">restart_loop</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#next-run">next_run</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#remove">remove</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#add">add</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#subscriptions">subscriptions</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="Roles.html"> Roles</a></li>
@@ -174,7 +174,7 @@ If the news check loop has failed, print out the exception and traceback</p>
       &copy;2021, Dozer Development Team.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
