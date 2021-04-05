@@ -41,6 +41,14 @@
 </pre></div>
 </div>
 <p><cite>{prefix}giveme Java, Python</cite> - gives you the roles called Java and Python, if they exist
+create
+++++++
+Create a giveable role. Name must not contain commas. Similar to add,
+but will always create a new role.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}giveme create Python` - creates a role named &quot;Python&quot; and makes it giveable
+</pre></div>
+</div>
+<p><cite>{prefix}giveme Python</cite> - gives you the Python role that was just created
 add
 +++
 Makes an existing role giveable, or creates one if it doesn’t exist.
@@ -50,9 +58,25 @@ existing role if one exists.</p>
 </pre></div>
 </div>
 <p><cite>{prefix}giveme Java</cite> - gives you the Java role that was just found or created
-delete
+remove
 ++++++
+Removes multiple giveable roles from you. Names must be separated by
+commas.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}giveme remove Java` - removes the role called &quot;Java&quot; from you (if it can be given with `{prefix}giveme`)
+</pre></div>
+</div>
+<p><cite>{prefix}giveme remove Java, Python</cite> - removes the roles called “Java” and “Python” from you
+removefromlist
+++++++++++++++
 Deletes and removes a giveable role.</p>
+</div>
+<div class="section" id="purge">
+<h2>purge<a class="headerlink" href="#purge" title="Permalink to this headline">¶</a></h2>
+<p>Force a purge of giveme roles that no longer exist in the guild</p>
+</div>
+<div class="section" id="delete">
+<h2>delete<a class="headerlink" href="#delete" title="Permalink to this headline">¶</a></h2>
+<p>Deletes and removes a giveable role.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}giveme removefromlist Java` - removes the role &quot;Java&quot; from the list of giveable roles but does not remove it from the server or members who have it
 </pre></div>
 </div>
@@ -64,33 +88,9 @@ Deletes and removes a giveable role.</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="create">
-<h2>create<a class="headerlink" href="#create" title="Permalink to this headline">¶</a></h2>
-<p>Create a giveable role. Name must not contain commas. Similar to add,
-but will always create a new role.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}giveme create Python` - creates a role named &quot;Python&quot; and makes it giveable
-</pre></div>
-</div>
-<p><cite>{prefix}giveme Python</cite> - gives you the Python role that was just created
-purge
-+++++
-Force a purge of giveme roles that no longer exist in the guild</p>
-</div>
-<div class="section" id="removefromlist">
-<h2>removefromlist<a class="headerlink" href="#removefromlist" title="Permalink to this headline">¶</a></h2>
-<p>Deletes and removes a giveable role.</p>
-</div>
-<div class="section" id="remove">
-<h2>remove<a class="headerlink" href="#remove" title="Permalink to this headline">¶</a></h2>
-<p>Removes multiple giveable roles from you. Names must be separated by
-commas.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}giveme remove Java` - removes the role called &quot;Java&quot; from you (if it can be given with `{prefix}giveme`)
-</pre></div>
-</div>
-<p><cite>{prefix}giveme remove Java, Python</cite> - removes the roles called “Java” and “Python” from you
-tempgive
-++++++++
-Temporarily gives a member a role for a set time. Not restricted to
+<div class="section" id="tempgive">
+<h2>tempgive<a class="headerlink" href="#tempgive" title="Permalink to this headline">¶</a></h2>
+<p>Temporarily gives a member a role for a set time. Not restricted to
 giveable roles.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}tempgive cooldude#1234 1h Java` - gives cooldude any role, giveable or not, named Java for one hour
 </pre></div>
@@ -118,9 +118,16 @@ giveable roles.</p>
 </div>
 <p><cite>{prefix}rolemenu addrole &lt;message id&gt; &#64;robots 🤖:</cite> adds the reaction role ‘robots’ to the target message
 <cite>{prefix}rolemenu delrole &lt;message id&gt; &#64;robots:</cite> removes the reaction role ‘robots’ from the target message
-addrole
-+++++++
-Adds a reaction role to a message or a role menu</p>
+createmenu
+++++++++++
+Creates a blank reaction role menu</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}rolemenu createmenu #roles Example role menu`: Creates an empty role menu embed
+</pre></div>
+</div>
+</div>
+<div class="section" id="addrole">
+<h2>addrole<a class="headerlink" href="#addrole" title="Permalink to this headline">¶</a></h2>
+<p>Adds a reaction role to a message or a role menu</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  -----To target a role menu use this format-----
 `{prefix}rolemenu addrole &lt;message id&gt; &lt;@robots or &quot;Robots&quot;&gt; 🤖`
 </pre></div>
@@ -138,13 +145,7 @@ Adds a reaction role to a message or a role menu</p>
 </div>
 <p><cite>{prefix}rolemenu delrole &lt;message id&gt; &lt;&#64;robots or “Robots”&gt;</cite>
 —–To target a custom message use this format—–
-<cite>{prefix}rolemenu delrole &lt;channel&gt; &lt;message id&gt; &lt;&#64;robots or “Robots”&gt;</cite>
-createmenu
-++++++++++
-Creates a blank reaction role menu</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}rolemenu createmenu #roles Example role menu`: Creates an empty role menu embed
-</pre></div>
-</div>
+<cite>{prefix}rolemenu delrole &lt;channel&gt; &lt;message id&gt; &lt;&#64;robots or “Robots”&gt;</cite></p>
 </div>
 </div>
 
@@ -181,13 +182,14 @@ Creates a blank reaction role menu</p>
 <li class="toctree-l1"><a class="reference internal" href="News.html"> News</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#"> Roles</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#giveme">giveme</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#purge">purge</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#delete">delete</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#list">list</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#create">create</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#removefromlist">removefromlist</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#remove">remove</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tempgive">tempgive</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#give">give</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#take">take</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#rolemenu">rolemenu</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#addrole">addrole</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#delrole">delrole</a></li>
 </ul>
 </li>
@@ -233,7 +235,7 @@ Creates a blank reaction role menu</p>
       &copy;2021, Dozer Development Team.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

@@ -43,20 +43,6 @@ as a team number.</p>
 </pre></div>
 </div>
 </div>
-<div class="section" id="awards">
-<h2>awards<a class="headerlink" href="#awards" title="Permalink to this headline">¶</a></h2>
-<p>Gets a list of awards the specified team has won during a year.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}tba awards 1114` - list all the awards team 1114 Simbotics has ever gotten.
-</pre></div>
-</div>
-</div>
-<div class="section" id="team">
-<h2>team<a class="headerlink" href="#team" title="Permalink to this headline">¶</a></h2>
-<p>Get information on an FRC team by number.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}tba team 4131` - show information on team 4131, the Iron Patriots
-</pre></div>
-</div>
-</div>
 <div class="section" id="raw">
 <h2>raw<a class="headerlink" href="#raw" title="Permalink to this headline">¶</a></h2>
 <p>Get raw TBA API output for a team. This command is really only useful
@@ -80,20 +66,34 @@ current (or upcoming) year.</p>
 </pre></div>
 </div>
 </div>
+<div class="section" id="awards">
+<h2>awards<a class="headerlink" href="#awards" title="Permalink to this headline">¶</a></h2>
+<p>Gets a list of awards the specified team has won during a year.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}tba awards 1114` - list all the awards team 1114 Simbotics has ever gotten.
+</pre></div>
+</div>
+</div>
+<div class="section" id="team">
+<h2>team<a class="headerlink" href="#team" title="Permalink to this headline">¶</a></h2>
+<p>Get information on an FRC team by number.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}tba team 4131` - show information on team 4131, the Iron Patriots
+</pre></div>
+</div>
+</div>
 <div class="section" id="weather">
 <h2>weather<a class="headerlink" href="#weather" title="Permalink to this headline">¶</a></h2>
 <p>Finds the current weather for a given team.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}weather 5052` - show the current weather for FRC team 5052, The RoboLobos
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}weather frc 5052` - show the current weather for FRC team 5052, The RoboLobos
 </pre></div>
 </div>
-<p><cite>{prefix}weather 15470 ftc</cite> - show the current weather for FTC team 15470
+<p><cite>{prefix}weather ftc 15470</cite> - show the current weather for FTC team 15470
 timezone
 ++++++++
 Get the timezone of a team based on the team number.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}timezone 5052` - show the local time of FRC team 5052, The RoboLobos
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}timezone frc 5052` - show the local time of FRC team 5052, The RoboLobos
 </pre></div>
 </div>
-<p><cite>{prefix}timezone 15470 ftc</cite> - show the local time of FTC team 15470</p>
+<p><cite>{prefix}timezone ftc 15470</cite> - show the local time of FTC team 15470</p>
 </div>
 </div>
 
@@ -132,11 +132,11 @@ Get the timezone of a team based on the team number.</p>
 <li class="toctree-l1"><a class="reference internal" href="Starboard.html"> Starboard</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#"> TBA</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#id1">tba</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#awards">awards</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#team">team</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#raw">raw</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#eventsfor">eventsfor</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#media">media</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#awards">awards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#team">team</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#weather">weather</a></li>
 </ul>
 </li>
@@ -180,7 +180,7 @@ Get the timezone of a team based on the team number.</p>
       &copy;2021, Dozer Development Team.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.1</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
