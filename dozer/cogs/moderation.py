@@ -9,9 +9,11 @@ from logging import getLogger
 from typing import Union
 
 import discord
-from discord.ext.commands import BadArgument, has_permissions, RoleConverter
+from discord import Forbidden
+from discord.ext.commands import BadArgument, has_permissions, RoleConverter, guild_only
 
 from ._utils import *
+from .general import blurple
 from .. import db
 
 MAX_PURGE = 1000
@@ -39,7 +41,6 @@ class Moderation(Cog):
     def __init__(self, bot):
         super().__init__(bot)
         self.links_config = db.ConfigCache(GuildMessageLinks)
-        self.bulk_delete_buffer = {}
 
     """=== Helper functions ==="""
 
@@ -422,6 +423,44 @@ class Moderation(Cog):
     prune.example_usage = """
     `{prefix}prune 10` - Delete the last 10 messages in the current channel.
     `{prefix}prune 786324930378727484` - Deletes all messages up to that message ID
+    """
+
+    @command()
+    @guild_only()
+    @has_permissions(manage_roles=True)
+    async def punishments(self, ctx):
+        """List currently active mutes and deafens in a guild"""
+        punishments = await PunishmentTimerRecords.get_by(guild_id=ctx.guild.id)
+        deafen_records = await Deafen.get_by(guild_id=ctx.guild.id)
+        self_inflicted = [record.member_id for record in deafen_records if record.self_inflicted]
+        deafens = [punishment for punishment in punishments if punishment.type_of_punishment == 2 and punishment.target_id not in self_inflicted]
+        self_deafens = [punishment for punishment in punishments if punishment.type_of_punishment == 2 and punishment.target_id in self_inflicted]
+        mutes = [punishment for punishment in punishments if punishment.type_of_punishment == 1]
+        embed = discord.Embed(title=f"Active punishments in {ctx.guild}", color=blurple)
+        embed.set_footer(text='Triggered by ' + ctx.author.display_name)
+
+        for field_number, punishments in enumerate(chunk(deafens, 3)):
+            embed.add_field(name=f"Deafens - {len(deafens)}", value='\n-\n'.join(
+                f"{ctx.guild.get_member(punishment.target_id).mention} ({ctx.guild.get_member(punishment.target_id)} | {punishment.target_id}) "
+                f"\nRemaining time: {datetime.timedelta(seconds=round(punishment.target_ts - time.time()))} Reason: {punishment.reason}"
+                for punishment in punishments) or 'None', inline=False)
+
+        for field_number, punishments in enumerate(chunk(mutes, 3)):
+            embed.add_field(name=f"Mutes - {len(mutes)}", value='\n-\n'.join(
+                f"{ctx.guild.get_member(punishment.target_id).mention} ({ctx.guild.get_member(punishment.target_id)} | {punishment.target_id}) "
+                f"\nRemaining time: {datetime.timedelta(seconds=round(punishment.target_ts - time.time()))} Reason: {punishment.reason}"
+                for punishment in punishments) or 'None', inline=False)
+
+        for field_number, punishments in enumerate(chunk(self_deafens, 3)):
+            embed.add_field(name=f"Self Deafens - {len(self_deafens)}", value='\n-\n'.join(
+                f"{ctx.guild.get_member(punishment.target_id).mention} ({ctx.guild.get_member(punishment.target_id)} | {punishment.target_id}) "
+                f"\nRemaining time: {datetime.timedelta(seconds=round(punishment.target_ts - time.time()))} Reason: {punishment.reason}"
+                for punishment in punishments) or 'None', inline=False)
+
+        await ctx.send(embed=embed)
+
+    punishments.example_usage = """
+    `{prefix}punishments:` Lists currently active punishments in current guild
     """
 
     @command()
