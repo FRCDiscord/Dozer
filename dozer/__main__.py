@@ -48,7 +48,8 @@ config = {
     'debug': False,
     'is_backup': False,
     'invite_override': "",
-    "sentry_url": ""
+    "sentry_url": "",
+    'denylist_cogs': []
 }
 config_file = 'config.json'
 
@@ -83,8 +84,10 @@ bot = Dozer(config, intents=intents, max_messages=config['cache_size'])
 
 
 for ext in os.listdir('dozer/cogs'):
-    if not ext.startswith(('_', '.')):
-        bot.load_extension('dozer.cogs.' + ext[:-3])  # Remove '.py'
+    cog_name = ext[:-3]  # Remove '.py'
+
+    if not cog_name.startswith(('_', '.')) and cog_name not in config['denylist_cogs'] :
+        bot.load_extension('dozer.cogs.' + cog_name)
 
 asyncio.get_event_loop().run_until_complete(db_migrate())
 
