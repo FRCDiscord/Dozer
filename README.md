@@ -56,6 +56,7 @@ machine for development or production. You can install PostgreSQL for your platf
 2. Create a bot user inside of your application. 
    In the settings menu, go to the "Bot" menu.
    ![creating a bot user 1](static/createbot1.png)
+   
    Within the bot menu, select the "create bot user" option.
    ![creating a bot user 2](static/createbot2.png)
 
