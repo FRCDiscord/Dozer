@@ -78,8 +78,8 @@ Setup configuration options:
 
 2. Open your command line/terminal interface and go to the directory where Dozer's code is located.
    1. If you're not familiar with how to do that:
-      1. On Windows, open CMD or Powershell. On Mac and Linux, open the Terminal. and type `cd "path/to/directory.`
-         Alternatively, on Windows, go to the directory in the File Explorer app. Click the bar that is circled in the image below and type `cmd`. Press enter and the command line should open up within that directory.
+      1. On Windows, open CMD or Powershell. On Mac and Linux, open the Terminal. and type `cd "path/to/directory"`.
+         Alternatively, on Windows, go to the directory in the File Explorer app. Click the bar that is circled in the image below and type `cmd`. Press enter and the command line should open up within that directory. Also, you can use an integrated terminal with an IDE of your choice.
          ![open the cmd within a directory](static/fileExplorerBar.png)
 
 3. Install dependencies with `python -m pip install -Ur requirements.txt` in your command line interface.
@@ -90,7 +90,7 @@ Setup configuration options:
 
 5. Add the Discord bot account's token to `discord_token` in `config.json`
 
-6. If you have a Google Maps API key, a Blue Alliance API key, an Orange Alliance API key, a Twitch API client ID and client secret, and/or a Reddit client ID and client secret, add them to the appropriate places in config.json. For more details on how to get these API keys, [see this file for instructions](tokenInstructions.md). If you don't, your bot will still work, but you won't be able to use the commands that rely on these tokens.
+6. If you have a Google Maps API key, a Blue Alliance API key, an Orange Alliance API key, a Twitch API client ID and client secret, and/or a Reddit client ID and client secret, add them to the appropriate places in `config.json`. For more details on how to get these API keys, [see this file for instructions](tokenInstructions.md). If you don't, your bot will still work, but you won't be able to use the commands that rely on these tokens.
 
 7. If you are using Docker, you most likely won't have to do anything. Otherwise, add your database connection info to `db_url` in `config.json` using the following format:
     
@@ -103,7 +103,15 @@ Setup configuration options:
 
 9. The default command prefix is &. If this is already in use on your server or you would like another prefix, you can change the `prefix` value in `config.json`.
 
-10. Run the bot again. If you're using Docker, type `docker-compose up` in your command line interface. If you are setting it up manually, repeat the command in step 4. You should see `Signed in as username#discrim (id)` after a few seconds.
+10. When using Docker to configure lavalink, change the host IP listed in `config.json` to "172.18.0.2".
+
+11. Run the bot again. If you're using Docker, run `docker-compose up` twice in your command line interface. If you are setting it up manually, repeat the command in step 4. You should see `Signed in as username#discrim (id)` after a few seconds.
+   1. When using Docker:
+      1. Make sure the Docker for Desktop client is running. On Windows, you have to open up the app and either skip the tutorial or follow it when running it for the first time, and then you can run the command. (Note: it's not necessary to do the tutorial.) By default, Docker runs in the background after that first startup, so you should be fine.
+      2. The first time you run `docker-compose up`, you are building it and the bot won't go online. Once the building process seems to be done, press ctrl+C and run the command again.
+      3. As of this writing, `Signed in as` message is pretty far up, as seen highlighted in orange in the image below.
+      4. Sometimes, the bot can't connect to the lavalink IP, as circled in blue in the image below. In that case, simply run the bot command `{prefix}restart` and it should work.
+![dockerstartup](static/dockerstartup.png)
 
 ### Adding the bot to your server
 
