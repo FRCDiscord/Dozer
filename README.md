@@ -56,7 +56,6 @@ machine for development or production. You can install PostgreSQL for your platf
 2. Create a bot user inside of your application. 
    In the settings menu, go to the "Bot" menu.
    ![creating a bot user 1](static/createbot1.png)
-   
    Within the bot menu, select the "create bot user" option.
    ![creating a bot user 2](static/createbot2.png)
 
@@ -67,36 +66,43 @@ machine for development or production. You can install PostgreSQL for your platf
 4. Within your bot user settings, make sure both "intents" settings are enabled.
    ![enabling intents](static/intents.png)
 
-### Getting a Google Maps API Key
-
-1. Go to the [Google Map APIs Docs](https://developers.google.com/maps/documentation/javascript/get-api-key) and request an API key
-2. Create a new project. 
-
-   ![creating a new project](static/gmaps.png)
-3. Copy the API key - We'll need this too!
-
-**Currently, getting an API token requires a credit card. If you do not wish to make such a heavy commitment to your bot right now, entering nothing or keeping the default value for your API token will not cause the bot any troubles unless you attempt to call a command that utilizes it.**
 
 ### Setting up the bot
 
-1. Install dependencies with `python -m pip install -Ur requirements.txt`
-2. Run the bot once with `python -m dozer`. This will crash, but generate a default config file.
+Setup configuration options:
+- Dozer can be set up manually, with Python, or with Docker. 
+- Docker allows you to run programs the exact same way on different platforms using [containers](https://www.docker.com/resources/what-container). **Docker also allows Dozer to set up many of the dependencies** (particularly lavalink, which is used for the music functionality) **automatically.** To use Dozer with the Docker configuration
+
+1. If you are using Docker, download and install it for your platform [here](https://www.docker.com/products/docker-desktop). Additional documentation can be found [here](https://docs.docker.com/desktop/), if needed.
+
+2. Open your command line/terminal interface and go to the directory where Dozer's code is located.
+   1. If you're not familiar with how to do that:
+      1. On Windows, open CMD or Powershell. On Mac and Linux, open the Terminal. and type `cd "path/to/directory.`
+         Alternatively, on Windows, go to the directory in the File Explorer app. Click the bar that is circled in the image below and type `cmd`. Press enter and the command line should open up within that directory.
+         ![open the cmd within a directory](static/fileExplorerBar.png)
+
+3. Install dependencies with `python -m pip install -Ur requirements.txt` in your command line interface.
+   1. If that doesn't work, try replacing `python` with `python3`.
+
+4. Run the bot once with `python -m dozer`. This will crash, but generate a default config file.
    1. Dozer uses [json](http://www.json.org/) for its config file
-3. Add the Discord bot account's token to `discord_token` in `config.json`
-4. Add your Google Maps API key to `gmaps_key` in `config.json`
-  1. If you do not have an API key, don't touch this setting, but your bot will not have access to commands that use the GMAPI.
-5. Add information about your team and your bot to `tba` in `config.json`
-6. Add your database connection info to `db_url` in `config.json` using the following format:
+
+5. Add the Discord bot account's token to `discord_token` in `config.json`
+
+6. If you have a Google Maps API key, a Blue Alliance API key, an Orange Alliance API key, a Twitch API client ID and client secret, and/or a Reddit client ID and client secret, add them to the appropriate places in config.json. For more details on how to get these API keys, [see this file for instructions](tokenInstructions.md). If you don't, your bot will still work, but you won't be able to use the commands that rely on these tokens.
+
+7. If you are using Docker, you most likely won't have to do anything. Otherwise, add your database connection info to `db_url` in `config.json` using the following format:
     
-    ```postgres://user:password@host:port```
+   ```postgres://user:password@host:port```
     
-    Replace `host` with your database IP, or `localhost` if it's on the same PC. `port` is by default 5432. If the user has no
-    password, you can remove the colon and password. The default user for the above installation is `postgres`, however we strongly 
-    suggest making a `dozer` user for security reasons using [this guide](https://www.postgresql.org/docs/current/app-createuser.html).
-7. Add your ID, and anyone else's ID who should be able to use the developer commands, to the list `developers` in `config.json`
+   Replace `host` with your database IP, or `localhost` if it's on the same PC. `port` is by default 5432. If the user has no password, you can remove the colon and password. The default user for the above installation is `postgres`, however we strongly suggest making a `dozer` user for security reasons using [this guide](https://www.postgresql.org/docs/current/app-createuser.html).
+
+8. Add your Discord user ID, and anyone else's ID who should be able to use the developer commands, to the list `developers` in `config.json`
    1. Be careful giving this out. Developers can control everything your bot does and potentially get your [bot user token!](#getting-your-discord-bot-token)
-8. The default command prefix is &. If this is already in use on your server or you would like another prefix, you can change the `prefix` value in `config.json`.
-9. Run the bot again, you should see `Signed in as username#discrim (id)` after a few seconds.
+
+9. The default command prefix is &. If this is already in use on your server or you would like another prefix, you can change the `prefix` value in `config.json`.
+
+10. Run the bot again. If you're using Docker, type `docker-compose up` in your command line interface. If you are setting it up manually, repeat the command in step 4. You should see `Signed in as username#discrim (id)` after a few seconds.
 
 ### Adding the bot to your server
 
