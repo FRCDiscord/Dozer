@@ -12,7 +12,7 @@ Table of Contents
             * [Manually](#manually)
             * [Using pyenv](#using-pyenv)
          * [Getting your Discord Bot Token](#getting-your-discord-bot-token)
-         * [Getting a Google Maps API Key](#getting-a-google-maps-api-key)
+         * [Getting Optional API Keys](tokenInstructions.md)
          * [Setting up the bot](#setting-up-the-bot)
          * [Adding the bot to your server](#adding-the-bot-to-your-server)
 
