@@ -46,7 +46,7 @@ class Filter(Cog):
         for wordfilter in results:
             self.filter_dict[guild_id][wordfilter.filter_id] = re.compile(wordfilter.pattern, re.IGNORECASE)
 
-    async def check_filters(self, message):
+    async def check_filters_messages(self, message):
         """Check all the filters for a certain message (with it's guild)"""
         if message.author.id == self.bot.user.id or not hasattr(message.author, 'roles'):
             return
@@ -62,7 +62,7 @@ class Filter(Cog):
         deleted = False
         for wordid, wordfilter in filters.items():
             if wordfilter.search(message.content) is not None:
-                await message.channel.send("{}, Banned word detected!".format(message.author.mention), delete_after=5.0)
+                await message.channel.send(f"{message.author.mention}, Banned word detected!", delete_after=5.0)
                 time = datetime.datetime.utcnow()
                 infraction = WordFilterInfraction(member_id=message.author.id, filter_id=wordid,
                                                   timestamp=time,
@@ -72,17 +72,56 @@ class Filter(Cog):
                     await message.delete()
                     deleted = True
 
+    async def check_filters_nicknames(self, member_before, member_after):
+        if member_after.id == self.bot.user.id or not hasattr(member_after, 'roles'):
+            return
+        roles = await self.word_filter_role_whitelist.query_all(guild_id=member_after.guild.id)
+        whitelisted_ids = set(role.role_id for role in roles)
+        if any(x.id in whitelisted_ids for x in member_after.roles):
+            return
+        try:
+            filters = self.filter_dict[member_after.guild.id]
+        except KeyError:
+            await self.load_filters(member_after.guild.id)
+            filters = self.filter_dict[member_after.guild.id]
+        reverted = False
+        if member_after.nick is None:
+            return
+        for wordid, wordfilter in filters.items():
+            if wordfilter.search(member_after.nick) is not None:
+                time = datetime.datetime.utcnow()
+                infraction = WordFilterInfraction(member_id=member_after.id, filter_id=wordid,
+                                                  timestamp=time,
+                                                  message=member_after.nick)
+                await infraction.update_or_add()
+                if not reverted:
+                    try:
+                        await member_after.edit(nick=member_before.nick)
+                        await member_after.send(f"{member_after.mention}, your nickname in **{member_after.guild}** "
+                                                f"contained a banned word and has been reset to your previous nickname")
+                    except discord.Forbidden:
+                        await member_after.send(f"{member_after.mention}, your nickname in **{member_after.guild}** "
+                                                f"contains a banned word but because your permissions outrank dozer "
+                                                f"it was not reset")
+                    reverted = True
+
     """Event Handlers"""
 
     @Cog.listener('on_message')
     async def on_message(self, message):
         """Send the message handler out"""
-        await self.check_filters(message)
+        await self.check_filters_messages(message)
 
     @Cog.listener('on_message_edit')
     async def on_message_edit(self, _, after):
         """Send the message handler out, but for edits"""
-        await self.check_filters(after)
+        await self.check_filters_messages(after)
+
+    @Cog.listener("on_member_update")
+    async def on_member_update(self, before, after):
+        """Called whenever a member gets updated"""
+        if before.nick != after.nick:
+            await self.check_filters_nicknames(before, after)
 
     """Commands"""
 
