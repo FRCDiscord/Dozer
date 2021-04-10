@@ -120,8 +120,7 @@ class Moderation(Cog):
         coros = []
         for channel in member.guild.channels:
             overwrite = channel.overwrites_for(member)
-            can_perm_override = channel.permissions_for(member.guild.me).manage_roles
-            if can_perm_override:
+            if channel.permissions_for(member.guild.me).manage_roles and channel.permissions_for(member.guild.me).manage_channel:
                 overwrite.update(**overwrites)
                 coros.append(
                     channel.set_permissions(target=member, overwrite=None if overwrite.is_empty() else overwrite))
