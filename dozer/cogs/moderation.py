@@ -120,11 +120,11 @@ class Moderation(Cog):
         coros = []
         for channel in member.guild.channels:
             overwrite = channel.overwrites_for(member)
-            if channel.permissions_for(member.guild.me).manage_roles and channel.permissions_for(member.guild.me).manage_channel:
+            if channel.permissions_for(member.guild.me).manage_roles and channel.permissions_for(member.guild.me).manage_channels:
                 overwrite.update(**overwrites)
                 coros.append(
                     channel.set_permissions(target=member, overwrite=None if overwrite.is_empty() else overwrite))
-        await asyncio.gather(*coros, return_exceptions=False)
+        await asyncio.gather(*coros)
 
     hm_regex = re.compile(r"((?P<weeks>\d+)w)?((?P<days>\d+)d)?((?P<hours>\d+)h)?((?P<minutes>\d+)m)?((?P<seconds>\d+)s)?")
 
