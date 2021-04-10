@@ -73,6 +73,7 @@ class Filter(Cog):
                     deleted = True
 
     async def check_filters_nicknames(self, member_before, member_after):
+        """Check all filters for a members nickname change"""
         if member_after.id == self.bot.user.id or not hasattr(member_after, 'roles'):
             return
         roles = await self.word_filter_role_whitelist.query_all(guild_id=member_after.guild.id)
