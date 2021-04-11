@@ -124,7 +124,10 @@ class Moderation(Cog):
                 overwrite.update(**overwrites)
                 coros.append(
                     channel.set_permissions(target=member, overwrite=None if overwrite.is_empty() else overwrite))
-        await asyncio.gather(*coros)
+        try:
+            await asyncio.gather(*coros)
+        except discord.Forbidden as e:
+            DOZER_LOGGER.warning(f"Failed to catch missing permissions: Error ({e}")
 
     hm_regex = re.compile(r"((?P<weeks>\d+)w)?((?P<days>\d+)d)?((?P<hours>\d+)h)?((?P<minutes>\d+)m)?((?P<seconds>\d+)s)?")
 
