@@ -5,6 +5,7 @@ import typing
 import discord
 import discord.utils
 from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgument, guild_only
+from discord_slash import cog_ext, SlashContext
 
 from ..bot import DOZER_LOGGER
 from ..db import *
@@ -249,6 +250,11 @@ class Roles(Cog):
     `{prefix}giveme Java, Python` - gives you the roles called Java and Python, if they exist
     """
 
+    @cog_ext.cog_slash(name="giveme", description="Give yourself roles from the list.")
+    async def slash_giveme(self, ctx: SlashContext, *, roles):
+        """giveme slash handler"""
+        await self.giveme(ctx, roles)
+
     @giveme.command()
     @bot_has_permissions(manage_roles=True)
     @has_permissions(manage_roles=True)
@@ -363,6 +369,11 @@ class Roles(Cog):
     `{prefix}giveme remove Java, Python` - removes the roles called "Java" and "Python" from you
     """
 
+    @cog_ext.cog_slash(name="giveme-remove", description="Get a list of roles you can give yourself.")
+    async def slash_givemeremove(self, ctx: SlashContext, roles):
+        """giveme remove slash handler"""
+        await self.remove(ctx, roles)
+
     @giveme.command()
     @bot_has_permissions(manage_roles=True)
     @has_permissions(manage_guild=True)
@@ -404,6 +415,11 @@ class Roles(Cog):
     list_roles.example_usage = """
     `{prefix}giveme list` - lists all giveable roles
     """
+
+    @cog_ext.cog_slash(name="giveme-list", description="Get a list of roles you can give yourself.")
+    async def slash_givemelist(self, ctx: SlashContext):
+        """giveme list slash handler"""
+        await self.list_roles(ctx)
 
     @staticmethod
     def normalize(name):
