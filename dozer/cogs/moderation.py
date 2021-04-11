@@ -127,7 +127,7 @@ class Moderation(Cog):
         try:
             await asyncio.gather(*coros)
         except discord.Forbidden as e:
-            DOZER_LOGGER.warning(f"Failed to catch missing permissions: Error ({e}")
+            DOZER_LOGGER.error(f"Failed to catch missing permissions: Error ({e}")
 
     hm_regex = re.compile(r"((?P<weeks>\d+)w)?((?P<days>\d+)d)?((?P<hours>\d+)h)?((?P<minutes>\d+)m)?((?P<seconds>\d+)s)?")
 
