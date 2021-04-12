@@ -117,7 +117,6 @@ class Moderation(Cog):
 
     async def perm_override(self, member, **overwrites):
         """Applies the given overrides to the given member in their guild."""
-        coros = []
         for channel in member.guild.channels:
             overwrite = channel.overwrites_for(member)
             if channel.permissions_for(member.guild.me).manage_roles:
