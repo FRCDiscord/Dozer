@@ -510,7 +510,7 @@ class Roles(Cog):
     async def slash_give(self, ctx: SlashContext, member:discord.Member, roles):
         """give slash handler"""
         ctx.prefix = "/"
-        await self.give(ctx, member, roles=roles)
+        await self.give(ctx, member, role=roles)
 
     @command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
@@ -533,7 +533,7 @@ class Roles(Cog):
     async def slash_take(self, ctx: SlashContext, member:discord.Member, roles):
         """take slash handler"""
         ctx.prefix = "/"
-        await self.take(ctx, member, roles=roles)
+        await self.take(ctx, member, role=roles)
 
 
     async def update_role_menu(self, ctx, menu):
