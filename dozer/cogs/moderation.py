@@ -120,14 +120,12 @@ class Moderation(Cog):
         coros = []
         for channel in member.guild.channels:
             overwrite = channel.overwrites_for(member)
-            if channel.permissions_for(member.guild.me).manage_roles and channel.permissions_for(member.guild.me).manage_channels:
+            if channel.permissions_for(member.guild.me).manage_roles:
                 overwrite.update(**overwrites)
-                coros.append(
-                    channel.set_permissions(target=member, overwrite=None if overwrite.is_empty() else overwrite))
-        try:
-            await asyncio.gather(*coros)
-        except discord.Forbidden as e:
-            DOZER_LOGGER.error(f"Failed to catch missing permissions: Error ({e}")
+                try:
+                    await channel.set_permissions(target=member, overwrite=None if overwrite.is_empty() else overwrite)
+                except discord.Forbidden as e:
+                    DOZER_LOGGER.error(f"Failed to catch missing perms in {channel} ({channel.id}) Guild: {channel.guild.id}; Error: {e}")
 
     hm_regex = re.compile(r"((?P<weeks>\d+)w)?((?P<days>\d+)d)?((?P<hours>\d+)h)?((?P<minutes>\d+)m)?((?P<seconds>\d+)s)?")
 
