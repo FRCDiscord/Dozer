@@ -2,17 +2,17 @@
 import asyncio
 import time
 import typing
+
 import discord
 import discord.utils
 from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgument, guild_only
 from discord_slash import cog_ext, SlashContext
 
+from ._utils import *
+from .actionlogs import CustomJoinLeaveMessages
+from .. import db
 from ..bot import DOZER_LOGGER
 from ..db import *
-from .actionlogs import CustomJoinLeaveMessages
-
-from ._utils import *
-from .. import db
 
 blurple = discord.Color.blurple()
 
@@ -253,7 +253,8 @@ class Roles(Cog):
     @cog_ext.cog_slash(name="giveme", description="Give yourself roles from the list.")
     async def slash_giveme(self, ctx: SlashContext, *, roles):
         """giveme slash handler"""
-        await self.giveme(ctx, roles)
+        ctx.prefix = "/"
+        await self.giveme(ctx, roles=roles)
 
     @giveme.command()
     @bot_has_permissions(manage_roles=True)
@@ -372,7 +373,8 @@ class Roles(Cog):
     @cog_ext.cog_slash(name="giveme-remove", description="Get a list of roles you can give yourself.")
     async def slash_givemeremove(self, ctx: SlashContext, roles):
         """giveme remove slash handler"""
-        await self.remove(ctx, roles)
+        ctx.prefix = "/"
+        await self.remove(ctx, roles=roles)
 
     @giveme.command()
     @bot_has_permissions(manage_roles=True)
@@ -504,6 +506,12 @@ class Roles(Cog):
     `{prefix}give cooldude#1234 Java` - gives cooldude any role, giveable or not, named Java
     """
 
+    @cog_ext.cog_slash(name="give", description="Gives role(s) to given members.")
+    async def slash_give(self, ctx: SlashContext, member:discord.Member, roles):
+        """give slash handler"""
+        ctx.prefix = "/"
+        await self.give(ctx, member, roles=roles)
+
     @command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
@@ -520,6 +528,13 @@ class Roles(Cog):
     take.example_usage = """
     `{prefix}take cooldude#1234 Java` - takes any role named Java, giveable or not, from cooldude
     """
+
+    @cog_ext.cog_slash(name="take", description="Takes role(s) from given members.")
+    async def slash_take(self, ctx: SlashContext, member:discord.Member, roles):
+        """take slash handler"""
+        ctx.prefix = "/"
+        await self.take(ctx, member, roles=roles)
+
 
     async def update_role_menu(self, ctx, menu):
         """Updates a reaction role menu"""
