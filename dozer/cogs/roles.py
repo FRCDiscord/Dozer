@@ -250,7 +250,7 @@ class Roles(Cog):
     `{prefix}giveme Java, Python` - gives you the roles called Java and Python, if they exist
     """
 
-    @cog_ext.cog_slash(name="giveme", description="Give yourself roles from the list.")
+    @cog_ext.cog_subcommand(base="giveme", name="", description="Give yourself roles from the list.")
     async def slash_giveme(self, ctx: SlashContext, *, roles):
         """giveme slash handler"""
         ctx.prefix = "/"
@@ -370,7 +370,7 @@ class Roles(Cog):
     `{prefix}giveme remove Java, Python` - removes the roles called "Java" and "Python" from you
     """
 
-    @cog_ext.cog_slash(name="giveme-remove", description="Get a list of roles you can give yourself.")
+    @cog_ext.cog_subcommand(base="giveme", name="remove", description="Take a giveable role from yourself.")
     async def slash_givemeremove(self, ctx: SlashContext, roles):
         """giveme remove slash handler"""
         ctx.prefix = "/"
@@ -418,7 +418,7 @@ class Roles(Cog):
     `{prefix}giveme list` - lists all giveable roles
     """
 
-    @cog_ext.cog_slash(name="giveme-list", description="Get a list of roles you can give yourself.")
+    @cog_ext.cog_subcommand(base="giveme", name="list", description="Get a list of roles you can give yourself.")
     async def slash_givemelist(self, ctx: SlashContext):
         """giveme list slash handler"""
         await self.list_roles(ctx)
