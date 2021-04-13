@@ -510,7 +510,10 @@ class Roles(Cog):
     async def slash_give(self, ctx: SlashContext, member:discord.Member, role: discord.Role):
         """give slash handler"""
         ctx.prefix = "/"
-        await self.give(ctx, member, role=role)
+        if ctx.author.permissions_in(ctx.channel).manage_roles:
+            await self.give(ctx, member, role=role)
+        else:
+            raise PermissionError("You do not have manage roles!")
 
     @command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
@@ -533,7 +536,10 @@ class Roles(Cog):
     async def slash_take(self, ctx: SlashContext, member:discord.Member, role:discord.Role):
         """take slash handler"""
         ctx.prefix = "/"
-        await self.take(ctx, member, role=role)
+        if ctx.author.permissions_in(ctx.channel).manage_roles:
+            await self.take(ctx, member, role=role)
+        else:
+            raise PermissionError("You do not have manage roles!")
 
     async def update_role_menu(self, ctx, menu):
         """Updates a reaction role menu"""
