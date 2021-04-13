@@ -119,7 +119,10 @@ class Actionlog(Cog):
                 await asyncio.sleep(10)  # prevents nickname update spam
             else:
                 if results[0].locked_name != after.display_name:
-                    await after.edit(nick=results[0].locked_name)
+                    try:
+                        await after.edit(nick=results[0].locked_name)
+                    except discord.Forbidden:
+                        return
                     results[0].timeout = time.time() + 10
                     await results[0].update_or_add()
                     await after.send(f"{after.mention}, you do not have nickname change perms in **{after.guild}** "
@@ -515,12 +518,23 @@ class Actionlog(Cog):
             timeout=time.time()
         )
         await lock.update_or_add()
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value=f"**{member}**'s nickname has been locked to **{name}**")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
 
     @command()
     @has_permissions(manage_nicknames=True)
     @bot_has_permissions(manage_nicknames=True)
     async def unlocknickname(self, ctx, member: discord.Member):
-        await NicknameLock.delete(guild_id=ctx.guild.id, member_id=member.id)
+        deleted = await NicknameLock.delete(guild_id=ctx.guild.id, member_id=member.id)
+        if int(deleted.split(" ", 1)[1]):
+            e = discord.Embed(color=blurple)
+            e.add_field(name='Success!', value=f"Nickname lock for {member} has been removed")
+            e.set_footer(text='Triggered by ' + ctx.author.display_name)
+            await ctx.send(embed=e)
+        else:
+            raise BadArgument(f"No member of {member} found with nickname lock!")
 
 
 class NicknameLock(db.DatabaseTable):
