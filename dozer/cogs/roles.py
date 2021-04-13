@@ -250,7 +250,7 @@ class Roles(Cog):
     `{prefix}giveme Java, Python` - gives you the roles called Java and Python, if they exist
     """
 
-    @cog_ext.cog_subcommand(base="giveme", name="", description="Give yourself roles from the list.")
+    @cog_ext.cog_subcommand(base="giveme", name="role", description="Give yourself roles from the list.")
     async def slash_giveme(self, ctx: SlashContext, *, roles):
         """giveme slash handler"""
         ctx.prefix = "/"
