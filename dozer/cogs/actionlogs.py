@@ -117,16 +117,16 @@ class Actionlog(Cog):
         if results:
             while time.time() <= results[0].timeout:
                 await asyncio.sleep(10)  # prevents nickname update spam
-            else:
-                if results[0].locked_name != after.display_name:
-                    try:
-                        await after.edit(nick=results[0].locked_name)
-                    except discord.Forbidden:
-                        return
-                    results[0].timeout = time.time() + 10
-                    await results[0].update_or_add()
-                    await after.send(f"{after.mention}, you do not have nickname change perms in **{after.guild}** "
-                                     f"your nickname has been reverted to **{results[0].locked_name}**")
+
+            if results[0].locked_name != after.display_name:
+                try:
+                    await after.edit(nick=results[0].locked_name)
+                except discord.Forbidden:
+                    return
+                results[0].timeout = time.time() + 10
+                await results[0].update_or_add()
+                await after.send(f"{after.mention}, you do not have nickname change perms in **{after.guild}** "
+                                 f"your nickname has been reverted to **{results[0].locked_name}**")
 
     @Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
@@ -507,6 +507,7 @@ class Actionlog(Cog):
     @has_permissions(manage_nicknames=True)
     @bot_has_permissions(manage_nicknames=True)
     async def locknickname(self, ctx, member: discord.Member, name: str):
+        """Locks a members nickname to a particular string, in essence revoking nickname change perms"""
         try:
             await member.edit(nick=name)
         except discord.Forbidden:
@@ -523,10 +524,15 @@ class Actionlog(Cog):
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
+    locknickname.example_usage = """
+    `{prefix}locknickname @Snowplow#5196 Dozer`: Locks user snowplows nickname to "dozer"
+    """
+
     @command()
     @has_permissions(manage_nicknames=True)
     @bot_has_permissions(manage_nicknames=True)
     async def unlocknickname(self, ctx, member: discord.Member):
+        """Removes nickname lock from member"""
         deleted = await NicknameLock.delete(guild_id=ctx.guild.id, member_id=member.id)
         if int(deleted.split(" ", 1)[1]):
             e = discord.Embed(color=blurple)
@@ -535,6 +541,10 @@ class Actionlog(Cog):
             await ctx.send(embed=e)
         else:
             raise BadArgument(f"No member of {member} found with nickname lock!")
+
+    locknickname.example_usage = """
+    `{prefix}unlocknickname @Snowplow#5196`: Removes nickname lock from user dozer
+    """
 
 
 class NicknameLock(db.DatabaseTable):
