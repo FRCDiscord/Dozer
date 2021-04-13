@@ -5,7 +5,7 @@ import logging
 import time
 
 import discord
-from discord.ext.commands import has_permissions
+from discord.ext.commands import has_permissions, BadArgument
 
 from ._utils import *
 from .general import blurple
@@ -484,6 +484,64 @@ class Actionlog(Cog):
         `{user_id}` = user's ID
         """
         await ctx.send(embed=e)
+
+    @command()
+    @has_permissions(manage_nicknames=True)
+    @bot_has_permissions(manage_nicknames=True)
+    async def locknickname(self, ctx, member: discord.Member, name: str):
+        try:
+            await member.edit(nick=name)
+        except discord.Forbidden:
+            raise BadArgument(f"Dozer is not elevated high enough to change {member}'s nickname")
+        lock = NicknameLock(
+            guild_id=ctx.guild.id,
+            member_id=member.id,
+            locked_name=name,
+            timeout=time.time()
+        )
+        await lock.update_or_add()
+
+    @command()
+    @has_permissions(manage_nicknames=True)
+    @bot_has_permissions(manage_nicknames=True)
+    async def unlocknickname(self, ctx, member: discord.Member):
+        await NicknameLock.delete(guild_id=ctx.guild.id, member_id=member.id)
+
+
+class NicknameLock(db.DatabaseTable):
+    """Holds nickname lock info"""
+    __tablename__ = "nickname_locks"
+    __uniques__ = "guild_id, member_id"
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            guild_id bigint NOT NULL,
+            member_id bigint NOT NULL,
+            locked_name text,
+            timeout bigint,
+            UNIQUE (guild_id, member_id)
+            )""")
+
+    def __init__(self, guild_id, member_id, locked_name, timeout=None):
+        super().__init__()
+        self.guild_id = guild_id
+        self.member_id = member_id
+        self.locked_name = locked_name
+        self.timeout = timeout
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = NicknameLock(guild_id=result.get("guild_id"), member_id=result.get("member_id"),
+                               locked_name=result.get("locked_name"), timeout=result.get("timeout"))
+            result_list.append(obj)
+        return result_list
 
 
 class CustomJoinLeaveMessages(db.DatabaseTable):
