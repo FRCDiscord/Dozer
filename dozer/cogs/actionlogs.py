@@ -109,6 +109,21 @@ class Actionlog(Cog):
             channel = after.guild.get_channel(message_log_channel.messagelog_channel)
             if channel is not None:
                 await channel.send(embed=embed)
+        await self.check_nickname_lock(before, after)
+
+    async def check_nickname_lock(self, before, after):
+        """The handler for checking if a member is allowed to change their nickname"""
+        results = await NicknameLock.get_by(guild_id=after.guild.id, member_id=after.id)
+        if results:
+            while time.time() <= results[0].timeout:
+                await asyncio.sleep(10)  # prevents nickname update spam
+            else:
+                if results[0].locked_name != after.display_name:
+                    await after.edit(nick=results[0].locked_name)
+                    results[0].timeout = time.time() + 10
+                    await results[0].update_or_add()
+                    await after.send(f"{after.mention}, you do not have nickname change perms in **{after.guild}** "
+                                     f"your nickname has been reverted to **{results[0].locked_name}**")
 
     @Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
