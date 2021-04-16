@@ -104,7 +104,7 @@ class Moderation(Cog):
             await orig_channel.send(embed=modlog_embed)
         if len(modlog_channel) != 0:
             if global_modlog:
-                channel = self.bot.get_guild(actor.guild.id if guild_override is None else guild_override).\
+                channel = self.bot.get_guild(actor.guild.id if guild_override is None else guild_override). \
                     get_channel(modlog_channel[0].modlog_channel)
                 if channel is not None and channel != orig_channel:  # prevent duplicate embeds
                     try:
