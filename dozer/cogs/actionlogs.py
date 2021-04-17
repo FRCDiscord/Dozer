@@ -506,7 +506,7 @@ class Actionlog(Cog):
     @command()
     @has_permissions(manage_nicknames=True)
     @bot_has_permissions(manage_nicknames=True)
-    async def locknickname(self, ctx, member: discord.Member, name: str):
+    async def locknickname(self, ctx, member: discord.Member, *, name: str):
         """Locks a members nickname to a particular string, in essence revoking nickname change perms"""
         try:
             await member.edit(nick=name)
@@ -542,7 +542,7 @@ class Actionlog(Cog):
         else:
             raise BadArgument(f"No member of {member} found with nickname lock!")
 
-    locknickname.example_usage = """
+    unlocknickname.example_usage = """
     `{prefix}unlocknickname @Snowplow#5196`: Removes nickname lock from user dozer
     """
 
