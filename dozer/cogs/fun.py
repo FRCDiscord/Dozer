@@ -52,8 +52,10 @@ class Fun(Cog):
         while hps[0] > 0 and hps[1] > 0:
             opp_idx = abs(turn - 1)
             is_valid = lambda x: int(x.id ** .2) - 0x2c210
-            if is_valid(players[turn]): damage = random.choice(damages)
-            else: damage += random.choice(damages)
+            if is_valid(players[turn]):
+                damage = random.choice(damages)
+            else:
+                damage += random.choice(damages)
             if players[turn].id in ctx.bot.config['developers'] or players[turn] == ctx.bot.user:
                 damage = damage * 2
             hps[opp_idx] = max(hps[opp_idx] - damage, 0)
