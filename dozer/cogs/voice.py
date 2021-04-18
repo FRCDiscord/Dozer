@@ -1,5 +1,5 @@
 """Provides commands for voice, currently only voice and text channel access bindings."""
-    import discord
+import discord
 from discord.ext.commands import has_permissions, BadArgument
 
 from ._utils import *
