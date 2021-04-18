@@ -25,14 +25,14 @@ Swaps Snowplow's xp with Dozer's xp
    `{prefix}adjustlevels transferxp <@Snowplow or "Snowplow"> <@Dozer or "Dozer">`:
 Adds Snowplow's xp to dozer's xp
    
-swapxp
-++++++
-Swap xp stats between two members in a guild
-::
-   
 transferxp
 ++++++++++
 Adds xp from one member to another member
+::
+   
+swapxp
+++++++
+Swap xp stats between two members in a guild
 ::
    
 setlevel
@@ -58,16 +58,26 @@ Configures dozer ranks:tm:
 `{prefix}configureranks notificationsoff`: Turns off notification channel
 `{prefix}configureranks setrolelevel role level`: Adds a level role
 `{prefix}configureranks delrolelevel role`: Deletes a level role 
-setrolelevel
-++++++++++++
-Sets a role to be given to a user when they reach a certain level
-::
-   `{prefix}setrolelevel "level 2" 2`: Will configure the role "level 2" to be given to users who reach level 2` 
 toggle
 ++++++
 Toggle dozer ranks
 ::
    
+notificationsoff
+++++++++++++++++
+Turns off level up messages
+::
+   
+setrolelevel
+++++++++++++
+Sets a role to be given to a user when they reach a certain level
+::
+   `{prefix}setrolelevel "level 2" 2`: Will configure the role "level 2" to be given to users who reach level 2` 
+removerolelevel
++++++++++++++++
+Removes a levelrole
+::
+   `{prefix}removerolelevel level 2 `: Will remove role "level 2" from level roles
 xprange
 +++++++
 Set the range of a servers levels random xp
@@ -76,16 +86,6 @@ Set the range of a servers levels random xp
 keeproles
 +++++++++
 Toggles whenever old level role roles will be kept on level up
-::
-   
-removerolelevel
-+++++++++++++++
-Removes a levelrole
-::
-   `{prefix}removerolelevel level 2 `: Will remove role "level 2" from level roles
-notificationsoff
-++++++++++++++++
-Turns off level up messages
 ::
    
 setcooldown

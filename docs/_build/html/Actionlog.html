@@ -4,7 +4,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Actionlog &#8212; Dozer  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
@@ -32,16 +33,16 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="actionlog">
+  <section id="actionlog">
 <h1>Actionlog<a class="headerlink" href="#actionlog" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="messagelogconfig">
+<section id="messagelogconfig">
 <h2>messagelogconfig<a class="headerlink" href="#messagelogconfig" title="Permalink to this headline">¶</a></h2>
 <p>Set the modlog channel for a server by passing the channel id</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}messagelogconfig #orwellian-dystopia` - set a channel named #orwellian-dystopia to log message edits/deletions
 </pre></div>
 </div>
-</div>
-<div class="section" id="memberlogconfig">
+</section>
+<section id="memberlogconfig">
 <h2>memberlogconfig<a class="headerlink" href="#memberlogconfig" title="Permalink to this headline">¶</a></h2>
 <p>Command group to configure Join/Leave logs</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}memberlogconfig setchannel channel`: Sets the member log channel
@@ -51,31 +52,46 @@
 <cite>{prefix}memberlogconfig setjoinmessage template</cite>: Sets join template
 <cite>{prefix}memberlogconfig setleavemessage template</cite>: Sets leave template
 <cite>{prefix}memberlogconfig help</cite>: Returns the template formatting key
-toggleping
-++++++++++
-Toggles whenever a new member gets pinged on join</p>
-</div>
-<div class="section" id="help">
-<h2>help<a class="headerlink" href="#help" title="Permalink to this headline">¶</a></h2>
-<p>Displays message formatting key</p>
-</div>
-<div class="section" id="setjoinmessage">
+help
+++++
+Displays message formatting key</p>
+</section>
+<section id="setjoinmessage">
 <h2>setjoinmessage<a class="headerlink" href="#setjoinmessage" title="Permalink to this headline">¶</a></h2>
 <p>Configure custom join message template</p>
-</div>
-<div class="section" id="setleavemessage">
+</section>
+<section id="setleavemessage">
 <h2>setleavemessage<a class="headerlink" href="#setleavemessage" title="Permalink to this headline">¶</a></h2>
 <p>Configure custom leave message template</p>
-</div>
-<div class="section" id="setchannel">
+</section>
+<section id="setchannel">
 <h2>setchannel<a class="headerlink" href="#setchannel" title="Permalink to this headline">¶</a></h2>
 <p>Configure join/leave channel</p>
-</div>
-<div class="section" id="disable">
+</section>
+<section id="disable">
 <h2>disable<a class="headerlink" href="#disable" title="Permalink to this headline">¶</a></h2>
 <p>Disables Join/Leave logging</p>
+</section>
+<section id="toggleping">
+<h2>toggleping<a class="headerlink" href="#toggleping" title="Permalink to this headline">¶</a></h2>
+<p>Toggles whenever a new member gets pinged on join</p>
+</section>
+<section id="locknickname">
+<h2>locknickname<a class="headerlink" href="#locknickname" title="Permalink to this headline">¶</a></h2>
+<p>Locks a members nickname to a particular string, in essence revoking
+nickname change perms</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}locknickname @Snowplow#5196 Dozer`: Locks user snowplows nickname to &quot;dozer&quot;
+</pre></div>
 </div>
+</section>
+<section id="unlocknickname">
+<h2>unlocknickname<a class="headerlink" href="#unlocknickname" title="Permalink to this headline">¶</a></h2>
+<p>Removes nickname lock from member</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}unlocknickname @Snowplow#5196`: Removes nickname lock from user dozer
+</pre></div>
 </div>
+</section>
+</section>
 
 
           </div>
@@ -94,16 +110,18 @@ Toggles whenever a new member gets pinged on join</p>
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#"> Actionlog</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#messagelogconfig">messagelogconfig</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#memberlogconfig">memberlogconfig</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#help">help</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#setjoinmessage">setjoinmessage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#setleavemessage">setleavemessage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#setchannel">setchannel</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#disable">disable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#toggleping">toggleping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#locknickname">locknickname</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#unlocknickname">unlocknickname</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="Development.html"> Development</a></li>
@@ -160,7 +178,7 @@ Toggles whenever a new member gets pinged on join</p>
       &copy;2021, Dozer Development Team.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
