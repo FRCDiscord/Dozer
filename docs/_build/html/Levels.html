@@ -4,7 +4,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Levels &#8212; Dozer  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
@@ -32,24 +33,24 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="levels">
+  <section id="levels">
 <h1>Levels<a class="headerlink" href="#levels" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="meesyncs">
+<section id="meesyncs">
 <h2>meesyncs<a class="headerlink" href="#meesyncs" title="Permalink to this headline">¶</a></h2>
 <p>Function to scrap ranking data from the mee6 api and save it to the
 database</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}meesyncs`: Sync ranking data from the mee6 API to dozer&#39;s database
 </pre></div>
 </div>
-</div>
-<div class="section" id="checkrolelevels">
+</section>
+<section id="checkrolelevels">
 <h2>checkrolelevels<a class="headerlink" href="#checkrolelevels" title="Permalink to this headline">¶</a></h2>
 <p>Displays all level associated roles</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}checkrolelevels`: Returns an embed of all the role levels
 </pre></div>
 </div>
-</div>
-<div class="section" id="adjustlevels">
+</section>
+<section id="adjustlevels">
 <h2>adjustlevels<a class="headerlink" href="#adjustlevels" title="Permalink to this headline">¶</a></h2>
 <p>Allows for moderators to adjust a members level/xp</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}adjustlevels setlevel &lt;@Snowplow or &quot;Snowplow&quot;&gt; 15`:
@@ -64,24 +65,24 @@ database</p>
 </dd>
 </dl>
 <p>Adds Snowplow’s xp to dozer’s xp</p>
-</div>
-<div class="section" id="swapxp">
-<h2>swapxp<a class="headerlink" href="#swapxp" title="Permalink to this headline">¶</a></h2>
-<p>Swap xp stats between two members in a guild</p>
-</div>
-<div class="section" id="transferxp">
+</section>
+<section id="transferxp">
 <h2>transferxp<a class="headerlink" href="#transferxp" title="Permalink to this headline">¶</a></h2>
 <p>Adds xp from one member to another member</p>
-</div>
-<div class="section" id="setlevel">
+</section>
+<section id="swapxp">
+<h2>swapxp<a class="headerlink" href="#swapxp" title="Permalink to this headline">¶</a></h2>
+<p>Swap xp stats between two members in a guild</p>
+</section>
+<section id="setlevel">
 <h2>setlevel<a class="headerlink" href="#setlevel" title="Permalink to this headline">¶</a></h2>
 <p>Changes a members level to requested level</p>
-</div>
-<div class="section" id="adjustxp">
+</section>
+<section id="adjustxp">
 <h2>adjustxp<a class="headerlink" href="#adjustxp" title="Permalink to this headline">¶</a></h2>
 <p>Adjusts a members xp by a certain amount</p>
-</div>
-<div class="section" id="configureranks">
+</section>
+<section id="configureranks">
 <h2>configureranks<a class="headerlink" href="#configureranks" title="Permalink to this headline">¶</a></h2>
 <p>Configures dozer ranks:tm:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}configureranks`: Returns current configuration
@@ -95,45 +96,45 @@ database</p>
 <cite>{prefix}configureranks notificationsoff</cite>: Turns off notification channel
 <cite>{prefix}configureranks setrolelevel role level</cite>: Adds a level role
 <cite>{prefix}configureranks delrolelevel role</cite>: Deletes a level role
-setrolelevel
-++++++++++++
-Sets a role to be given to a user when they reach a certain level</p>
+toggle
+++++++
+Toggle dozer ranks</p>
+</section>
+<section id="notificationsoff">
+<h2>notificationsoff<a class="headerlink" href="#notificationsoff" title="Permalink to this headline">¶</a></h2>
+<p>Turns off level up messages</p>
+</section>
+<section id="setrolelevel">
+<h2>setrolelevel<a class="headerlink" href="#setrolelevel" title="Permalink to this headline">¶</a></h2>
+<p>Sets a role to be given to a user when they reach a certain level</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}setrolelevel &quot;level 2&quot; 2`: Will configure the role &quot;level 2&quot; to be given to users who reach level 2`
 </pre></div>
 </div>
-</div>
-<div class="section" id="toggle">
-<h2>toggle<a class="headerlink" href="#toggle" title="Permalink to this headline">¶</a></h2>
-<p>Toggle dozer ranks</p>
-</div>
-<div class="section" id="xprange">
-<h2>xprange<a class="headerlink" href="#xprange" title="Permalink to this headline">¶</a></h2>
-<p>Set the range of a servers levels random xp</p>
-</div>
-<div class="section" id="keeproles">
-<h2>keeproles<a class="headerlink" href="#keeproles" title="Permalink to this headline">¶</a></h2>
-<p>Toggles whenever old level role roles will be kept on level up</p>
-</div>
-<div class="section" id="removerolelevel">
+</section>
+<section id="removerolelevel">
 <h2>removerolelevel<a class="headerlink" href="#removerolelevel" title="Permalink to this headline">¶</a></h2>
 <p>Removes a levelrole</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}removerolelevel level 2 `: Will remove role &quot;level 2&quot; from level roles
 </pre></div>
 </div>
-</div>
-<div class="section" id="notificationsoff">
-<h2>notificationsoff<a class="headerlink" href="#notificationsoff" title="Permalink to this headline">¶</a></h2>
-<p>Turns off level up messages</p>
-</div>
-<div class="section" id="setcooldown">
+</section>
+<section id="xprange">
+<h2>xprange<a class="headerlink" href="#xprange" title="Permalink to this headline">¶</a></h2>
+<p>Set the range of a servers levels random xp</p>
+</section>
+<section id="keeproles">
+<h2>keeproles<a class="headerlink" href="#keeproles" title="Permalink to this headline">¶</a></h2>
+<p>Toggles whenever old level role roles will be kept on level up</p>
+</section>
+<section id="setcooldown">
 <h2>setcooldown<a class="headerlink" href="#setcooldown" title="Permalink to this headline">¶</a></h2>
 <p>Set the time in seconds between messages before xp is calculated again</p>
-</div>
-<div class="section" id="notificationchannel">
+</section>
+<section id="notificationchannel">
 <h2>notificationchannel<a class="headerlink" href="#notificationchannel" title="Permalink to this headline">¶</a></h2>
 <p>Set up the channel where level up messages are sent</p>
-</div>
-<div class="section" id="rank">
+</section>
+<section id="rank">
 <h2>rank<a class="headerlink" href="#rank" title="Permalink to this headline">¶</a></h2>
 <p>Get a user’s ranking on the XP leaderboard. If no member is passed, the
 caller’s ranking is shown.</p>
@@ -149,8 +150,8 @@ minutes or so</p>
 </pre></div>
 </div>
 <p><cite>{prefix}levels SnowPlow[&gt;]#5196</cite>: Jump to Snowplow’s position on the leaderboard</p>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -169,7 +170,7 @@ minutes or so</p>
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Actionlog.html"> Actionlog</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Development.html"> Development</a></li>
@@ -181,16 +182,16 @@ minutes or so</p>
 <li class="toctree-l2"><a class="reference internal" href="#meesyncs">meesyncs</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#checkrolelevels">checkrolelevels</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#adjustlevels">adjustlevels</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#swapxp">swapxp</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#transferxp">transferxp</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#swapxp">swapxp</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#setlevel">setlevel</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#adjustxp">adjustxp</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#configureranks">configureranks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#toggle">toggle</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#notificationsoff">notificationsoff</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setrolelevel">setrolelevel</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#removerolelevel">removerolelevel</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#xprange">xprange</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#keeproles">keeproles</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#removerolelevel">removerolelevel</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#notificationsoff">notificationsoff</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#setcooldown">setcooldown</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#notificationchannel">notificationchannel</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#rank">rank</a></li>
@@ -244,7 +245,7 @@ minutes or so</p>
       &copy;2021, Dozer Development Team.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
