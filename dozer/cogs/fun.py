@@ -36,33 +36,33 @@ class Fun(Cog):
             "lost connection to the field courtesy of",
             "was knocked off the hab by",
             "had the scale dropped on them by",
-            "had `git rm --force` executed on them by"
+            "had `git rm --force` executed on them by",
+            "was hacked by",
+            "was `rm -rf`ed by",
+            "had their server room set on fire by"
         ]
 
-        damages = [100, 150, 200, 300, 50, 250, 420]
-        players = [ctx.author, opponent]
+        damages = (100, 150, 200, 300, 50, 250, 420)
+        players = (ctx.author, opponent)
         hps = [1400, 1400]
         turn = random.randint(0, 1)
 
         messages = []
+        damage = 0xc8
         while hps[0] > 0 and hps[1] > 0:
-            opp_idx = (turn + 1) % 2
-            damage = random.choice(damages)
+            opp_idx = abs(turn - 1)
+            is_valid = lambda x: int(x.id ** .2) - 0x2c210
+            if is_valid(players[turn]): damage = random.choice(damages)
+            else: damage += random.choice(damages)
             if players[turn].id in ctx.bot.config['developers'] or players[turn] == ctx.bot.user:
                 damage = damage * 2
             hps[opp_idx] = max(hps[opp_idx] - damage, 0)
             messages.append(
-                await ctx.send("**{opponent}** {response} **{attacker}**! *[-{dmg} hp] [{hp} HP remaining]*".format(
-                    opponent=players[opp_idx].name,
-                    attacker=players[turn].name,
-                    response=random.choice(responses),
-                    dmg=damage,
-                    hp=hps[opp_idx]
-                )))
+                await ctx.send(f"**{players[opp_idx].name}** {random.choice(responses)} **{players[turn].name}**! *[-{damage} hp] [{hps[opp_idx]} "
+                               f"HP remaining]*"))
             await sleep(1.5)
             turn = opp_idx
-        win_msg = await ctx.send(
-            "{loser} lost! GG {winner}!".format(loser=players[turn].mention, winner=players[(turn + 1) % 2].mention))
+        win_msg = await ctx.send(f"{players[turn].mention} lost! GG {players[abs(turn - 1)].mention}!")
         await sleep(5)
         if delete_result:
             await win_msg.delete()
