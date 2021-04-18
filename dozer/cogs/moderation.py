@@ -104,25 +104,27 @@ class Moderation(Cog):
             await orig_channel.send(embed=modlog_embed)
         if len(modlog_channel) != 0:
             if global_modlog:
-                channel = self.bot.get_guild(actor.guild.id if guild_override is None else guild_override).\
+                channel = self.bot.get_guild(actor.guild.id if guild_override is None else guild_override). \
                     get_channel(modlog_channel[0].modlog_channel)
                 if channel is not None and channel != orig_channel:  # prevent duplicate embeds
-                    await channel.send(embed=modlog_embed)
+                    try:
+                        await channel.send(embed=modlog_embed)
+                    except discord.Forbidden as e:
+                        DOZER_LOGGER.warning(f"Unable to send modlog in guild \"{channel.guild}\" ({channel.guild.id}) reason {e}")
         else:
             if orig_channel is not None:
                 await orig_channel.send("Please configure modlog channel to enable modlog functionality")
 
     async def perm_override(self, member, **overwrites):
         """Applies the given overrides to the given member in their guild."""
-        coros = []
         for channel in member.guild.channels:
             overwrite = channel.overwrites_for(member)
-            can_perm_override = channel.permissions_for(member.guild.me).manage_roles
-            if can_perm_override:
+            if channel.permissions_for(member.guild.me).manage_roles:
                 overwrite.update(**overwrites)
-                coros.append(
-                    channel.set_permissions(target=member, overwrite=None if overwrite.is_empty() else overwrite))
-        await asyncio.gather(*coros)
+                try:
+                    await channel.set_permissions(target=member, overwrite=None if overwrite.is_empty() else overwrite)
+                except discord.Forbidden as e:
+                    DOZER_LOGGER.error(f"Failed to catch missing perms in {channel} ({channel.id}) Guild: {channel.guild.id}; Error: {e}")
 
     hm_regex = re.compile(r"((?P<weeks>\d+)w)?((?P<days>\d+)d)?((?P<hours>\d+)h)?((?P<minutes>\d+)m)?((?P<seconds>\d+)s)?")
 
@@ -158,11 +160,11 @@ class Moderation(Cog):
 
         user = await punishment.get_by(member_id=target.id)
         if len(user) != 0:
-            await self.mod_log(actor,
-                               "un" + punishment.past_participle,
-                               target,
-                               reason,
-                               orig_channel,
+            await self.mod_log(actor=actor,
+                               action="un" + punishment.past_participle,
+                               target=target,
+                               reason=reason,
+                               orig_channel=orig_channel,
                                embed_color=discord.Color.green(),
                                global_modlog=global_modlog)
             self.bot.loop.create_task(coro=punishment.finished_callback(self, target))
@@ -574,8 +576,8 @@ class Moderation(Cog):
             seconds = self.hm_to_seconds(reason)
             reason = self.hm_regex.sub("", reason) or "No reason provided"
             if await self._deafen(member_mentions, reason, seconds=seconds, self_inflicted=False, actor=ctx.author, orig_channel=ctx.channel):
-                await self.mod_log(ctx.author, "deafened", member_mentions, reason, ctx.channel, discord.Color.red(),
-                                   duration=datetime.timedelta(seconds=seconds))
+                await self.mod_log(actor=ctx.author, action="deafened", target=member_mentions, reason=reason, orig_channel=ctx.channel,
+                                   embed_color=discord.Color.red(), duration=datetime.timedelta(seconds=seconds))
             else:
                 await ctx.send("Member is already deafened!")
 
