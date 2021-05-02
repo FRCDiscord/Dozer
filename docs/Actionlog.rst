@@ -45,3 +45,14 @@ disable
 Disables Join/Leave logging
 ::
    
+locknickname
+++++++++++++
+Locks a members nickname to a particular string, in essence revoking
+nickname change perms
+::
+   `{prefix}locknickname @Snowplow#5196 Dozer`: Locks user snowplows nickname to "dozer"
+unlocknickname
+++++++++++++++
+Removes nickname lock from member
+::
+   `{prefix}unlocknickname @Snowplow#5196`: Removes nickname lock from user dozer

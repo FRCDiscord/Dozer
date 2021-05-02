@@ -668,12 +668,12 @@ class Levels(Cog):
     `{prefix}rank`: show your ranking
     `{prefix}rank coolgal#1234`: show another user's ranking
     """
-
-    @cog_ext.cog_slash(name="leaderboard", description="Returns the guilds dozer leaderboard")
-    async def slash_levels(self, ctx: SlashContext, start_member: discord.Member = None):
-        """Leaderboard slash handler"""
-        await ctx.ack()
-        await self.levels(ctx, start_member)
+    # Disabled until slash command pagination is fixed by discord
+    # @cog_ext.cog_slash(name="leaderboard", description="Returns the guilds dozer leaderboard")
+    # async def slash_levels(self, ctx: SlashContext, start_member: discord.Member = None):
+    #     """Leaderboard slash handler"""
+    #     await ctx.ack()
+    #     await self.levels(ctx, start_member)
 
     @command(aliases=["ranks", "leaderboard"])
     @guild_only()
