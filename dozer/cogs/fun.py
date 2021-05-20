@@ -8,6 +8,7 @@ from discord.ext.commands import cooldown, BucketType, guild_only, BadArgument, 
 from discord_slash import cog_ext, SlashContext
 
 from ._utils import *
+from .general import blurple
 
 
 class Fun(Cog):
@@ -61,8 +62,8 @@ class Fun(Cog):
                 )))
             await sleep(1.5)
             turn = opp_idx
-        win_msg = await ctx.send(
-            "{loser} lost! GG {winner}!".format(loser=players[turn].mention, winner=players[(turn + 1) % 2].mention))
+        win_embed = discord.Embed(description=f"{players[turn].mention} lost! GG {players[(turn + 1) % 2].mention}!", color=blurple)
+        win_msg = await ctx.send(embed=win_embed)
         await sleep(5)
         if delete_result:
             await win_msg.delete()
