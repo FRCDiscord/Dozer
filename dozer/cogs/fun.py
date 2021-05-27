@@ -8,6 +8,7 @@ from discord.ext.commands import cooldown, BucketType, guild_only, BadArgument, 
 from discord_slash import cog_ext, SlashContext
 
 from ._utils import *
+from .general import blurple
 
 
 class Fun(Cog):
@@ -15,28 +16,28 @@ class Fun(Cog):
 
     async def battle(self, ctx, opponent: discord.Member, delete_result=True):
         """Start a fight with another user."""
-        responses = [
-            "was hit on the head by",
-            "was kicked by",
-            "was slammed into a wall by",
-            "was dropkicked by",
-            "was DDoSed by",
-            "was chokeslammed by",
-            "was run over with a robot by",
-            "had their IQ dropped 15 points by",
-            "had a heavy object dropped on them by",
-            "was beat up by",
-            "was told to read the manual by",
-            "was told to use windows by",
-            "was forced to update windows by",
-            "was E-stopped by",
-            "was hit by a snowplow driven by",
-            "had their api token leaked by",
-            "had a satellite dropped on them by",
-            "lost connection to the field courtesy of",
-            "was knocked off the hab by",
-            "had the scale dropped on them by",
-            "had `git rm --force` executed on them by"
+        attacks = [
+            "**{opponent}** was hit on the head by **{attacker}** ",
+            "**{opponent}** was kicked by **{attacker}** ",
+            "**{opponent}** was slammed into a wall by **{attacker}** ",
+            "**{opponent}** was dropkicked by **{attacker}** ",
+            "**{opponent}** was DDoSed by **{attacker}** ",
+            "**{opponent}** was chokeslammed by **{attacker}** ",
+            "**{opponent}** was run over with a robot by **{attacker}** ",
+            "**{opponent}** had their IQ dropped 15 points by **{attacker}**",
+            "**{opponent}** had a heavy object dropped on them by **{attacker}**",
+            "**{opponent}** was beat up by **{attacker}** ",
+            "**{opponent}** was told to read the manual by **{attacker}** ",
+            "**{opponent}** was told to use windows by **{attacker}**",
+            "**{opponent}** was forced to update windows by **{attacker}**",
+            "**{opponent}** was E-stopped by **{attacker}** ",
+            "**{opponent}** was hit by a snowplow driven by **{attacker}**",
+            "**{opponent}** had their api token leaked by **{attacker}**",
+            "**{opponent}** had a satellite dropped on them by **{attacker}**",
+            "**{opponent}** lost connection to the field courtesy of **{attacker}**",
+            "**{opponent}** was knocked off the hab by **{attacker}**",
+            "**{opponent}** had the scale dropped on them by **{attacker}**",
+            "**{opponent}** had `git rm --force` executed on them by **{attacker}**",
         ]
 
         damages = [100, 150, 200, 300, 50, 250, 420]
@@ -52,17 +53,12 @@ class Fun(Cog):
                 damage = damage * 2
             hps[opp_idx] = max(hps[opp_idx] - damage, 0)
             messages.append(
-                await ctx.send("**{opponent}** {response} **{attacker}**! *[-{dmg} hp] [{hp} HP remaining]*".format(
-                    opponent=players[opp_idx].name,
-                    attacker=players[turn].name,
-                    response=random.choice(responses),
-                    dmg=damage,
-                    hp=hps[opp_idx]
-                )))
+                await ctx.send(f"{random.choice(attacks).format(opponent=players[opp_idx].name, attacker=players[turn].name)} *[-{damage} hp]"
+                               f" [{hps[opp_idx]} HP remaining]*"))
             await sleep(1.5)
             turn = opp_idx
-        win_msg = await ctx.send(
-            "{loser} lost! GG {winner}!".format(loser=players[turn].mention, winner=players[(turn + 1) % 2].mention))
+        win_embed = discord.Embed(description=f"{players[turn].mention} lost! GG {players[(turn + 1) % 2].mention}!", color=blurple)
+        win_msg = await ctx.send(embed=win_embed)
         await sleep(5)
         if delete_result:
             await win_msg.delete()
