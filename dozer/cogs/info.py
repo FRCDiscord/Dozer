@@ -1,9 +1,10 @@
 """Provides commands for pulling certain information."""
 import math
 import typing
-import humanize
 from datetime import timedelta, timezone, datetime
 from difflib import SequenceMatcher
+import humanize
+
 
 import discord
 from discord.ext.commands import cooldown, BucketType, guild_only
