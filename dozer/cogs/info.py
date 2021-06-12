@@ -1,6 +1,8 @@
 """Provides commands for pulling certain information."""
 import math
 import typing
+import humanize
+from datetime import timedelta, timezone, datetime
 from difflib import SequenceMatcher
 
 import discord
@@ -55,10 +57,10 @@ class Info(Cog):
             embed.add_field(name="Last Seen Here At", value="Levels Disabled")
         elif len(levels_data):
             embed.add_field(name="Last Seen Here At", value=levels_data[0].last_given_at.strftime(datetime_format))
-            footers.append(f"Total Messages: {levels_data[0].total_messages}")
+            footers.append(f"Tracked Messages: {levels_data[0].total_messages}")
         else:
             embed.add_field(name="Last Seen Here At", value="Not available")
-            footers.append("Total Messages: N/A")
+            footers.append("Tracked Messages: N/A")
 
         embed.add_field(name='Member Joined', value=member.joined_at.strftime(datetime_format), inline=True)
         if member.premium_since is not None:
@@ -95,7 +97,9 @@ class Info(Cog):
             elif activity.type is discord.ActivityType.listening:
                 return f'Listening to {activity.name}'  # Special-cased to insert " to"
             else:
-                return f'{activity.type.name.capitalize()} {activity.name}'
+                activity_time = datetime.now(tz=timezone.utc) - activity.start.replace(tzinfo=timezone.utc)
+                formatted_time = humanize.naturaldelta(activity_time, months=True, minimum_unit='seconds')
+                return f'{activity.type.name.capitalize()} {activity.name} for {formatted_time}'
 
         # Some games show up twice in the list (e.g. "Rainbow Six Siege" and "Tom Clancy's Rainbow Six Siege") so we
         # need to dedup them by string similarity before displaying them

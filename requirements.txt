@@ -10,6 +10,6 @@ python-Levenshtein
 python-dateutil
 sentry-sdk
 wavelink
-git+https://github.com/Rapptz/discord-ext-menus.git
+discord-ext-menus
 rstcloth
 discord-py-slash-command
