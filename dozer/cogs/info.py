@@ -98,7 +98,7 @@ class Info(Cog):
                 return f'Listening to {activity.name}'  # Special-cased to insert " to"
             else:
                 activity_time = datetime.now(tz=timezone.utc) - activity.start.replace(tzinfo=timezone.utc)
-                formatted_time = humanize.naturaldelta(activity_time, months=True, minimum_unit='seconds')
+                formatted_time = humanize.precisedelta(activity_time, minimum_unit='minutes', format="%0.1f")
                 return f'{activity.type.name.capitalize()} {activity.name} for {formatted_time}'
 
         # Some games show up twice in the list (e.g. "Rainbow Six Siege" and "Tom Clancy's Rainbow Six Siege") so we
