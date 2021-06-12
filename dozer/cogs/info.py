@@ -97,9 +97,11 @@ class Info(Cog):
             elif activity.type is discord.ActivityType.listening:
                 return f'Listening to {activity.name}'  # Special-cased to insert " to"
             else:
+                print(activity)
                 activity_time = datetime.now(tz=timezone.utc) - activity.start.replace(tzinfo=timezone.utc)
                 formatted_time = humanize.precisedelta(activity_time, minimum_unit='minutes', format="%0.1f")
-                return f'{activity.type.name.capitalize()} {activity.name} for {formatted_time}'
+                return f'{activity.type.name.capitalize()} {activity.name} {"`" + activity.details + "`" if activity.details else ""} ' \
+                       f'for {formatted_time}'
 
         # Some games show up twice in the list (e.g. "Rainbow Six Siege" and "Tom Clancy's Rainbow Six Siege") so we
         # need to dedup them by string similarity before displaying them
