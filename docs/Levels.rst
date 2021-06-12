@@ -30,9 +30,9 @@ transferxp
 Adds xp from one member to another member
 ::
    
-adjustxp
-++++++++
-Adjusts a members xp by a certain amount
+swapxp
+++++++
+Swap xp stats between two members in a guild
 ::
    
 setlevel
@@ -40,9 +40,9 @@ setlevel
 Changes a members level to requested level
 ::
    
-swapxp
-++++++
-Swap xp stats between two members in a guild
+adjustxp
+++++++++
+Adjusts a members xp by a certain amount
 ::
    
 configureranks
@@ -58,21 +58,6 @@ Configures dozer ranks:tm:
 `{prefix}configureranks notificationsoff`: Turns off notification channel
 `{prefix}configureranks setrolelevel role level`: Adds a level role
 `{prefix}configureranks delrolelevel role`: Deletes a level role 
-keeproles
-+++++++++
-Toggles whenever old level role roles will be kept on level up
-::
-   
-setcooldown
-+++++++++++
-Set the time in seconds between messages before xp is calculated again
-::
-   
-notificationchannel
-+++++++++++++++++++
-Set up the channel where level up messages are sent
-::
-   
 toggle
 ++++++
 Toggle dozer ranks
@@ -96,6 +81,21 @@ Removes a levelrole
 xprange
 +++++++
 Set the range of a servers levels random xp
+::
+   
+keeproles
++++++++++
+Toggles whenever old level role roles will be kept on level up
+::
+   
+setcooldown
++++++++++++
+Set the time in seconds between messages before xp is calculated again
+::
+   
+notificationchannel
++++++++++++++++++++
+Set up the channel where level up messages are sent
 ::
    
 rank

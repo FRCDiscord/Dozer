@@ -11,13 +11,6 @@ restart_loop
 Restart the news check loop
 ::
    `{prefix}news restart_loop` - Restart the news loop if you are a developer
-add
-+++
-Add a new subscription of a given source to a channel.
-::
-   `{prefix}news add #news cd` - Make new Chief Delphi posts appear in #news
-`{prefix}news add #announcements frc plain` - Add new FRC blog posts in plain text to #announcements
-`{prefix}news add #reddit reddit embed frc` - Add new posts from /r/FRC to #reddit
 remove
 ++++++
 Remove a subscription of a given source from a specific channel
@@ -45,3 +38,10 @@ List all subscriptions that the current server are subscribed to
 ::
    `{prefix}news subs` - Check all subscriptions in the current server
 `{prefix}news subs #news` - See all the subscriptions for #news
+add
++++
+Add a new subscription of a given source to a channel.
+::
+   `{prefix}news add #news cd` - Make new Chief Delphi posts appear in #news
+`{prefix}news add #announcements frc plain` - Add new FRC blog posts in plain text to #announcements
+`{prefix}news add #reddit reddit embed frc` - Add new posts from /r/FRC to #reddit
