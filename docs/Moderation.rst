@@ -24,6 +24,11 @@ Bulk delete a set number of messages from the current channel.
 ::
    `{prefix}prune 10` - Delete the last 10 messages in the current channel.
 `{prefix}prune 786324930378727484` - Deletes all messages up to that message ID
+punishments
++++++++++++
+List currently active mutes and deafens in a guild
+::
+   `{prefix}punishments:` Lists currently active punishments in current guild
 ban
 +++
 Bans the user mentioned.
@@ -116,3 +121,18 @@ safe default role conventions that the memberconfig command does.
 `{prefix}linkscrubconfig @ everyone` - set the default role as the link role (ping-safe)
 `{prefix}linkscrubconfig @.everyone` - set the default role as the link role (ping-safe)
 `{prefix}linkscrubconfig @/everyone` - set the default role as the link role (ping-safe)
+crossbans
++++++++++
+Cross ban
+::
+   
+subscribe
++++++++++
+Subscribe to a guild to cross ban from
+::
+   
+unsubscribe
++++++++++++
+Remove cross ban subscription
+::
+   

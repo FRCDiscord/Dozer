@@ -5,7 +5,7 @@ import logging
 import time
 
 import discord
-from discord.ext.commands import has_permissions
+from discord.ext.commands import has_permissions, BadArgument
 
 from ._utils import *
 from .general import blurple
@@ -109,6 +109,24 @@ class Actionlog(Cog):
             channel = after.guild.get_channel(message_log_channel.messagelog_channel)
             if channel is not None:
                 await channel.send(embed=embed)
+        await self.check_nickname_lock(before, after)
+
+    async def check_nickname_lock(self, before, after):
+        """The handler for checking if a member is allowed to change their nickname"""
+        results = await NicknameLock.get_by(guild_id=after.guild.id, member_id=after.id)
+        if results:
+            while time.time() <= results[0].timeout:
+                await asyncio.sleep(10)  # prevents nickname update spam
+
+            if results[0].locked_name != after.display_name:
+                try:
+                    await after.edit(nick=results[0].locked_name)
+                except discord.Forbidden:
+                    return
+                results[0].timeout = time.time() + 10
+                await results[0].update_or_add()
+                await after.send(f"{after.mention}, you do not have nickname change perms in **{after.guild}** "
+                                 f"your nickname has been reverted to **{results[0].locked_name}**")
 
     @Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
@@ -500,6 +518,85 @@ class Actionlog(Cog):
         `{user_id}` = user's ID
         """
         await ctx.send(embed=e)
+
+    @command()
+    @has_permissions(manage_nicknames=True)
+    @bot_has_permissions(manage_nicknames=True)
+    async def locknickname(self, ctx, member: discord.Member, *, name: str):
+        """Locks a members nickname to a particular string, in essence revoking nickname change perms"""
+        try:
+            await member.edit(nick=name)
+        except discord.Forbidden:
+            raise BadArgument(f"Dozer is not elevated high enough to change {member}'s nickname")
+        lock = NicknameLock(
+            guild_id=ctx.guild.id,
+            member_id=member.id,
+            locked_name=name,
+            timeout=time.time()
+        )
+        await lock.update_or_add()
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value=f"**{member}**'s nickname has been locked to **{name}**")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
+
+    locknickname.example_usage = """
+    `{prefix}locknickname @Snowplow#5196 Dozer`: Locks user snowplows nickname to "dozer"
+    """
+
+    @command()
+    @has_permissions(manage_nicknames=True)
+    @bot_has_permissions(manage_nicknames=True)
+    async def unlocknickname(self, ctx, member: discord.Member):
+        """Removes nickname lock from member"""
+        deleted = await NicknameLock.delete(guild_id=ctx.guild.id, member_id=member.id)
+        if int(deleted.split(" ", 1)[1]):
+            e = discord.Embed(color=blurple)
+            e.add_field(name='Success!', value=f"Nickname lock for {member} has been removed")
+            e.set_footer(text='Triggered by ' + ctx.author.display_name)
+            await ctx.send(embed=e)
+        else:
+            raise BadArgument(f"No member of {member} found with nickname lock!")
+
+    unlocknickname.example_usage = """
+    `{prefix}unlocknickname @Snowplow#5196`: Removes nickname lock from user dozer
+    """
+
+
+class NicknameLock(db.DatabaseTable):
+    """Holds nickname lock info"""
+    __tablename__ = "nickname_locks"
+    __uniques__ = "guild_id, member_id"
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            guild_id bigint NOT NULL,
+            member_id bigint NOT NULL,
+            locked_name text,
+            timeout bigint,
+            UNIQUE (guild_id, member_id)
+            )""")
+
+    def __init__(self, guild_id, member_id, locked_name, timeout=None):
+        super().__init__()
+        self.guild_id = guild_id
+        self.member_id = member_id
+        self.locked_name = locked_name
+        self.timeout = timeout
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = NicknameLock(guild_id=result.get("guild_id"), member_id=result.get("member_id"),
+                               locked_name=result.get("locked_name"), timeout=result.get("timeout"))
+            result_list.append(obj)
+        return result_list
 
 
 class CustomJoinLeaveMessages(db.DatabaseTable):

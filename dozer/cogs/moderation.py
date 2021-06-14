@@ -104,7 +104,7 @@ class Moderation(Cog):
             await orig_channel.send(embed=modlog_embed)
         if len(modlog_channel) != 0:
             if global_modlog:
-                channel = self.bot.get_guild(actor.guild.id if guild_override is None else guild_override).\
+                channel = self.bot.get_guild(actor.guild.id if guild_override is None else guild_override). \
                     get_channel(modlog_channel[0].modlog_channel)
                 if channel is not None and channel != orig_channel:  # prevent duplicate embeds
                     try:
@@ -467,21 +467,35 @@ class Moderation(Cog):
         embed = discord.Embed(title=f"Active punishments in {ctx.guild}", color=blurple)
         embed.set_footer(text='Triggered by ' + ctx.author.display_name)
 
+        def get_mention(target_id):
+            member = ctx.guild.get_member(target_id)
+            if member:
+                return member.mention
+            else:
+                return "**Member left**"
+
+        def get_name(target_id):
+            user = ctx.bot.get_user(target_id)
+            if user:
+                return user
+            else:
+                return "**Unknown#NONE**"
+
         for field_number, punishments in enumerate(chunk(deafens, 3)):
             embed.add_field(name=f"Deafens - {len(deafens)}", value='\n-\n'.join(
-                f"{ctx.guild.get_member(punishment.target_id).mention} ({ctx.guild.get_member(punishment.target_id)} | {punishment.target_id}) "
+                f"{get_mention(punishment.target_id)} ({get_name(punishment.target_id)} | {punishment.target_id}) "
                 f"\nRemaining time: {datetime.timedelta(seconds=round(punishment.target_ts - time.time()))} Reason: {punishment.reason}"
                 for punishment in punishments) or 'None', inline=False)
 
         for field_number, punishments in enumerate(chunk(mutes, 3)):
             embed.add_field(name=f"Mutes - {len(mutes)}", value='\n-\n'.join(
-                f"{ctx.guild.get_member(punishment.target_id).mention} ({ctx.guild.get_member(punishment.target_id)} | {punishment.target_id}) "
+                f"{get_mention(punishment.target_id)} ({get_name(punishment.target_id)} | {punishment.target_id}) "
                 f"\nRemaining time: {datetime.timedelta(seconds=round(punishment.target_ts - time.time()))} Reason: {punishment.reason}"
                 for punishment in punishments) or 'None', inline=False)
 
         for field_number, punishments in enumerate(chunk(self_deafens, 3)):
             embed.add_field(name=f"Self Deafens - {len(self_deafens)}", value='\n-\n'.join(
-                f"{ctx.guild.get_member(punishment.target_id).mention} ({ctx.guild.get_member(punishment.target_id)} | {punishment.target_id}) "
+                f"{get_mention(punishment.target_id)} ({get_name(punishment.target_id)} | {punishment.target_id}) "
                 f"\nRemaining time: {datetime.timedelta(seconds=round(punishment.target_ts - time.time()))} Reason: {punishment.reason}"
                 for punishment in punishments) or 'None', inline=False)
 
