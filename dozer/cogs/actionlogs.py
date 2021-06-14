@@ -249,7 +249,11 @@ class Actionlog(Cog):
         if message.content:
             embed.add_field(name="Message Content:", value=message.content[0:1023], inline=False)
             if len(message.content) > 1024:
-                embed.add_field(name="Message Content Continued:", value=message.content[1024:2000], inline=False)
+                embed.add_field(name="Message Content Continued:", value=message.content[1024:2048], inline=False)
+            if len(message.content) > 2048:
+                embed.add_field(name="Message Content Continued:", value=message.content[2048:3072], inline=False)
+            if len(message.content) > 3072:
+                embed.add_field(name="Message Content Continued:", value=message.content[3072:4000], inline=False)
         else:
             embed.add_field(name="Message Content:", value="N/A", inline=False)
         embed.set_footer(text=f"Message ID: {message.channel.id} - {message.id}\nUserID: {message.author.id}")
@@ -292,7 +296,11 @@ class Actionlog(Cog):
         if content:
             embed.add_field(name="Edited", value=content[0:1023], inline=False)
             if len(content) > 1024:
-                embed.add_field(name="Edited Continued", value=content[1024:2000], inline=False)
+                embed.add_field(name="Message Content Continued:", value=content[1024:2048], inline=False)
+            if len(content) > 2048:
+                embed.add_field(name="Message Content Continued:", value=content[2048:3072], inline=False)
+            if len(content) > 3072:
+                embed.add_field(name="Message Content Continued:", value=content[3072:4000], inline=False)
         else:
             embed.add_field(name="Edited", value="N/A", inline=False)
         embed.set_footer(text=f"Message ID: {channel_id} - {message_id}\nUserID: {user_id}")
@@ -322,10 +330,18 @@ class Actionlog(Cog):
             if before.content:
                 embed.add_field(name="Original", value=before.content[0:1023], inline=False)
                 if len(before.content) > 1024:
-                    embed.add_field(name="Original Continued", value=before.content[1024:2000], inline=False)
+                    embed.add_field(name="Message Content Continued:", value=before.content[1024:2048], inline=False)
+                if len(before.content) > 2048:
+                    embed.add_field(name="Message Content Continued:", value=before.content[2048:3072], inline=False)
+                if len(before.content) > 3072:
+                    embed.add_field(name="Message Content Continued:", value=before.content[3072:4000], inline=False)
                 embed.add_field(name="Edited", value=after.content[0:1023], inline=False)
                 if len(after.content) > 1024:
-                    embed.add_field(name="Edited Continued", value=after.content[1024:2000], inline=False)
+                    embed.add_field(name="Message Content Continued:", value=after.content[1024:2048], inline=False)
+                if len(after.content) > 2048:
+                    embed.add_field(name="Message Content Continued:", value=after.content[2048:3072], inline=False)
+                if len(after.content) > 3072:
+                    embed.add_field(name="Message Content Continued:", value=after.content[3072:4000], inline=False)
             else:
                 embed.add_field(name="Original", value="N/A", inline=False)
                 embed.add_field(name="Edited", value="N/A", inline=False)
