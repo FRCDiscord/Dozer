@@ -9,7 +9,7 @@ from logging import getLogger
 from typing import Union
 
 import discord
-from discord import Forbidden
+from discord.ext import tasks
 from discord.ext.commands import BadArgument, has_permissions, RoleConverter, guild_only
 
 from ._utils import *
@@ -64,7 +64,7 @@ class Moderation(Cog):
                         count += 1
         return count
 
-    @discord.ext.tasks.loop(hours=168)
+    @tasks.loop(hours=168)
     async def nm_kick(self):
         """Kicks new members"""
         await self.nm_kick_internal()
