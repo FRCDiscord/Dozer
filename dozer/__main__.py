@@ -46,6 +46,7 @@ config = {
         'region': 'us_central'
     },
     'debug': False,
+    'presences_intents': False,
     'is_backup': False,
     'invite_override': "",
     "sentry_url": "",
@@ -78,6 +79,7 @@ from . import Dozer  # After version check
 
 intents = discord.Intents.default()
 intents.members = True
+intents.presences = config['presences_intents']
 
 bot = Dozer(config, intents=intents, max_messages=config['cache_size'])
 

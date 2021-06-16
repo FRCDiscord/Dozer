@@ -73,7 +73,8 @@ class Info(Cog):
                                         getattr(member, f'{platform}_status') is not discord.Status.offline])
             status = f'{status} on {platforms}'
         activities = '\n'.join(self._format_activities(member.activities))
-        embed.add_field(name='Status and Activity', value=f'{status}\n{activities}', inline=False)
+        if self.bot.config['presences_intents']:
+            embed.add_field(name='Status and Activity', value=f'{status}\n{activities}', inline=False)
         for field_number, roles in enumerate(chunk(member.roles[:0:-1], 35)):
             embed.add_field(name='Roles', value=', '.join(role.mention for role in roles) or 'None', inline=False)
         footers.append(f"Color: {str(member.color).upper()}")
