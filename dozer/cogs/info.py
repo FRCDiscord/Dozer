@@ -1,9 +1,10 @@
 """Provides commands for pulling certain information."""
 import math
 import typing
-import humanize
 from datetime import timedelta, timezone, datetime
 from difflib import SequenceMatcher
+import humanize
+
 
 import discord
 from discord.ext.commands import cooldown, BucketType, guild_only
@@ -97,7 +98,6 @@ class Info(Cog):
             elif activity.type is discord.ActivityType.listening:
                 return f'Listening to {activity.name}'  # Special-cased to insert " to"
             else:
-                print(activity)
                 activity_time = datetime.now(tz=timezone.utc) - activity.start.replace(tzinfo=timezone.utc)
                 formatted_time = humanize.precisedelta(activity_time, minimum_unit='minutes', format="%0.1f")
                 return f'{activity.type.name.capitalize()} {activity.name} {"`" + activity.details + "`" if activity.details else ""} ' \
