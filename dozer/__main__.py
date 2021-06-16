@@ -78,7 +78,6 @@ from . import Dozer  # After version check
 
 intents = discord.Intents.default()
 intents.members = True
-intents.presences = True
 
 bot = Dozer(config, intents=intents, max_messages=config['cache_size'])
 
