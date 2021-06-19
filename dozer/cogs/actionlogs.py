@@ -2,6 +2,7 @@
 import asyncio
 import datetime
 import logging
+import math
 import time
 
 import discord
@@ -320,6 +321,15 @@ class Actionlog(Cog):
             if channel is not None:
                 await channel.send(embed=embed)
 
+    async def embed_paginatorinator(self, content_name, embed, text):
+        """Chunks up embed sections to fit within 1024 characters"""
+        required_chunks = math.ceil(len(text) / 1024)
+        c_embed = embed.copy()
+        c_embed.add_field(name=content_name, value=text[0:1023])
+        for n in range(1, required_chunks):
+            c_embed.add_field(name=f"{content_name} Continued ({n})", value=text[1024*n:(1024*(n+1))-1], inline=False)
+        return c_embed
+
     @Cog.listener('on_message_edit')
     async def on_message_edit(self, before, after):
         """Logs message edits."""
@@ -337,24 +347,31 @@ class Actionlog(Cog):
                                               f"\nEdited In: {before.channel.mention}", color=0xFFC400,
                                   timestamp=after.edited_at)
             embed.set_author(name=before.author, icon_url=before.author.avatar_url)
-            if before.content:
-                embed.add_field(name="Original", value=before.content[0:1023], inline=False)
-                if len(before.content) > 1024:
-                    embed.add_field(name="Original Continued", value=before.content[1024:2000], inline=False)
-                embed.add_field(name="Edited", value=after.content[0:1023], inline=False)
-                if len(after.content) > 1024:
-                    embed.add_field(name="Edited Continued", value=after.content[1024:2000], inline=False)
-            else:
-                embed.add_field(name="Original", value="N/A", inline=False)
-                embed.add_field(name="Edited", value="N/A", inline=False)
             embed.set_footer(text=f"Message ID: {channel_id} - {message_id}\nUserID: {user_id}")
+            if len(before.content) + len(after.content) < 5000:
+                embed = await self.embed_paginatorinator("Original", embed, before.content)
+                first_embed = await self.embed_paginatorinator("Edited", embed, after.content)
+                second_embed = None
+            else:
+                first_embed = await self.embed_paginatorinator("Original", embed, before.content)
+                embed.add_field(name="Original", value="Loading...", inline=False)
+                second_embed = await self.embed_paginatorinator("Edited", embed, after.content)
+
             if after.attachments:
-                embed.add_field(name="Attachments", value=", ".join([i.url for i in before.attachments]))
+                first_embed.add_field(name="Attachments", value=", ".join([i.url for i in before.attachments]))
             message_log_channel = await self.edit_delete_config.query_one(guild_id=before.guild.id)
             if message_log_channel is not None:
                 channel = before.guild.get_channel(message_log_channel.messagelog_channel)
                 if channel is not None:
-                    await channel.send(embed=embed)
+                    first_message = await channel.send(embed=first_embed)
+                    if second_embed:
+                        second_message = await channel.send(embed=second_embed)
+                        first_embed.add_field(name="Edited", value=f"[CONTINUED](https://discordapp.com/channels/{guild_id}"
+                                                                   f"/{second_message.channel.id}/{second_message.id})", inline=False)
+                        await first_message.edit(embed=first_embed)
+                        embed.set_field_at(0, name="Original", value=f"[CONTINUED](https://discordapp.com/channels/{guild_id}"
+                                                                     f"/{first_message.channel.id}/{first_message.id})", inline=False)
+                        await second_message.edit(embed=second_embed)
 
     @command()
     @has_permissions(administrator=True)
