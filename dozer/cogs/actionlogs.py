@@ -19,7 +19,7 @@ async def embed_paginatorinator(content_name, embed, text):
     """Chunks up embed sections to fit within 1024 characters"""
     required_chunks = math.ceil(len(text) / 1024)
     c_embed = embed.copy()
-    c_embed.add_field(name=content_name, value=text[0:1023])
+    c_embed.add_field(name=content_name, value=text[0:1023], inline=False)
     for n in range(1, required_chunks):
         c_embed.add_field(name=f"{content_name} Continued ({n})", value=text[1024*n:(1024*(n+1))-1], inline=False)
     return c_embed
