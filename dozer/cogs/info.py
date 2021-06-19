@@ -1,7 +1,10 @@
 """Provides commands for pulling certain information."""
 import math
 import typing
+from datetime import timedelta, timezone, datetime
 from difflib import SequenceMatcher
+import humanize
+
 
 import discord
 from discord.ext.commands import cooldown, BucketType, guild_only
@@ -55,10 +58,10 @@ class Info(Cog):
             embed.add_field(name="Last Seen Here At", value="Levels Disabled")
         elif len(levels_data):
             embed.add_field(name="Last Seen Here At", value=levels_data[0].last_given_at.strftime(datetime_format))
-            footers.append(f"Total Messages: {levels_data[0].total_messages}")
+            footers.append(f"Tracked Messages: {levels_data[0].total_messages}")
         else:
             embed.add_field(name="Last Seen Here At", value="Not available")
-            footers.append("Total Messages: N/A")
+            footers.append("Tracked Messages: N/A")
 
         embed.add_field(name='Member Joined', value=member.joined_at.strftime(datetime_format), inline=True)
         if member.premium_since is not None:
@@ -70,7 +73,8 @@ class Info(Cog):
                                         getattr(member, f'{platform}_status') is not discord.Status.offline])
             status = f'{status} on {platforms}'
         activities = '\n'.join(self._format_activities(member.activities))
-        embed.add_field(name='Status and Activity', value=f'{status}\n{activities}', inline=False)
+        if self.bot.config['presences_intents']:
+            embed.add_field(name='Status and Activity', value=f'{status}\n{activities}', inline=False)
         for field_number, roles in enumerate(chunk(member.roles[:0:-1], 35)):
             embed.add_field(name='Roles', value=', '.join(role.mention for role in roles) or 'None', inline=False)
         footers.append(f"Color: {str(member.color).upper()}")
@@ -95,7 +99,10 @@ class Info(Cog):
             elif activity.type is discord.ActivityType.listening:
                 return f'Listening to {activity.name}'  # Special-cased to insert " to"
             else:
-                return f'{activity.type.name.capitalize()} {activity.name}'
+                activity_time = datetime.now(tz=timezone.utc) - activity.start.replace(tzinfo=timezone.utc)
+                formatted_time = humanize.precisedelta(activity_time, minimum_unit='minutes', format="%0.1f")
+                return f'{activity.type.name.capitalize()} {activity.name} {"`" + activity.details + "`" if activity.details else ""} ' \
+                       f'for {formatted_time}'
 
         # Some games show up twice in the list (e.g. "Rainbow Six Siege" and "Tom Clancy's Rainbow Six Siege") so we
         # need to dedup them by string similarity before displaying them
