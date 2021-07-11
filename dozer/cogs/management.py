@@ -1,25 +1,23 @@
 """General, basic commands that are common for Discord bots"""
-import inspect
 
-import functools
 import asyncio
-import itertools
 import logging
 import math
-from datetime import timedelta, timezone, datetime
+
+import humanize
+from datetime import timezone, datetime
 
 import discord
-
-from discord.ext.commands import guild_only, has_permissions, BadArgument
-from discord.ext.tasks import loop
 from dateutil import parser
+from discord.ext.commands import has_permissions
 
 from ._utils import *
 from .general import blurple
 from .. import db
-from ..bot import DOZER_LOGGER
 
 timezones = {"CDT": "UTC-5", "EST": "UTC-5", "EDT": "UTC-4"}
+
+DOZER_LOGGER = logging.getLogger(__name__)
 
 
 class Management(Cog):
@@ -29,17 +27,18 @@ class Management(Cog):
     async def on_ready(self):
         """Restore time based event schedulers"""
         messages = await ScheduledMessages.get_by()
-        DOZER_LOGGER.info("Restarting scheduled message send cycle")
+        started = 0
         for message in messages:
             self.bot.loop.create_task(self.msg_timer(message))
+            started += 1
+        DOZER_LOGGER.info(f"Restarted {started}/{len(messages)} scheduled messages")
 
     async def msg_timer(self, db_entry):
         delay = db_entry.time - datetime.now(tz=timezone.utc)
-        print(delay.total_seconds())
         if delay.total_seconds() > 0:
             await asyncio.sleep(delay.total_seconds())
         await self.send_scheduled_msg(db_entry)
-        await db_entry.delete()
+        await db_entry.delete(id=db_entry.entry_id)
 
     async def send_scheduled_msg(self, db_entry, channel_override=None):
         """Formats and sends scheduled message"""
@@ -49,13 +48,20 @@ class Management(Cog):
         embed.colour = blurple
         if db_entry.requester_id:
             name = await guild.fetch_member(db_entry.requester_id)
-            embed.set_footer(text=f"Triggered by {name.display_name}")
+            embed.set_footer(text=f"Author: {name.display_name}")
         await channel.send(embed=embed)
 
-    @command()
+    @group(invoke_without_command=True)
     @has_permissions(manage_messages=True)
-    async def schedulesend(self, ctx, channel: discord.TextChannel, time, *, content):
-        """Work in progress"""
+    async def schedulesend(self, ctx):
+        """Allows a message to be sent at a particular time"""
+
+    @schedulesend.command()
+    @has_permissions(manage_messages=True)
+    async def add(self, ctx, channel: discord.TextChannel, time, *, content):
+        """Allows a message to be sent at a particular time
+        Supported timezones= EST/EDT, CST/CDT, UTC
+        """
 
         send_time = parser.parse(time, tzinfos=timezones)
         content = content.split("-/-", 1)
@@ -75,6 +81,23 @@ class Management(Cog):
         await ctx.send("Scheduled message saved\nPreview:")
         await self.send_scheduled_msg(entry, channel_override=ctx.message.channel.id)
 
+    @schedulesend.command()
+    @has_permissions(manage_messages=True)
+    async def list(self, ctx):
+        """Displays currently scheduled messages"""
+        messages = await ScheduledMessages.get_by(guild_id=ctx.guild.id)
+        pages = []
+        for page_num, page in enumerate(chunk(messages, 3)):
+            embed = discord.Embed(title=f"Currently scheduled messages for {ctx.guild}")
+            pages.append(embed)
+            for message in page:
+                requester = await ctx.guild.fetch_member(message.requester_id)
+                embed.add_field(name=f"ID: {message.entry_id}", value=f"Channel: <#{message.channel_id}>"
+                                                                      f"\nTime: {message.time}"
+                                                                      f"\nAuthor: {requester.mention}", inline=False)
+                embed.add_field(name=f"Header: {message.header}", value=message.content, inline=False)
+                embed.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(messages) / 3)}")
+        await paginate(ctx, pages)
 
 
 class ScheduledMessages(db.DatabaseTable):
@@ -98,7 +121,7 @@ class ScheduledMessages(db.DatabaseTable):
             PRIMARY KEY (id)
             )""")
 
-    def __init__(self, guild_id, channel_id, time, content, header=None, requester_id=None):
+    def __init__(self, guild_id, channel_id, time, content, header=None, requester_id=None, entry_id=None):
         super().__init__()
         self.guild_id = guild_id
         self.channel_id = channel_id
@@ -106,6 +129,7 @@ class ScheduledMessages(db.DatabaseTable):
         self.time = time
         self.header = header
         self.content = content
+        self.entry_id = entry_id
 
     @classmethod
     async def get_by(cls, **kwargs):
@@ -113,7 +137,8 @@ class ScheduledMessages(db.DatabaseTable):
         result_list = []
         for result in results:
             obj = ScheduledMessages(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"), header=result.get("header"),
-                                    requester_id=result.get("member_id"), time=result.get("time"), content=result.get("content"))
+                                    requester_id=result.get("requester_id"), time=result.get("time"), content=result.get("content"),
+                                    entry_id=result.get("id"))
             result_list.append(obj)
         return result_list
 
