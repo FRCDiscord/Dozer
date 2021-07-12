@@ -4,7 +4,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17: http://docutils.sourceforge.net/" />
+
     <title>Starboard &#8212; Dozer  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
@@ -32,9 +33,9 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="starboard">
+  <section id="starboard">
 <h1>Starboard<a class="headerlink" href="#starboard" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="id1">
+<section id="id1">
 <h2>starboard<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 <p>Show the current server’s starboard configuration. A starboard (or a
 hall of fame) is a channel the bot will repost messages in if they
@@ -43,30 +44,30 @@ a starboard, use the <cite>starboard config</cite> subcommand.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}starboard` - Get the current starboard settings for this server
 </pre></div>
 </div>
+</section>
+<section id="add">
+<h2>add<a class="headerlink" href="#add" title="Permalink to this headline">¶</a></h2>
+<p>Add a message to the starboard manually</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}starboard add 1285719825125 #channel` - add message with id `1285719825125` in `#channel` to the starboard
+</pre></div>
 </div>
-<div class="section" id="disable">
-<h2>disable<a class="headerlink" href="#disable" title="Permalink to this headline">¶</a></h2>
-<p>Turn off the starboard if it is enabled</p>
+<p>manually.
+disable
++++++++
+Turn off the starboard if it is enabled</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}starboard disable` - disables the starboard for the current server
 </pre></div>
 </div>
-</div>
-<div class="section" id="config">
+</section>
+<section id="config">
 <h2>config<a class="headerlink" href="#config" title="Permalink to this headline">¶</a></h2>
 <p>Modify the settings for this server’s starboard</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}starboard config #hall-of-fame 🌟 5` - Set the bot to repost messages that have 5 star reactions to `#hall-of-fame
 </pre></div>
 </div>
-<p><cite>{prefix}starboard config #hall-of-fame 🌟 5 ❌</cite> - Same as above, but with a extra X cancel emoji
-add
-+++
-Add a message to the starboard manually</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}starboard add 1285719825125 #channel` - add message with id `1285719825125` in `#channel` to the starboard
-</pre></div>
-</div>
-<p>manually.</p>
-</div>
-</div>
+<p><cite>{prefix}starboard config #hall-of-fame 🌟 5 ❌</cite> - Same as above, but with a extra X cancel emoji</p>
+</section>
+</section>
 
 
           </div>
@@ -85,7 +86,7 @@ Add a message to the starboard manually</p>
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Actionlog.html"> Actionlog</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Development.html"> Development</a></li>
@@ -102,7 +103,7 @@ Add a message to the starboard manually</p>
 <li class="toctree-l1"><a class="reference internal" href="Roles.html"> Roles</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#"> Starboard</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#id1">starboard</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#disable">disable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#add">add</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#config">config</a></li>
 </ul>
 </li>
@@ -147,7 +148,7 @@ Add a message to the starboard manually</p>
       &copy;2021, Dozer Development Team.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.2</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.3</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
