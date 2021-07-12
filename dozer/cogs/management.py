@@ -84,7 +84,6 @@ class Management(Cog):
     async def add(self, ctx, channel: discord.TextChannel, time, *, content):
         """Allows a message to be sent at a particular time
         Headers are distinguished by the characters `-/-`
-        Supported timezones= `EST/EDT, CST/CDT, UTC/GMT`
         """
         print(self.timezones)
         send_time = parser.parse(time, tzinfos=self.timezones['abbreviations'])
