@@ -4,13 +4,13 @@ import asyncio
 import logging
 import math
 
-import humanize
 from datetime import timezone, datetime
 
 import discord
 from dateutil import parser
 from discord.ext.commands import has_permissions, CommandInvokeError
 
+from ..db import asyncpg
 from ._utils import *
 from .general import blurple
 from .. import db
@@ -40,9 +40,10 @@ class Management(Cog):
             self.started_timers = True
             DOZER_LOGGER.info(f"Started {started}/{len(messages)} scheduled messages")
         else:
-            DOZER_LOGGER.info(f"Client Resumed: Timers still running")
+            DOZER_LOGGER.info("Client Resumed: Timers still running")
 
     async def msg_timer(self, db_entry):
+        """Holds the futures for sending a message"""
         delay = db_entry.time - datetime.now(tz=timezone.utc)
         if delay.total_seconds() > 0:
             await asyncio.sleep(delay.total_seconds())
@@ -64,13 +65,15 @@ class Management(Cog):
     @has_permissions(manage_messages=True)
     async def schedulesend(self, ctx):
         """Allows a message to be sent at a particular time
-        Supported timezones= EST/EDT, CST/CDT, UTC"""
+        Commands: add, delete, list
+        """
 
     @schedulesend.command()
     @has_permissions(manage_messages=True)
     async def add(self, ctx, channel: discord.TextChannel, time, *, content):
         """Allows a message to be sent at a particular time
-        Supported timezones= EST/EDT, CST/CDT, UTC
+        Headers are distinguished by the characters `-/-`
+        Supported timezones= `EST/EDT, CST/CDT, UTC/GMT`
         """
 
         send_time = parser.parse(time, tzinfos=timezones)
@@ -92,6 +95,10 @@ class Management(Cog):
         await ctx.send("Scheduled message saved\nPreview:")
         await self.send_scheduled_msg(entry, channel_override=ctx.message.channel.id)
 
+    add.example_usage = """
+    `{prefix}schedulesend add #announcments "1/0/1970 0:00:00 GMT" Epoch -/- 00000`: Dozer will send a message on the unix epoch in #announcments
+    """
+
     @schedulesend.command()
     @has_permissions(manage_messages=True)
     async def delete(self, ctx, entry_id: int):
@@ -106,12 +113,17 @@ class Management(Cog):
                 e.add_field(name='Success', value=f"Deleted entry with ID: {entry_id} and cancelled planned send")
                 e.set_footer(text='Triggered by ' + ctx.author.display_name)
                 await ctx.send(embed=e)
-            else:
-                raise CommandInvokeError("Unable to delete db entry")
+            elif response.split(" ", 1)[1] == "0":
+                raise asyncpg.UnknownPostgresError("Requested row not deleted")
+
         else:
             e.add_field(name='Error', value=f"No entry with ID: {entry_id} found")
             e.set_footer(text='Triggered by ' + ctx.author.display_name)
             await ctx.send(embed=e)
+
+    delete.example_usage = """
+    `{prefix}schedulesend delete 5`: Deletes the scheduled message with the ID of 5
+    """
 
     @schedulesend.command()
     @has_permissions(manage_messages=True)
@@ -130,6 +142,10 @@ class Management(Cog):
                 embed.add_field(name=f"Header: {message.header}", value=message.content, inline=False)
                 embed.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(messages) / 3)}")
         await paginate(ctx, pages)
+
+    list.example_usage = """
+    `{prefix}schedulesend list`: Lists all scheduled messages for the current guild
+    """
 
 
 class ScheduledMessages(db.DatabaseTable):
