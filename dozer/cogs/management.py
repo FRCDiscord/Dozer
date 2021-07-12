@@ -6,6 +6,7 @@ import math
 
 from datetime import timezone, datetime
 
+import humanize
 import discord
 from dateutil import parser
 from discord.ext.commands import has_permissions, CommandInvokeError
@@ -15,7 +16,7 @@ from ._utils import *
 from .general import blurple
 from .. import db
 
-timezones = {"CDT": "UTC-5", "EST": "UTC-5", "EDT": "UTC-4"}
+timezones = {"CDT": "UTC-5", "EST": "UTC-5", "EDT": "UTC-4", "GMT": "UTC-0"}
 
 DOZER_LOGGER = logging.getLogger(__name__)
 
@@ -92,7 +93,8 @@ class Management(Cog):
         await entry.update_or_add()
         task = self.bot.loop.create_task(self.msg_timer(entry))
         self.timers[entry.request_id] = task
-        await ctx.send("Scheduled message saved\nPreview:")
+        await ctx.send(f"Scheduled message saved, and will be sent in {channel.mention} on"
+                       f" {send_time.strftime('%B %d %H:%M %Y')} UTC\nMessage preview:")
         await self.send_scheduled_msg(entry, channel_override=ctx.message.channel.id)
 
     add.example_usage = """
