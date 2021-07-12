@@ -1,8 +1,10 @@
 """General, basic commands that are common for Discord bots"""
 
 import asyncio
+import json
 import logging
 import math
+import os
 
 from datetime import timezone, datetime
 
@@ -16,17 +18,25 @@ from ._utils import *
 from .general import blurple
 from .. import db
 
-timezones = {"CDT": "UTC-5", "EST": "UTC-5", "EDT": "UTC-4", "GMT": "UTC-0"}
-
 DOZER_LOGGER = logging.getLogger(__name__)
+
+timezone_file = "timezones.json"
 
 
 class Management(Cog):
     """A cog housing Guild management/utility commands."""
+
     def __init__(self, bot):
         super().__init__(bot)
         self.started_timers = False
         self.timers = {}
+        if os.path.isfile(timezone_file):
+            DOZER_LOGGER.info("Loaded timezone configurations")
+            with open(timezone_file) as f:
+                self.timezones = json.load(f)
+        else:
+            DOZER_LOGGER.error("Unable to load timezone configurations")
+            self.timezones = {"abbreviations": []}
 
     @Cog.listener('on_ready')
     async def on_ready(self):
@@ -76,8 +86,8 @@ class Management(Cog):
         Headers are distinguished by the characters `-/-`
         Supported timezones= `EST/EDT, CST/CDT, UTC/GMT`
         """
-
-        send_time = parser.parse(time, tzinfos=timezones)
+        print(self.timezones)
+        send_time = parser.parse(time, tzinfos=self.timezones['abbreviations'])
         content = content.split("-/-", 1)
         message = content[1] if len(content) == 2 else content[0]
         header = content[0] if len(content) == 2 else None
