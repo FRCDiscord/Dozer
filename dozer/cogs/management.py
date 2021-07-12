@@ -9,7 +9,7 @@ from datetime import timezone, datetime
 
 import discord
 from dateutil import parser
-from discord.ext.commands import has_permissions
+from discord.ext.commands import has_permissions, CommandInvokeError
 
 from ._utils import *
 from .general import blurple
@@ -22,23 +22,32 @@ DOZER_LOGGER = logging.getLogger(__name__)
 
 class Management(Cog):
     """A cog housing Guild management/utility commands."""
+    def __init__(self, bot):
+        super().__init__(bot)
+        self.started_timers = False
+        self.timers = {}
 
     @Cog.listener('on_ready')
     async def on_ready(self):
         """Restore time based event schedulers"""
         messages = await ScheduledMessages.get_by()
         started = 0
-        for message in messages:
-            self.bot.loop.create_task(self.msg_timer(message))
-            started += 1
-        DOZER_LOGGER.info(f"Restarted {started}/{len(messages)} scheduled messages")
+        if not self.started_timers:
+            for message in messages:
+                task = self.bot.loop.create_task(self.msg_timer(message))
+                self.timers[message.request_id] = task
+                started += 1
+            self.started_timers = True
+            DOZER_LOGGER.info(f"Started {started}/{len(messages)} scheduled messages")
+        else:
+            DOZER_LOGGER.info(f"Client Resumed: Timers still running")
 
     async def msg_timer(self, db_entry):
         delay = db_entry.time - datetime.now(tz=timezone.utc)
         if delay.total_seconds() > 0:
             await asyncio.sleep(delay.total_seconds())
         await self.send_scheduled_msg(db_entry)
-        await db_entry.delete(id=db_entry.entry_id)
+        await db_entry.delete(request_id=db_entry.request_id)
 
     async def send_scheduled_msg(self, db_entry, channel_override=None):
         """Formats and sends scheduled message"""
@@ -54,7 +63,8 @@ class Management(Cog):
     @group(invoke_without_command=True)
     @has_permissions(manage_messages=True)
     async def schedulesend(self, ctx):
-        """Allows a message to be sent at a particular time"""
+        """Allows a message to be sent at a particular time
+        Supported timezones= EST/EDT, CST/CDT, UTC"""
 
     @schedulesend.command()
     @has_permissions(manage_messages=True)
@@ -73,13 +83,35 @@ class Management(Cog):
             time=send_time,
             content=message,
             header=header,
-            requester_id=ctx.author.id
+            requester_id=ctx.author.id,
+            request_id=ctx.message.id
         )
         await entry.update_or_add()
-
-        self.bot.loop.create_task(self.msg_timer(entry))
+        task = self.bot.loop.create_task(self.msg_timer(entry))
+        self.timers[entry.request_id] = task
         await ctx.send("Scheduled message saved\nPreview:")
         await self.send_scheduled_msg(entry, channel_override=ctx.message.channel.id)
+
+    @schedulesend.command()
+    @has_permissions(manage_messages=True)
+    async def delete(self, ctx, entry_id: int):
+        """Delete a scheduled message"""
+        entries = await ScheduledMessages.get_by(entry_id=entry_id)
+        e = discord.Embed(color=blurple)
+        if len(entries) > 0:
+            response = await ScheduledMessages.delete(request_id=entries[0].request_id)
+            task = self.timers[entries[0].request_id]
+            task.cancel()
+            if response.split(" ", 1)[1] == "1":
+                e.add_field(name='Success', value=f"Deleted entry with ID: {entry_id} and cancelled planned send")
+                e.set_footer(text='Triggered by ' + ctx.author.display_name)
+                await ctx.send(embed=e)
+            else:
+                raise CommandInvokeError("Unable to delete db entry")
+        else:
+            e.add_field(name='Error', value=f"No entry with ID: {entry_id} found")
+            e.set_footer(text='Triggered by ' + ctx.author.display_name)
+            await ctx.send(embed=e)
 
     @schedulesend.command()
     @has_permissions(manage_messages=True)
@@ -93,7 +125,7 @@ class Management(Cog):
             for message in page:
                 requester = await ctx.guild.fetch_member(message.requester_id)
                 embed.add_field(name=f"ID: {message.entry_id}", value=f"Channel: <#{message.channel_id}>"
-                                                                      f"\nTime: {message.time}"
+                                                                      f"\nTime: {message.time} UTC"
                                                                       f"\nAuthor: {requester.mention}", inline=False)
                 embed.add_field(name=f"Header: {message.header}", value=message.content, inline=False)
                 embed.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(messages) / 3)}")
@@ -103,7 +135,7 @@ class Management(Cog):
 class ScheduledMessages(db.DatabaseTable):
     """Stores messages that are scheduled to be sent"""
     __tablename__ = 'scheduled_messages'
-    __uniques__ = 'id'
+    __uniques__ = 'entry_id, request_id'
 
     @classmethod
     async def initial_create(cls):
@@ -111,21 +143,23 @@ class ScheduledMessages(db.DatabaseTable):
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            id serial, 
+            entry_id serial,
+            request_id bigint UNIQUE NOT NULL, 
             guild_id bigint NOT NULL,
             channel_id bigint NOT NULL,
             requester_id bigint NULL, 
             time timestamptz NOT NULL,
             header text NULL,
             content text NOT NULL,
-            PRIMARY KEY (id)
+            PRIMARY KEY (entry_id, request_id)
             )""")
 
-    def __init__(self, guild_id, channel_id, time, content, header=None, requester_id=None, entry_id=None):
+    def __init__(self, guild_id, channel_id, time, content, request_id, header=None, requester_id=None, entry_id=None):
         super().__init__()
         self.guild_id = guild_id
         self.channel_id = channel_id
         self.requester_id = requester_id
+        self.request_id = request_id
         self.time = time
         self.header = header
         self.content = content
@@ -138,7 +172,7 @@ class ScheduledMessages(db.DatabaseTable):
         for result in results:
             obj = ScheduledMessages(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"), header=result.get("header"),
                                     requester_id=result.get("requester_id"), time=result.get("time"), content=result.get("content"),
-                                    entry_id=result.get("id"))
+                                    entry_id=result.get("entry_id"), request_id=result.get("request_id"))
             result_list.append(obj)
         return result_list
 
