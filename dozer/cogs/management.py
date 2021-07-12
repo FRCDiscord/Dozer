@@ -94,7 +94,7 @@ class Management(Cog):
         task = self.bot.loop.create_task(self.msg_timer(entry))
         self.timers[entry.request_id] = task
         await ctx.send(f"Scheduled message saved, and will be sent in {channel.mention} on"
-                       f" {send_time.strftime('%B %d %H:%M %Y')} UTC\nMessage preview:")
+                       f" {send_time.strftime('%B %d %H:%M%z %Y')}\nMessage preview:")
         await self.send_scheduled_msg(entry, channel_override=ctx.message.channel.id)
 
     add.example_usage = """
