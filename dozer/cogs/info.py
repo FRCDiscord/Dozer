@@ -1,12 +1,11 @@
 """Provides commands for pulling certain information."""
 import math
 import typing
-from datetime import timedelta, timezone, datetime
+from datetime import timezone, datetime
 from difflib import SequenceMatcher
-import humanize
-
 
 import discord
+import humanize
 from discord.ext.commands import cooldown, BucketType, guild_only
 from discord_slash import cog_ext, SlashContext
 
@@ -150,7 +149,6 @@ class Info(Cog):
     @cog_ext.cog_subcommand(base="role", name="rolemembers", description="Returns all member who have a role")
     async def slash_rolemember(self, ctx: SlashContext, role: discord.Role):
         """rolemembers slash handler"""
-        await ctx.ack()
         await self.rolemembers(ctx, role=role)
 
     @command()
