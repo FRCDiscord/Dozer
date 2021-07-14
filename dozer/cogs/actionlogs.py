@@ -372,6 +372,50 @@ class Actionlog(Cog):
                                                                      f"/{first_message.channel.id}/{first_message.id})", inline=False)
                         await second_message.edit(embed=second_embed)
 
+    @Cog.listener()
+    async def on_member_ban(self, guild, user):
+        """Logs raw member ban events, even if not banned via &ban"""
+        audit = await self.check_audit(guild, discord.AuditLogAction.ban)
+        embed = discord.Embed(title="User Banned", color=0xff6700)
+        embed.set_thumbnail(url=user.avatar_url)
+        embed.add_field(name="Banned user", value=f"{user}|({user.id})")
+        if audit and audit.target == user:
+            acton_member = await guild.fetch_member(audit.user.id)
+            embed.description = f"User banned by: {acton_member.mention}\n{acton_member}|({acton_member.id})"
+            embed.add_field(name="Reason", value=audit.reason, inline=False)
+            embed.set_footer(text=f"Actor ID: {acton_member.id}\nTarget ID: {user.id}")
+        else:
+            embed.description = "No audit log entry found"
+            embed.set_footer(text=f"Actor ID: Unknown\nTarget ID: {user.id}")
+
+        message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
+        if message_log_channel is not None:
+            channel = guild.get_channel(message_log_channel.messagelog_channel)
+            if channel is not None:
+                await channel.send(embed=embed)
+
+    async def on_member_kick(self, guild, user):
+        """Logs raw member kick events, even if not kicked via &kick"""
+        audit = await self.check_audit(guild, discord.AuditLogAction.kick)
+        embed = discord.Embed(title="User kicked", color=0xffa500)
+        embed.set_thumbnail(url=user.avatar_url)
+        embed.add_field(name="Kicked user", value=f"{user}|({user.id})")
+        if audit and audit.target == user:
+            acton_member = await guild.fetch_member(audit.user.id)
+            embed.description = f"User kicked by: {acton_member.mention}\n{acton_member}|({acton_member.id})"
+            embed.add_field(name="Reason", value=audit.reason, inline=False)
+            embed.set_footer(text=f"Actor ID: {acton_member.id}\nTarget ID: {user.id}")
+        else:
+            embed.description = "No audit log entry found"
+            embed.set_footer(text=f"Actor ID: Unknown\nTarget ID: {user.id}")
+
+        message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
+        if message_log_channel is not None:
+            channel = guild.get_channel(message_log_channel.messagelog_channel)
+            if channel is not None:
+                await channel.send(embed=embed)
+
+
     @command()
     @has_permissions(administrator=True)
     async def messagelogconfig(self, ctx, channel_mentions: discord.TextChannel):
