@@ -5,22 +5,19 @@ import json
 import logging
 import math
 import os
-
 from datetime import timezone, datetime
 
-import humanize
 import discord
 from dateutil import parser
-from discord.ext.commands import has_permissions, CommandInvokeError
+from discord.ext.commands import has_permissions, BadArgument
 
-from ..db import asyncpg
 from ._utils import *
 from .general import blurple
 from .. import db
 
 DOZER_LOGGER = logging.getLogger(__name__)
 
-timezone_file = "timezones.json"
+TIMEZONE_FILE = "timezones.json"
 
 
 class Management(Cog):
@@ -30,13 +27,13 @@ class Management(Cog):
         super().__init__(bot)
         self.started_timers = False
         self.timers = {}
-        if os.path.isfile(timezone_file):
+        if os.path.isfile(TIMEZONE_FILE):
             DOZER_LOGGER.info("Loaded timezone configurations")
-            with open(timezone_file) as f:
+            with open(TIMEZONE_FILE) as f:
                 self.timezones = json.load(f)
         else:
             DOZER_LOGGER.error("Unable to load timezone configurations")
-            self.timezones = {"abbreviations": []}
+            self.timezones = {}
 
     @Cog.listener('on_ready')
     async def on_ready(self):
@@ -65,12 +62,24 @@ class Management(Cog):
         """Formats and sends scheduled message"""
         embed = discord.Embed(title=db_entry.header if db_entry.header else "Scheduled Message", description=db_entry.content)
         guild = self.bot.get_guild(db_entry.guild_id)
+        if not guild:
+            DOZER_LOGGER.warning(f"Attempted to schedulesend message in guild({db_entry.guild_id}); Guild no longer exist")
+            return
         channel = guild.get_channel(db_entry.channel_id if not channel_override else channel_override)
+        if not channel:
+            DOZER_LOGGER.warning(f"Attempted to schedulesend message in guild({guild}), channel({db_entry.channel_id});"
+                                 f" Channel no longer exist")
+            return
         embed.colour = blurple
+        perms = channel.permissions_for(guild.me)
         if db_entry.requester_id:
             name = await guild.fetch_member(db_entry.requester_id)
             embed.set_footer(text=f"Author: {name.display_name}")
-        await channel.send(embed=embed)
+        if perms.send_messages:
+            await channel.send(embed=embed)
+        else:
+            DOZER_LOGGER.warning((f"Attempted to schedulesend message in guild({guild}:{guild.id}), channel({channel});"
+                                  f" Client lacks send permissions"))
 
     @group(invoke_without_command=True)
     @has_permissions(manage_messages=True)
@@ -85,24 +94,38 @@ class Management(Cog):
         """Allows a message to be sent at a particular time
         Headers are distinguished by the characters `-/-`
         """
-        print(self.timezones)
-        send_time = parser.parse(time, tzinfos=self.timezones['abbreviations'])
+        perms = channel.permissions_for(ctx.guild.me)
+        if not perms.send_messages:
+            raise BadArgument(f"Dozer does not have permissions to send messages in {channel.mention}")
+        try:
+            send_time = parser.parse(time, tzinfos=self.timezones)
+        except ValueError:
+            raise BadArgument("Unknown Date Format")
+        except OverflowError:
+            raise BadArgument("Date exceeds max value")
+        if send_time.tzinfo is None:
+            await ctx.send("```Warning! Unknown timezone entered, defaulting to UTC```")
+            send_time.replace(tzinfo=timezone.utc)
         content = content.split("-/-", 1)
         message = content[1] if len(content) == 2 else content[0]
         header = content[0] if len(content) == 2 else None
+        if len(header) > 256:  # message does not need a check as description max char is higher than max message length of 4000
+            await ctx.send("```Warning! Header larger than max 256 characters, header has been truncated```")
         entry = ScheduledMessages(
             guild_id=ctx.guild.id,
             channel_id=channel.id,
             time=send_time,
             content=message,
-            header=header,
+            header=header[:256],
             requester_id=ctx.author.id,
             request_id=ctx.message.id
         )
         await entry.update_or_add()
+        entries = await ScheduledMessages.get_by(request_id=entry.request_id)
+        entry = entries[0]
         task = self.bot.loop.create_task(self.msg_timer(entry))
         self.timers[entry.request_id] = task
-        await ctx.send(f"Scheduled message saved, and will be sent in {channel.mention} on"
+        await ctx.send(f"Scheduled message(ID: {entry.entry_id}) saved, and will be sent in {channel.mention} on"
                        f" {send_time.strftime('%B %d %H:%M%z %Y')}\nMessage preview:")
         await self.send_scheduled_msg(entry, channel_override=ctx.message.channel.id)
 
@@ -118,14 +141,14 @@ class Management(Cog):
         e = discord.Embed(color=blurple)
         if len(entries) > 0:
             response = await ScheduledMessages.delete(request_id=entries[0].request_id)
-            task = self.timers[entries[0].request_id]
+            task = self.timers.pop(entries[0].request_id)
             task.cancel()
             if response.split(" ", 1)[1] == "1":
                 e.add_field(name='Success', value=f"Deleted entry with ID: {entry_id} and cancelled planned send")
                 e.set_footer(text='Triggered by ' + ctx.author.display_name)
                 await ctx.send(embed=e)
             elif response.split(" ", 1)[1] == "0":
-                raise asyncpg.UnknownPostgresError("Requested row not deleted")
+                raise Exception("Requested row not deleted")
 
         else:
             e.add_field(name='Error', value=f"No entry with ID: {entry_id} found")
