@@ -87,6 +87,7 @@ class Management(Cog):
         """Allows a message to be sent at a particular time
         Commands: add, delete, list
         """
+        await ctx.send("Allows a message to be sent at a particular time\nCommands: add, delete, list")
 
     @schedulesend.command()
     @has_permissions(manage_messages=True)
