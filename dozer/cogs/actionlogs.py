@@ -2,6 +2,7 @@
 import asyncio
 import datetime
 import logging
+import math
 import time
 
 import discord
@@ -12,6 +13,16 @@ from .general import blurple
 from .. import db
 
 DOZER_LOGGER = logging.getLogger(__name__)
+
+
+async def embed_paginatorinator(content_name, embed, text):
+    """Chunks up embed sections to fit within 1024 characters"""
+    required_chunks = math.ceil(len(text) / 1024)
+    c_embed = embed.copy()
+    c_embed.add_field(name=content_name, value=text[0:1023], inline=False)
+    for n in range(1, required_chunks):
+        c_embed.add_field(name=f"{content_name} Continued ({n})", value=text[1024*n:(1024*(n+1))-1], inline=False)
+    return c_embed
 
 
 class Actionlog(Cog):
@@ -265,9 +276,7 @@ class Actionlog(Cog):
                 audit_member = await message.guild.fetch_member(audit.user.id)
                 embed.add_field(name="Message Deleted By: ", value=str(audit_member.mention), inline=False)
         if message.content:
-            embed.add_field(name="Message Content:", value=message.content[0:1023], inline=False)
-            if len(message.content) > 1024:
-                embed.add_field(name="Message Content Continued:", value=message.content[1024:2000], inline=False)
+            embed = await embed_paginatorinator("Message Content", embed, message.content)
         else:
             embed.add_field(name="Message Content:", value="N/A", inline=False)
         embed.set_footer(text=f"Message ID: {message.channel.id} - {message.id}\nUserID: {message.author.id}")
@@ -301,7 +310,7 @@ class Actionlog(Cog):
         message_id = payload.message_id
         link = f"https://discordapp.com/channels/{guild_id}/{channel_id}/{message_id}"
         mention = f"<@!{user_id}>"
-        avatar_link = f"http://cdn.discordapp.com/avatars/{user_id}/{author['avatar']}.webp?size=1024"
+        avatar_link = f"https://cdn.discordapp.com/avatars/{user_id}/{author['avatar']}.webp?size=1024"
         embed = discord.Embed(title="Message Edited",
                               description=f"[MESSAGE]({link}) From {mention}\nEdited In: {mchannel.mention}",
                               color=0xFFC400)
@@ -337,24 +346,53 @@ class Actionlog(Cog):
                                               f"\nEdited In: {before.channel.mention}", color=0xFFC400,
                                   timestamp=after.edited_at)
             embed.set_author(name=before.author, icon_url=before.author.avatar_url)
-            if before.content:
-                embed.add_field(name="Original", value=before.content[0:1023], inline=False)
-                if len(before.content) > 1024:
-                    embed.add_field(name="Original Continued", value=before.content[1024:2000], inline=False)
-                embed.add_field(name="Edited", value=after.content[0:1023], inline=False)
-                if len(after.content) > 1024:
-                    embed.add_field(name="Edited Continued", value=after.content[1024:2000], inline=False)
-            else:
-                embed.add_field(name="Original", value="N/A", inline=False)
-                embed.add_field(name="Edited", value="N/A", inline=False)
             embed.set_footer(text=f"Message ID: {channel_id} - {message_id}\nUserID: {user_id}")
+            if len(before.content) + len(after.content) < 5000:
+                embed = await embed_paginatorinator("Original", embed, before.content)
+                first_embed = await embed_paginatorinator("Edited", embed, after.content)
+                second_embed = None
+            else:
+                first_embed = await embed_paginatorinator("Original", embed, before.content)
+                embed.add_field(name="Original", value="Loading...", inline=False)
+                second_embed = await embed_paginatorinator("Edited", embed, after.content)
+
             if after.attachments:
-                embed.add_field(name="Attachments", value=", ".join([i.url for i in before.attachments]))
+                first_embed.add_field(name="Attachments", value=", ".join([i.url for i in before.attachments]))
             message_log_channel = await self.edit_delete_config.query_one(guild_id=before.guild.id)
             if message_log_channel is not None:
                 channel = before.guild.get_channel(message_log_channel.messagelog_channel)
                 if channel is not None:
-                    await channel.send(embed=embed)
+                    first_message = await channel.send(embed=first_embed)
+                    if second_embed:
+                        second_message = await channel.send(embed=second_embed)
+                        first_embed.add_field(name="Edited", value=f"[CONTINUED](https://discordapp.com/channels/{guild_id}"
+                                                                   f"/{second_message.channel.id}/{second_message.id})", inline=False)
+                        await first_message.edit(embed=first_embed)
+                        embed.set_field_at(0, name="Original", value=f"[CONTINUED](https://discordapp.com/channels/{guild_id}"
+                                                                     f"/{first_message.channel.id}/{first_message.id})", inline=False)
+                        await second_message.edit(embed=second_embed)
+
+    @Cog.listener('on_member_ban')
+    async def on_member_ban(self, guild, user):
+        """Logs raw member ban events, even if not banned via &ban"""
+        audit = await self.check_audit(guild, discord.AuditLogAction.ban)
+        embed = discord.Embed(title="User Banned", color=0xff6700)
+        embed.set_thumbnail(url=user.avatar_url)
+        embed.add_field(name="Banned user", value=f"{user}|({user.id})")
+        if audit and audit.target == user:
+            acton_member = await guild.fetch_member(audit.user.id)
+            embed.description = f"User banned by: {acton_member.mention}\n{acton_member}|({acton_member.id})"
+            embed.add_field(name="Reason", value=audit.reason, inline=False)
+            embed.set_footer(text=f"Actor ID: {acton_member.id}\nTarget ID: {user.id}")
+        else:
+            embed.description = "No audit log entry found"
+            embed.set_footer(text=f"Actor ID: Unknown\nTarget ID: {user.id}")
+
+        message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
+        if message_log_channel is not None:
+            channel = guild.get_channel(message_log_channel.messagelog_channel)
+            if channel is not None:
+                await channel.send(embed=embed)
 
     @command()
     @has_permissions(administrator=True)

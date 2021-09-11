@@ -1,13 +1,14 @@
 """Records members' XP and level."""
 
-import functools
 import asyncio
+import functools
 import itertools
 import logging
 import math
-from datetime import timedelta, timezone, datetime
 import random
 import typing
+from datetime import timedelta, timezone, datetime
+
 import aiohttp
 import discord
 from discord.ext.commands import guild_only, has_permissions, BadArgument
@@ -668,12 +669,11 @@ class Levels(Cog):
     `{prefix}rank`: show your ranking
     `{prefix}rank coolgal#1234`: show another user's ranking
     """
-
-    @cog_ext.cog_slash(name="leaderboard", description="Returns the guilds dozer leaderboard")
-    async def slash_levels(self, ctx: SlashContext, start_member: discord.Member = None):
-        """Leaderboard slash handler"""
-        await ctx.ack()
-        await self.levels(ctx, start_member)
+    # Disabled until slash command pagination is fixed by discord
+    # @cog_ext.cog_slash(name="leaderboard", description="Returns the guilds dozer leaderboard")
+    # async def slash_levels(self, ctx: SlashContext, start_member: discord.Member = None):
+    #     """Leaderboard slash handler"""
+    #     await self.levels(ctx, start_member)
 
     @command(aliases=["ranks", "leaderboard"])
     @guild_only()

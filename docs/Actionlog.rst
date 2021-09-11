@@ -15,11 +15,6 @@ Command group to configure Join/Leave logs
 `{prefix}memberlogconfig setjoinmessage template`: Sets join template
 `{prefix}memberlogconfig setleavemessage template`: Sets leave template
 `{prefix}memberlogconfig help`: Returns the template formatting key
-toggleping
-++++++++++
-Toggles whenever a new member gets pinged on join
-::
-   
 help
 ++++
 Displays message formatting key
@@ -45,3 +40,19 @@ disable
 Disables Join/Leave logging
 ::
    
+toggleping
+++++++++++
+Toggles whenever a new member gets pinged on join
+::
+   
+locknickname
+++++++++++++
+Locks a members nickname to a particular string, in essence revoking
+nickname change perms
+::
+   `{prefix}locknickname @Snowplow#5196 Dozer`: Locks user snowplows nickname to "dozer"
+unlocknickname
+++++++++++++++
+Removes nickname lock from member
+::
+   `{prefix}unlocknickname @Snowplow#5196`: Removes nickname lock from user dozer

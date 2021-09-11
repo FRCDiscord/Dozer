@@ -1,0 +1,14 @@
+{
+  "EDT": "UTC-4",
+  "EST": "UTC-5",
+  "CDT": "UTC-5",
+  "CST": "UTC-6",
+  "GMT": "UTC-0",
+  "MDT": "UTC-6",
+  "MST": "UTC-7",
+  "PDT": "UTC-7",
+  "PST": "UTC-8",
+  "IST": "UTC+1",
+  "CET": "UTC+1",
+  "BRT": "UTC-3"
+}
