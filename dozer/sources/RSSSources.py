@@ -197,7 +197,7 @@ class FTCQA(RSSSource):
     full_name = "FTC Q&A Answers"
     short_name = "ftc-qa"
     description = "Answers from the official FIRST Tech Challenge Q&A system"
-    color = discord.colour.Color.dark_blue()
+    color = discord.colour.Color.orange()
 
 
 class FTCBlogPosts(RSSSource):
