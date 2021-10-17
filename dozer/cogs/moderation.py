@@ -9,12 +9,13 @@ from logging import getLogger
 from typing import Union
 
 import discord
-from discord import Forbidden
 from discord.ext.commands import BadArgument, has_permissions, RoleConverter, guild_only
 
 from ._utils import *
 from .general import blurple
 from .. import db
+
+# from discord.ext import tasks
 
 MAX_PURGE = 1000
 

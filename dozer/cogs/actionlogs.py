@@ -406,7 +406,7 @@ class Actionlog(Cog):
         else:
             config = GuildMessageLog(guild_id=ctx.guild.id, messagelog_channel=channel_mentions.id, name=ctx.guild.name)
         await config.update_or_add()
-        self.edit_delete_config.invalidate_entry(id=ctx.guild.id)
+        self.edit_delete_config.invalidate_entry(guild_id=ctx.guild.id)
         await ctx.send(ctx.message.author.mention + ', messagelog settings configured!')
 
     messagelogconfig.example_usage = """
