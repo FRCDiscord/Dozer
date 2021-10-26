@@ -125,8 +125,6 @@ Setup configuration options:
    ![oauthInvite](static/invite3_oauthurl.png)
 
 ### Setting up the database systems
-If you want just a database file with no replication, Dozer will work using SQLite without needing any extra work on your end.
-If you're interested in using a more advanced database system, we recommend postgres. You can set up postgres on your own server
-or use a service such as ElephantSQL. To make it work in Dozer, install the psycopg2 pip package, then change the `db_url` key
-in `config.json` to a URL that follows this format: `postgresql://username:password@host/db_name_in_postgres` with the correct
-information filled in.
+Dozer requires Postgres. You can set up Postgres on your own server or use a service such as ElephantSQL. To make it work in Dozer, 
+install the psycopg2 pip package, then change the `db_url` key in `config.json` to a URL that follows this format: 
+`postgresql://username:password@host/db_name_in_postgres` with the correct information filled in.

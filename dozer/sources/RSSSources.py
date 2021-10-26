@@ -189,6 +189,15 @@ class FRCQA(RSSSource):
     short_name = "frc-qa"
     description = "Answers from the official FIRST Robotics Competition Q&A system"
     color = discord.colour.Color.dark_blue()
+    
+class FTCQA(RSSSource):
+    """Answers from the official FIRST Tech Challenge Q&A system"""
+    url = "https://ftc-qa.firstinspires.org/rss/answers.rss"
+    base_url = "https://ftc-qa.firstinspires.org/"
+    full_name = "FTC Q&A Answers"
+    short_name = "ftc-qa"
+    description = "Answers from the official FIRST Tech Challenge Q&A system"
+    color = discord.colour.Color.orange()
 
 
 class FTCBlogPosts(RSSSource):
