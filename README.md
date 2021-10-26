@@ -90,7 +90,7 @@ Setup configuration options:
 
 5. Add the Discord bot account's token to `discord_token` in `config.json`
 
-6. If you have a Google Maps API key, a Blue Alliance API key, an Orange Alliance API key, a Twitch API client ID and client secret, and/or a Reddit client ID and client secret, add them to the appropriate places in `config.json`. For more details on how to get these API keys, [see this file for instructions](tokenInstructions.md). If you don't, your bot will still work, but you won't be able to use the commands that rely on these tokens.
+6. If you have a Google Maps API key, a Blue Alliance API key, an Orange Alliance API key, a Twitch API client ID and client secret, and/or a Reddit client ID and client secret, add them to the appropriate places in `config.json`. For more details on how to get these API keys, [see this file for instructions](tokenInstructions.md). ***If you don't, your bot will still work,*** but you won't be able to use the commands that rely on these tokens.
 
 7. If you are using Docker, you most likely won't have to do anything. Otherwise, add your database connection info to `db_url` in `config.json` using the following format:
     
@@ -103,7 +103,12 @@ Setup configuration options:
 
 9. The default command prefix is &. If this is already in use on your server or you would like another prefix, you can change the `prefix` value in `config.json`.
 
-10. When using Docker to configure lavalink, change the host IP listed in `config.json` to "172.18.0.2".
+10. To configure lavalink:
+   * **If you are using Docker,** Open up Docker Desktop and find the lavalink container's name. Change the host IP listed in `config.json` to that name. For example, in the following image below, the config.json file should say `"host": "dozerRecent_lavalink_1"`. Set the `port` value to the port that's listed in `docker-compose.yml`.
+   
+   ![Finding the lavalink container name](static/containerNames.png)
+
+   * **If you are not using Docker**, set the `host` and `port` values to which values that you have set up.
 
 11. Run the bot again. If you're using Docker, run `docker-compose up` twice in your command line interface. If you are setting it up manually, repeat the command in step 4. You should see `Signed in as username#discrim (id)` after a few seconds.
    1. When using Docker:

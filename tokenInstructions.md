@@ -1,9 +1,9 @@
 # Instructions on getting API Tokens/Keys
 
-(In progress)
-
 * [Google Maps](#google-maps)
 * [The Blue Alliance](#the-blue-alliance)
+* [The Orange Alliance](#the-orange-alliance)
+* [Twitch](#twitch)
 
 
 ### Google Maps
@@ -28,3 +28,15 @@
 ![tbaKey](static/tba.png)
 
 3. Add the key to config.json, where it says "Put TBA API key here"
+
+### The Orange Alliance
+
+Create an Orange Alliance account, go to your user settings, and find instructions on how to receive an API key.
+
+### Twitch
+
+Follow Step 1 under [these instructions](https://dev.twitch.tv/docs/api/) to get an Client ID and Secret.
+
+### Reddit
+
+To get a Reddit API Client ID and Secret, follow the instructions under "Get Access" on [this page](https://towardsdatascience.com/how-to-use-the-reddit-api-in-python-5e05ddfd1e5c).
