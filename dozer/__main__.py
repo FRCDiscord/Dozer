@@ -16,7 +16,7 @@ config = {
     'prefix': '&', 'developers': [],
     'cache_size': 20000,
     'tba': {
-        'key': ''
+        'key': 'Put TBA API key here'
     },
     'toa': {
         'key': 'Put TOA API key here',
@@ -49,8 +49,7 @@ config = {
     'presences_intents': False,
     'is_backup': False,
     'invite_override': "",
-    "sentry_url": "",
-    'denylist_cogs': []
+    "sentry_url": ""
 }
 config_file = 'config.json'
 
@@ -85,10 +84,8 @@ bot = Dozer(config, intents=intents, max_messages=config['cache_size'])
 
 
 for ext in os.listdir('dozer/cogs'):
-    cog_name = ext[:-3]  # Remove '.py'
-
-    if not cog_name.startswith(('_', '.')) and cog_name not in config['denylist_cogs'] :
-        bot.load_extension('dozer.cogs.' + cog_name)
+    if not ext.startswith(('_', '.')):
+        bot.load_extension('dozer.cogs.' + ext[:-3])  # Remove '.py'
 
 asyncio.get_event_loop().run_until_complete(db_migrate())
 

@@ -6,6 +6,7 @@ dozer.db
 cilog.txt
 
 venv/
+.venv/
 
 # IDEA
 .idea/
