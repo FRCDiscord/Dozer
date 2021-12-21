@@ -110,8 +110,9 @@ class Management(Cog):
         content = content.split("-/-", 1)
         message = content[1] if len(content) == 2 else content[0]
         header = content[0] if len(content) == 2 else None
-        if len(header) > 256:  # message does not need a check as description max char is higher than max message length of 4000
-            await ctx.send("```Warning! Header larger than max 256 characters, header has been truncated```")
+        if header is not None:
+            if len(header) > 256:  # message does not need a check as description max char is higher than max message length of 4000
+                await ctx.send("```Warning! Header larger than max 256 characters, header has been truncated```")
         entry = ScheduledMessages(
             guild_id=ctx.guild.id,
             channel_id=channel.id,

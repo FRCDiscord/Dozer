@@ -158,7 +158,9 @@ disable=print-statement,
         no-else-continue,
         unused-argument,
         consider-using-f-string,
-        unspecified-encoding
+        unspecified-encoding,
+        consider-using-in,
+        trailing-whitespace
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
