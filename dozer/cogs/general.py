@@ -77,6 +77,9 @@ class General(Cog):
         info.add_field(name="Open Source",
                        value="Dozer is open source! Feel free to view and contribute to our Python code "
                              "[on Github](https://github.com/FRCDiscord/Dozer)")
+        info.add_field(name="Privacy",
+                       value="We are fully committed to protecting your privacy. "
+                             "You can view our privacy policy [here](https://github.com/FRCDiscord/Dozer/blob/master/privacy.md)")
         info.set_footer(text='Dozer Help | all commands | Info page')
         await self._show_help(ctx, info, 'Dozer: Commands', '', 'all commands', ctx.bot.commands)
 
