@@ -63,11 +63,6 @@ class Filter(Cog):
         for wordid, wordfilter in filters.items():
             if wordfilter.search(message.content) is not None:
                 await message.channel.send(f"{message.author.mention}, Banned word detected!", delete_after=5.0)
-                time = datetime.datetime.utcnow()
-                infraction = WordFilterInfraction(member_id=message.author.id, filter_id=wordid,
-                                                  timestamp=time,
-                                                  message=message.content)
-                await infraction.update_or_add()
                 if not deleted:
                     await message.delete()
                     deleted = True
@@ -90,11 +85,6 @@ class Filter(Cog):
             return
         for wordid, wordfilter in filters.items():
             if wordfilter.search(member_after.nick) is not None:
-                time = datetime.datetime.utcnow()
-                infraction = WordFilterInfraction(member_id=member_after.id, filter_id=wordid,
-                                                  timestamp=time,
-                                                  message=member_after.nick)
-                await infraction.update_or_add()
                 if not reverted:
                     try:
                         await member_after.edit(nick=member_before.nick)

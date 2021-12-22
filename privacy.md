@@ -37,9 +37,9 @@ Dozer uses log files to keep track of errors and exceptions that occur within do
 These log files are never taken off platform. They are only used for debugging purposes.
 
 ### Data removal
-If you wish for all of your data to be removed from our database, please contact us either via Discord or Email.
+If you wish for all of your data to be removed from our database, please contact us via either Discord or Email.
 
-All message content will automatically be removed after either a cache purge or in the case of `&schedulesend` when the message is sent. 
+All message content will automatically be removed after a cache purge or in the case of `&schedulesend` when the message is sent. 
 
 ### Contacting us
 - [Support server](https://discord.gg/Y6RFJfhr43)
