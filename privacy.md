@@ -15,7 +15,7 @@ All collected information listed above is stored in a database which is protecte
 We also temporarily store the following information to reduce the amount of API calls to Discord:
 - User information (Username, discriminator, avatar link, etc.)
 - User roles (Name, color, etc.)
-- User permissions (Name, color, etc.)
+- User permissions (Manage Messages, Manage Nicknames, etc.)
 - User voice state (Channel ID, etc.)
 - Guild information (Name, icon, etc.)
 - Guild member information (Nickname, etc.)
