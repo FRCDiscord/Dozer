@@ -71,12 +71,12 @@ class General(Cog):
         This command can show info for all commands, a specific command, or a category of commands.
         Use `{0}{1} {1}` for more information.
         """.format(ctx.prefix, ctx.invoked_with)), inline=False)
-        info.add_field(name='Support',
-                       value="Join our development server at https://discord.gg/bB8tcQ8 for support, to help with development, or if "
-                             "you have any questions or comments!")
+
         info.add_field(name="Open Source",
                        value="Dozer is open source! Feel free to view and contribute to our Python code "
-                             "[on Github](https://github.com/FRCDiscord/Dozer)")
+                             "[on Github](https://github.com/FRCDiscord/Dozer)", inline=False)
+        info.add_field(name='Support',
+                       value="If you have any questions or comments you can join our [support server](https://discord.gg/bB8tcQ8) ")
         info.add_field(name="Privacy",
                        value="We are fully committed to protecting your privacy. "
                              "You can view our privacy policy [here](https://github.com/FRCDiscord/Dozer/blob/master/privacy.md)")
