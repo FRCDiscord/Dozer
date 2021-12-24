@@ -244,9 +244,9 @@ class Levels(Cog):
         member = guild.get_member(user_id)
         if member:
             if member.status == discord.Status.offline:
-                return f"**{member.display_name}**#{member.discriminator}"
+                return f"[{member.display_name}](https://discordapp.com/users/{member.id})"
             else:
-                return str(member.mention)
+                return str(member.mention)  # This only works if presence intents are enabled
         else:  # Still try to see if the bot can find the user to get their name
             user = self.bot.get_user(user_id)
             if user:
@@ -680,7 +680,7 @@ class Levels(Cog):
     async def levels(self, ctx, start: typing.Optional[discord.Member]):
         """Show the XP leaderboard for this server. Leaderboard refreshes every 5 minutes or so"""
 
-        # Order by total_xp needs a tiebreaker, otherwise all records with equal XP have the same rank
+        # Order by total_xp needs a tiebreaker, otherwise all records with equal XP will have the same rank
         # This causes rankings like #1, #1, #1, #4, #4, #6, ...
         # user_id is arbitrary, chosen because it is guaranteed to be unique between two records in the same guild
         records = await db.Pool.fetch(f"""
