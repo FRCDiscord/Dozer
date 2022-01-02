@@ -4,7 +4,7 @@ services:
     image: postgres:alpine
     environment:
       POSTGRES_PASSWORD: simplepass
-      POSTGRES_USER: dozer_user
+      POSTGRES_USER: dozer
     ports:
       - "5432:5432"
     volumes:

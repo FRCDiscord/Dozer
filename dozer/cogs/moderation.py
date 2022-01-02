@@ -9,13 +9,12 @@ from logging import getLogger
 from typing import Union
 
 import discord
+from discord.ext import tasks
 from discord.ext.commands import BadArgument, has_permissions, RoleConverter, guild_only
 
 from ._utils import *
 from .general import blurple
 from .. import db
-
-# from discord.ext import tasks
 
 MAX_PURGE = 1000
 
@@ -368,8 +367,8 @@ class Moderation(Cog):
     """
 
     @command()
-    @has_permissions(manage_roles=True)
-    @bot_has_permissions(manage_roles=True)
+    @has_permissions(manage_permissions=True)
+    @bot_has_permissions(manage_permissions=True)
     async def timeout(self, ctx, duration: float):
         """Set a timeout (no sending messages or adding reactions) on the current channel."""
         settings = await MemberRole.get_by(guild_id=ctx.guild.id)
@@ -550,7 +549,7 @@ class Moderation(Cog):
 
     @command()
     @has_permissions(manage_roles=True)
-    @bot_has_permissions(manage_roles=True)
+    @bot_has_permissions(manage_permissions=True)
     async def mute(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
         """Mute a user to prevent them from sending messages"""
         async with ctx.typing():
@@ -568,7 +567,7 @@ class Moderation(Cog):
 
     @command()
     @has_permissions(manage_roles=True)
-    @bot_has_permissions(manage_roles=True)
+    @bot_has_permissions(manage_permissions=True)
     async def unmute(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
         """Unmute a user to allow them to send messages again."""
         async with ctx.typing():
@@ -584,7 +583,7 @@ class Moderation(Cog):
 
     @command()
     @has_permissions(manage_roles=True)
-    @bot_has_permissions(manage_roles=True)
+    @bot_has_permissions(manage_permissions=True)
     async def deafen(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
         """Deafen a user to prevent them from both sending messages but also reading messages."""
         async with ctx.typing():
@@ -601,7 +600,7 @@ class Moderation(Cog):
     """
 
     @command()
-    @bot_has_permissions(manage_roles=True)  # Once instance globally, don't wait instead throw exception
+    @bot_has_permissions(manage_permissions=True)  # Once instance globally, don't wait instead throw exception
     @discord.ext.commands.max_concurrency(1, wait=False, per=discord.ext.commands.BucketType.default)
     @discord.ext.commands.cooldown(rate=10, per=2, type=discord.ext.commands.BucketType.guild)  # 10 seconds per 2 members in the guild
     async def selfdeafen(self, ctx, *, reason="No reason provided"):
@@ -623,7 +622,7 @@ class Moderation(Cog):
 
     @command()
     @has_permissions(manage_roles=True)
-    @bot_has_permissions(manage_roles=True)
+    @bot_has_permissions(manage_permissions=True)
     async def undeafen(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
         """Undeafen a user to allow them to see message and send message again."""
         async with ctx.typing():

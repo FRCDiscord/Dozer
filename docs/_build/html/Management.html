@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TOA &#8212; Dozer  documentation</title>
+    <title>Management &#8212; Dozer  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -14,8 +14,6 @@
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Voice" href="Voice.html" />
-    <link rel="prev" title="Teams" href="Teams.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -32,21 +30,32 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="toa">
-<h1>TOA<a class="headerlink" href="#toa" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="id1">
-<h2>toa<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
-<p>Get FTC-related information from The Orange Alliance. If no subcommand
-is specified, the <cite>team</cite> subcommand is inferred, and the argument is
-taken as a team number.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}toa 5667` - show information on team 5667, Robominers
+  <div class="section" id="management">
+<h1>Management<a class="headerlink" href="#management" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="schedulesend">
+<h2>schedulesend<a class="headerlink" href="#schedulesend" title="Permalink to this headline">¶</a></h2>
+<p>Allows a message to be sent at a particular time Commands: add, delete,
+list</p>
+</div>
+<div class="section" id="list">
+<h2>list<a class="headerlink" href="#list" title="Permalink to this headline">¶</a></h2>
+<p>Displays currently scheduled messages</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}schedulesend list`: Lists all scheduled messages for the current guild
 </pre></div>
 </div>
 </div>
-<div class="section" id="team">
-<h2>team<a class="headerlink" href="#team" title="Permalink to this headline">¶</a></h2>
-<p>Get information on an FTC team by number.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}toa team 12670` - show information on team 12670, Eclipse
+<div class="section" id="add">
+<h2>add<a class="headerlink" href="#add" title="Permalink to this headline">¶</a></h2>
+<p>Allows a message to be sent at a particular time Headers are
+distinguished by the characters <cite>-/-</cite></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}schedulesend add #announcments &quot;1/0/1970 0:00:00 GMT&quot; Epoch -/- 00000`: Dozer will send a message on the unix epoch in #announcments
+</pre></div>
+</div>
+</div>
+<div class="section" id="delete">
+<h2>delete<a class="headerlink" href="#delete" title="Permalink to this headline">¶</a></h2>
+<p>Delete a scheduled message</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}schedulesend delete 5`: Deletes the scheduled message with the ID of 5
 </pre></div>
 </div>
 </div>
@@ -70,7 +79,7 @@ taken as a team number.</p>
 
 <h3>Navigation</h3>
 <p class="caption"><span class="caption-text">Contents:</span></p>
-<ul class="current">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="Actionlog.html"> Actionlog</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Development.html"> Development</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Filter.html"> Filter</a></li>
@@ -87,11 +96,7 @@ taken as a team number.</p>
 <li class="toctree-l1"><a class="reference internal" href="Starboard.html"> Starboard</a></li>
 <li class="toctree-l1"><a class="reference internal" href="TBA.html"> TBA</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Teams.html"> Teams</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#"> TOA</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#id1">toa</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#team">team</a></li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="TOA.html"> TOA</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Voice.html"> Voice</a></li>
 </ul>
 
@@ -99,8 +104,6 @@ taken as a team number.</p>
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="Teams.html" title="previous chapter">Teams</a></li>
-      <li>Next: <a href="Voice.html" title="next chapter">Voice</a></li>
   </ul></li>
 </ul>
 </div>
@@ -134,7 +137,7 @@ taken as a team number.</p>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
-      <a href="_sources/TOA.rst.txt"
+      <a href="_sources/Management.rst.txt"
           rel="nofollow">Page source</a>
     </div>
 

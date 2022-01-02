@@ -11,6 +11,17 @@ restart_loop
 Restart the news check loop
 ::
    `{prefix}news restart_loop` - Restart the news loop if you are a developer
+subscriptions
++++++++++++++
+List all subscriptions that the current server are subscribed to
+::
+   `{prefix}news subs` - Check all subscriptions in the current server
+`{prefix}news subs #news` - See all the subscriptions for #news
+get_exception
++++++++++++++
+If the news check loop has failed, print out the exception and traceback
+::
+   `{prefix}news get_exception` - Get the exception that the loop failed with
 remove
 ++++++
 Remove a subscription of a given source from a specific channel
@@ -27,17 +38,6 @@ sources
 List all available sources to subscribe to.
 ::
    `{prefix}`news sources` - Get all available sources
-get_exception
-+++++++++++++
-If the news check loop has failed, print out the exception and traceback
-::
-   `{prefix}news get_exception` - Get the exception that the loop failed with
-subscriptions
-+++++++++++++
-List all subscriptions that the current server are subscribed to
-::
-   `{prefix}news subs` - Check all subscriptions in the current server
-`{prefix}news subs #news` - See all the subscriptions for #news
 add
 +++
 Add a new subscription of a given source to a channel.
