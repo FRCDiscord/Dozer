@@ -8,18 +8,6 @@ specified, the `team` subcommand is inferred, and the argument is taken
 as a team number.
 ::
    `{prefix}tba 5052` - show information on team 5052, the RoboLobos
-raw
-+++
-Get raw TBA API output for a team. This command is really only useful
-for development.
-::
-   `{prefix}tba raw 4150` - show raw information on team 4150, FRobotics
-eventsfor
-+++++++++
-Get the events a team is registered for a given year. Defaults to
-current (or upcoming) year.
-::
-   `{prefix}tba eventsfor 1533` - show the currently registered events for team 1533, Triple Strange
 media
 +++++
 Get media of a team for a given year. Defaults to current year.
@@ -35,6 +23,18 @@ team
 Get information on an FRC team by number.
 ::
    `{prefix}tba team 4131` - show information on team 4131, the Iron Patriots
+raw
++++
+Get raw TBA API output for a team. This command is really only useful
+for development.
+::
+   `{prefix}tba raw 4150` - show raw information on team 4150, FRobotics
+eventsfor
++++++++++
+Get the events a team is registered for a given year. Defaults to
+current (or upcoming) year.
+::
+   `{prefix}tba eventsfor 1533` - show the currently registered events for team 1533, Triple Strange
 weather
 +++++++
 Finds the current weather for a given team.

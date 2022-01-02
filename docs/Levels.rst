@@ -58,34 +58,9 @@ Configures dozer ranks:tm:
 `{prefix}configureranks notificationsoff`: Turns off notification channel
 `{prefix}configureranks setrolelevel role level`: Adds a level role
 `{prefix}configureranks delrolelevel role`: Deletes a level role 
-toggle
-++++++
-Toggle dozer ranks
-::
-   
 notificationsoff
 ++++++++++++++++
 Turns off level up messages
-::
-   
-setrolelevel
-++++++++++++
-Sets a role to be given to a user when they reach a certain level
-::
-   `{prefix}setrolelevel "level 2" 2`: Will configure the role "level 2" to be given to users who reach level 2` 
-removerolelevel
-+++++++++++++++
-Removes a levelrole
-::
-   `{prefix}removerolelevel level 2 `: Will remove role "level 2" from level roles
-xprange
-+++++++
-Set the range of a servers levels random xp
-::
-   
-keeproles
-+++++++++
-Toggles whenever old level role roles will be kept on level up
 ::
    
 setcooldown
@@ -93,9 +68,34 @@ setcooldown
 Set the time in seconds between messages before xp is calculated again
 ::
    
+keeproles
++++++++++
+Toggles whenever old level role roles will be kept on level up
+::
+   
+removerolelevel
++++++++++++++++
+Removes a levelrole
+::
+   `{prefix}removerolelevel level 2 `: Will remove role "level 2" from level roles
+toggle
+++++++
+Toggle dozer ranks
+::
+   
+setrolelevel
+++++++++++++
+Sets a role to be given to a user when they reach a certain level
+::
+   `{prefix}setrolelevel "level 2" 2`: Will configure the role "level 2" to be given to users who reach level 2` 
 notificationchannel
 +++++++++++++++++++
 Set up the channel where level up messages are sent
+::
+   
+xprange
++++++++
+Set the range of a servers levels random xp
 ::
    
 rank

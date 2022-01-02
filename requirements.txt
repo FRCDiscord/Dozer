@@ -1,5 +1,5 @@
 asyncpg~=0.21.0
-discord.py[voice]>=1.5.1
+py-cord
 tbapi~=1.3.1b4
 aiotba~=0.0.2.post1
 googlemaps~=4.4.2
