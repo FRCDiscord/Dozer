@@ -63,11 +63,6 @@ class Filter(Cog):
         for wordid, wordfilter in filters.items():
             if wordfilter.search(message.content) is not None:
                 await message.channel.send(f"{message.author.mention}, Banned word detected!", delete_after=5.0)
-                time = datetime.datetime.utcnow()
-                infraction = WordFilterInfraction(member_id=message.author.id, filter_id=wordid,
-                                                  timestamp=time,
-                                                  message=message.content)
-                await infraction.update_or_add()
                 if not deleted:
                     await message.delete()
                     deleted = True
@@ -90,11 +85,6 @@ class Filter(Cog):
             return
         for wordid, wordfilter in filters.items():
             if wordfilter.search(member_after.nick) is not None:
-                time = datetime.datetime.utcnow()
-                infraction = WordFilterInfraction(member_id=member_after.id, filter_id=wordid,
-                                                  timestamp=time,
-                                                  message=member_after.nick)
-                await infraction.update_or_add()
                 if not reverted:
                     try:
                         await member_after.edit(nick=member_before.nick)
@@ -420,38 +410,3 @@ class WordFilterRoleWhitelist(db.DatabaseTable):
             result_list.append(obj)
         return result_list
 
-
-class WordFilterInfraction(db.DatabaseTable):
-    """Object for each word filter infraction"""
-    __tablename__ = 'word_filter_infraction'
-    __uniques__ = 'id'
-
-    @classmethod
-    async def initial_create(cls):
-        """Create the table in the database"""
-        async with db.Pool.acquire() as conn:
-            await conn.execute(f"""
-            CREATE TABLE {cls.__tablename__} (
-            id serial PRIMARY KEY NOT NULL,
-            member_id bigint NOT NULL,
-            filter_id bigint references word_filters(filter_id),
-            timestamp timestamp NOT NULL,
-            message varchar NOT NULL
-            )""")
-
-    def __init__(self, member_id, filter_id, timestamp, message):
-        super().__init__()
-        self.member_id = member_id
-        self.filter_id = filter_id
-        self.timestamp = timestamp
-        self.message = message
-
-    @classmethod
-    async def get_by(cls, **kwargs):
-        results = await super().get_by(**kwargs)
-        result_list = []
-        for result in results:
-            obj = WordFilterInfraction(member_id=result.get("member_id"), filter_id=result.get("filter_id"),
-                                       timestamp=result.get("timestamp"), message=result.get("message"))
-            result_list.append(obj)
-        return result_list
