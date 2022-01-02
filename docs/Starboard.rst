@@ -9,6 +9,12 @@ receive a certain number         of configured reactions.  To configure
 a starboard, use the `starboard config` subcommand.
 ::
    `{prefix}starboard` - Get the current starboard settings for this server
+config
+++++++
+Modify the settings for this server's starboard
+::
+   `{prefix}starboard config #hall-of-fame 🌟 5` - Set the bot to repost messages that have 5 star reactions to `#hall-of-fame
+`{prefix}starboard config #hall-of-fame 🌟 5 ❌` - Same as above, but with a extra X cancel emoji 
 add
 +++
 Add a message to the starboard manually
@@ -20,9 +26,3 @@ disable
 Turn off the starboard if it is enabled
 ::
    `{prefix}starboard disable` - disables the starboard for the current server
-config
-++++++
-Modify the settings for this server's starboard
-::
-   `{prefix}starboard config #hall-of-fame 🌟 5` - Set the bot to repost messages that have 5 star reactions to `#hall-of-fame
-`{prefix}starboard config #hall-of-fame 🌟 5 ❌` - Same as above, but with a extra X cancel emoji 

@@ -182,7 +182,6 @@ class Info(Cog):
 
         embed.add_field(name='Created at', value=guild.created_at.strftime(datetime_format))
         embed.add_field(name='Owner', value=guild.owner)
-        embed.add_field(name='Region', value=guild.region.name)
         embed.add_field(name='Emoji', value="{} static, {} animated".format(static_emoji, animated_emoji))
         embed.add_field(name='Roles', value=str(len(guild.roles) - 1))  # Remove @everyone
         embed.add_field(name='Channels', value=str(len(guild.channels)))
