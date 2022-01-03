@@ -568,7 +568,7 @@ class Moderation(Cog):
     @command()
     @has_permissions(manage_roles=True)
     @bot_has_permissions(manage_permissions=True)
-    async def unmute(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
+    async def unmute(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
         """Unmute a user to allow them to send messages again."""
         async with ctx.typing():
             if await self._unmute(member_mentions):
@@ -623,7 +623,7 @@ class Moderation(Cog):
     @command()
     @has_permissions(manage_roles=True)
     @bot_has_permissions(manage_permissions=True)
-    async def undeafen(self, ctx, member_mentions: discord.Member, reason="No reason provided"):
+    async def undeafen(self, ctx, member_mentions: discord.Member, *, reason="No reason provided"):
         """Undeafen a user to allow them to see message and send message again."""
         async with ctx.typing():
             result = await self._undeafen(member_mentions)
