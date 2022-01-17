@@ -507,7 +507,7 @@ class Roles(Cog):
     """
 
     @cog_ext.cog_slash(name="give", description="Gives role(s) to given members.")
-    async def slash_give(self, ctx: SlashContext, member:discord.Member, role: discord.Role):
+    async def slash_give(self, ctx: SlashContext, member: discord.Member, role: discord.Role):
         """give slash handler"""
         ctx.prefix = "/"
         if ctx.author.permissions_in(ctx.channel).manage_roles:
@@ -533,7 +533,7 @@ class Roles(Cog):
     """
 
     @cog_ext.cog_slash(name="take", description="Takes role(s) from given members.")
-    async def slash_take(self, ctx: SlashContext, member:discord.Member, role:discord.Role):
+    async def slash_take(self, ctx: SlashContext, member: discord.Member, role: discord.Role):
         """take slash handler"""
         ctx.prefix = "/"
         if ctx.author.permissions_in(ctx.channel).manage_roles:
