@@ -236,13 +236,19 @@ class Roles(Cog):
         try:
             await self.bot.wait_for('reaction_add', timeout=30, check=lambda reaction, reactor:
                                     reaction.emoji == "❌" and reactor == ctx.author and reaction.message == msg)
-            await msg.delete()
+            try:
+                await msg.delete()
+            except discord.HTTPException:
+                pass
             try:
                 await ctx.message.delete()
             except discord.Forbidden:
                 pass
         except asyncio.TimeoutError:
-            await msg.clear_reactions()
+            try:
+                await msg.clear_reactions()
+            except discord.HTTPException:
+                pass
             return
 
     giveme.example_usage = """
@@ -356,13 +362,19 @@ class Roles(Cog):
         try:
             await self.bot.wait_for('reaction_add', timeout=30, check=lambda reaction, reactor:
                                     reaction.emoji == "❌" and reactor == ctx.author and reaction.message == msg)
-            await msg.delete()
+            try:
+                await msg.delete()
+            except discord.HTTPException:
+                pass
             try:
                 await ctx.message.delete()
             except discord.Forbidden:
                 pass
         except asyncio.TimeoutError:
-            await msg.clear_reactions()
+            try:
+                await msg.clear_reactions()
+            except discord.HTTPException:
+                pass
             return
 
     remove.example_usage = """
