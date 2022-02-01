@@ -675,7 +675,7 @@ class Levels(Cog):
     #     """Leaderboard slash handler"""
     #     await self.levels(ctx, start_member)
 
-    @command(aliases=["ranks", "leaderboard", "rnaks"])
+    @command(aliases=["ranks", "leaderboard"])
     @guild_only()
     async def levels(self, ctx, start: typing.Optional[discord.Member]):
         """Show the XP leaderboard for this server. Leaderboard refreshes every 5 minutes or so"""
