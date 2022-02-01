@@ -239,7 +239,7 @@ class Roles(Cog):
             try:
                 await msg.delete()
             except discord.HTTPException:
-                pass
+                DOZER_LOGGER.debug(f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             try:
                 await ctx.message.delete()
             except discord.Forbidden:
@@ -248,7 +248,7 @@ class Roles(Cog):
             try:
                 await msg.clear_reactions()
             except discord.HTTPException:
-                pass
+                DOZER_LOGGER.debug(f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             return
 
     giveme.example_usage = """
@@ -365,7 +365,7 @@ class Roles(Cog):
             try:
                 await msg.delete()
             except discord.HTTPException:
-                pass
+                DOZER_LOGGER.debug(f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             try:
                 await ctx.message.delete()
             except discord.Forbidden:
@@ -374,7 +374,7 @@ class Roles(Cog):
             try:
                 await msg.clear_reactions()
             except discord.HTTPException:
-                pass
+                DOZER_LOGGER.debug(f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             return
 
     remove.example_usage = """
