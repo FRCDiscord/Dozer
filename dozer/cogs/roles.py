@@ -126,6 +126,7 @@ class Roles(Cog):
 
     @Cog.listener('on_guild_role_update')
     async def on_role_edit(self, old, new):
+        """Changes role names in database when they are changed in the guild"""
         if self.normalize(old.name)!=self.normalize(new.name):
             results = await GiveableRole.get_by(norm_name=self.normalize(old.name), guild_id=old.guild.id)
             if results:
@@ -135,6 +136,7 @@ class Roles(Cog):
 
     @Cog.listener('on_guild_role_delete')
     async def on_role_delete(self, old):
+        """Deletes roles from database when the roles are deleted from the guild. """
         results = await GiveableRole.get_by(norm_name=self.normalize(old.name), guild_id=old.guild.id)
         if results:
             DOZER_LOGGER.debug(f"Role {old.id} deleted. Deleting from database.")
