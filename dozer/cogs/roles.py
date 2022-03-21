@@ -127,8 +127,18 @@ class Roles(Cog):
     @Cog.listener('on_guild_role_update')
     async def on_role_edit(self, old, new):
         if(self.normalize(old.name)!=self.normalize(new.name)):
-            DOZER_LOGGER.debug(f"Role {new.id} name updated. updating name")
-            await GiveableRole.from_role(new).update_or_add()
+            results = await GiveableRole.get_by(norm_name=self.normalize(old.name), guild_id=old.guild.id)
+            if(results):
+                DOZER_LOGGER.debug(f"Role {new.id} name updated. updating name")
+                await GiveableRole.from_role(new).update_or_add()
+    
+
+    @Cog.listener('on_guild_role_delete')
+    async def on_role_delete(self, old):
+        results = await GiveableRole.get_by(norm_name=self.normalize(old.name), guild_id=old.guild.id)
+        if(results):
+            DOZER_LOGGER.debug(f"Role {new.id} deleted. Deleting from database.")
+            await GiveableRole.delete(role_id=old.id)
 
     @Cog.listener('on_member_join')
     async def on_member_join(self, member):
