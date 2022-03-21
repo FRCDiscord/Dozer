@@ -137,7 +137,7 @@ class Roles(Cog):
     async def on_role_delete(self, old):
         results = await GiveableRole.get_by(norm_name=self.normalize(old.name), guild_id=old.guild.id)
         if(results):
-            DOZER_LOGGER.debug(f"Role {new.id} deleted. Deleting from database.")
+            DOZER_LOGGER.debug(f"Role {old.id} deleted. Deleting from database.")
             await GiveableRole.delete(role_id=old.id)
 
     @Cog.listener('on_member_join')
