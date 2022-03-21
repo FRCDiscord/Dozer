@@ -123,6 +123,12 @@ class Roles(Cog):
         await target.remove_roles(target_role)
 
         await TempRoleTimerRecords.delete(id=record.id)
+        
+    @Cog.listener('on_guild_role_update')
+    async def on_role_edit(self, old, new):
+        if(self.normalize(old.name)!=self.normalize(new.name)):
+            DOZER_LOGGER.debug(f"Role {new.id} name updated. updating name")
+            GiveableRole.from_role(new).update_or_add()
 
     @Cog.listener('on_member_join')
     async def on_member_join(self, member):
