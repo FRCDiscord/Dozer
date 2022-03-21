@@ -236,13 +236,19 @@ class Roles(Cog):
         try:
             await self.bot.wait_for('reaction_add', timeout=30, check=lambda reaction, reactor:
                                     reaction.emoji == "❌" and reactor == ctx.author and reaction.message == msg)
-            await msg.delete()
+            try:
+                await msg.delete()
+            except discord.HTTPException:
+                DOZER_LOGGER.debug(f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             try:
                 await ctx.message.delete()
             except discord.Forbidden:
                 pass
         except asyncio.TimeoutError:
-            await msg.clear_reactions()
+            try:
+                await msg.clear_reactions()
+            except discord.HTTPException:
+                DOZER_LOGGER.debug(f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             return
 
     giveme.example_usage = """
@@ -356,13 +362,19 @@ class Roles(Cog):
         try:
             await self.bot.wait_for('reaction_add', timeout=30, check=lambda reaction, reactor:
                                     reaction.emoji == "❌" and reactor == ctx.author and reaction.message == msg)
-            await msg.delete()
+            try:
+                await msg.delete()
+            except discord.HTTPException:
+                DOZER_LOGGER.debug(f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             try:
                 await ctx.message.delete()
             except discord.Forbidden:
                 pass
         except asyncio.TimeoutError:
-            await msg.clear_reactions()
+            try:
+                await msg.clear_reactions()
+            except discord.HTTPException:
+                DOZER_LOGGER.debug(f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             return
 
     remove.example_usage = """
@@ -507,7 +519,7 @@ class Roles(Cog):
     """
 
     @cog_ext.cog_slash(name="give", description="Gives role(s) to given members.")
-    async def slash_give(self, ctx: SlashContext, member:discord.Member, role: discord.Role):
+    async def slash_give(self, ctx: SlashContext, member: discord.Member, role: discord.Role):
         """give slash handler"""
         ctx.prefix = "/"
         if ctx.author.permissions_in(ctx.channel).manage_roles:
@@ -533,7 +545,7 @@ class Roles(Cog):
     """
 
     @cog_ext.cog_slash(name="take", description="Takes role(s) from given members.")
-    async def slash_take(self, ctx: SlashContext, member:discord.Member, role:discord.Role):
+    async def slash_take(self, ctx: SlashContext, member: discord.Member, role: discord.Role):
         """take slash handler"""
         ctx.prefix = "/"
         if ctx.author.permissions_in(ctx.channel).manage_roles:
