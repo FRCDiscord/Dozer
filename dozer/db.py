@@ -1,6 +1,6 @@
 """Provides database storage for the Dozer Discord bot"""
 import logging
-
+from typing import List, Dict
 import asyncpg
 
 DOZER_LOGGER = logging.getLogger(__name__)
@@ -50,9 +50,9 @@ async def db_migrate():
 
 class DatabaseTable:
     """Defines a database table"""
-    __tablename__ = None
-    __versions__ = []
-    __uniques__ = []
+    __tablename__: str = ''
+    __versions__: List[int] = []
+    __uniques__: List[str] = []
 
     # Declare the migrate/create functions
     @classmethod
@@ -192,6 +192,6 @@ class ConfigCache:
         if query_hash in self.cache:
             del self.cache[query_hash]
 
-    __versions__ = {}
+    __versions__: Dict[str,int] = {}
 
-    __uniques__ = []
+    __uniques__: List[str] = []
