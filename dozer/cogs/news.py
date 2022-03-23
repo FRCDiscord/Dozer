@@ -11,6 +11,8 @@ import discord
 from discord.ext import tasks
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 
+from dozer.context import DozerContext
+
 from ._utils import *
 from .. import db
 from ..sources import DataBasedSource, Source, sources
@@ -113,7 +115,7 @@ class News(Cog):
                            f" seconds.")
 
     @get_new_posts.error
-    async def log_exception(self, _exception):
+    async def log_exception(self, _exception: Exception):
         """Catch error in the news loop and attempt to restart"""
         DOZER_LOGGER.error(f"News fetch encountered an error: \"{_exception}\", attempting to restart")
         self.get_new_posts.restart()
@@ -141,7 +143,7 @@ class News(Cog):
                 DOZER_LOGGER.error(f"Parsing error in source {source.short_name}: {err}")
 
     @Cog.listener()
-    async def on_guild_channel_delete(self, channel):
+    async def on_guild_channel_delete(self, channel: discord.Channel):
         """Called when a channel is deleted, so it can be removed from the newsfeed"""
         await NewsSubscription.delete(channel_id=channel.id)
 
@@ -453,7 +455,7 @@ class NewsSubscription(db.DatabaseTable):
             kind varchar NOT NULL
             )""")
 
-    def __init__(self, channel_id, guild_id, source, kind, data=None, sub_id=None):
+    def __init__(self, channel_id: int, guild_id: int, source: str, kind: str, data: str=None, sub_id: int=None):
         super().__init__()
         self.id = sub_id
         self.channel_id = channel_id

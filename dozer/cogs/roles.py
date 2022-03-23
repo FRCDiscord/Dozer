@@ -7,7 +7,9 @@ import discord
 import discord.utils
 from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgument, guild_only
 from discord_slash import cog_ext, SlashContext
+from discord.ext import commands
 
+from dozer.context import DozerContext
 from ._utils import *
 from .actionlogs import CustomJoinLeaveMessages
 from .. import db
@@ -30,7 +32,7 @@ class Roles(Cog):
                     await ctx.send("Purged missing roles")
 
     @staticmethod
-    def calculate_epoch_time(time_string):
+    def calculate_epoch_time(time_string: str):
         """Calculates a unix timestamp based on a 1m style string"""
         seconds_per_unit = {"m": 60, "h": 3600, "d": 86400, "w": 604800, "y": 3.154e+7}
         time_delta = int(time_string[:-1]) * seconds_per_unit[time_string[-1]]
@@ -38,7 +40,7 @@ class Roles(Cog):
         return time_release
 
     @staticmethod
-    async def safe_message_fetch(ctx, menu=None, channel=None, message_id=None):
+    async def safe_message_fetch(ctx: DozerContext, menu=None, channel: discord.TextChannel=None, message_id: int=None):
         """Used to safely get a message and raise an error message cannot be found"""
         try:
             if menu:
@@ -53,13 +55,13 @@ class Roles(Cog):
             raise BadArgument("That message does not exist or is not in this channel!")
 
     @staticmethod
-    async def add_to_message(message, entry):
+    async def add_to_message(message: discord.Message, entry):
         """Adds a reaction role to a message"""
         await message.add_reaction(entry.reaction)
         await entry.update_or_add()
 
     @staticmethod
-    async def del_from_message(message, entry):
+    async def del_from_message(message: discord.Message, entry):
         """Removes a reaction from a message"""
         await message.clear_reaction(entry.reaction)
 
@@ -71,23 +73,23 @@ class Roles(Cog):
             self.bot.loop.create_task(self.removal_timer(record))
 
     @Cog.listener()
-    async def on_raw_message_delete(self, payload):
+    async def on_raw_message_delete(self, payload: discord.RawMessageDeleteEvent):
         """Used to remove dead reaction role entries"""
         message_id = payload.message_id
         await ReactionRole.delete(message_id=message_id)
         await RoleMenu.delete(message_id=message_id)
 
     @Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         """Raw API event for reaction add, passes event to action handler"""
         await self.on_raw_reaction_action(payload)
 
     @Cog.listener()
-    async def on_raw_reaction_remove(self, payload):
+    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
         """Raw API event for reaction remove, passes event to action handler"""
         await self.on_raw_reaction_action(payload)
 
-    async def on_raw_reaction_action(self, payload):
+    async def on_raw_reaction_action(self, payload: discord.RawReactionActionEvent):
         """Called whenever a reaction is added or removed"""
         message_id = payload.message_id
         reaction = str(payload.emoji)
@@ -125,7 +127,7 @@ class Roles(Cog):
         await TempRoleTimerRecords.delete(id=record.id)
 
     @Cog.listener('on_member_join')
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: discord.Member):
         """Restores a member's roles when they join if they have joined before."""
         me = member.guild.me
         top_restorable = me.top_role.position if me.guild_permissions.manage_roles else 0
@@ -167,7 +169,7 @@ class Roles(Cog):
             pass
 
     @Cog.listener('on_member_remove')
-    async def on_member_remove(self, member):
+    async def on_member_remove(self, member: discord.Member):
         """Saves a member's roles when they leave in case they rejoin."""
         guild_id = member.guild.id
         member_id = member.id
@@ -197,7 +199,7 @@ class Roles(Cog):
         await self.giveme_purge(rolelist)
         return counter
 
-    async def on_guild_role_delete(self, role):
+    async def on_guild_role_delete(self, role: discord.Role):
         """Automatically delete giveme roles if they are deleted from the guild"""
         rolelist = [role]
         await self.giveme_purge(rolelist)
@@ -273,7 +275,7 @@ class Roles(Cog):
     @giveme.command()
     @bot_has_permissions(manage_roles=True)
     @has_permissions(manage_guild=True)
-    async def add(self, ctx: DozerContext, *, name):
+    async def add(self, ctx: DozerContext, *, name: str):
         """Makes an existing role giveable, or creates one if it doesn't exist. Name must not contain commas.
         Similar to create, but will use an existing role if one exists."""
         if ',' in name:
@@ -302,7 +304,7 @@ class Roles(Cog):
     @giveme.command()
     @bot_has_permissions(manage_roles=True)
     @has_permissions(manage_guild=True)
-    async def create(self, ctx: DozerContext, *, name):
+    async def create(self, ctx: DozerContext, *, name: str):
         """Create a giveable role. Name must not contain commas.
         Similar to add, but will always create a new role."""
         if ',' in name:
@@ -391,7 +393,7 @@ class Roles(Cog):
     @giveme.command()
     @bot_has_permissions(manage_roles=True)
     @has_permissions(manage_guild=True)
-    async def delete(self, ctx: DozerContext, *, name):
+    async def delete(self, ctx: DozerContext, *, name: str):
         """Deletes and removes a giveable role."""
         if ',' in name:
             raise BadArgument('this command only works with single roles!')
@@ -443,7 +445,7 @@ class Roles(Cog):
     @giveme.command()
     @bot_has_permissions(manage_roles=True)
     @has_permissions(manage_guild=True)
-    async def removefromlist(self, ctx: DozerContext, *, name):
+    async def removefromlist(self, ctx: DozerContext, *, name: str):
         """Deletes and removes a giveable role."""
         # Honestly this is the giveme delete command but modified to only delete from the DB
         if ',' in name:
@@ -470,7 +472,7 @@ class Roles(Cog):
     @command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
-    async def tempgive(self, ctx: DozerContext, member: discord.Member, length, *, role: discord.Role):
+    async def tempgive(self, ctx: DozerContext, member: discord.Member, length: int, *, role: discord.Role):
         """Temporarily gives a member a role for a set time. Not restricted to giveable roles."""
         if role > ctx.author.top_role:
             raise BadArgument('Cannot give roles higher than your top role!')
@@ -553,7 +555,7 @@ class Roles(Cog):
         else:
             raise PermissionError("You do not have manage roles!")
 
-    async def update_role_menu(self, ctx: DozerContext, menu):
+    async def update_role_menu(self, ctx: DozerContext, menu: int):
         """Updates a reaction role menu"""
         menu_message = await self.safe_message_fetch(ctx, menu=menu)
 
@@ -613,7 +615,7 @@ class Roles(Cog):
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
     @guild_only()
-    async def createmenu(self, ctx: DozerContext, channel: discord.TextChannel, *, name):
+    async def createmenu(self, ctx: DozerContext, channel: discord.TextChannel, *, name: str):
         """Creates a blank reaction role menu"""
         menu_embed = discord.Embed(title=f"Role Menu: {name}", description="React to get a role")
         message = await channel.send(embed=menu_embed)
@@ -746,7 +748,7 @@ class RoleMenu(db.DatabaseTable):
             PRIMARY KEY (message_id)
             )""")
 
-    def __init__(self, guild_id, channel_id, message_id, name):
+    def __init__(self, guild_id: int, channel_id: int, message_id: int, name: str):
         super().__init__()
         self.guild_id = guild_id
         self.channel_id = channel_id
@@ -783,7 +785,7 @@ class ReactionRole(db.DatabaseTable):
             PRIMARY KEY (message_id, role_id)
             )""")
 
-    def __init__(self, guild_id, channel_id, message_id, role_id, reaction):
+    def __init__(self, guild_id: int, channel_id: int, message_id: int, role_id: int, reaction: str):
         super().__init__()
         self.guild_id = guild_id
         self.channel_id = channel_id
@@ -819,7 +821,7 @@ class GiveableRole(db.DatabaseTable):
             norm_name varchar NOT NULL
             )""")
 
-    def __init__(self, guild_id, role_id, norm_name, name):
+    def __init__(self, guild_id: int, role_id: int, norm_name: str, name: str):
         super().__init__()
         self.guild_id = guild_id
         self.role_id = role_id
@@ -837,7 +839,7 @@ class GiveableRole(db.DatabaseTable):
         return result_list
 
     @classmethod
-    def from_role(cls, role):
+    def from_role(cls, role: discord.Role):
         """Creates a GiveableRole record from a discord.Role."""
         return cls(role_id=role.id, name=role.name, norm_name=Roles.normalize(role.name), guild_id=role.guild.id)
 
@@ -860,7 +862,7 @@ class MissingRole(db.DatabaseTable):
             PRIMARY KEY (role_id, member_id)
             )""")
 
-    def __init__(self, guild_id, member_id, role_id, role_name):
+    def __init__(self, guild_id: int, member_id: int, role_id: int, role_name: str):
         super().__init__()
         self.guild_id = guild_id
         self.member_id = member_id
@@ -897,7 +899,7 @@ class TempRoleTimerRecords(db.DatabaseTable):
             removal_ts bigint NOT NULL
             )""")
 
-    def __init__(self, guild_id, target_id, target_role_id, removal_ts, input_id=None):
+    def __init__(self, guild_id: int, target_id: int, target_role_id: int, removal_ts: int, input_id: int=None):
         super().__init__()
         self.id = input_id
         self.guild_id = guild_id
