@@ -27,7 +27,7 @@ class Voice(Cog):
             await voice_channel.channel.set_permissions(target=everyone, overwrite=perms)
 
     @Cog.listener('on_voice_state_update')  # Used for VoiceBind
-    async def on_voice_state_update(self, member: discord.Member, before, after):
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
         """Handles voicebinds when members join/leave voice channels"""
         # skip this if we have no perms, or if it's something like a mute/deafen
         if member.guild.me.guild_permissions.manage_roles and before.channel != after.channel:
@@ -45,7 +45,7 @@ class Voice(Cog):
                     await member.add_roles(member.guild.get_role(config[0].role_id))
 
     @Cog.listener('on_voice_state_update')  # Used for auto PTT
-    async def on_PTT_check(self, member: discord.Member, before, after):
+    async def on_PTT_check(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
         """Runs the autoPTTcheck when a user leaves and/or joins a vc"""
         # skip this if we have no perms to edit voice channel
         total_users = 0

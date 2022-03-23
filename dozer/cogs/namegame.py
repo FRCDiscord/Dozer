@@ -619,7 +619,7 @@ class NameGame(Cog):
     `{prefix}ng leaderboard ftc` - display the namegame winning leaderboards for FTC.
     """
 
-    async def strike(self, ctx: DozerContext, game, player):
+    async def strike(self, ctx: DozerContext, game: NameGameSession, player: discord.Member):
         """Gives a player a strike."""
         if game.strike(player):
             await ctx.send(f"Player {player.mention} is ELIMINATED!")
@@ -650,7 +650,7 @@ class NameGame(Cog):
         if not game.running:
             self.games.pop(ctx.channel.id)
 
-    async def display_info(self, ctx: DozerContext, game):
+    async def display_info(self, ctx: DozerContext, game: NameGameSession):
         """Displays info about the current game"""
         info_embed = discord.Embed(title="Current Game Info", color=discord.Color.blue())
         info_embed.add_field(name="Game Type", value=game.mode.upper())
@@ -664,7 +664,7 @@ class NameGame(Cog):
         info_embed.add_field(name="Teams Picked", value=game.get_picked())
         await ctx.send(embed=info_embed)
 
-    async def skip_player(self, ctx: DozerContext, game, player, msg=None):
+    async def skip_player(self, ctx: DozerContext, game: NameGameSession, player: discord.Member, msg=None):
         """Skips a player"""
         if msg is not None:
             await ctx.send(msg)
@@ -678,18 +678,18 @@ class NameGame(Cog):
         await self.strike(ctx, game, player)
 
     # send an embed that starts a new turn
-    async def send_turn_embed(self, ctx: DozerContext, game, **kwargs):
+    async def send_turn_embed(self, ctx: DozerContext, game: NameGameSession, **kwargs):
         """Sends an embed that starts a new turn"""
         game.turn_embed = game.create_embed(**kwargs)
         game.turn_msg = await ctx.send(embed=game.turn_embed)
 
-    async def notify(self, ctx: DozerContext, game, msg):
+    async def notify(self, ctx: DozerContext, game: NameGameSession, msg: str):
         """Notifies people in the channel when it's their turn."""
         if game.pings_enabled:
             await ctx.send(msg)
 
     @Cog.listener()
-    async def on_reaction_add(self, reaction, user):
+    async def on_reaction_add(self, reaction: discord.Reaction, user: discord.Member):
         """When reactions are added, trigger the voting handler"""
         if reaction.message.channel.id not in self.games:
             return
@@ -737,7 +737,7 @@ class NameGame(Cog):
                 return
             await self._on_reaction(game, reaction, user, -1)
 
-    async def _on_reaction(self, game, reaction: discord.Reaction, user: discord.Member, inc):
+    async def _on_reaction(self, game: NameGameSession, reaction: discord.Reaction, user: discord.Member, inc: int):
         """Handles pass/fail reactions"""
         if reaction.message.id == game.vote_msg.id and user in game.players:
             if reaction.emoji == '❌':
@@ -770,7 +770,7 @@ class NameGame(Cog):
             game.turn_task = self.bot.loop.create_task(self.game_turn_countdown(ctx, game))
 
     @keep_alive
-    async def game_vote_countdown(self, ctx: DozerContext, game):
+    async def game_vote_countdown(self, ctx: DozerContext, game: NameGameSession):
         """Counts down the time remaining left to vote"""
         await asyncio.sleep(1)
         async with game.state_lock:
