@@ -22,8 +22,8 @@ class TOAParser:
     A class to make async requests to The Orange Alliance.
     """
 
-    def __init__(self, api_key, aiohttp_session, base_url="https://theorangealliance.org/api/", app_name="Dozer",
-                 ratelimit=True):
+    def __init__(self, api_key: str, aiohttp_session, base_url: str="https://theorangealliance.org/api/", app_name: str="Dozer",
+                 ratelimit: bool=True):
         self.last_req = datetime.now()
         self.ratelimit = ratelimit
         self.base = base_url

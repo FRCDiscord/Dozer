@@ -7,6 +7,8 @@ from aiotba.http import AioTBAError
 from discord.ext.commands import BadArgument, guild_only, has_permissions
 from discord_slash import cog_ext, SlashContext
 
+from dozer.context import DozerContext
+
 from ._utils import *
 from .info import blurple
 from .. import db
@@ -31,7 +33,7 @@ class Teams(Cog):
         await self.teamsfor(ctx, user=member)
 
     @command()
-    async def setteam(self, ctx: DozerContext, team_type, team_number: int):
+    async def setteam(self, ctx: DozerContext, team_type: str, team_number: int):
         """Sets an association with your team in the database."""
         team_type = team_type.casefold()
         dbcheck = await TeamNumbers.get_by(user_id=ctx.author.id, team_type=team_type, team_number=team_number)
@@ -46,7 +48,7 @@ class Teams(Cog):
     """
 
     @command()
-    async def removeteam(self, ctx: DozerContext, team_type, team_number: int):
+    async def removeteam(self, ctx: DozerContext, team_type: str, team_number: int):
         """Removes an association with a team in the database."""
         team_type = team_type.casefold()
         results = await TeamNumbers.get_by(user_id=ctx.author.id, team_type=team_type, team_number=team_number)
@@ -141,7 +143,7 @@ class Teams(Cog):
 
     @group(invoke_without_command=True)
     @guild_only()
-    async def onteam(self, ctx: DozerContext, team_type, team_number: int):
+    async def onteam(self, ctx: DozerContext, team_type: str, team_number: int):
         """Allows you to see who has associated themselves with a particular team."""
         team_type = team_type.casefold()
         users = await TeamNumbers.get_by(team_type=team_type, team_number=team_number)
@@ -202,7 +204,7 @@ class Teams(Cog):
         await ctx.send(embed=e)
 
     @Cog.listener('on_member_join')
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: discord.Member):
         """Adds a user's team association to their name when they join (if exactly 1 association)"""
         settings = await AutoAssociation.get_by(guild_id=member.guild.id)
         enabled = settings[0].team_on_join if settings else True
@@ -230,7 +232,7 @@ class AutoAssociation(db.DatabaseTable):
             PRIMARY KEY (guild_id)
             )""")
 
-    def __init__(self, guild_id, team_on_join=True):
+    def __init__(self, guild_id: int, team_on_join: bool=True):
         super().__init__()
         self.guild_id = guild_id
         self.team_on_join = team_on_join
@@ -262,7 +264,7 @@ class TeamNumbers(db.DatabaseTable):
             PRIMARY KEY (user_id, team_number, team_type)
             )""")
 
-    def __init__(self, user_id, team_number, team_type):
+    def __init__(self, user_id: int, team_number: int, team_type: str):
         super().__init__()
         self.user_id = user_id
         self.team_number = team_number

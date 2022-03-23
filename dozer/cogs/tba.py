@@ -14,7 +14,9 @@ import googlemaps
 from discord.ext.commands import BadArgument
 from discord_slash import cog_ext, SlashContext
 from geopy.geocoders import Nominatim
+from discord.ext import commands
 
+from dozer.context import DozerContext
 from ._utils import *
 
 
@@ -41,7 +43,7 @@ class TBA(Cog):
         Get FRC-related information from The Blue Alliance.
         If no subcommand is specified, the `team` subcommand is inferred, and the argument is taken as a team number.
         """
-        await self.team.callback(self, ctx: DozerContext, team_num)
+        await self.team.callback(self, ctx, team_num)
 
     tba.example_usage = """
     `{prefix}tba 5052` - show information on team 5052, the RoboLobos
@@ -236,7 +238,7 @@ class TBA(Cog):
 
     @command()
     @bot_has_permissions(embed_links=True)
-    async def weather(self, ctx: DozerContext, team_program, team_num:int):
+    async def weather(self, ctx: DozerContext, team_program: str, team_num:int):
         """Finds the current weather for a given team."""
 
         if team_program.lower() == "frc":
@@ -284,7 +286,7 @@ class TBA(Cog):
         await self.timezone(ctx, team_program=team_program, team_num=team_number)
 
     @command()
-    async def timezone(self, ctx: DozerContext, team_program, team_num: int):
+    async def timezone(self, ctx: DozerContext, team_program: str, team_num: int):
         """
         Get the timezone of a team based on the team number.
         """
