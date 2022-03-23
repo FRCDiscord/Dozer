@@ -7,6 +7,8 @@ import discord
 from discord.ext.commands import cooldown, BucketType, guild_only, BadArgument, MissingPermissions
 from discord_slash import cog_ext, SlashContext
 
+from dozer.context import DozerContext
+
 from ._utils import *
 from .general import blurple
 
@@ -14,7 +16,7 @@ from .general import blurple
 class Fun(Cog):
     """Fun commands"""
 
-    async def battle(self, ctx, opponent: discord.Member, delete_result=True):
+    async def battle(self, ctx: DozerContext, opponent: discord.Member, delete_result: bool=True):
         """Start a fight with another user."""
         attacks = [
             "**{opponent}** was hit on the head by **{attacker}** ",
@@ -82,7 +84,7 @@ class Fun(Cog):
     @discord.ext.commands.cooldown(1, 5, BucketType.channel)
     @discord.ext.commands.max_concurrency(1, per=BucketType.channel, wait=False)
     @command()
-    async def fight(self, ctx, opponent: discord.Member, wager: int = 0):
+    async def fight(self, ctx: DozerContext, opponent: discord.Member, wager: int = 0):
         """Start a fight with another user."""
 
         levels = self.bot.get_cog("Levels")

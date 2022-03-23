@@ -9,6 +9,7 @@ import discord
 from discord.ext import commands
 
 from dozer import db
+from dozer.context import DozerContext
 
 __all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk', 'dev_check', 'DynamicPrefixEntry']
 
@@ -89,7 +90,7 @@ class Cog(commands.Cog):
 def dev_check():
     """Function decorator to check that the calling user is a developer"""
 
-    async def predicate(ctx):
+    async def predicate(ctx: DozerContext):
         if ctx.author.id not in ctx.bot.config['developers']:
             raise commands.NotOwner('you are not a developer!')
         return True
@@ -118,7 +119,7 @@ class Reactor:
     """
     _stop_reaction = object()
 
-    def __init__(self, ctx, initial_reactions, *, auto_remove: bool=True, timeout: int=60):
+    def __init__(self, ctx: DozerContext, initial_reactions, *, auto_remove: bool=True, timeout: int=60):
         """
         ctx: command context
         initial_reactions: iterable of emoji to react with on start
@@ -167,7 +168,7 @@ class Reactor:
         """Listener for stop reactions."""
         self._action = self._stop_reaction
 
-    def _check_reaction(self, reaction, member):
+    def _check_reaction(self, reaction, member: discord.Member):
         return reaction.message.id == self.message.id and member.id == self.caller.id
 
 
@@ -195,7 +196,7 @@ class Paginator(Reactor):
         '\N{BLACK SQUARE FOR STOP}'  # :stop_button:
     )
 
-    def __init__(self, ctx, initial_reactions, pages, *, start: int=0, auto_remove: bool=True, timeout: int=60):
+    def __init__(self, ctx: DozerContext, initial_reactions, pages, *, start: int=0, auto_remove: bool=True, timeout: int=60):
         all_reactions = list(initial_reactions)
         ind = all_reactions.index(Ellipsis)
         all_reactions[ind:ind + 1] = self.pagination_reactions
@@ -253,7 +254,7 @@ class Paginator(Reactor):
             self.go_to_page(-amt)
 
 
-async def paginate(ctx, pages, *, start: int=0, auto_remove: bool=True, timeout: int=60):
+async def paginate(ctx: DozerContext, pages, *, start: int=0, auto_remove: bool=True, timeout: int=60):
     """
     Simple pagination based on Paginator. Pagination is handled normally and other reactions are ignored.
     """
@@ -276,7 +277,7 @@ def chunk(iterable, size: int):
 def bot_has_permissions(**required):
     """Decorator to check if bot has certain permissions when added to a command"""
 
-    def predicate(ctx):
+    def predicate(ctx: DozerContext):
         """Function to tell the bot if it has the right permissions"""
         given = ctx.channel.permissions_for((ctx.guild or ctx.channel).me)
         missing = [name for name, value in required.items() if getattr(given, name) != value]
