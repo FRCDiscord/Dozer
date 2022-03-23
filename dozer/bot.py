@@ -1,9 +1,11 @@
 """Bot object for Dozer"""
 
+import json
 import logging
 import re
 import sys
 import traceback
+from typing import Pattern
 
 import discord
 from discord.ext import commands
@@ -48,7 +50,7 @@ class Dozer(commands.Bot):
     """Botty things that are critical to Dozer working"""
     _global_cooldown = commands.Cooldown(1, 1, commands.BucketType.user)  # One command per second per user
 
-    def __init__(self, config, *args, **kwargs):
+    def __init__(self, config: dict, *args, **kwargs):
         self.dynamic_prefix = _utils.PrefixHandler(config['prefix'])
         super().__init__(command_prefix=self.dynamic_prefix.handler, *args, **kwargs)
         self.slash = SlashCommand(self, sync_commands=True, override_type=True)
@@ -78,11 +80,11 @@ class Dozer(commands.Bot):
             DOZER_LOGGER.warning("You are running an older version of the discord.py rewrite (with breaking changes)! "
                                  "To upgrade, run `pip install -r requirements.txt --upgrade`")
 
-    async def get_context(self, message, *, cls=DozerContext):
+    async def get_context(self, message: discord.Message, *, cls=DozerContext):
         ctx = await super().get_context(message, cls=cls)
         return ctx
 
-    async def on_command_error(self, context, exception):
+    async def on_command_error(self, context: DozerContext, exception):
         if isinstance(exception, commands.NoPrivateMessage):
             await context.send('{}, This command cannot be used in DMs.'.format(context.author.mention))
         elif isinstance(exception, commands.UserInputError):
@@ -126,12 +128,12 @@ class Dozer(commands.Bot):
         traceback.print_exc()
         capture_exception()
 
-    async def on_slash_command_error(self, ctx, ex):
+    async def on_slash_command_error(self, ctx: DozerContext, ex: Exception):
         """Passes slash command errors to primary command handler"""
         await self.on_command_error(ctx, ex)
 
     @staticmethod
-    def format_error(ctx, err, *, word_re=re.compile('[A-Z][a-z]+')):
+    def format_error(ctx: DozerContext, err: Exception, *, word_re: Pattern = re.compile('[A-Z][a-z]+')):
         """Turns an exception into a user-friendly (or -friendlier, at least) error message."""
         type_words = word_re.findall(type(err).__name__)
         type_msg = ' '.join(map(str.lower, type_words))
@@ -141,7 +143,7 @@ class Dozer(commands.Bot):
         else:
             return type_msg
 
-    def global_checks(self, ctx):
+    def global_checks(self, ctx: DozerContext):
         """Checks that should be executed before passed to the command"""
         if ctx.author.bot:
             raise InvalidContext('Bots cannot run commands!')
@@ -155,7 +157,7 @@ class Dozer(commands.Bot):
         del self.config['discord_token']  # Prevent token dumping
         super().run(token)
 
-    async def shutdown(self, restart=False):
+    async def shutdown(self, restart: bool = False):
         """Shuts down the bot"""
         self._restarting = restart
         await self.logout()
