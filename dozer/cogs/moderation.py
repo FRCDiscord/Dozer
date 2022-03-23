@@ -9,7 +9,7 @@ from logging import getLogger
 from typing import Union
 
 import discord
-from discord.ext import tasks
+from discord.ext import tasks, commands
 from discord.ext.commands import BadArgument, has_permissions, RoleConverter, guild_only
 
 from dozer.context import DozerContext

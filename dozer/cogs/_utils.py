@@ -287,7 +287,7 @@ def bot_has_permissions(**required):
         else:
             return True
 
-    def decorator(func: function):
+    def decorator(func):
         """Defines the bot_has_permissions decorator"""
         if isinstance(func, Command):
             func.checks.append(predicate)
