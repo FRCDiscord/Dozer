@@ -8,6 +8,8 @@ import rstcloth
 
 from discord.ext.commands import NotOwner
 
+from dozer.context import DozerContext
+
 from ._utils import *
 
 DOZER_LOGGER = logging.getLogger("dozer")
@@ -23,13 +25,13 @@ class Development(Cog):
         eval_globals[module] = __import__(module)
     eval_globals['__builtins__'] = __import__('builtins')
 
-    def cog_check(self, ctx):  # All of this cog is only available to devs
+    def cog_check(self, ctx: DozerContext):  # All of this cog is only available to devs
         if ctx.author.id not in ctx.bot.config['developers']:
             raise NotOwner('you are not a developer!')
         return True
 
     @command()
-    async def reload(self, ctx, cog):
+    async def reload(self, ctx: DozerContext, cog: str):
         """Reloads a cog."""
         extension = 'dozer.cogs.' + cog
         msg = await ctx.send('Reloading extension %s' % extension)
@@ -41,7 +43,7 @@ class Development(Cog):
     """
 
     @command()
-    async def document(self, ctx):
+    async def document(self, ctx: DozerContext):
         """Dump documentation for Sphinx processing"""
         for x in self.bot.cogs:
             cog = ctx.bot.get_cog(x)
@@ -60,7 +62,7 @@ class Development(Cog):
     """
 
     @command(name='eval')
-    async def evaluate(self, ctx, *, code):
+    async def evaluate(self, ctx: DozerContext, *, code: str):
         """
         Evaluates Python.
         Await is valid and `{ctx}` is the command context.
@@ -98,7 +100,7 @@ class Development(Cog):
     """
 
     @command(name='su', pass_context=True)
-    async def pseudo(self, ctx, user: discord.Member, *, command):
+    async def pseudo(self, ctx: DozerContext, user: discord.Member, *, command: str):
         """Execute a command as another user."""
         msg = copy.copy(ctx.message)
         msg.author = user
@@ -117,7 +119,7 @@ class Development(Cog):
     """
 
 
-def load_function(code, globals_, locals_):
+def load_function(code: str, globals_, locals_):
     """Loads the user-evaluted code as a function so it can be executed."""
     function_header = 'async def evaluated_function(ctx):'
 
