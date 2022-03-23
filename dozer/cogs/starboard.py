@@ -63,7 +63,7 @@ class Starboard(Cog):
         self.config_cache = db.ConfigCache(StarboardConfig)
         self.locked_messages = set()
 
-    def make_config_embed(self, ctx, title, config):
+    def make_config_embed(self, ctx: DozerContext, title, config):
         """Makes a config embed."""
         channel = self.bot.get_channel(config.channel_id)
         if channel is None:
@@ -216,7 +216,7 @@ class Starboard(Cog):
 
     @guild_only()
     @group(invoke_without_command=True, aliases=['hof'])
-    async def starboard(self, ctx):
+    async def starboard(self, ctx: DozerContext):
         """Show the current server's starboard configuration.
          A starboard (or a hall of fame) is a channel the bot will repost messages in if they receive a certain number\
          of configured reactions.
@@ -239,7 +239,7 @@ class Starboard(Cog):
     @has_permissions(manage_guild=True, manage_channels=True)
     @bot_has_permissions(add_reactions=True, embed_links=True)
     @starboard.command()
-    async def config(self, ctx, channel: discord.TextChannel, star_emoji: typing.Union[discord.Emoji, str],
+    async def config(self, ctx: DozerContext, channel: discord.TextChannel, star_emoji: typing.Union[discord.Emoji, str],
                      threshold: int,
                      cancel_emoji: typing.Union[discord.Emoji, str] = None):
         """Modify the settings for this server's starboard"""
@@ -274,7 +274,7 @@ class Starboard(Cog):
     @guild_only()
     @has_permissions(manage_guild=True, manage_channels=True)
     @starboard.command()
-    async def disable(self, ctx):
+    async def disable(self, ctx: DozerContext):
         """Turn off the starboard if it is enabled"""
         config = await StarboardConfig.get_by(guild_id=ctx.guild.id)
         if not config:
@@ -292,7 +292,7 @@ class Starboard(Cog):
     @guild_only()
     @has_permissions(manage_messages=True)
     @starboard.command()
-    async def add(self, ctx, message_id, channel: discord.TextChannel = None):
+    async def add(self, ctx: DozerContext, message_id, channel: discord.TextChannel = None):
         """Add a message to the starboard manually"""
         config = await self.config_cache.query_one(guild_id=ctx.guild.id)
         if config is None:

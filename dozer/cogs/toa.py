@@ -9,7 +9,9 @@ import aiohttp
 import async_timeout
 import discord
 from discord_slash import cog_ext, SlashContext
+from discord.ext import commands
 
+from dozer.context import DozerContext
 from ._utils import *
 
 embed_color = discord.Color(0xf89808)
@@ -66,7 +68,7 @@ class TOA(Cog):
         await self.team(ctx, team_num=team_number)
 
     @group(invoke_without_command=True)
-    async def toa(self, ctx, team_num: int):
+    async def toa(self, ctx: DozerContext, team_num: int):
         """
         Get FTC-related information from The Orange Alliance.
         If no subcommand is specified, the `team` subcommand is inferred, and the argument is taken as a team number.
@@ -79,7 +81,7 @@ class TOA(Cog):
 
     @toa.command()
     @bot_has_permissions(embed_links=True)
-    async def team(self, ctx, team_num: int):
+    async def team(self, ctx: DozerContext, team_num: int):
         """Get information on an FTC team by number."""
         res = json.loads(await self.parser.req("team/" + str(team_num)))
         if len(res) == 0:

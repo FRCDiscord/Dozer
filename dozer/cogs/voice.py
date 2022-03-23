@@ -60,7 +60,7 @@ class Voice(Cog):
     @command()
     @bot_has_permissions(manage_channels=True)
     @has_permissions(manage_channels=True)
-    async def autoptt(self, ctx, voice_channel: discord.VoiceChannel, ptt_threshold: int):
+    async def autoptt(self, ctx: DozerContext, voice_channel: discord.VoiceChannel, ptt_threshold: int):
         """Configures AutoPtt limit for when members join/leave voice channels ptt is enabled"""
 
         e = discord.Embed(color=blurple)
@@ -99,7 +99,7 @@ class Voice(Cog):
     @command()
     @bot_has_permissions(manage_roles=True)
     @has_permissions(manage_roles=True)
-    async def voicebind(self, ctx, voice_channel: discord.VoiceChannel, *, role: discord.Role):
+    async def voicebind(self, ctx: DozerContext, voice_channel: discord.VoiceChannel, *, role: discord.Role):
         """Associates a voice channel with a role, so users joining a voice channel will automatically be given a specified role or roles."""
 
         config = await Voicebinds.get_by(channel_id=voice_channel.id)
@@ -121,7 +121,7 @@ class Voice(Cog):
     @command()
     @bot_has_permissions(manage_roles=True)
     @has_permissions(manage_roles=True)
-    async def voiceunbind(self, ctx, voice_channel: discord.VoiceChannel):
+    async def voiceunbind(self, ctx: DozerContext, voice_channel: discord.VoiceChannel):
         """Dissasociates a voice channel with a role previously binded with the voicebind command."""
         config = await Voicebinds.get_by(channel_id=voice_channel.id)
         if len(config) != 0:
@@ -140,7 +140,7 @@ class Voice(Cog):
 
     @command()
     @bot_has_permissions(manage_roles=True)
-    async def voicebindlist(self, ctx):
+    async def voicebindlist(self, ctx: DozerContext):
         """Lists all the voice channel to role bindings for the current server"""
         embed = discord.Embed(title="List of voice bindings for \"{}\"".format(ctx.guild), color=discord.Color.blue())
         for config in await Voicebinds.get_by(guild_id=ctx.guild.id):
