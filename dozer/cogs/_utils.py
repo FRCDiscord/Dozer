@@ -9,7 +9,6 @@ import discord
 from discord.ext import commands
 
 from dozer import db
-from dozer.bot import Dozer, DozerContext
 
 __all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk', 'dev_check', 'DynamicPrefixEntry']
 
@@ -119,7 +118,7 @@ class Reactor:
     """
     _stop_reaction = object()
 
-    def __init__(self, ctx: DozerContext, initial_reactions, *, auto_remove: bool=True, timeout: int=60):
+    def __init__(self, ctx, initial_reactions, *, auto_remove: bool=True, timeout: int=60):
         """
         ctx: command context
         initial_reactions: iterable of emoji to react with on start
@@ -196,7 +195,7 @@ class Paginator(Reactor):
         '\N{BLACK SQUARE FOR STOP}'  # :stop_button:
     )
 
-    def __init__(self, ctx: DozerContext, initial_reactions, pages, *, start: int=0, auto_remove: bool=True, timeout: int=60):
+    def __init__(self, ctx, initial_reactions, pages, *, start: int=0, auto_remove: bool=True, timeout: int=60):
         all_reactions = list(initial_reactions)
         ind = all_reactions.index(Ellipsis)
         all_reactions[ind:ind + 1] = self.pagination_reactions
@@ -254,7 +253,7 @@ class Paginator(Reactor):
             self.go_to_page(-amt)
 
 
-async def paginate(ctx: DozerContext, pages, *, start: int=0, auto_remove: bool=True, timeout: int=60):
+async def paginate(ctx, pages, *, start: int=0, auto_remove: bool=True, timeout: int=60):
     """
     Simple pagination based on Paginator. Pagination is handled normally and other reactions are ignored.
     """
@@ -277,7 +276,7 @@ def chunk(iterable, size: int):
 def bot_has_permissions(**required):
     """Decorator to check if bot has certain permissions when added to a command"""
 
-    def predicate(ctx: DozerContext):
+    def predicate(ctx):
         """Function to tell the bot if it has the right permissions"""
         given = ctx.channel.permissions_for((ctx.guild or ctx.channel).me)
         missing = [name for name, value in required.items() if getattr(given, name) != value]
@@ -311,7 +310,7 @@ class PrefixHandler:
         self.default_prefix = default_prefix
         self.prefix_cache = {}
 
-    def handler(self, bot: Dozer, message: discord.message):
+    def handler(self, bot, message: discord.message):
         """Process the dynamic prefix for each message"""
         dynamic = self.prefix_cache.get(message.guild.id) if message.guild else self.default_prefix
         # <@!> is a nickname mention which discord.py doesn't make by default
