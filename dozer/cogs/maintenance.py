@@ -57,7 +57,7 @@ class Maintenance(Cog):
             await ctx.send('```\n' + res + '```')
         else:
             await ctx.send('```\n' + res + '```')
-            await ctx.bot.get_command('restart').callback(self, ctx: DozerContext)
+            await ctx.bot.get_command('restart').callback(self, ctx)
 
     update.example_usage = """
     `{prefix}update` - update to the latest commit and restart
