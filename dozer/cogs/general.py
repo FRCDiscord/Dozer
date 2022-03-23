@@ -14,7 +14,7 @@ class General(Cog):
     """General commands common to all Discord bots."""
 
     @command()
-    async def ping(self, ctx):
+    async def ping(self, ctx: discord.ext.commands.Context):
         """Check the bot is online, and calculate its response time."""
         if ctx.guild is None:
             location = 'DMs'
@@ -33,7 +33,7 @@ class General(Cog):
     @command(name='help', aliases=['about'])
     @bot_has_permissions(add_reactions=True, embed_links=True,
                          read_message_history=True)  # Message history is for internals of paginate()
-    async def base_help(self, ctx, *target):
+    async def base_help(self, ctx: discord.ext.commands.Context, *target):
         """Show this message."""
         if not target:  # No commands - general help
             await self._help_all(ctx)
@@ -60,7 +60,7 @@ class General(Cog):
     `{prefix}help General` - Help about the General category
     """
 
-    async def _help_all(self, ctx):
+    async def _help_all(self, ctx: discord.ext.commands.Context):
         """Gets the help message for all commands."""
         info = discord.Embed(title='Dozer: Info', description='A guild management bot for FIRST Discord servers',
                              color=discord.Color.blue())
@@ -83,7 +83,7 @@ class General(Cog):
         info.set_footer(text='Dozer Help | all commands | Info page')
         await self._show_help(ctx, info, 'Dozer: Commands', '', 'all commands', ctx.bot.commands)
 
-    async def _help_command(self, ctx, command):
+    async def _help_command(self, ctx: discord.ext.commands.Context, command):
         """Gets the help message for one command."""
         info = discord.Embed(title='Command: {}{} {}'.format(ctx.prefix, command.qualified_name, command.signature),
                              description=command.help or (None if command.example_usage else 'No information provided.'),
@@ -96,14 +96,15 @@ class General(Cog):
                               command.commands if isinstance(command, Group) else set(),
                               name=command.qualified_name, signature=command.signature)
 
-    async def _help_cog(self, ctx, cog):
+    async def _help_cog(self, ctx: discord.ext.commands.Context, cog):
         """Gets the help message for one cog."""
         await self._show_help(ctx, None, 'Category: {cog_name}', inspect.cleandoc(cog.__doc__ or ''),
                               '{cog_name!r} category',
                               (command for command in ctx.bot.commands if command.cog is cog),
                               cog_name=type(cog).__name__)
 
-    async def _show_help(self, ctx, start_page, title, description, footer, commands, **format_args):
+    async def _show_help(self, ctx: discord.ext.commands.Context, start_page: discord.Embed, title: str, description: str, 
+                        footer: str, commands, **format_args):
         """Creates and sends a template help message, with arguments filled in."""
         format_args['prefix'] = ctx.prefix
         footer = 'Dozer Help | {} | Page {}'.format(footer, '{page_num} of {len_pages}')
@@ -160,7 +161,7 @@ class General(Cog):
 
     @has_permissions(change_nickname=True)
     @command()
-    async def nick(self, ctx, *, nicktochangeto):
+    async def nick(self, ctx: discord.ext.commands.Context, *, nicktochangeto: str):
         """Allows a member to change their nickname."""
         await discord.Member.edit(ctx.author, nick=nicktochangeto[:32])
         await ctx.send("Nick successfully changed to " + nicktochangeto[:32])
@@ -168,7 +169,7 @@ class General(Cog):
             await ctx.send("Warning: truncated nickname to 32 characters")
 
     @command()
-    async def invite(self, ctx):
+    async def invite(self, ctx: discord.ext.commands.Context):
         """
         Display the bot's invite link.
         The generated link gives all permissions the bot requires. If permissions are removed, some commands will be unusable.
@@ -187,7 +188,7 @@ class General(Cog):
     @command(aliases=["setprefix"])
     @guild_only()
     @has_permissions(manage_guild=True)
-    async def configprefix(self, ctx, prefix: str):
+    async def configprefix(self, ctx: discord.ext.commands.Context, prefix: str):
         """Update a servers dynamic prefix"""
         new_prefix = DynamicPrefixEntry(
             guild_id=int(ctx.guild.id),
