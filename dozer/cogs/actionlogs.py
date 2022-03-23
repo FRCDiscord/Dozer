@@ -545,7 +545,7 @@ class Actionlog(Cog):
     @command()
     @has_permissions(manage_nicknames=True)
     @bot_has_permissions(manage_nicknames=True)
-    async def locknickname(self, ctx, member: discord.Member, *, name: str):
+    async def locknickname(self, ctx: DozerContext, member: discord.Member, *, name: str):
         """Locks a members nickname to a particular string, in essence revoking nickname change perms"""
         try:
             await member.edit(nick=name)
@@ -570,7 +570,7 @@ class Actionlog(Cog):
     @command()
     @has_permissions(manage_nicknames=True)
     @bot_has_permissions(manage_nicknames=True)
-    async def unlocknickname(self, ctx, member: discord.Member):
+    async def unlocknickname(self, ctx: DozerContext, member: discord.Member):
         """Removes nickname lock from member"""
         deleted = await NicknameLock.delete(guild_id=ctx.guild.id, member_id=member.id)
         if int(deleted.split(" ", 1)[1]):
@@ -604,7 +604,7 @@ class NicknameLock(db.DatabaseTable):
             UNIQUE (guild_id, member_id)
             )""")
 
-    def __init__(self, guild_id, member_id, locked_name, timeout=None):
+    def __init__(self, guild_id: int, member_id: int, locked_name: str, timeout: int=None):
         super().__init__()
         self.guild_id = guild_id
         self.member_id = member_id
@@ -638,7 +638,7 @@ class CustomJoinLeaveMessages(db.DatabaseTable):
             name varchar NOT NULL
             )""")
 
-    def __init__(self, guild_id, channel_id=None, ping=None, join_message=None, leave_message=None):
+    def __init__(self, guild_id: int, channel_id: int=None, ping=None, join_message: str=None, leave_message: str=None):
         super().__init__()
         self.guild_id = guild_id
         self.channel_id = channel_id
@@ -692,7 +692,7 @@ class GuildMessageLog(db.DatabaseTable):
             messagelog_channel bigint NOT NULL
             )""")
 
-    def __init__(self, guild_id, name, messagelog_channel):
+    def __init__(self, guild_id: int, name: str, messagelog_channel: int):
         super().__init__()
         self.guild_id = guild_id
         self.name = name
