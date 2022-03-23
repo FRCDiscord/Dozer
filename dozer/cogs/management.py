@@ -11,7 +11,8 @@ import discord
 from dateutil import parser
 from discord.ext.commands import has_permissions, BadArgument
 
-from dozer.bot import Dozer, DozerContext
+from dozer.bot import Dozer
+from dozer.context import DozerContext
 
 from ._utils import *
 from .general import blurple

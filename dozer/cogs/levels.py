@@ -15,7 +15,8 @@ from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
 from discord_slash import cog_ext, SlashContext
 
-from dozer.bot import Dozer, DozerContext
+from dozer.bot import Dozer
+from dozer.context import DozerContext
 
 from ._utils import *
 

@@ -4,7 +4,7 @@ import inspect
 import discord
 from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions, NotOwner, guild_only
 
-from dozer.bot import DozerContext
+from dozer.context import DozerContext
 
 from ._utils import *
 from ..utils import oauth_url

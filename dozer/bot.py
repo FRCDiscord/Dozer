@@ -11,7 +11,7 @@ import discord
 from discord.ext import commands
 from discord_slash import SlashCommand
 from sentry_sdk import capture_exception
-
+from .context import DozerContext
 from . import utils
 from .cogs import _utils
 
@@ -38,12 +38,7 @@ class InvalidContext(commands.CheckFailure):
     """
 
 
-class DozerContext(commands.Context):
-    """Cleans all messages before sending"""
-    async def send(self, content=None, **kwargs): # pylint: disable=arguments-differ
-        if content is not None:
-            content = utils.clean(self, content, mass=True, member=False, role=False, channel=False)
-        return await super().send(content, **kwargs)
+
 
 
 class Dozer(commands.Bot):

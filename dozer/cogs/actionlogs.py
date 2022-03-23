@@ -7,8 +7,7 @@ import time
 
 import discord
 from discord.ext.commands import has_permissions, BadArgument
-
-from dozer.bot import DozerContext
+from dozer.context import DozerContext
 
 from ._utils import *
 from .general import blurple
