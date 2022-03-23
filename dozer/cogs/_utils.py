@@ -82,7 +82,7 @@ def group(**kwargs):
 class Cog(commands.Cog):
     """Initiates cogs."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         super().__init__()
         self.bot = bot
 

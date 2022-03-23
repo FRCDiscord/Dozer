@@ -58,7 +58,7 @@ def make_starboard_embed(msg: discord.Message, reaction_count):
 class Starboard(Cog):
     """Cog to post specific 'Hall of Fame' messages in a specific channel"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         super().__init__(bot)
         self.config_cache = db.ConfigCache(StarboardConfig)
         self.locked_messages = set()

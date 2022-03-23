@@ -157,7 +157,7 @@ class NameGameSession():
 
 class NameGame(Cog):
     """Namegame commands"""
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         super().__init__(bot)
         with gzip.open("ftc_teams.pickle.gz") as f:
             raw_teams = pickle.load(f)

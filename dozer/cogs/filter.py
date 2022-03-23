@@ -20,7 +20,7 @@ class Filter(Cog):
     """
     filter_dict = {}
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         super().__init__(bot)
         self.word_filter_setting = db.ConfigCache(WordFilterSetting)
         self.word_filter_role_whitelist = db.ConfigCache(WordFilterRoleWhitelist)

@@ -20,7 +20,7 @@ from ._utils import *
 
 class TBA(Cog):
     """Commands that talk to The Blue Alliance"""
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         super().__init__(bot)
         tba_config = bot.config['tba']
         self.gmaps_key = bot.config['gmaps_key']

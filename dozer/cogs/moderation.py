@@ -40,7 +40,7 @@ class SafeRoleConverter(RoleConverter):
 class Moderation(Cog):
     """A cog to handle moderation tasks."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         super().__init__(bot)
         self.links_config = db.ConfigCache(GuildMessageLinks)
 

@@ -29,7 +29,7 @@ async def embed_paginatorinator(content_name, embed, text):
 class Actionlog(Cog):
     """A cog to handle guild events tasks"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         super().__init__(bot)
         self.edit_delete_config = db.ConfigCache(GuildMessageLog)
         self.bulk_delete_buffer = {}

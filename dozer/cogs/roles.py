@@ -20,7 +20,7 @@ blurple = discord.Color.blurple()
 class Roles(Cog):
     """Commands for role management."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         super().__init__(bot)
         for command in self.giveme.walk_commands():
             @command.before_invoke

@@ -55,7 +55,7 @@ class TOAParser:
 
 class TOA(Cog):
     """TOA commands"""
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         super().__init__(bot)
         self.http_session = aiohttp.ClientSession()
         self.parser = TOAParser(bot.config['toa']['key'], self.http_session, app_name=bot.config['toa']['app_name'])
