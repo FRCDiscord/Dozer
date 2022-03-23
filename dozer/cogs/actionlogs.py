@@ -4,7 +4,7 @@ import datetime
 import logging
 import math
 import time
-
+from discord.ext import commands
 import discord
 from discord.ext.commands import has_permissions, BadArgument
 from dozer.context import DozerContext
@@ -603,7 +603,7 @@ class NicknameLock(db.DatabaseTable):
             UNIQUE (guild_id, member_id)
             )""")
 
-    def __init__(self, guild_id: int, member_id: int, locked_name: str, timeout: int=None):
+    def __init__(self, guild_id: int, member_id: int, locked_name: str, timeout: float=None):
         super().__init__()
         self.guild_id = guild_id
         self.member_id = member_id
