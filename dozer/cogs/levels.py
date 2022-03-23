@@ -15,6 +15,8 @@ from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
 from discord_slash import cog_ext, SlashContext
 
+from dozer.bot import Dozer, DozerContext
+
 from ._utils import *
 
 blurple = discord.Color.blurple()
@@ -32,7 +34,7 @@ class Levels(Cog):
 
     cache_size = 750
 
-    def __init__(self, bot):
+    def __init__(self, bot: Dozer):
         super().__init__(bot)
         self._loop = bot.loop
         self.guild_settings = {}
@@ -44,7 +46,7 @@ class Levels(Cog):
 
     @staticmethod
     @functools.lru_cache(cache_size)
-    def total_xp_for_level(level):
+    def total_xp_for_level(level: int):
         """Compute the total XP required to reach the given level.
         All members at this level have at least this much XP.
         """
@@ -61,7 +63,7 @@ class Levels(Cog):
 
     @staticmethod
     @functools.lru_cache(cache_size)
-    def level_for_total_xp(xp):
+    def level_for_total_xp(xp: int):
         """Compute the level of a member with the given amount of total XP.
         All members with this much XP are at or above this level.
         """
@@ -100,7 +102,7 @@ class Levels(Cog):
             else:
                 self._level_roles[role.guild_id] = [role]
 
-    async def check_new_roles(self, guild, member, cached_member, guild_settings):
+    async def check_new_roles(self, guild: discord.Guild, member: discord.Member, cached_member, guild_settings):
         """Check and see if a member has qualified to get a new role"""
         current_level = self.level_for_total_xp(cached_member.total_xp)
         unsorted = self._level_roles.get(guild.id)
@@ -138,7 +140,7 @@ class Levels(Cog):
             except discord.Forbidden:
                 DOZER_LOGGER.debug(f"Unable to add roles to {member} in guild {guild} Reason: Forbidden")
 
-    async def check_level_up(self, guild, member, old_xp, new_xp):
+    async def check_level_up(self, guild: discord.Guild, member: discord.Member, old_xp: int, new_xp: int):
         """Check and see if a member has ranked up, and then send a message if enabled"""
         old_level = self.level_for_total_xp(old_xp)
         new_level = self.level_for_total_xp(new_xp)
@@ -149,7 +151,7 @@ class Levels(Cog):
                 if channel:
                     await channel.send(f"{member.mention}, you have reached level {new_level}!")
 
-    async def load_member(self, guild_id, member_id):
+    async def load_member(self, guild_id: int, member_id: int):
         """Check to see if a member is in the level cache and if not load from the database"""
         cached_member = self._xp_cache.get((guild_id, member_id))
         if cached_member is None:
@@ -164,7 +166,7 @@ class Levels(Cog):
             self._xp_cache[(guild_id, member_id)] = cached_member
         return cached_member
 
-    async def sync_member(self, guild_id, member_id):
+    async def sync_member(self, guild_id: int, member_id: int):
         """Sync an individual member to the database"""
         cached_member = self._xp_cache.get((guild_id, member_id))
         if cached_member:
@@ -240,7 +242,7 @@ class Levels(Cog):
         finally:
             self.sync_task.start()
 
-    def _fmt_member(self, guild, user_id):
+    def _fmt_member(self, guild: discord.Guild, user_id: int):
         member = guild.get_member(user_id)
         if member:
             if member.status == discord.Status.offline:
@@ -255,7 +257,7 @@ class Levels(Cog):
                 return f"({user_id})"
 
     @Cog.listener('on_message')
-    async def give_message_xp(self, message):
+    async def give_message_xp(self, message: discord.Message):
         """Handle giving XP to a user for a message."""
         if message.author.bot or not message.guild:
             return
@@ -281,7 +283,7 @@ class Levels(Cog):
     @discord.ext.commands.max_concurrency(1, wait=False)  # Only allows one instance of this command to run at a time globally
     @discord.ext.commands.cooldown(rate=1, per=900, type=discord.ext.commands.BucketType.guild)  # A cooldown of 15 minutes per guild to prevent spam
     @has_permissions(administrator=True)
-    async def meesyncs(self, ctx):
+    async def meesyncs(self, ctx: DozerContext):
         """Function to scrap ranking data from the mee6 api and save it to the database"""
         guild_id = ctx.guild.id
         progress_template = "Currently syncing from Mee6 API please wait... Page: {page}"
@@ -323,7 +325,7 @@ class Levels(Cog):
 
     @command(aliases=["rolelevels", "levelroles"])
     @guild_only()
-    async def checkrolelevels(self, ctx):
+    async def checkrolelevels(self, ctx: DozerContext):
         """Displays all level associated roles"""
         unsorted = self._level_roles.get(ctx.guild.id)
         embed = discord.Embed(title=f"Level roles for {ctx.guild}", color=blurple)
@@ -352,7 +354,7 @@ class Levels(Cog):
 
     @group(invoke_without_command=True, aliases=["moderatelevels", "levelsmoderation"])
     @guild_only()
-    async def adjustlevels(self, ctx):
+    async def adjustlevels(self, ctx: DozerContext):
         """Allows for moderators to adjust a members level/xp"""
         await ctx.send(f"Invalid subcommand\nFor help with adjustlevels use `{ctx.prefix}help adjustlevels`")
 
@@ -366,7 +368,7 @@ class Levels(Cog):
     @adjustlevels.command()
     @guild_only()
     @has_permissions(manage_messages=True)
-    async def setlevel(self, ctx, member: discord.Member, level: int):
+    async def setlevel(self, ctx: DozerContext, member: discord.Member, level: int):
         """Changes a members level to requested level"""
         if level >= LEVEL_SET_LIMIT:  # Make sure level doesn't get close to LEVEL_CALC_LIMIT
             raise BadArgument("Requested level is too high!")
@@ -383,7 +385,7 @@ class Levels(Cog):
     @adjustlevels.command(aliases=["addxp"])
     @guild_only()
     @has_permissions(manage_messages=True)
-    async def adjustxp(self, ctx, member: discord.Member, xp_amount: int):
+    async def adjustxp(self, ctx: DozerContext, member: discord.Member, xp_amount: int):
         """Adjusts a members xp by a certain amount"""
         if abs(xp_amount) >= ADD_LIMIT:
             raise BadArgument("You cannot change a members xp more than the 32bit limit will allow!")
@@ -398,7 +400,7 @@ class Levels(Cog):
     @adjustlevels.command()
     @guild_only()
     @has_permissions(manage_messages=True)
-    async def swapxp(self, ctx, take_member: discord.Member, give_member: discord.Member):
+    async def swapxp(self, ctx: DozerContext, take_member: discord.Member, give_member: discord.Member):
         """Swap xp stats between two members in a guild"""
         take = await self.load_member(ctx.guild.id, take_member.id)
         give = await self.load_member(ctx.guild.id, give_member.id)
@@ -414,7 +416,7 @@ class Levels(Cog):
     @adjustlevels.command()
     @guild_only()
     @has_permissions(manage_messages=True)
-    async def transferxp(self, ctx, take_member: discord.Member, give_member: discord.Member):
+    async def transferxp(self, ctx: DozerContext, take_member: discord.Member, give_member: discord.Member):
         """Adds xp from one member to another member"""
         take = await self.load_member(ctx.guild.id, take_member.id)
         give = await self.load_member(ctx.guild.id, give_member.id)
@@ -431,7 +433,7 @@ class Levels(Cog):
 
     @group(invoke_without_command=True, aliases=["configurelevels", "levelconfig", "rankconfig"])
     @guild_only()
-    async def configureranks(self, ctx):
+    async def configureranks(self, ctx: DozerContext):
         """Configures dozer ranks:tm:"""
         settings = self.guild_settings.get(ctx.guild.id)
         if settings:
@@ -466,7 +468,7 @@ class Levels(Cog):
     @configureranks.command(aliases=["xp"])
     @guild_only()
     @has_permissions(manage_guild=True)
-    async def xprange(self, ctx, xp_min: int, xp_max: int):
+    async def xprange(self, ctx: DozerContext, xp_min: int, xp_max: int):
         """Set the range of a servers levels random xp"""
         if xp_min > xp_max:
             raise BadArgument("XP_min cannot be greater than XP_max!")
@@ -479,7 +481,7 @@ class Levels(Cog):
     @configureranks.command(aliases=["cooldown"])
     @guild_only()
     @has_permissions(manage_guild=True)
-    async def setcooldown(self, ctx, cooldown: int):
+    async def setcooldown(self, ctx: DozerContext, cooldown: int):
         """Set the time in seconds between messages before xp is calculated again"""
         if cooldown < 0:
             raise BadArgument("Cooldown cannot be less than zero!")
@@ -488,35 +490,35 @@ class Levels(Cog):
     @configureranks.command()
     @guild_only()
     @has_permissions(manage_guild=True)
-    async def toggle(self, ctx):
+    async def toggle(self, ctx: DozerContext):
         """Toggle dozer ranks"""
         await self._cfg_guild_setting(ctx, toggle_enabled=True)
 
     @configureranks.command()
     @guild_only()
     @has_permissions(manage_guild=True)
-    async def keeproles(self, ctx):
+    async def keeproles(self, ctx: DozerContext):
         """Toggles whenever old level role roles will be kept on level up"""
         await self._cfg_guild_setting(ctx, keep_old_roles_toggle=True)
 
     @configureranks.command(aliases=["notifications"])
     @guild_only()
     @has_permissions(manage_guild=True)
-    async def notificationchannel(self, ctx, channel: discord.TextChannel):
+    async def notificationchannel(self, ctx: DozerContext, channel: discord.TextChannel):
         """Set up the channel where level up messages are sent"""
         await self._cfg_guild_setting(ctx, lvl_up_msgs_id=channel.id)
 
     @configureranks.command(aliases=["nonotifications"])
     @guild_only()
     @has_permissions(manage_guild=True)
-    async def notificationsoff(self, ctx):
+    async def notificationsoff(self, ctx: DozerContext):
         """Turns off level up messages"""
         await self._cfg_guild_setting(ctx, no_lvl_up=True)
 
     @configureranks.command(aliases=["addrolelevel", "addlevelrole", "setlevelrole"])
     @guild_only()
     @has_permissions(manage_roles=True)
-    async def setrolelevel(self, ctx, role: discord.Role, level: int):
+    async def setrolelevel(self, ctx: DozerContext, role: discord.Role, level: int):
         """Sets a role to be given to a user when they reach a certain level"""
         if role > ctx.author.top_role:
             raise BadArgument('Cannot give roles higher than your top role!')
@@ -556,7 +558,7 @@ class Levels(Cog):
     @configureranks.command(aliases=["delrolelevel"])
     @guild_only()
     @has_permissions(manage_roles=True)
-    async def removerolelevel(self, ctx, role: discord.Role):
+    async def removerolelevel(self, ctx: DozerContext, role: discord.Role):
         """Removes a levelrole"""
         e = discord.Embed(color=blurple)
         async with ctx.channel.typing():
@@ -573,7 +575,7 @@ class Levels(Cog):
     `{prefix}removerolelevel level 2 `: Will remove role "level 2" from level roles
     """
 
-    async def _cfg_guild_setting(self, ctx, xp_min=None, xp_max=None, xp_cooldown=None, lvl_up_msgs_id=None, toggle_enabled=None, no_lvl_up=False,
+    async def _cfg_guild_setting(self, ctx: DozerContext, xp_min=None, xp_max=None, xp_cooldown=None, lvl_up_msgs_id=None, toggle_enabled=None, no_lvl_up=False,
                                  keep_old_roles_toggle=False):
         """Basic Database entry updater"""
         async with ctx.channel.typing():  # Send typing to show that the bot is thinking and not stalled
@@ -625,7 +627,7 @@ class Levels(Cog):
     @command(aliases=["rnak", "level"])
     @guild_only()
     @discord.ext.commands.cooldown(rate=1, per=5, type=discord.ext.commands.BucketType.user)
-    async def rank(self, ctx, *, member: discord.Member = None):
+    async def rank(self, ctx: DozerContext, *, member: discord.Member = None):
         """Get a user's ranking on the XP leaderboard.
         If no member is passed, the caller's ranking is shown.
         """
@@ -677,7 +679,7 @@ class Levels(Cog):
 
     @command(aliases=["ranks", "leaderboard"])
     @guild_only()
-    async def levels(self, ctx, start: typing.Optional[discord.Member]):
+    async def levels(self, ctx: DozerContext, start: typing.Optional[discord.Member]):
         """Show the XP leaderboard for this server. Leaderboard refreshes every 5 minutes or so"""
 
         # Order by total_xp needs a tiebreaker, otherwise all records with equal XP will have the same rank
@@ -738,7 +740,7 @@ class XPRole(db.DatabaseTable):
                 PRIMARY KEY (guild_id, role_id)
                 )""")
 
-    def __init__(self, guild_id, role_id, level):
+    def __init__(self, guild_id: int, role_id: int, level: int):
         super().__init__()
         self.guild_id = guild_id
         self.role_id = role_id
@@ -774,7 +776,7 @@ class MemberXP(db.DatabaseTable):
             PRIMARY KEY (guild_id, user_id)
             )""")
 
-    def __init__(self, guild_id, user_id, total_xp, total_messages, last_given_at):
+    def __init__(self, guild_id: int, user_id: int, total_xp: int, total_messages:int, last_given_at: datetime.time):
         super().__init__()
         self.guild_id = guild_id
         self.user_id = user_id
@@ -836,7 +838,7 @@ class GuildXPSettings(db.DatabaseTable):
             enabled boolean NOT NULL
             )""")
 
-    def __init__(self, guild_id, xp_min, xp_max, xp_cooldown, entropy_value, enabled, lvl_up_msgs, keep_old_roles):
+    def __init__(self, guild_id: int, xp_min: int, xp_max: int, xp_cooldown: int, entropy_value: int, enabled: bool, lvl_up_msgs: bool, keep_old_roles: bool):
         super().__init__()
         self.guild_id = guild_id
         self.xp_min = xp_min
