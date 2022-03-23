@@ -467,7 +467,7 @@ class NameGame(Cog):
 
     @ng.command()
     @game_is_running
-    async def pick(self, ctx: DozerContext, team: int, *, name):
+    async def pick(self, ctx: DozerContext, team: int, *, name: str):
         """Attempt to pick a team in a game."""
         game = self.games[ctx.channel.id]
 
@@ -726,7 +726,7 @@ class NameGame(Cog):
                     game.vote_time = -1
 
     @Cog.listener()
-    async def on_reaction_remove(self, reaction, user):
+    async def on_reaction_remove(self, reaction: discord.Reaction, user: discord.Member):
         """When a reaction is removed, do vote handling"""
         if reaction.message.channel.id not in self.games:
             return
@@ -737,7 +737,7 @@ class NameGame(Cog):
                 return
             await self._on_reaction(game, reaction, user, -1)
 
-    async def _on_reaction(self, game, reaction, user, inc):
+    async def _on_reaction(self, game, reaction: discord.Reaction, user: discord.Member, inc):
         """Handles pass/fail reactions"""
         if reaction.message.id == game.vote_msg.id and user in game.players:
             if reaction.emoji == '❌':
@@ -805,7 +805,7 @@ class NameGameConfig(db.DatabaseTable):
             pings_enabled bigint NOT NULL
             )""")
 
-    def __init__(self, guild_id, mode, pings_enabled, channel_id=None):
+    def __init__(self, guild_id: int, mode: str, pings_enabled: int, channel_id: int=None):
         super().__init__()
         self.channel_id = channel_id
         self.mode = mode
@@ -840,7 +840,7 @@ class NameGameLeaderboard(db.DatabaseTable):
             PRIMARY KEY (user_id, game_mode)
             )""")
 
-    def __init__(self, user_id, game_mode, wins):
+    def __init__(self, user_id: int, game_mode: str, wins: int):
         super().__init__()
         self.game_mode = game_mode
         self.user_id = user_id
