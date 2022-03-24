@@ -99,6 +99,7 @@ class DataBasedSource(Source):
         behaviour, change the implementation of __str__ in your subclass.
             full_name: The string that will be displayed to the user of your cleaned, verified data.
         """
+
         def __init__(self, short_name, full_name):
             self.short_name = short_name
             self.full_name = full_name

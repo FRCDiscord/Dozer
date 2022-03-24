@@ -17,7 +17,6 @@ from discord_slash import cog_ext, SlashContext
 
 from dozer.bot import Dozer
 from dozer.context import DozerContext
-
 from ._utils import *
 
 blurple = discord.Color.blurple()
@@ -55,7 +54,8 @@ class Levels(Cog):
         # > The formula to calculate how many xp you need for the next level is 5 * (lvl ^ 2) + 50 * lvl + 100 with
         # > your current level as lvl
         if level >= LEVEL_CALC_LIMIT:  # If the level gets too big, dozer will hang trying to calculate the level. A better way needs to
-            DOZER_LOGGER.critical("Member XP exceeded maximum calculation limit")  # be found to calculate level's but this is the best for now
+            DOZER_LOGGER.critical(
+                "Member XP exceeded maximum calculation limit")  # be found to calculate level's but this is the best for now
             return LEVEL_CALC_LIMIT
         needed = 0
         for lvl in range(level):
@@ -83,7 +83,8 @@ class Levels(Cog):
         DOZER_LOGGER.info("Preloading guild settings")
         await self.update_server_settings_cache()
         await self.update_level_role_cache()
-        DOZER_LOGGER.info(f"Loaded settings for {len(self.guild_settings)} guilds; and {len(self._level_roles)} level roles")
+        DOZER_LOGGER.info(
+            f"Loaded settings for {len(self.guild_settings)} guilds; and {len(self._level_roles)} level roles")
         # Load subset of member XP records here?
 
     async def update_server_settings_cache(self):
@@ -119,18 +120,21 @@ class Levels(Cog):
             # Determine if we should add all roles or just top role
             to_add = to_do if guild_settings.keep_old_roles or not len(to_do) else [to_do[-1]]
 
-            for level_role in to_add:  # Go through all roles that should be added and see if the member already has those roles
+            for level_role in to_add:
+                # Go through all roles that should be added and see if the member already has those roles
                 add_role = guild.get_role(level_role.role_id)
                 if add_role not in member.roles:
                     add_roles.append(add_role)
 
             if not guild_settings.keep_old_roles:  # Check if a guild wants all old roles removed
-                for level_role in to_do[:-1]:  # Go through all roles that should be removed and make sure the member already has those roles
+                for level_role in to_do[:-1]:
+                    # Go through all roles that should be removed and make sure the member already has those roles
                     del_role = guild.get_role(level_role.role_id)
                     if del_role in member.roles:
                         del_roles.append(del_role)
 
-            for level_role in to_undo:  # Go through all roles the member shouldn't have, and make sure they don't have them
+            for level_role in to_undo:
+                # Go through all roles the member shouldn't have, and make sure they don't have them
                 del_role = guild.get_role(level_role.role_id)
                 if del_role in member.roles:
                     del_roles.append(del_role)
@@ -171,7 +175,8 @@ class Levels(Cog):
         """Sync an individual member to the database"""
         cached_member = self._xp_cache.get((guild_id, member_id))
         if cached_member:
-            e = MemberXP(guild_id, member_id, cached_member.total_xp, cached_member.total_messages, cached_member.last_given_at)
+            e = MemberXP(guild_id, member_id, cached_member.total_xp, cached_member.total_messages,
+                         cached_member.last_given_at)
             await e.update_or_add()
             cached_member.dirty = False
             return True
@@ -193,7 +198,8 @@ class Levels(Cog):
                 del self._xp_cache[(guild_id, user_id)]
                 evicted += 1
                 continue
-            to_write.append((guild_id, user_id, cached_member.total_xp, cached_member.total_messages, cached_member.last_given_at))
+            to_write.append(
+                (guild_id, user_id, cached_member.total_xp, cached_member.total_messages, cached_member.last_given_at))
             cached_member.dirty = False
 
         if not to_write:
@@ -202,11 +208,12 @@ class Levels(Cog):
         # Query written manually to insert all records at once
         try:
             async with db.Pool.acquire() as conn:
-                await conn.executemany(f"INSERT INTO {MemberXP.__tablename__} (guild_id, user_id, total_xp, total_messages, last_given_at)"
-                                       f" VALUES ($1, $2, $3, $4, $5) ON CONFLICT ({MemberXP.__uniques__}) DO UPDATE"
-                                       f" SET total_xp = EXCLUDED.total_xp, total_messages = EXCLUDED.total_messages, last_given_at = "
-                                       f"EXCLUDED.last_given_at",
-                                       to_write)
+                await conn.executemany(
+                    f"INSERT INTO {MemberXP.__tablename__} (guild_id, user_id, total_xp, total_messages, last_given_at)"
+                    f" VALUES ($1, $2, $3, $4, $5) ON CONFLICT ({MemberXP.__uniques__}) DO UPDATE"
+                    f" SET total_xp = EXCLUDED.total_xp, total_messages = EXCLUDED.total_messages, last_given_at = "
+                    f"EXCLUDED.last_given_at",
+                    to_write)
             DOZER_LOGGER.debug(f"Inserted/updated {len(to_write)} record(s); Evicted {evicted} records(s)")
         except Exception as e:
             DOZER_LOGGER.error(f"Failed to sync levels cache to db, Reason:{e}")
@@ -271,7 +278,8 @@ class Levels(Cog):
         old_xp = cached_member.total_xp
 
         timestamp = message.created_at.replace(tzinfo=timezone.utc)
-        if cached_member.last_given_at is None or timestamp - cached_member.last_given_at > timedelta(seconds=guild_settings.xp_cooldown):
+        if cached_member.last_given_at is None or timestamp - cached_member.last_given_at > timedelta(
+                seconds=guild_settings.xp_cooldown):
             cached_member.total_xp += random.randint(guild_settings.xp_min, guild_settings.xp_max)
             cached_member.last_given_at = timestamp
         cached_member.total_messages += 1
@@ -281,14 +289,17 @@ class Levels(Cog):
 
     @command(aliases=["mee6sync"])
     @guild_only()  # Prevent command from being executed in a DM
-    @discord.ext.commands.max_concurrency(1, wait=False)  # Only allows one instance of this command to run at a time globally
-    @discord.ext.commands.cooldown(rate=1, per=900, type=discord.ext.commands.BucketType.guild)  # A cooldown of 15 minutes per guild to prevent spam
+    @discord.ext.commands.max_concurrency(1,
+                                          wait=False)  # Only allows one instance of this command to run at a time globally
+    @discord.ext.commands.cooldown(rate=1, per=900,
+                                   type=discord.ext.commands.BucketType.guild)  # A cooldown of 15 minutes per guild to prevent spam
     @has_permissions(administrator=True)
     async def meesyncs(self, ctx: DozerContext):
         """Function to scrap ranking data from the mee6 api and save it to the database"""
         guild_id = ctx.guild.id
         progress_template = "Currently syncing from Mee6 API please wait... Page: {page}"
-        DOZER_LOGGER.info(f"Syncing Mee6 level data for {ctx.guild.member_count} members from guild {ctx.guild}({guild_id})")
+        DOZER_LOGGER.info(
+            f"Syncing Mee6 level data for {ctx.guild.member_count} members from guild {ctx.guild}({guild_id})")
 
         if self.guild_settings.get(guild_id):
             self.guild_settings[guild_id].enabled = False
@@ -298,7 +309,8 @@ class Levels(Cog):
 
         msg = await ctx.send(progress_template.format(page="N/A"))
         for page in itertools.count():
-            async with self.session.get(f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}") as response:
+            async with self.session.get(
+                    f"https://mee6.xyz/api/plugins/levels/leaderboard/{guild_id}?page={page}") as response:
                 data = await response.json()
                 if data.get("players") and len(data["players"]) > 0:
                     for user in data["players"]:
@@ -340,7 +352,8 @@ class Levels(Cog):
                 for level_role in page:
                     role = ctx.guild.get_role(level_role.role_id)
                     if_unavailable = "Deleted role"
-                    e.add_field(name=f"Level: {level_role.level}", value=f"{role.mention if role else if_unavailable}", inline=False)
+                    e.add_field(name=f"Level: {level_role.level}", value=f"{role.mention if role else if_unavailable}",
+                                inline=False)
 
                 e.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(roles) / 10)}")
                 embeds.append(e)
@@ -576,7 +589,8 @@ class Levels(Cog):
     `{prefix}removerolelevel level 2 `: Will remove role "level 2" from level roles
     """
 
-    async def _cfg_guild_setting(self, ctx: DozerContext, xp_min=None, xp_max=None, xp_cooldown=None, lvl_up_msgs_id=None, toggle_enabled=None, no_lvl_up=False,
+    async def _cfg_guild_setting(self, ctx: DozerContext, xp_min=None, xp_max=None, xp_cooldown=None,
+                                 lvl_up_msgs_id=None, toggle_enabled=None, no_lvl_up=False,
                                  keep_old_roles_toggle=False):
         """Basic Database entry updater"""
         async with ctx.channel.typing():  # Send typing to show that the bot is thinking and not stalled
@@ -602,7 +616,8 @@ class Levels(Cog):
                 xp_max=int(xp_max) if xp_max is not None else old_ent.xp_max,
                 xp_cooldown=int(xp_cooldown) if xp_cooldown is not None else old_ent.xp_cooldown,
                 entropy_value=0,  # Is in table but is not used yet
-                lvl_up_msgs=int(lvl_up_msgs_id) if lvl_up_msgs_id else old_ent.lvl_up_msgs if not no_lvl_up else GuildXPSettings.nullify,
+                lvl_up_msgs=int(
+                    lvl_up_msgs_id) if lvl_up_msgs_id else old_ent.lvl_up_msgs if not no_lvl_up else GuildXPSettings.nullify,
                 keep_old_roles=not old_ent.keep_old_roles if keep_old_roles_toggle else old_ent.keep_old_roles,
                 enabled=not old_ent.enabled if toggle_enabled else old_ent.enabled
             )
@@ -640,7 +655,8 @@ class Levels(Cog):
         if guild_settings is None or not guild_settings.enabled:
             embed.description = "Levels are not enabled in this server"
         else:
-            cache_record = await self.load_member(ctx.guild.id, member.id)  # Grab member from cache to make sure we have the most up to date values
+            cache_record = await self.load_member(ctx.guild.id,
+                                                  member.id)  # Grab member from cache to make sure we have the most up to date values
 
             # Make Postgres compute the rank for us (need WITH-query so rank() sees records for every user)
             db_record = await db.Pool.fetchrow(f"""
@@ -651,7 +667,8 @@ class Levels(Cog):
             """, ctx.guild.id, member.id)
 
             total_xp = cache_record.total_xp
-            db_count = await db.Pool.fetchval(f"""SELECT count(*) FROM {MemberXP.__tablename__} WHERE guild_id = $1; """, ctx.guild.id)
+            db_count = await db.Pool.fetchval(
+                f"""SELECT count(*) FROM {MemberXP.__tablename__} WHERE guild_id = $1; """, ctx.guild.id)
             # Prevents 1/1 in servers of ~100 and 50/40 in shrunk servers
             count = ctx.guild.member_count if ctx.guild.member_count > db_count else db_count
             level = self.level_for_total_xp(total_xp)
@@ -663,8 +680,9 @@ class Levels(Cog):
             else:
                 rank = count
 
-            embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
-                                 f"#{rank} of {count} in this server")
+            embed.description = (
+                f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
+                f"#{rank} of {count} in this server")
         embed.set_author(name=member.display_name, icon_url=member.avatar_url_as(format='png', size=64))
         await ctx.send(embed=embed)
 
@@ -672,6 +690,7 @@ class Levels(Cog):
     `{prefix}rank`: show your ranking
     `{prefix}rank coolgal#1234`: show another user's ranking
     """
+
     # Disabled until slash command pagination is fixed by discord
     # @cog_ext.cog_slash(name="leaderboard", description="Returns the guilds dozer leaderboard")
     # async def slash_levels(self, ctx: SlashContext, start_member: discord.Member = None):
@@ -777,7 +796,7 @@ class MemberXP(db.DatabaseTable):
             PRIMARY KEY (guild_id, user_id)
             )""")
 
-    def __init__(self, guild_id: int, user_id: int, total_xp: int, total_messages:int, last_given_at: datetime.time):
+    def __init__(self, guild_id: int, user_id: int, total_xp: int, total_messages: int, last_given_at: datetime.time):
         super().__init__()
         self.guild_id = guild_id
         self.user_id = user_id
@@ -839,7 +858,8 @@ class GuildXPSettings(db.DatabaseTable):
             enabled boolean NOT NULL
             )""")
 
-    def __init__(self, guild_id: int, xp_min: int, xp_max: int, xp_cooldown: int, entropy_value: int, enabled: bool, lvl_up_msgs: bool, keep_old_roles: bool):
+    def __init__(self, guild_id: int, xp_min: int, xp_max: int, xp_cooldown: int, entropy_value: int, enabled: bool,
+                 lvl_up_msgs: bool, keep_old_roles: bool):
         super().__init__()
         self.guild_id = guild_id
         self.xp_min = xp_min
@@ -855,8 +875,10 @@ class GuildXPSettings(db.DatabaseTable):
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
-            obj = GuildXPSettings(guild_id=result.get("guild_id"), xp_min=result.get("xp_min"), xp_max=result.get("xp_max"),
-                                  xp_cooldown=result.get("xp_cooldown"), entropy_value=result.get("entropy_value"), enabled=result.get("enabled"),
+            obj = GuildXPSettings(guild_id=result.get("guild_id"), xp_min=result.get("xp_min"),
+                                  xp_max=result.get("xp_max"),
+                                  xp_cooldown=result.get("xp_cooldown"), entropy_value=result.get("entropy_value"),
+                                  enabled=result.get("enabled"),
                                   lvl_up_msgs=result.get("lvl_up_msgs"), keep_old_roles=result.get("keep_old_roles"))
             result_list.append(obj)
         return result_list

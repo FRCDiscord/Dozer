@@ -1,14 +1,13 @@
 """Establish a system of filters that allow run-time specified filters to applied to all messages in a guild,
 with whitelisted role exceptions."""
 
-import datetime
 import re
+
 import discord
 from discord.ext import commands
 from discord.ext.commands import guild_only, has_permissions
 
 from dozer.context import DozerContext
-
 from ._utils import *
 from .. import db
 
@@ -239,7 +238,7 @@ class Filter(Cog):
     @filter.command(name="dm")
     async def dm_config(self, ctx: DozerContext, config: bool):
         """Set whether filter words should be DMed when used in bot messages"""
-        config = str(int(config)) # turns into "1" or "0" idk man
+        config = str(int(config))  # turns into "1" or "0" idk man
         results = await WordFilterSetting.get_by(guild_id=ctx.guild.id, setting_type="dm")
         if results:
             before_setting = results[0].value
@@ -252,7 +251,8 @@ class Filter(Cog):
         await result.update_or_add()
         self.word_filter_setting.invalidate_entry(guild_id=ctx.guild.id, setting_type="dm")
         await ctx.send(
-            "The DM setting for this guild has been changed from {} to {}.".format(before_setting == "1", result.value == "1"))
+            "The DM setting for this guild has been changed from {} to {}.".format(before_setting == "1",
+                                                                                   result.value == "1"))
 
     dm_config.example_usage = "`{prefix}filter dm_config True` - Makes all messages containining filter lists to be sent through DMs"
 
@@ -331,7 +331,7 @@ class WordFilter(db.DatabaseTable):
             pattern varchar NOT NULL
             )""")
 
-    def __init__(self, guild_id: int, friendly_name: str, pattern: str, enabled: bool=True, filter_id: int=None):
+    def __init__(self, guild_id: int, friendly_name: str, pattern: str, enabled: bool = True, filter_id: int = None):
         super().__init__()
         self.filter_id = filter_id
         self.guild_id = guild_id
@@ -345,7 +345,8 @@ class WordFilter(db.DatabaseTable):
         result_list = []
         for result in results:
             obj = WordFilter(guild_id=result.get("guild_id"), friendly_name=result.get("friendly_name"),
-                             pattern=result.get("pattern"), enabled=result.get("enabled"), filter_id=result.get("filter_id"))
+                             pattern=result.get("pattern"), enabled=result.get("enabled"),
+                             filter_id=result.get("filter_id"))
             result_list.append(obj)
         return result_list
 
@@ -412,4 +413,3 @@ class WordFilterRoleWhitelist(db.DatabaseTable):
             obj = WordFilterRoleWhitelist(guild_id=result.get("guild_id"), role_id=result.get("role_id"))
             result_list.append(obj)
         return result_list
-

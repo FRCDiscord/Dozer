@@ -11,10 +11,10 @@ import aiotba
 import async_timeout
 import discord
 import googlemaps
+from discord.ext import commands
 from discord.ext.commands import BadArgument
 from discord_slash import cog_ext, SlashContext
 from geopy.geocoders import Nominatim
-from discord.ext import commands
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -22,6 +22,7 @@ from ._utils import *
 
 class TBA(Cog):
     """Commands that talk to The Blue Alliance"""
+
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
         tba_config = bot.config['tba']
@@ -238,7 +239,7 @@ class TBA(Cog):
 
     @command()
     @bot_has_permissions(embed_links=True)
-    async def weather(self, ctx: DozerContext, team_program: str, team_num:int):
+    async def weather(self, ctx: DozerContext, team_program: str, team_num: int):
         """Finds the current weather for a given team."""
 
         if team_program.lower() == "frc":
@@ -260,7 +261,8 @@ class TBA(Cog):
         if td.country == "USA":
             td.country = "United States of America"
             units = 'u'
-        url = "https://wttr.in/{}".format(urlquote("{}+{}+{}_0_{}.png".format(td.city, td.state_prov, td.country, units)))
+        url = "https://wttr.in/{}".format(
+            urlquote("{}+{}+{}_0_{}.png".format(td.city, td.state_prov, td.country, units)))
 
         if isinstance(ctx, SlashContext):
             async with self.http_session.get(url) as resp:
@@ -333,7 +335,8 @@ class TBA(Cog):
 
         current_time = datetime.datetime.utcnow() + datetime.timedelta(hours=utc_offset)
 
-        await ctx.send("Timezone: {} UTC{}\n{}".format(tzname, utc_offset, current_time.strftime("Current Time: %I:%M:%S %p (%H:%M:%S)")))
+        await ctx.send("Timezone: {} UTC{}\n{}".format(tzname, utc_offset,
+                                                       current_time.strftime("Current Time: %I:%M:%S %p (%H:%M:%S)")))
 
     timezone.example_usage = """
     `{prefix}timezone frc 5052` - show the local time of FRC team 5052, The RoboLobos

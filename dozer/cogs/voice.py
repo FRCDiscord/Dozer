@@ -3,7 +3,6 @@ import discord
 from discord.ext.commands import has_permissions, BadArgument
 
 from dozer.context import DozerContext
-
 from ._utils import *
 from .info import blurple
 from .. import db
@@ -27,7 +26,8 @@ class Voice(Cog):
             await voice_channel.channel.set_permissions(target=everyone, overwrite=perms)
 
     @Cog.listener('on_voice_state_update')  # Used for VoiceBind
-    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState,
+                                    after: discord.VoiceState):
         """Handles voicebinds when members join/leave voice channels"""
         # skip this if we have no perms, or if it's something like a mute/deafen
         if member.guild.me.guild_permissions.manage_roles and before.channel != after.channel:
@@ -174,7 +174,7 @@ class Voicebinds(db.DatabaseTable):
             role_id bigint null
             )""")
 
-    def __init__(self, guild_id: int, channel_id: int, role_id: int, row_id: int=None):
+    def __init__(self, guild_id: int, channel_id: int, role_id: int, row_id: int = None):
         super().__init__()
         if row_id is not None:
             self.id = row_id
@@ -221,8 +221,8 @@ class AutoPTT(db.DatabaseTable):
         result_list = []
         for result in results:
             obj = AutoPTT(
-                          channel_id=result.get("channel_id"),
-                          ptt_limit=result.get("ptt_limit"))
+                channel_id=result.get("channel_id"),
+                ptt_limit=result.get("ptt_limit"))
             result_list.append(obj)
         return result_list
 

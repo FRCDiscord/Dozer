@@ -1,15 +1,14 @@
 """Commands specific to development. Only approved developers can use these commands."""
 import copy
+import logging
 import re
 import subprocess
-import logging
+
 import discord
 import rstcloth
-
 from discord.ext.commands import NotOwner
 
 from dozer.context import DozerContext
-
 from ._utils import *
 
 DOZER_LOGGER = logging.getLogger("dozer")
@@ -57,6 +56,7 @@ class Development(Cog):
         # make a call to Sphinx to build
         subprocess.call("make html", shell=True, cwd='docs')
         await ctx.send("Documentation cycle run")
+
     document.example_usage = """
     `{prefix}document` - Runs the documentation cycle
     """
@@ -72,7 +72,8 @@ class Development(Cog):
         else:
             code = code.strip('`').strip()  # Remove single-line code blocks, if necessary
 
-        DOZER_LOGGER.info(f"Evaluating code at request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
+        DOZER_LOGGER.info(
+            f"Evaluating code at request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
         DOZER_LOGGER.info("-" * 32)
         for line in code.splitlines():
             DOZER_LOGGER.info(line)
@@ -106,9 +107,10 @@ class Development(Cog):
         msg.author = user
         msg.content = command
         context = await self.bot.get_context(msg)
-        context.is_pseudo = True # adds new flag to bypass ratelimit
+        context.is_pseudo = True  # adds new flag to bypass ratelimit
         # let's also add a log of who ran pseudo
-        DOZER_LOGGER.info(f"Running pseudo on request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
+        DOZER_LOGGER.info(
+            f"Running pseudo on request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
         DOZER_LOGGER.info("-" * 32)
         DOZER_LOGGER.info(ctx.message.content)
         DOZER_LOGGER.info("-" * 32)

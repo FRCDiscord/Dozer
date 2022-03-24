@@ -5,9 +5,9 @@ import typing
 
 import discord
 import discord.utils
+from discord.ext import commands
 from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgument, guild_only
 from discord_slash import cog_ext, SlashContext
-from discord.ext import commands
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -40,7 +40,8 @@ class Roles(Cog):
         return time_release
 
     @staticmethod
-    async def safe_message_fetch(ctx: DozerContext, menu=None, channel: discord.TextChannel=None, message_id: int=None):
+    async def safe_message_fetch(ctx: DozerContext, menu=None, channel: discord.TextChannel = None,
+                                 message_id: int = None):
         """Used to safely get a message and raise an error message cannot be found"""
         try:
             if menu:
@@ -241,7 +242,8 @@ class Roles(Cog):
             try:
                 await msg.delete()
             except discord.HTTPException:
-                DOZER_LOGGER.debug(f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
+                DOZER_LOGGER.debug(
+                    f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             try:
                 await ctx.message.delete()
             except discord.Forbidden:
@@ -250,7 +252,8 @@ class Roles(Cog):
             try:
                 await msg.clear_reactions()
             except discord.HTTPException:
-                DOZER_LOGGER.debug(f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
+                DOZER_LOGGER.debug(
+                    f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             return
 
     giveme.example_usage = """
@@ -367,7 +370,8 @@ class Roles(Cog):
             try:
                 await msg.delete()
             except discord.HTTPException:
-                DOZER_LOGGER.debug(f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
+                DOZER_LOGGER.debug(
+                    f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             try:
                 await ctx.message.delete()
             except discord.Forbidden:
@@ -376,7 +380,8 @@ class Roles(Cog):
             try:
                 await msg.clear_reactions()
             except discord.HTTPException:
-                DOZER_LOGGER.debug(f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
+                DOZER_LOGGER.debug(
+                    f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             return
 
     remove.example_usage = """
@@ -581,9 +586,11 @@ class Roles(Cog):
             for role in menu_entries:
                 boundroles.append(role.message_id)
             link = f"https://discordapp.com/channels/{rolemenu.guild_id}/{rolemenu.channel_id}/{rolemenu.message_id}"
-            embed.add_field(name=f"Menu: {rolemenu.name}", value=f"[Contains {len(menu_entries)} role watchers]({link})", inline=False)
-        unbound_reactions = await db.Pool.fetch(f"""SELECT * FROM {ReactionRole.__tablename__} WHERE message_id != all($1)"""
-                                                f""" and guild_id = $2;""", boundroles, ctx.guild.id)
+            embed.add_field(name=f"Menu: {rolemenu.name}",
+                            value=f"[Contains {len(menu_entries)} role watchers]({link})", inline=False)
+        unbound_reactions = await db.Pool.fetch(
+            f"""SELECT * FROM {ReactionRole.__tablename__} WHERE message_id != all($1)"""
+            f""" and guild_id = $2;""", boundroles, ctx.guild.id)
         combined_unbound = {}  # The following code is too group individual reaction role entries into the messages they are associated with
         if unbound_reactions:
             for unbound in unbound_reactions:
@@ -593,14 +600,16 @@ class Roles(Cog):
                 if combined_unbound.get(message_id):
                     combined_unbound[message_id]["total"] += 1
                 else:
-                    combined_unbound[message_id] = {"guild_id": guild_id, "channel_id": channel_id, "message_id": message_id, "total": 1}
+                    combined_unbound[message_id] = {"guild_id": guild_id, "channel_id": channel_id,
+                                                    "message_id": message_id, "total": 1}
         for combined in combined_unbound.values():
             gid = combined["guild_id"]
             cid = combined["channel_id"]
             mid = combined["message_id"]
             total = combined["total"]
             link = f"https://discordapp.com/channels/{gid}/{cid}/{mid}"
-            embed.add_field(name=f"Custom Message: {mid}", value=f"[Contains {total} role watchers]({link})", inline=False)
+            embed.add_field(name=f"Custom Message: {mid}", value=f"[Contains {total} role watchers]({link})",
+                            inline=False)
         embed.description = f"{ctx.bot.user.display_name} is tracking ({len(rolemenus) + len(combined_unbound)}) " \
                             f"reaction role message(s) in **{ctx.guild}**"
         await ctx.send(embed=embed)
@@ -633,7 +642,8 @@ class Roles(Cog):
 
         e = discord.Embed(color=blurple)
         link = f"https://discordapp.com/channels/{ctx.guild.id}/{message.channel.id}/{message.id}"
-        e.add_field(name='Success!', value=f"I added created role menu [\"{name}\"]({link}) in channel {channel.mention}")
+        e.add_field(name='Success!',
+                    value=f"I added created role menu [\"{name}\"]({link}) in channel {channel.mention}")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
@@ -645,7 +655,8 @@ class Roles(Cog):
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
     @guild_only()
-    async def addrole(self, ctx: DozerContext, channel: typing.Optional[discord.TextChannel], message_id: int, role: discord.Role,
+    async def addrole(self, ctx: DozerContext, channel: typing.Optional[discord.TextChannel], message_id: int,
+                      role: discord.Role,
                       emoji: typing.Union[discord.Emoji, str]):
         """Adds a reaction role to a message or a role menu"""
         if isinstance(emoji, discord.Emoji) and emoji.guild_id != ctx.guild.id:
@@ -701,7 +712,8 @@ class Roles(Cog):
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
     @guild_only()
-    async def delrole(self, ctx: DozerContext, channel: typing.Optional[discord.TextChannel], message_id: int, role: discord.Role):
+    async def delrole(self, ctx: DozerContext, channel: typing.Optional[discord.TextChannel], message_id: int,
+                      role: discord.Role):
         """Removes a reaction role from a message or a role menu"""
 
         menu_return = await RoleMenu.get_by(guild_id=ctx.guild.id, message_id=message_id)
@@ -798,7 +810,8 @@ class ReactionRole(db.DatabaseTable):
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
-            obj = ReactionRole(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"), message_id=result.get("message_id"),
+            obj = ReactionRole(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
+                               message_id=result.get("message_id"),
                                role_id=result.get("role_id"), reaction=result.get("reaction"))
             result_list.append(obj)
         return result_list
@@ -899,7 +912,7 @@ class TempRoleTimerRecords(db.DatabaseTable):
             removal_ts bigint NOT NULL
             )""")
 
-    def __init__(self, guild_id: int, target_id: int, target_role_id: int, removal_ts: int, input_id: int=None):
+    def __init__(self, guild_id: int, target_id: int, target_role_id: int, removal_ts: int, input_id: int = None):
         super().__init__()
         self.id = input_id
         self.guild_id = guild_id
