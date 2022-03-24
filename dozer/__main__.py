@@ -61,7 +61,7 @@ with open('config.json', 'w') as f:
     json.dump(config, f, indent='\t')
 
 if config['sentry_url'] != "":
-    sentry_sdk.init(
+    sentry_sdk.init(  # pylint: disable=abstract-class-instantiated  # noqa: E0110
         config['sentry_url'],
         traces_sample_rate=1.0,
     )
