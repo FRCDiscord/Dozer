@@ -263,7 +263,7 @@ async def paginate(ctx: DozerContext, pages, *, start: int = 0, auto_remove: boo
     """
     Simple pagination based on Paginator. Pagination is handled normally and other reactions are ignored.
     """
-    paginator = Paginator(ctx, (...,), pages, start=start, auto_remove=auto_remove, timeout=timeout)
+    paginator = Paginator(ctx, ..., pages, start=start, auto_remove=auto_remove, timeout=timeout)
     async for reaction in paginator:
         pass  # The normal pagination reactions are handled - just drop anything else
 
