@@ -8,8 +8,8 @@ from urllib.parse import urljoin
 import aiohttp
 import async_timeout
 import discord
-from discord_slash import cog_ext, SlashContext
 from discord.ext import commands
+from discord_slash import cog_ext, SlashContext
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -22,8 +22,9 @@ class TOAParser:
     A class to make async requests to The Orange Alliance.
     """
 
-    def __init__(self, api_key: str, aiohttp_session, base_url: str="https://theorangealliance.org/api/", app_name: str="Dozer",
-                 ratelimit: bool=True):
+    def __init__(self, api_key: str, aiohttp_session, base_url: str = "https://theorangealliance.org/api/",
+                 app_name: str = "Dozer",
+                 ratelimit: bool = True):
         self.last_req = datetime.now()
         self.ratelimit = ratelimit
         self.base = base_url
@@ -57,6 +58,7 @@ class TOAParser:
 
 class TOA(Cog):
     """TOA commands"""
+
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
         self.http_session = aiohttp.ClientSession()
@@ -73,7 +75,7 @@ class TOA(Cog):
         Get FTC-related information from The Orange Alliance.
         If no subcommand is specified, the `team` subcommand is inferred, and the argument is taken as a team number.
         """
-        await self.team.callback(self, ctx, team_num) # This works but Pylint throws an error
+        await self.team.callback(self, ctx, team_num)  # This works but Pylint throws an error
 
     toa.example_usage = """
     `{prefix}toa 5667` - show information on team 5667, Robominers
@@ -95,7 +97,8 @@ class TOA(Cog):
                      icon_url='https://theorangealliance.org/assets/imgs/favicon.png?v=1')
         e.add_field(name='Name', value=team_data['team_name_short'])
         e.add_field(name='Rookie Year', value=team_data['rookie_year'])
-        e.add_field(name='Location', value=', '.join((team_data['city'], team_data['state_prov'], team_data['country'])))
+        e.add_field(name='Location',
+                    value=', '.join((team_data['city'], team_data['state_prov'], team_data['country'])))
         e.add_field(name='Website', value=team_data['website'] or 'n/a')
         e.add_field(name='Team Info Page', value='https://theorangealliance.org/teams/{}'.format(team_data['team_key']))
         e.set_footer(text='Triggered by ' + ctx.author.display_name)

@@ -7,12 +7,13 @@ from collections import OrderedDict
 from functools import wraps
 
 import discord
-from dozer.context import DozerContext
 import tbapi
+from discord.ext import commands
 from discord.ext.commands import has_permissions
 from fuzzywuzzy import fuzz
-from discord.ext import commands
+
 from dozer.bot import DOZER_LOGGER
+from dozer.context import DozerContext
 from ._utils import *
 from .. import db
 
@@ -21,6 +22,7 @@ SUPPORTED_MODES = ["frc", "ftc"]
 
 def keep_alive(func):
     """Keeps the wrapped async function alive; functions must have self and ctx as args"""
+
     @wraps(func)
     async def wrapper(self, ctx, *args, **kwargs):
         """Wraps namegame"""
@@ -40,6 +42,7 @@ def keep_alive(func):
 
 def game_is_running(func):
     """Check if there's an active game in a channel"""
+
     @wraps(func)
     async def wrapper(self, ctx: DozerContext, *args, **kwargs):
         """Wraps the checker"""
@@ -54,6 +57,7 @@ def game_is_running(func):
 
 class NameGameSession():
     """NameGame session object"""
+
     def __init__(self, mode: str):
         self.running = True
         self.pings_enabled = False
@@ -82,7 +86,8 @@ class NameGameSession():
         self.vote_embed = None
         self.vote_task = None
 
-    def create_embed(self, title: str="", description: str="", color=discord.Color.blurple(), extra_fields=[], start: bool=False):
+    def create_embed(self, title: str = "", description: str = "", color=discord.Color.blurple(), extra_fields=[],
+                     start: bool = False):
         """Creates an embed."""
         v = "Starting " if start else "Current "
         embed = discord.Embed()
@@ -158,6 +163,7 @@ class NameGameSession():
 
 class NameGame(Cog):
     """Namegame commands"""
+
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
         with gzip.open("ftc_teams.pickle.gz") as f:
@@ -292,7 +298,8 @@ class NameGame(Cog):
         if config is not None:
             # update_or_add ignores attributes set to None. To set the column to None, we delete the record and insert
             # a new one with channel set to None.
-            new_namegame_config = NameGameConfig(channel_id=None, guild_id=ctx.guild.id, pings_enabled=config.pings_enabled,
+            new_namegame_config = NameGameConfig(channel_id=None, guild_id=ctx.guild.id,
+                                                 pings_enabled=config.pings_enabled,
                                                  mode=config.mode)
             await NameGameConfig.delete(guild_id=ctx.guild.id)
             await new_namegame_config.update_or_add()
@@ -671,7 +678,7 @@ class NameGame(Cog):
         game.vote_time = -1
         game.next_turn()
         await self.send_turn_embed(ctx, game,
-                                   title=f"Player {player.display_name} was skipped and now has {game.players[player]+1} strike(s)!",
+                                   title=f"Player {player.display_name} was skipped and now has {game.players[player] + 1} strike(s)!",
                                    color=discord.Color.red())
         if player != game.current_player:
             await self.notify(ctx, game, f"{game.current_player.mention}, you're up! Current number: {game.number}")
@@ -805,7 +812,7 @@ class NameGameConfig(db.DatabaseTable):
             pings_enabled bigint NOT NULL
             )""")
 
-    def __init__(self, guild_id: int, mode: str, pings_enabled: int, channel_id: int=None):
+    def __init__(self, guild_id: int, mode: str, pings_enabled: int, channel_id: int = None):
         super().__init__()
         self.channel_id = channel_id
         self.mode = mode

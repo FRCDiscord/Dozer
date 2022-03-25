@@ -10,7 +10,6 @@ from discord.ext.commands import cooldown, BucketType, guild_only
 from discord_slash import cog_ext, SlashContext
 
 from dozer.context import DozerContext
-
 from ._utils import *
 from .levels import MemberXP, GuildXPSettings
 
@@ -110,7 +109,8 @@ class Info(Cog):
         matcher = SequenceMatcher(lambda c: not c.isalnum(), autojunk=False)
         filtered = [activities[0]]
         for activity in activities[1:]:  # Expensive metadata is computed about seq2, so change it less frequently
-            matcher.set_seq2(str(activity.name))  # Activity must be string, otherwise None will be passed into the matcher. An that breaks stuff
+            matcher.set_seq2(
+                str(activity.name))  # Activity must be string, otherwise None will be passed into the matcher. An that breaks stuff
             for filtered_activity in filtered:
                 matcher.set_seq1(str(filtered_activity.name))
                 if matcher.quick_ratio() < 0.6 and matcher.ratio() < 0.6:  # Use quick_ratio if we can as ratio is slow
@@ -141,7 +141,8 @@ class Info(Cog):
     @cooldown(1, 10, BucketType.channel)
     async def role(self, ctx: DozerContext, role: discord.Role):
         """Retrieve info about a role in this guild"""
-        embed = discord.Embed(title=f"Info for role: {role.name}", description=f"{role.mention} ({role.id})", color=role.color)
+        embed = discord.Embed(title=f"Info for role: {role.name}", description=f"{role.mention} ({role.id})",
+                              color=role.color)
         embed.add_field(name="Created on", value=role.created_at.strftime(datetime_format))
         embed.add_field(name="Position", value=role.position)
         embed.add_field(name="Color", value=str(role.color).upper())
@@ -178,7 +179,8 @@ class Info(Cog):
         guild = ctx.guild
         static_emoji = sum(not e.animated for e in ctx.guild.emojis)
         animated_emoji = sum(e.animated for e in ctx.guild.emojis)
-        embed = discord.Embed(title=f"Info for guild: {guild.name}", description=f"Members: {guild.member_count}", color=blurple)
+        embed = discord.Embed(title=f"Info for guild: {guild.name}", description=f"Members: {guild.member_count}",
+                              color=blurple)
 
         embed.set_thumbnail(url=guild.icon_url)
 

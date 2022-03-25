@@ -1,6 +1,5 @@
 """Bot object for Dozer"""
 
-import json
 import logging
 import re
 import sys
@@ -11,9 +10,10 @@ import discord
 from discord.ext import commands
 from discord_slash import SlashCommand
 from sentry_sdk import capture_exception
-from .context import DozerContext
+
 from . import utils
 from .cogs import _utils
+from .context import DozerContext
 
 DOZER_LOGGER = logging.getLogger('dozer')
 DOZER_LOGGER.level = logging.INFO
@@ -36,9 +36,6 @@ class InvalidContext(commands.CheckFailure):
     Check failure raised by the global check for an invalid command context - executed by a bot, exceeding global rate-limit, etc.
     The message will be ignored.
     """
-
-
-
 
 
 class Dozer(commands.Bot):
@@ -87,19 +84,24 @@ class Dozer(commands.Bot):
         elif isinstance(exception, commands.NotOwner):
             await context.send('{}, {}'.format(context.author.mention, exception.args[0]))
         elif isinstance(exception, commands.MissingPermissions):
-            permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in exception.missing_perms]
+            permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in
+                                exception.missing_perms]
             await context.send('{}, you need {} permissions to run this command!'.format(
                 context.author.mention, utils.pretty_concat(permission_names)))
         elif isinstance(exception, commands.BotMissingPermissions):
-            permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in exception.missing_perms]
+            permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in
+                                exception.missing_perms]
             await context.send('{}, I need {} permissions to run this command!'.format(
                 context.author.mention, utils.pretty_concat(permission_names)))
         elif isinstance(exception, commands.CommandOnCooldown):
             await context.send(
-                '{}, That command is on cooldown! Try again in {:.2f}s!'.format(context.author.mention, exception.retry_after))
+                '{}, That command is on cooldown! Try again in {:.2f}s!'.format(context.author.mention,
+                                                                                exception.retry_after))
         elif isinstance(exception, commands.MaxConcurrencyReached):
-            types = {discord.ext.commands.BucketType.default: "`Global`", discord.ext.commands.BucketType.guild: "`Guild`",
-                     discord.ext.commands.BucketType.channel: "`Channel`", discord.ext.commands.BucketType.category: "`Category`",
+            types = {discord.ext.commands.BucketType.default: "`Global`",
+                     discord.ext.commands.BucketType.guild: "`Guild`",
+                     discord.ext.commands.BucketType.channel: "`Channel`",
+                     discord.ext.commands.BucketType.category: "`Category`",
                      discord.ext.commands.BucketType.member: "`Member`", discord.ext.commands.BucketType.user: "`User`"}
             await context.send(
                 '{}, That command has exceeded the max {} concurrency limit of `{}` instance! Please try again later.'.format(
@@ -107,13 +109,15 @@ class Dozer(commands.Bot):
         elif isinstance(exception, (commands.CommandNotFound, InvalidContext)):
             pass  # Silent ignore
         else:
-            await context.send('```\n%s\n```' % ''.join(traceback.format_exception_only(type(exception), exception)).strip())
+            await context.send(
+                '```\n%s\n```' % ''.join(traceback.format_exception_only(type(exception), exception)).strip())
             if isinstance(context.channel, discord.TextChannel):
                 DOZER_LOGGER.error('Error in command <%d> (%d.name!r(%d.id) %d(%d.id) %d(%d.id) %d)',
                                    context.command, context.guild, context.guild, context.channel, context.channel,
                                    context.author, context.author, context.message.content)
             else:
-                DOZER_LOGGER.error('Error in command <%d> (DM %d(%d.id) %d)', context.command, context.channel.recipient,
+                DOZER_LOGGER.error('Error in command <%d> (DM %d(%d.id) %d)', context.command,
+                                   context.channel.recipient,
                                    context.channel.recipient, context.message.content)
             DOZER_LOGGER.error(''.join(traceback.format_exception(type(exception), exception, exception.__traceback__)))
 
@@ -143,7 +147,7 @@ class Dozer(commands.Bot):
         if ctx.author.bot:
             raise InvalidContext('Bots cannot run commands!')
         retry_after = self._global_cooldown.update_rate_limit()
-        if retry_after and not hasattr(ctx, "is_pseudo"): # bypass ratelimit for su'ed commands
+        if retry_after and not hasattr(ctx, "is_pseudo"):  # bypass ratelimit for su'ed commands
             raise InvalidContext('Global rate-limit exceeded!')
         return True
 

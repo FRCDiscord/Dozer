@@ -12,7 +12,6 @@ from discord.ext import tasks
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 
 from dozer.context import DozerContext
-
 from ._utils import *
 from .. import db
 from ..sources import DataBasedSource, Source, sources
@@ -127,7 +126,8 @@ class News(Cog):
         self.sources = {}
         if self.http_source:
             await self.http_source.close()
-        self.http_source = aiohttp.ClientSession(headers={'Connection': 'keep-alive', 'User-Agent': 'Dozer RSS Feed Reader'})
+        self.http_source = aiohttp.ClientSession(
+            headers={'Connection': 'keep-alive', 'User-Agent': 'Dozer RSS Feed Reader'})
         # JVN's blog will 403 you if you use the default user agent, so replacing it with this will yield a parsable result.
         for source in self.enabled_sources:
             try:
@@ -455,7 +455,7 @@ class NewsSubscription(db.DatabaseTable):
             kind varchar NOT NULL
             )""")
 
-    def __init__(self, channel_id: int, guild_id: int, source: str, kind: str, data: str=None, sub_id: int=None):
+    def __init__(self, channel_id: int, guild_id: int, source: str, kind: str, data: str = None, sub_id: int = None):
         super().__init__()
         self.id = sub_id
         self.channel_id = channel_id

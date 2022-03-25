@@ -13,7 +13,6 @@ from discord.ext.commands import has_permissions, BadArgument
 
 from dozer.bot import Dozer
 from dozer.context import DozerContext
-
 from ._utils import *
 from .general import blurple
 from .. import db
@@ -61,12 +60,14 @@ class Management(Cog):
         await self.send_scheduled_msg(db_entry)
         await db_entry.delete(request_id=db_entry.request_id)
 
-    async def send_scheduled_msg(self, db_entry, channel_override: int=None):
+    async def send_scheduled_msg(self, db_entry, channel_override: int = None):
         """Formats and sends scheduled message"""
-        embed = discord.Embed(title=db_entry.header if db_entry.header else "Scheduled Message", description=db_entry.content)
+        embed = discord.Embed(title=db_entry.header if db_entry.header else "Scheduled Message",
+                              description=db_entry.content)
         guild = self.bot.get_guild(db_entry.guild_id)
         if not guild:
-            DOZER_LOGGER.warning(f"Attempted to schedulesend message in guild({db_entry.guild_id}); Guild no longer exist")
+            DOZER_LOGGER.warning(
+                f"Attempted to schedulesend message in guild({db_entry.guild_id}); Guild no longer exist")
             return
         channel = guild.get_channel(db_entry.channel_id if not channel_override else channel_override)
         if not channel:
@@ -209,7 +210,8 @@ class ScheduledMessages(db.DatabaseTable):
             PRIMARY KEY (entry_id, request_id)
             )""")
 
-    def __init__(self, guild_id: int, channel_id: int, time: datetime.time, content: str, request_id: str, header: str=None, requester_id: int=None, entry_id: int=None):
+    def __init__(self, guild_id: int, channel_id: int, time: datetime.time, content: str, request_id: str,
+                 header: str = None, requester_id: int = None, entry_id: int = None):
         super().__init__()
         self.guild_id = guild_id
         self.channel_id = channel_id
@@ -225,8 +227,10 @@ class ScheduledMessages(db.DatabaseTable):
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
-            obj = ScheduledMessages(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"), header=result.get("header"),
-                                    requester_id=result.get("requester_id"), time=result.get("time"), content=result.get("content"),
+            obj = ScheduledMessages(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
+                                    header=result.get("header"),
+                                    requester_id=result.get("requester_id"), time=result.get("time"),
+                                    content=result.get("content"),
                                     entry_id=result.get("entry_id"), request_id=result.get("request_id"))
             result_list.append(obj)
         return result_list

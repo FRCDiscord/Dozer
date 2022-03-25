@@ -5,7 +5,6 @@ import discord
 from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions, NotOwner, guild_only
 
 from dozer.context import DozerContext
-
 from ._utils import *
 from ..utils import oauth_url
 
@@ -88,7 +87,8 @@ class General(Cog):
     async def _help_command(self, ctx: DozerContext, command):
         """Gets the help message for one command."""
         info = discord.Embed(title='Command: {}{} {}'.format(ctx.prefix, command.qualified_name, command.signature),
-                             description=command.help or (None if command.example_usage else 'No information provided.'),
+                             description=command.help or (
+                                 None if command.example_usage else 'No information provided.'),
                              color=discord.Color.blue())
         usage = command.example_usage
         if usage:
@@ -105,8 +105,8 @@ class General(Cog):
                               (command for command in ctx.bot.commands if command.cog is cog),
                               cog_name=type(cog).__name__)
 
-    async def _show_help(self, ctx: DozerContext, start_page: discord.Embed, title: str, description: str, 
-                        footer: str, commands, **format_args):
+    async def _show_help(self, ctx: DozerContext, start_page: discord.Embed, title: str, description: str,
+                         footer: str, commands, **format_args):
         """Creates and sends a template help message, with arguments filled in."""
         format_args['prefix'] = ctx.prefix
         footer = 'Dozer Help | {} | Page {}'.format(footer, '{page_num} of {len_pages}')
@@ -125,7 +125,8 @@ class General(Cog):
             pages = []
             for page_num, page_commands in enumerate(command_chunks):
                 format_args['page_num'] = page_num + 1
-                page = discord.Embed(title=title.format(**format_args), description=description.format(**format_args), color=discord.Color.blue())
+                page = discord.Embed(title=title.format(**format_args), description=description.format(**format_args),
+                                     color=discord.Color.blue())
                 for command in page_commands:
                     if command.short_doc:
                         embed_value = command.short_doc
@@ -134,7 +135,8 @@ class General(Cog):
                             ctx, command)
                     else:
                         embed_value = 'No information provided.'
-                    page.add_field(name='{}{} {}'.format(ctx.prefix, command.qualified_name, command.signature), value=embed_value, inline=False)
+                    page.add_field(name='{}{} {}'.format(ctx.prefix, command.qualified_name, command.signature),
+                                   value=embed_value, inline=False)
                 page.set_footer(text=footer.format(**format_args))
                 pages.append(page)
 
@@ -157,7 +159,8 @@ class General(Cog):
         else:  # No commands, and no info page
             format_args['len_pages'] = 1
             format_args['page_num'] = 1
-            embed = discord.Embed(title=title.format(**format_args), description=description.format(**format_args), color=discord.Color.blue())
+            embed = discord.Embed(title=title.format(**format_args), description=description.format(**format_args),
+                                  color=discord.Color.blue())
             embed.set_footer(text=footer.format(**format_args))
             await ctx.send(embed=embed)
 

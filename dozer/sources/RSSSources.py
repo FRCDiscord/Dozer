@@ -1,12 +1,13 @@
 """Given an arbitrary RSS feed, get new posts from it"""
-import re
 import datetime
+import re
 import xml.etree.ElementTree
 
 import aiohttp
 import discord
 
 from .AbstractSources import Source
+
 
 def clean_html(raw_html):
     """Clean all HTML tags.
@@ -116,7 +117,7 @@ class RSSSource(Source):
             data['date'] = datetime.datetime.now()
 
         desc = clean_html(data['description'])
-        #length = 1024 - len(self.read_more_str)
+        # length = 1024 - len(self.read_more_str)
         length = 500
         if len(desc) >= length:
             data['description'] = desc[0:length] + self.read_more_str
@@ -189,7 +190,8 @@ class FRCQA(RSSSource):
     short_name = "frc-qa"
     description = "Answers from the official FIRST Robotics Competition Q&A system"
     color = discord.colour.Color.dark_blue()
-    
+
+
 class FTCQA(RSSSource):
     """Answers from the official FIRST Tech Challenge Q&A system"""
     url = "https://ftc-qa.firstinspires.org/rss/answers.rss"

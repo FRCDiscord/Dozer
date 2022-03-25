@@ -5,13 +5,15 @@ import logging
 import typing
 from collections.abc import Mapping
 from typing import Dict
+
 import discord
 from discord.ext import commands
 
 from dozer import db
 from dozer.context import DozerContext
 
-__all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk', 'dev_check', 'DynamicPrefixEntry']
+__all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk', 'dev_check',
+           'DynamicPrefixEntry']
 
 DOZER_LOGGER = logging.getLogger("dozer")
 
@@ -119,7 +121,7 @@ class Reactor:
     """
     _stop_reaction = object()
 
-    def __init__(self, ctx: DozerContext, initial_reactions, *, auto_remove: bool=True, timeout: int=60):
+    def __init__(self, ctx: DozerContext, initial_reactions, *, auto_remove: bool = True, timeout: int = 60):
         """
         ctx: command context
         initial_reactions: iterable of emoji to react with on start
@@ -143,7 +145,8 @@ class Reactor:
             await self.message.add_reaction(emoji)
         while True:
             try:
-                reaction, reacting_member = await self.bot.wait_for('reaction_add', check=self._check_reaction, timeout=self.timeout)
+                reaction, reacting_member = await self.bot.wait_for('reaction_add', check=self._check_reaction,
+                                                                    timeout=self.timeout)
             except asyncio.TimeoutError:
                 break
 
@@ -196,7 +199,8 @@ class Paginator(Reactor):
         '\N{BLACK SQUARE FOR STOP}'  # :stop_button:
     )
 
-    def __init__(self, ctx: DozerContext, initial_reactions, pages, *, start: int=0, auto_remove: bool=True, timeout: int=60):
+    def __init__(self, ctx: DozerContext, initial_reactions, pages, *, start: int = 0, auto_remove: bool = True,
+                 timeout: int = 60):
         all_reactions = list(initial_reactions)
         ind = all_reactions.index(Ellipsis)
         all_reactions[ind:ind + 1] = self.pagination_reactions
@@ -240,14 +244,14 @@ class Paginator(Reactor):
         if self.message is not None:
             self.do(self.message.edit(embed=self.pages[self.page]))
 
-    def next(self, amt: int=1):
+    def next(self, amt: int = 1):
         """Goes to the next help page"""
         if isinstance(self.page, int):
             self.go_to_page(self.page + amt)
         else:
             self.go_to_page(amt - 1)
 
-    def prev(self, amt: int=1):
+    def prev(self, amt: int = 1):
         """Goes to the previous help page"""
         if isinstance(self.page, int):
             self.go_to_page(self.page - amt)
@@ -255,7 +259,7 @@ class Paginator(Reactor):
             self.go_to_page(-amt)
 
 
-async def paginate(ctx: DozerContext, pages, *, start: int=0, auto_remove: bool=True, timeout: int=60):
+async def paginate(ctx: DozerContext, pages, *, start: int = 0, auto_remove: bool = True, timeout: int = 60):
     """
     Simple pagination based on Paginator. Pagination is handled normally and other reactions are ignored.
     """

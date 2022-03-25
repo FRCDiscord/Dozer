@@ -5,10 +5,8 @@ from asyncio import sleep
 
 import discord
 from discord.ext.commands import cooldown, BucketType, guild_only, BadArgument, MissingPermissions
-from discord_slash import cog_ext, SlashContext
 
 from dozer.context import DozerContext
-
 from ._utils import *
 from .general import blurple
 
@@ -16,7 +14,7 @@ from .general import blurple
 class Fun(Cog):
     """Fun commands"""
 
-    async def battle(self, ctx: DozerContext, opponent: discord.Member, delete_result: bool=True):
+    async def battle(self, ctx: DozerContext, opponent: discord.Member, delete_result: bool = True):
         """Start a fight with another user."""
         attacks = [
             "**{opponent}** was hit on the head by **{attacker}** ",
@@ -55,11 +53,13 @@ class Fun(Cog):
                 damage = damage * 2
             hps[opp_idx] = max(hps[opp_idx] - damage, 0)
             messages.append(
-                await ctx.send(f"{random.choice(attacks).format(opponent=players[opp_idx].name, attacker=players[turn].name)} *[-{damage} hp]"
-                               f" [{hps[opp_idx]} HP remaining]*"))
+                await ctx.send(
+                    f"{random.choice(attacks).format(opponent=players[opp_idx].name, attacker=players[turn].name)} *[-{damage} hp]"
+                    f" [{hps[opp_idx]} HP remaining]*"))
             await sleep(1.5)
             turn = opp_idx
-        win_embed = discord.Embed(description=f"{players[turn].mention} lost! GG {players[(turn + 1) % 2].mention}!", color=blurple)
+        win_embed = discord.Embed(description=f"{players[turn].mention} lost! GG {players[(turn + 1) % 2].mention}!",
+                                  color=blurple)
         win_msg = await ctx.send(embed=win_embed)
         await sleep(5)
         if delete_result:
@@ -115,8 +115,9 @@ class Fun(Cog):
         if opponent_levels.total_xp < wager:
             raise BadArgument(f"{opponent} does not have enough XP to fulfill the wager")
 
-        embed = discord.Embed(description=f"{ctx.author.mention} has challenged {opponent.mention} to a fight with a wager of"
-                                          f" {wager}xp")
+        embed = discord.Embed(
+            description=f"{ctx.author.mention} has challenged {opponent.mention} to a fight with a wager of"
+                        f" {wager}xp")
         embed.set_footer(text=f"{opponent.display_name} react to the ✅ to agree to the fight")
         embed.set_author(name=f"{ctx.author.display_name} vs {opponent.display_name}")
 

@@ -4,11 +4,12 @@ import datetime
 import logging
 import math
 import time
-from discord.ext import commands
-import discord
-from discord.ext.commands import has_permissions, BadArgument
-from dozer.context import DozerContext
 
+import discord
+from discord.ext import commands
+from discord.ext.commands import has_permissions, BadArgument
+
+from dozer.context import DozerContext
 from ._utils import *
 from .general import blurple
 from .. import db
@@ -22,7 +23,8 @@ async def embed_paginatorinator(content_name, embed, text):
     c_embed = embed.copy()
     c_embed.add_field(name=content_name, value=text[0:1023], inline=False)
     for n in range(1, required_chunks):
-        c_embed.add_field(name=f"{content_name} Continued ({n})", value=text[1024*n:(1024*(n+1))-1], inline=False)
+        c_embed.add_field(name=f"{content_name} Continued ({n})", value=text[1024 * n:(1024 * (n + 1)) - 1],
+                          inline=False)
     return c_embed
 
 
@@ -366,11 +368,13 @@ class Actionlog(Cog):
                     first_message = await channel.send(embed=first_embed)
                     if second_embed:
                         second_message = await channel.send(embed=second_embed)
-                        first_embed.add_field(name="Edited", value=f"[CONTINUED](https://discordapp.com/channels/{guild_id}"
-                                                                   f"/{second_message.channel.id}/{second_message.id})", inline=False)
+                        first_embed.add_field(name="Edited",
+                                              value=f"[CONTINUED](https://discordapp.com/channels/{guild_id}"
+                                                    f"/{second_message.channel.id}/{second_message.id})", inline=False)
                         await first_message.edit(embed=first_embed)
-                        embed.set_field_at(0, name="Original", value=f"[CONTINUED](https://discordapp.com/channels/{guild_id}"
-                                                                     f"/{first_message.channel.id}/{first_message.id})", inline=False)
+                        embed.set_field_at(0, name="Original",
+                                           value=f"[CONTINUED](https://discordapp.com/channels/{guild_id}"
+                                                 f"/{first_message.channel.id}/{first_message.id})", inline=False)
                         await second_message.edit(embed=second_embed)
 
     @Cog.listener('on_member_ban')
@@ -528,7 +532,8 @@ class Actionlog(Cog):
 
     @memberlogconfig.command()
     @has_permissions(manage_guild=True)
-    async def help(self, ctx: DozerContext):  # I cannot put formatting example in example_usage because then it trys to format the example
+    async def help(self,
+                   ctx: DozerContext):  # I cannot put formatting example in example_usage because then it trys to format the example
         """Displays message formatting key"""
         e = discord.Embed(color=blurple)
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
@@ -603,7 +608,7 @@ class NicknameLock(db.DatabaseTable):
             UNIQUE (guild_id, member_id)
             )""")
 
-    def __init__(self, guild_id: int, member_id: int, locked_name: str, timeout: float=None):
+    def __init__(self, guild_id: int, member_id: int, locked_name: str, timeout: float = None):
         super().__init__()
         self.guild_id = guild_id
         self.member_id = member_id
@@ -637,7 +642,8 @@ class CustomJoinLeaveMessages(db.DatabaseTable):
             name varchar NOT NULL
             )""")
 
-    def __init__(self, guild_id: int, channel_id: int=None, ping=None, join_message: str=None, leave_message: str=None):
+    def __init__(self, guild_id: int, channel_id: int = None, ping=None, join_message: str = None,
+                 leave_message: str = None):
         super().__init__()
         self.guild_id = guild_id
         self.channel_id = channel_id

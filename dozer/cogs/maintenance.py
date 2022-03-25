@@ -1,7 +1,6 @@
 """Maintenance commands for bot developers"""
 
 import os
-import sys
 
 from discord.ext.commands import NotOwner
 

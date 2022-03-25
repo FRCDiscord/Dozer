@@ -8,7 +8,6 @@ from discord.ext.commands import BadArgument, guild_only, has_permissions
 from discord_slash import cog_ext, SlashContext
 
 from dozer.context import DozerContext
-
 from ._utils import *
 from .info import blurple
 from .. import db
@@ -232,7 +231,7 @@ class AutoAssociation(db.DatabaseTable):
             PRIMARY KEY (guild_id)
             )""")
 
-    def __init__(self, guild_id: int, team_on_join: bool=True):
+    def __init__(self, guild_id: int, team_on_join: bool = True):
         super().__init__()
         self.guild_id = guild_id
         self.team_on_join = team_on_join
@@ -284,7 +283,7 @@ class TeamNumbers(db.DatabaseTable):
         async with db.Pool.acquire() as conn:
             statement = f"""
             INSERT INTO {self.__tablename__} ({", ".join(keys)})
-            VALUES({','.join(f'${i+1}' for i in range(len(values)))}) 
+            VALUES({','.join(f'${i + 1}' for i in range(len(values)))}) 
             """
             await conn.execute(statement, *values)
 

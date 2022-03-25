@@ -1,16 +1,14 @@
 """Initializes the bot and deals with the configuration file"""
 
+import asyncio
 import json
 import os
 import sys
-import asyncio
 
 import discord
 import sentry_sdk
 
 from .db import db_init, db_migrate
-
-from . import db
 
 config = {
     'prefix': '&', 'developers': [],
@@ -81,7 +79,6 @@ intents.members = True
 intents.presences = config['presences_intents']
 
 bot = Dozer(config, intents=intents, max_messages=config['cache_size'])
-
 
 for ext in os.listdir('dozer/cogs'):
     if not ext.startswith(('_', '.')):
