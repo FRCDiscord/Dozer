@@ -48,7 +48,7 @@ class Moderation(Cog):
 
     async def nm_kick_internal(self, guild: discord.Guild=None):
         """Kicks people who have not done the new member process within a set amount of time."""
-        getLogger("dozer").debug("Starting nm_kick cycle...")
+        DOZER_LOGGER.debug("Starting nm_kick cycle...")
         if not guild:
             entries = await NewMemPurgeConfig.get_by()
         else:
