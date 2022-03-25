@@ -1,3 +1,4 @@
+"""Class that holds dozercontext. """
 from discord.ext import commands
 
 from dozer import utils
