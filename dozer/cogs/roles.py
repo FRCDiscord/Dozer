@@ -265,6 +265,9 @@ class Roles(Cog):
         except asyncio.TimeoutError:
             try:
                 await msg.clear_reactions()
+            except discord.Forbidden:
+                await msg.remove_reaction("❌", ctx.guild.me)
+                DOZER_LOGGER.debug(f"Unable to clear reactions in guild {ctx.guild} due to missing permissions, used fallback")
             except discord.HTTPException:
                 DOZER_LOGGER.debug(f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             return
