@@ -17,8 +17,9 @@ def clean(ctx, text=None, *, mass=True, member=True, role=True, channel=True):
     """Cleans the message of anything specified in the parameters passed."""
     if text is None:
         text = ctx.message.content
+    cleaned_text = text
     if mass:
-        cleaned_text = mass_mention.sub(lambda match: '@\N{ZERO WIDTH SPACE}' + match.group(1), text)
+        cleaned_text = mass_mention.sub(lambda match: '@\N{ZERO WIDTH SPACE}' + match.group(1), cleaned_text)
     if member:
         cleaned_text = member_mention.sub(lambda match: clean_member_name(ctx, int(match.group(1))), cleaned_text)
     if role:
