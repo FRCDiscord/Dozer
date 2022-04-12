@@ -52,6 +52,7 @@ class Filter(Cog):
         """Check all the filters for a certain message (with it's guild)"""
         if message.author.id == self.bot.user.id or not hasattr(message.author, 'roles'):
             return
+
         roles = await self.word_filter_role_whitelist.query_all(guild_id=message.guild.id)
         whitelisted_ids = set(role.role_id for role in roles)
         if any(x.id in whitelisted_ids for x in message.author.roles):
@@ -236,14 +237,14 @@ class Filter(Cog):
     @guild_only()
     @has_permissions(manage_guild=True)
     @filter.command(name="dm")
-    async def dm_config(self, ctx: DozerContext, config: bool):
+    async def dm_config(self, ctx: DozerContext, config: str):
         """Set whether filter words should be DMed when used in bot messages"""
-        config = str(int(config))  # turns into "1" or "0" idk man
+        config: str = str(int(config))  # turns into "1" or "0" idk man
         results = await WordFilterSetting.get_by(guild_id=ctx.guild.id, setting_type="dm")
         if results:
             before_setting = results[0].value
             # Due to the settings table having a serial ID, inserts always succeed, so update_or_add can't be used to
-            # update in place. Instead we have to delete and reinsert the record.
+            # update in place. Instead, we have to delete and reinsert the record.
             await WordFilterSetting.delete(guild_id=results[0].guild_id, setting_type=results[0].setting_type)
         else:
             before_setting = None
@@ -254,7 +255,8 @@ class Filter(Cog):
             "The DM setting for this guild has been changed from {} to {}.".format(before_setting == "1",
                                                                                    result.value == "1"))
 
-    dm_config.example_usage = "`{prefix}filter dm_config True` - Makes all messages containining filter lists to be sent through DMs"
+    dm_config.example_usage = "`{prefix}filter dm_config True` - Makes all messages containining filter lists to be " \
+                              "sent through DMs "
 
     @guild_only()
     @filter.group(invoke_without_command=True)
@@ -316,7 +318,7 @@ def setup(bot):
 class WordFilter(db.DatabaseTable):
     """Object for each filter"""
     __tablename__ = 'word_filters'
-    __uniques__ = 'filter_id'
+    __uniques__ = ['filter_id']
 
     @classmethod
     async def initial_create(cls):
@@ -354,7 +356,7 @@ class WordFilter(db.DatabaseTable):
 class WordFilterSetting(db.DatabaseTable):
     """Each filter-related setting"""
     __tablename__ = 'word_filter_settings'
-    __uniques__ = 'id'
+    __uniques__ = ['id']
 
     @classmethod
     async def initial_create(cls):
@@ -388,7 +390,7 @@ class WordFilterSetting(db.DatabaseTable):
 class WordFilterRoleWhitelist(db.DatabaseTable):
     """Object for each whitelisted role"""
     __tablename__ = 'word_filter_role_whitelist'
-    __uniques__ = 'role_id'
+    __uniques__ = ['role_id']
 
     @classmethod
     async def initial_create(cls):

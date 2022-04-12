@@ -60,7 +60,7 @@ with open('config.json', 'w') as f:
 
 if config['sentry_url'] != "":
     sentry_sdk.init(  # pylint: disable=abstract-class-instantiated  # noqa: E0110
-        config['sentry_url'],
+        str(config['sentry_url']),
         traces_sample_rate=1.0,
     )
 
@@ -76,7 +76,7 @@ from . import Dozer  # After version check
 
 intents = discord.Intents.default()
 intents.members = True
-intents.presences = config['presences_intents']
+intents.presences = bool(config['presences_intents'])
 
 bot = Dozer(config, intents=intents, max_messages=config['cache_size'])
 

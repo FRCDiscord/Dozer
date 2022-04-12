@@ -4,7 +4,7 @@ import inspect
 import logging
 import typing
 from collections.abc import Mapping
-from typing import Dict
+from typing import Dict, Union
 
 import discord
 from discord.ext import commands
@@ -175,7 +175,8 @@ class Reactor:
         self._action = self._stop_reaction
 
     def _check_reaction(self, reaction: discord.Reaction, member: discord.Member):
-        return reaction.message.id == self.message.id and member.id == self.caller.id
+        if self.message is not None:
+            return reaction.message.id == self.message.id and member.id == self.caller.id
 
 
 class Paginator(Reactor):
@@ -237,7 +238,7 @@ class Paginator(Reactor):
                 else:  # Only valid option left is 4
                     self.stop()
 
-    def go_to_page(self, page: int):
+    def go_to_page(self, page: Union[int, str]):
         """Goes to a specific help page"""
         if isinstance(page, int):
             page = page % self.len_pages
