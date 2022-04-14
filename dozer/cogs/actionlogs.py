@@ -334,7 +334,7 @@ class Actionlog(Cog):
         """Logs message edits."""
         if before.author.bot:
             return
-        if before.channel.isInstance(discord.DMChannel):
+        if isinstance(before.channel, discord.DMChannel):
             return
         if after.edited_at is not None or before.edited_at is not None:
             # There is a reason for this. That reason is that otherwise, an infinite spam loop occurs
