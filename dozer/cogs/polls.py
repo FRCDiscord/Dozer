@@ -23,8 +23,6 @@ class Polls(Cog):
     @command()
     async def poll(self, ctx, *, text):
         """Command to create a very simple poll."""
-        # Delete called command
-        await ctx.message.delete()
 
         # Separate title and options
         splitted = text.split('" ')
