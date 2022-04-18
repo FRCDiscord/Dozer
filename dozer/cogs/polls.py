@@ -19,8 +19,6 @@ from .. import db
 
 class Polls(Cog):
     """Polls cog for Dozer, code borrowed with love from https://github.com/Iarrova/Polling-Bot"""
-    def __init__(self, bot):
-        super().__init__(bot)
 
     @command()
     async def poll(self, ctx, *, text):
