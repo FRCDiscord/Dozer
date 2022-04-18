@@ -28,9 +28,10 @@ class Polls(Cog):
         splitted = text.split('" ')
         title = splitted[0].replace('"', '')
         options = splitted[1:]
-        for i in enumerate(options):
-            options[i] = options[i].replace('"', '')
-
+        newoptions = []
+        for i in options:
+            newoptions.append(i.replace('"', ''))
+        options = newoptions
         # Check if there is more than 1 option
         if len(options) <= 1:
             embed = discord.Embed(
