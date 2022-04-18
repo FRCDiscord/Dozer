@@ -30,7 +30,7 @@ class Polls(Cog):
         splitted = text.split('" ')
         title = splitted[0].replace('"', '')
         options = splitted[1:]
-        for i in range(len(options)):
+        for i in enumerate(options):
             options[i] = options[i].replace('"', '')
 
         # Check if there is more than 1 option
