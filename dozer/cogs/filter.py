@@ -409,4 +409,3 @@ class WordFilterRoleWhitelist(db.DatabaseTable):
             obj = WordFilterRoleWhitelist(guild_id=result.get("guild_id"), role_id=result.get("role_id"))
             result_list.append(obj)
         return result_list
-

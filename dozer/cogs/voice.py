@@ -219,8 +219,8 @@ class AutoPTT(db.DatabaseTable):
         result_list = []
         for result in results:
             obj = AutoPTT(
-                          channel_id=result.get("channel_id"),
-                          ptt_limit=result.get("ptt_limit"))
+                channel_id=result.get("channel_id"),
+                ptt_limit=result.get("ptt_limit"))
             result_list.append(obj)
         return result_list
 
