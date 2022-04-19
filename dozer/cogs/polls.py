@@ -1,31 +1,27 @@
 """Very simple polls cog. """
-import asyncio
-import datetime
-import logging
-import re
-import time
-import typing
 from logging import getLogger
-from typing import Union
 
 import discord
-from discord.ext import tasks
-from discord.ext.commands import BadArgument, has_permissions, RoleConverter, guild_only
+from discord.ext.commands import has_permissions
 
 from ._utils import *
-from .general import blurple
-from .. import db
+
+DOZER_LOGGER = getLogger(__name__)
 
 
 class Polls(Cog):
     """Polls cog for Dozer, code borrowed with love from https://github.com/Iarrova/Polling-Bot"""
 
     @command()
-    async def poll(self, ctx, *, text):
+    @has_permissions(manage_messages=True)
+    async def poll(self, ctx, *, poll_options):
         """Command to create a very simple poll."""
-
+        try:
+            await ctx.message.delete()
+        except discord.Forbidden:
+            DOZER_LOGGER.debug("Could not delete poll invoke message. ")
         # Separate title and options
-        splitted = text.split('" ')
+        splitted = poll_options.split('" ')
         title = splitted[0].replace('"', '')
         options = splitted[1:]
         newoptions = []
@@ -49,7 +45,7 @@ class Polls(Cog):
             await ctx.send(embed=embed)
             return
 
-        # Checks wether poll is a Yes/No Question or a Multiple Choice Question
+        # Checks whether poll is a Yes/No Question or a Multiple Choice Question
         if len(options) == 2 and options[0].lower() == 'yes' and options[1].lower() == 'no':
             reactions = ['✅', '❌']
         else:
@@ -66,17 +62,18 @@ class Polls(Cog):
             description=''.join(description),
             colour=discord.Colour.blue()
         )
+        embed.set_footer(text="Invoked by " + ctx.author.display_name)
         message = await ctx.send(embed=embed)
 
         for reaction in reactions[:len(options)]:
             await message.add_reaction(reaction)
 
     poll.example_usage = (
-        "`{prefix}poll \"Are polls cool?\" \"Yes\" \"No\"` - Makes a poll with 2 options. `{prefix}poll \n"
-        "\"What should we name the robot?\" \"Bolt Bucket\" \"Susan\" \"Programming did it\"` - Makes a poll with the "
-        "3 listed options. ")
+        "`{prefix}poll \"Are polls cool?\" \"Yes\" \"No\"` - Makes a poll with 2 options. \n`{prefix}poll "
+        "\"What should we name the robot?\" \"Bolt Bucket\" \"Susan\" \"Programming did it\"` - Makes a poll with "
+        "the 3 listed options. ")
 
 
 def setup(bot):
-    """Adds the moderation cog to the bot."""
+    """Adds the Polls cog to the bot."""
     bot.add_cog(Polls(bot))
