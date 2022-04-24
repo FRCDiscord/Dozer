@@ -1164,6 +1164,15 @@ class GuildNewMember(db.DatabaseTable):
             result_list.append(obj)
         return result_list
 
+    async def version_1(self):
+        """DB migration v1"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            ALTER TABLE {self.__tablename__} ADD require_team bool NOT NULL DEFAULT false;
+            """)
+
+    __versions__ = [version_1]
+
 
 class GuildMessageLinks(db.DatabaseTable):
     """Contains information for link scrubbing"""
