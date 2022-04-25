@@ -3,7 +3,7 @@
 import asyncio
 import functools
 
-from discord.utils import escape_markdown
+
 import itertools
 import logging
 import math
@@ -13,6 +13,7 @@ from datetime import timedelta, timezone, datetime
 
 import aiohttp
 import discord
+from discord.utils import escape_markdown
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
 from discord_slash import cog_ext, SlashContext

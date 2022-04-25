@@ -127,12 +127,11 @@ class Roles(Cog):
     @Cog.listener('on_guild_role_update')
     async def on_role_edit(self, old, new):
         """Changes role names in database when they are changed in the guild"""
-        if self.normalize(old.name)!=self.normalize(new.name):
+        if self.normalize(old.name) != self.normalize(new.name):
             results = await GiveableRole.get_by(norm_name=self.normalize(old.name), guild_id=old.guild.id)
             if results:
                 DOZER_LOGGER.debug(f"Role {new.id} name updated. updating name")
                 await GiveableRole.from_role(new).update_or_add()
-    
 
     @Cog.listener('on_guild_role_delete')
     async def on_role_delete(self, old):
@@ -257,7 +256,8 @@ class Roles(Cog):
             try:
                 await msg.delete()
             except discord.HTTPException:
-                DOZER_LOGGER.debug(f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
+                DOZER_LOGGER.debug(
+                    f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             try:
                 await ctx.message.delete()
             except discord.Forbidden:
@@ -266,7 +266,8 @@ class Roles(Cog):
             try:
                 await msg.clear_reactions()
             except discord.HTTPException:
-                DOZER_LOGGER.debug(f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
+                DOZER_LOGGER.debug(
+                    f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             return
 
     giveme.example_usage = """
@@ -383,7 +384,8 @@ class Roles(Cog):
             try:
                 await msg.delete()
             except discord.HTTPException:
-                DOZER_LOGGER.debug(f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
+                DOZER_LOGGER.debug(
+                    f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             try:
                 await ctx.message.delete()
             except discord.Forbidden:
@@ -392,7 +394,8 @@ class Roles(Cog):
             try:
                 await msg.clear_reactions()
             except discord.HTTPException:
-                DOZER_LOGGER.debug(f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
+                DOZER_LOGGER.debug(
+                    f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             return
 
     remove.example_usage = """
@@ -597,9 +600,11 @@ class Roles(Cog):
             for role in menu_entries:
                 boundroles.append(role.message_id)
             link = f"https://discordapp.com/channels/{rolemenu.guild_id}/{rolemenu.channel_id}/{rolemenu.message_id}"
-            embed.add_field(name=f"Menu: {rolemenu.name}", value=f"[Contains {len(menu_entries)} role watchers]({link})", inline=False)
-        unbound_reactions = await db.Pool.fetch(f"""SELECT * FROM {ReactionRole.__tablename__} WHERE message_id != all($1)"""
-                                                f""" and guild_id = $2;""", boundroles, ctx.guild.id)
+            embed.add_field(name=f"Menu: {rolemenu.name}",
+                            value=f"[Contains {len(menu_entries)} role watchers]({link})", inline=False)
+        unbound_reactions = await db.Pool.fetch(
+            f"""SELECT * FROM {ReactionRole.__tablename__} WHERE message_id != all($1)"""
+            f""" and guild_id = $2;""", boundroles, ctx.guild.id)
         combined_unbound = {}  # The following code is too group individual reaction role entries into the messages they are associated with
         if unbound_reactions:
             for unbound in unbound_reactions:
@@ -609,14 +614,16 @@ class Roles(Cog):
                 if combined_unbound.get(message_id):
                     combined_unbound[message_id]["total"] += 1
                 else:
-                    combined_unbound[message_id] = {"guild_id": guild_id, "channel_id": channel_id, "message_id": message_id, "total": 1}
+                    combined_unbound[message_id] = {"guild_id": guild_id, "channel_id": channel_id,
+                                                    "message_id": message_id, "total": 1}
         for combined in combined_unbound.values():
             gid = combined["guild_id"]
             cid = combined["channel_id"]
             mid = combined["message_id"]
             total = combined["total"]
             link = f"https://discordapp.com/channels/{gid}/{cid}/{mid}"
-            embed.add_field(name=f"Custom Message: {mid}", value=f"[Contains {total} role watchers]({link})", inline=False)
+            embed.add_field(name=f"Custom Message: {mid}", value=f"[Contains {total} role watchers]({link})",
+                            inline=False)
         embed.description = f"{ctx.bot.user.display_name} is tracking ({len(rolemenus) + len(combined_unbound)}) " \
                             f"reaction role message(s) in **{ctx.guild}**"
         await ctx.send(embed=embed)
@@ -649,7 +656,8 @@ class Roles(Cog):
 
         e = discord.Embed(color=blurple)
         link = f"https://discordapp.com/channels/{ctx.guild.id}/{message.channel.id}/{message.id}"
-        e.add_field(name='Success!', value=f"I added created role menu [\"{name}\"]({link}) in channel {channel.mention}")
+        e.add_field(name='Success!',
+                    value=f"I added created role menu [\"{name}\"]({link}) in channel {channel.mention}")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
@@ -814,7 +822,8 @@ class ReactionRole(db.DatabaseTable):
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
-            obj = ReactionRole(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"), message_id=result.get("message_id"),
+            obj = ReactionRole(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
+                               message_id=result.get("message_id"),
                                role_id=result.get("role_id"), reaction=result.get("reaction"))
             result_list.append(obj)
         return result_list
