@@ -5,6 +5,7 @@ import json
 import discord
 from aiotba.http import AioTBAError
 from discord.ext.commands import BadArgument, guild_only, has_permissions
+from discord.utils import escape_markdown
 from discord_slash import cog_ext, SlashContext
 
 from ._utils import *
@@ -155,7 +156,7 @@ class Teams(Cog):
             for i in users:
                 user = ctx.guild.get_member(i.user_id)
                 if user is not None:
-                    memstr = "{} {} \n".format(user.display_name, user.mention)
+                    memstr = "{} {} \n".format(escape_markdown(user.display_name), user.mention)
                     if len(e.description + memstr) > 2047:
                         extra_mems += memstr
                     else:

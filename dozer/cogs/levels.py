@@ -2,6 +2,8 @@
 
 import asyncio
 import functools
+
+from discord.utils import escape_markdown
 import itertools
 import logging
 import math
@@ -703,7 +705,7 @@ class Levels(Cog):
             embeds = []
             for page_num, page in enumerate(chunk(records, 10)):
                 embed = discord.Embed(title=f"Rankings for {ctx.guild}", color=discord.Color.blue())
-                embed.description = '\n'.join(f"#{rank}: {self._fmt_member(ctx.guild, user_id)}"
+                embed.description = '\n'.join(f"#{rank}: {escape_markdown(self._fmt_member(ctx.guild, user_id))}"
                                               f" (lvl {self.level_for_total_xp(total_xp)}, {total_xp} XP)"
                                               for (user_id, total_xp, rank) in page)
                 embed.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(records) / 10)}")
