@@ -7,6 +7,7 @@ from difflib import SequenceMatcher
 import discord
 import humanize
 from discord.ext.commands import cooldown, BucketType, guild_only
+from discord.utils import escape_markdown
 from discord_slash import cog_ext, SlashContext
 
 from ._utils import *
@@ -48,7 +49,7 @@ class Info(Cog):
         levels_settings = await GuildXPSettings.get_by(guild_id=ctx.guild.id)
         levels_enabled = levels_settings[0].enabled if len(levels_settings) else False
 
-        embed = discord.Embed(title=member.display_name, description=f'{member!s} ({member.id})', color=member.color)
+        embed = discord.Embed(title=escape_markdown(member.display_name), description=f'{member!s} ({member.id})', color=member.color)
         embed.set_thumbnail(url=member.avatar_url)
         embed.add_field(name='Bot Created' if member.bot else 'Account Created',
                         value=member.created_at.strftime(datetime_format), inline=True)

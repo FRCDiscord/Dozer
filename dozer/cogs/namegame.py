@@ -8,6 +8,7 @@ from functools import wraps
 
 import discord
 import tbapi
+from discord.utils import escape_markdown
 from discord.ext.commands import has_permissions
 from fuzzywuzzy import fuzz
 
@@ -88,7 +89,7 @@ class NameGameSession():
         embed.title = title
         embed.description = description
         embed.color = color
-        embed.add_field(name="Players", value=", ".join([p.display_name for p in self.players.keys()]) or "n/a")
+        embed.add_field(name="Players", value=", ".join([escape_markdown(p.display_name) for p in self.players.keys()]) or "n/a")
         embed.add_field(name=v + "Player", value=self.current_player)
         embed.add_field(name=v + "Number", value=self.number or "Wildcard")
         embed.add_field(name="Time Left", value=self.time)
@@ -326,7 +327,7 @@ class NameGame(Cog):
         record = query[0]
         record.wins = wins
         await record.update_or_add()
-        await ctx.send(f"{user.display_name}'s wins now set to: **{wins}**")
+        await ctx.send(f"{escape_markdown(user.display_name)}'s wins now set to: **{wins}**")
 
     @config.command()
     @has_permissions(manage_guild=True)
@@ -479,7 +480,7 @@ class NameGame(Cog):
                 else:
                     await ctx.send(
                         f"Let the people playing play! If you want to join, ask one of the people currently playing to "
-                        f"run `{ctx.prefix}ng addplayer {ctx.author.display_name}`")
+                        f"run `{ctx.prefix}ng addplayer {escape_markdown(ctx.author.display_name)}`")
                 return
 
             if game.time < 0:
@@ -611,7 +612,7 @@ class NameGame(Cog):
                              key=lambda i: i.wins, reverse=True)[:10]
         embed = discord.Embed(color=discord.Color.gold(), title=f"{mode.upper()} Name Game Leaderboard")
         for idx, entry in enumerate(leaderboard, 1):
-            embed.add_field(name=f"#{idx}: {ctx.bot.get_user(entry.user_id).display_name}", value=entry.wins)
+            embed.add_field(name=f"#{idx}: {escape_markdown(ctx.bot.get_user(entry.user_id).display_name)}", value=entry.wins)
         await ctx.send(embed=embed)
 
     leaderboard.example_usage = """
@@ -655,7 +656,7 @@ class NameGame(Cog):
         info_embed.add_field(name="Game Type", value=game.mode.upper())
         info_embed.add_field(
             name="Strikes",
-            value="\n".join([f"{player.display_name}: {strikes}" for player, strikes in game.players.items()])
+            value="\n".join([f"{escape_markdown(player.display_name)}: {strikes}" for player, strikes in game.players.items()])
         )
         info_embed.add_field(name="Current Player", value=game.current_player)
         info_embed.add_field(name="Current Number", value=game.number or "Wildcard")

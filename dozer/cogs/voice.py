@@ -1,6 +1,7 @@
 """Provides commands for voice, currently only voice and text channel access bindings."""
 import discord
 from discord.ext.commands import has_permissions, BadArgument
+from discord.utils import escape_markdown
 
 from ._utils import *
 from .info import blurple
@@ -64,7 +65,7 @@ class Voice(Cog):
         """Configures AutoPtt limit for when members join/leave voice channels ptt is enabled"""
 
         e = discord.Embed(color=blurple)
-        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
 
         if ptt_threshold < 0:
             raise BadArgument('PTT threshold must be positive integer')

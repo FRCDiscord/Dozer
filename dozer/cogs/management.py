@@ -10,6 +10,7 @@ from datetime import timezone, datetime
 import discord
 from dateutil import parser
 from discord.ext.commands import has_permissions, BadArgument
+from discord.utils import escape_markdown
 
 from ._utils import *
 from .general import blurple
@@ -74,7 +75,7 @@ class Management(Cog):
         perms = channel.permissions_for(guild.me)
         if db_entry.requester_id:
             name = await guild.fetch_member(db_entry.requester_id)
-            embed.set_footer(text=f"Author: {name.display_name}")
+            embed.set_footer(text=f"Author: {escape_markdown(name.display_name)}")
         if perms.send_messages:
             await channel.send(embed=embed)
         else:
@@ -147,14 +148,14 @@ class Management(Cog):
             task.cancel()
             if response.split(" ", 1)[1] == "1":
                 e.add_field(name='Success', value=f"Deleted entry with ID: {entry_id} and cancelled planned send")
-                e.set_footer(text='Triggered by ' + ctx.author.display_name)
+                e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
                 await ctx.send(embed=e)
             elif response.split(" ", 1)[1] == "0":
                 raise Exception("Requested row not deleted")
 
         else:
             e.add_field(name='Error', value=f"No entry with ID: {entry_id} found")
-            e.set_footer(text='Triggered by ' + ctx.author.display_name)
+            e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
             await ctx.send(embed=e)
 
     delete.example_usage = """
