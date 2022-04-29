@@ -439,7 +439,7 @@ class Levels(Cog):
         settings = self.guild_settings.get(ctx.guild.id)
         if settings:
             embed = discord.Embed(color=blurple)
-            embed.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
+            embed.set_footer(text='Triggered by ' + ctx.author.display_name)
 
             notify_channel = ctx.guild.get_channel(settings.lvl_up_msgs)
 
@@ -611,7 +611,7 @@ class Levels(Cog):
             lvl_up_msgs = ctx.guild.get_channel(ent.lvl_up_msgs)
             embed = discord.Embed(color=blurple)
             embed.set_author(name=ctx.guild, icon_url=ctx.guild.icon_url)
-            embed.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
+            embed.set_footer(text='Triggered by ' + ctx.author.display_name)
             enabled = "Enabled" if ent.enabled else "Disabled"
             embed.add_field(name=f"Levels are {enabled} for {ctx.guild}", value=f"XP min: {ent.xp_min}\n"
                                                                                 f"XP max: {ent.xp_max}\n"

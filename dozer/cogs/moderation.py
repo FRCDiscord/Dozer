@@ -466,7 +466,7 @@ class Moderation(Cog):
         self_deafens = [punishment for punishment in punishments if punishment.type_of_punishment == 2 and punishment.target_id in self_inflicted]
         mutes = [punishment for punishment in punishments if punishment.type_of_punishment == 1]
         embed = discord.Embed(title=f"Active punishments in {ctx.guild}", color=blurple)
-        embed.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
+        embed.set_footer(text='Triggered by ' + ctx.author.display_name)
 
         def get_mention(target_id):
             member = ctx.guild.get_member(target_id)
@@ -795,7 +795,7 @@ class Moderation(Cog):
         for field_number, target_ids in enumerate(chunk(subscribers, 10)):
             embed.add_field(name='Subscribers', value='\n'.join(f"{self.bot.get_guild(sub_id.subscriber_id)} | {sub_id.subscriber_id}"
                                                                 for sub_id in target_ids) or 'None', inline=False)
-        embed.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
+        embed.set_footer(text='Triggered by ' + ctx.author.display_name)
 
         await ctx.send(embed=embed)
 
@@ -813,7 +813,7 @@ class Moderation(Cog):
             await subscription.update_or_add()
             embed = discord.Embed(title='Success!', description=f"**{ctx.guild}** is now subscribed to receive crossbans from **{guild}**",
                                   color=blurple)
-            embed.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
+            embed.set_footer(text='Triggered by ' + ctx.author.display_name)
             await ctx.send(embed=embed)
         else:
             raise BadArgument("Dozer could not find that guild! Make sure that dozer is in that guild!")
@@ -831,7 +831,7 @@ class Moderation(Cog):
             guild = self.bot.get_guild(guild_id)
             embed = discord.Embed(title='Success!', description=f"**{ctx.guild}** is no longer subscribed to receive crossbans from **{guild}**",
                                   color=blurple)
-            embed.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
+            embed.set_footer(text='Triggered by ' + ctx.author.display_name)
             await ctx.send(embed=embed)
         else:
             raise BadArgument("Dozer could not find a subscription to that guild!")
