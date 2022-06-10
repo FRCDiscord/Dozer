@@ -590,7 +590,7 @@ class Moderation(Cog):
                 await self.mod_log(ctx.author, "muted", member_mentions, reason, ctx.channel, discord.Color.red(),
                                    duration=datetime.timedelta(seconds=seconds))
             else:
-                await ctx.send("Member was already muted! Updating preexisting records with new time.")
+                await ctx.send("Member was already muted! Updating duration and reason.")
                 await self.mod_log(ctx.author, "muted", member_mentions, reason, ctx.channel, discord.Color.red(),
                                    duration=datetime.timedelta(seconds=seconds), global_modlog=False, dm=False)
 
@@ -626,7 +626,7 @@ class Moderation(Cog):
                 await self.mod_log(actor=ctx.author, action="deafened", target=member_mentions, reason=reason, orig_channel=ctx.channel,
                                    embed_color=discord.Color.red(), duration=datetime.timedelta(seconds=seconds))
             else:
-                await ctx.send("Member was already deafened! Updating preexisting records with new time.")
+                await ctx.send("Member was already deafened! Updating duration and reason.")
                 await self.mod_log(ctx.author, "deafened", member_mentions, reason, ctx.channel, discord.Color.red(),
                                    duration=datetime.timedelta(seconds=seconds), global_modlog=False, dm=False)
 
