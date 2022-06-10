@@ -41,6 +41,7 @@ class Moderation(Cog):
     def __init__(self, bot):
         super().__init__(bot)
         self.links_config = db.ConfigCache(GuildMessageLinks)
+        self.punishment_timer_tasks = []
 
     """=== Helper functions ==="""
 
@@ -127,7 +128,8 @@ class Moderation(Cog):
                 except discord.Forbidden as e:
                     DOZER_LOGGER.error(f"Failed to catch missing perms in {channel} ({channel.id}) Guild: {channel.guild.id}; Error: {e}")
 
-    hm_regex = re.compile(r"((?P<weeks>\d+)w)?((?P<days>\d+)d)?((?P<hours>\d+)h)?((?P<minutes>\d+)m)?((?P<seconds>\d+)s)?")
+    hm_regex = re.compile(r"((?P<years>\d+)y)?((?P<months>\d+)M)?((?P<weeks>\d+)w)?((?P<days>\d+)d)?((?P<hours>\d+)h)?((?P<minutes>\d+)m)?(("
+                          r"?P<seconds>\d+)s)?")
 
     def hm_to_seconds(self, hm_str):
         """Converts an hour-minute string to seconds. For example, '1h15m' returns 4500"""
@@ -139,9 +141,22 @@ class Moderation(Cog):
         seconds = int(matches.get('seconds') or 0)
         return (weeks * 604800) + (days * 86400) + (hours * 3600) + (minutes * 60) + seconds
 
+    async def restart_all_timers(self):
+        """Restarts all timers"""
+        logging.info("Restarting all timers")
+        for timer in self.punishment_timer_tasks:
+            logging.info(f"Stopping {timer}")
+        for timer in self.punishment_timer_tasks:
+            timer.cancel()
+        self.punishment_timer_tasks = []
+
     async def punishment_timer(self, seconds, target: discord.Member, punishment, reason, actor: discord.Member, orig_channel=None,
                                global_modlog=True):
         """Asynchronous task that sleeps for a set time to unmute/undeafen a member for a set period of time."""
+
+        # Add this task to the list of active timer tasks
+        self.punishment_timer_tasks.append(asyncio.current_task())
+
         if seconds == 0:
             return
 
@@ -228,7 +243,11 @@ class Moderation(Cog):
         """
         results = await Mute.get_by(guild_id=member.guild.id, member_id=member.id)
         if results:
-            return False  # member already muted
+            await PunishmentTimerRecords.delete(target_id=member.id, guild_id=member.guild.id, type_of_punishment=Mute.type)
+            await self.restart_all_timers()
+            self.bot.loop.create_task(
+                self.punishment_timer(seconds, member, Mute, reason, actor or member.guild.me, orig_channel=orig_channel))
+            return False  # member already muted, edit preexisting record
         else:
             user = Mute(member_id=member.id, guild_id=member.guild.id)
             await user.update_or_add()
@@ -261,6 +280,16 @@ class Moderation(Cog):
         """
         results = await Deafen.get_by(guild_id=member.guild.id, member_id=member.id)
         if results:
+            await PunishmentTimerRecords.delete(target_id=member.id, guild_id=member.guild.id, type_of_punishment=Deafen.type)
+
+            await self.restart_all_timers()
+            self.bot.loop.create_task(
+                self.punishment_timer(seconds, member,
+                                      Deafen,
+                                      reason,
+                                      actor or member.guild.me,
+                                      orig_channel=orig_channel,
+                                      global_modlog=not self_inflicted))
             return False
         else:
             user = Deafen(member_id=member.id, guild_id=member.guild.id, self_inflicted=self_inflicted)
@@ -497,7 +526,7 @@ class Moderation(Cog):
         for field_number, punishments in enumerate(chunk(self_deafens, 3)):
             embed.add_field(name=f"Self Deafens - {len(self_deafens)}", value='\n-\n'.join(
                 f"{get_mention(punishment.target_id)} ({get_name(punishment.target_id)} | {punishment.target_id}) "
-               f"\nExpires: <t:{round(punishment.target_ts)}:R> Reason: {punishment.reason}"
+                f"\nExpires: <t:{round(punishment.target_ts)}:R> Reason: {punishment.reason}"
                 for punishment in punishments) or 'None', inline=False)
 
         await ctx.send(embed=embed)
@@ -560,7 +589,9 @@ class Moderation(Cog):
                 await self.mod_log(ctx.author, "muted", member_mentions, reason, ctx.channel, discord.Color.red(),
                                    duration=datetime.timedelta(seconds=seconds))
             else:
-                await ctx.send("Member is already muted!")
+                await ctx.send("Member was already muted! Updating preexisting records with new time.")
+                await self.mod_log(ctx.author, "muted", member_mentions, reason, ctx.channel, discord.Color.red(),
+                                   duration=datetime.timedelta(seconds=seconds), global_modlog=False, dm=False)
 
     mute.example_usage = """
     `{prefix}mute @user 1h reason` - mute @user for 1 hour for a given reason, the timing component (1h) and reason is optional.
@@ -594,7 +625,9 @@ class Moderation(Cog):
                 await self.mod_log(actor=ctx.author, action="deafened", target=member_mentions, reason=reason, orig_channel=ctx.channel,
                                    embed_color=discord.Color.red(), duration=datetime.timedelta(seconds=seconds))
             else:
-                await ctx.send("Member is already deafened!")
+                await ctx.send("Member was already deafened! Updating preexisting records with new time.")
+                await self.mod_log(ctx.author, "deafened", member_mentions, reason, ctx.channel, discord.Color.red(),
+                                   duration=datetime.timedelta(seconds=seconds), global_modlog=False, dm=False)
 
     deafen.example_usage = """
     `{prefix}deafen @user 1h reason` - deafen @user for 1 hour for a given reason, the timing component (1h) is optional.
