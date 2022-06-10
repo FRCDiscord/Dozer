@@ -183,8 +183,9 @@ class Moderation(Cog):
                                orig_channel=orig_channel,
                                embed_color=discord.Color.green(),
                                global_modlog=global_modlog)
-            self.bot.loop.create_task(coro=punishment.finished_callback(self, target))
 
+            self.punishment_timer_tasks.remove(asyncio.current_task())
+            self.bot.loop.create_task(coro=punishment.finished_callback(self, target))
         if ent:
             await PunishmentTimerRecords.delete(guild_id=target.guild.id, target_id=target.id, type_of_punishment=punishment.type)
 
