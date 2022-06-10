@@ -134,12 +134,16 @@ class Moderation(Cog):
     def hm_to_seconds(self, hm_str):
         """Converts an hour-minute string to seconds. For example, '1h15m' returns 4500"""
         matches = re.match(self.hm_regex, hm_str).groupdict()
+        years = int(matches.get('years') or 0)
+        months = int(matches.get('months') or 0)
         weeks = int(matches.get('weeks') or 0)
         days = int(matches.get('days') or 0)
         hours = int(matches.get('hours') or 0)
         minutes = int(matches.get('minutes') or 0)
         seconds = int(matches.get('seconds') or 0)
-        return (weeks * 604800) + (days * 86400) + (hours * 3600) + (minutes * 60) + seconds
+        val = int((years * 3.154e+7) + (months * 2.628e+6) + (weeks * 604800) + (days * 86400) + (hours * 3600) + (minutes * 60) + seconds)
+        # Make sure it is a positive number, and it doesn't exceed the max 32-bit int
+        return max(0, min(2147483647, val))
 
     async def restart_all_timers(self):
         """Restarts all timers"""
