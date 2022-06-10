@@ -124,6 +124,24 @@ class Roles(Cog):
 
         await TempRoleTimerRecords.delete(id=record.id)
 
+    @Cog.listener('on_guild_role_update')
+    async def on_role_edit(self, old, new):
+        """Changes role names in database when they are changed in the guild"""
+        if self.normalize(old.name)!=self.normalize(new.name):
+            results = await GiveableRole.get_by(norm_name=self.normalize(old.name), guild_id=old.guild.id)
+            if results:
+                DOZER_LOGGER.debug(f"Role {new.id} name updated. updating name")
+                await GiveableRole.from_role(new).update_or_add()
+    
+
+    @Cog.listener('on_guild_role_delete')
+    async def on_role_delete(self, old):
+        """Deletes roles from database when the roles are deleted from the guild. """
+        results = await GiveableRole.get_by(norm_name=self.normalize(old.name), guild_id=old.guild.id)
+        if results:
+            DOZER_LOGGER.debug(f"Role {old.id} deleted. Deleting from database.")
+            await GiveableRole.delete(role_id=old.id)
+
     @Cog.listener('on_member_join')
     async def on_member_join(self, member):
         """Restores a member's roles when they join if they have joined before."""
@@ -236,13 +254,19 @@ class Roles(Cog):
         try:
             await self.bot.wait_for('reaction_add', timeout=30, check=lambda reaction, reactor:
                                     reaction.emoji == "❌" and reactor == ctx.author and reaction.message == msg)
-            await msg.delete()
+            try:
+                await msg.delete()
+            except discord.HTTPException:
+                DOZER_LOGGER.debug(f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             try:
                 await ctx.message.delete()
             except discord.Forbidden:
                 pass
         except asyncio.TimeoutError:
-            await msg.clear_reactions()
+            try:
+                await msg.clear_reactions()
+            except discord.HTTPException:
+                DOZER_LOGGER.debug(f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             return
 
     giveme.example_usage = """
@@ -356,13 +380,19 @@ class Roles(Cog):
         try:
             await self.bot.wait_for('reaction_add', timeout=30, check=lambda reaction, reactor:
                                     reaction.emoji == "❌" and reactor == ctx.author and reaction.message == msg)
-            await msg.delete()
+            try:
+                await msg.delete()
+            except discord.HTTPException:
+                DOZER_LOGGER.debug(f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             try:
                 await ctx.message.delete()
             except discord.Forbidden:
                 pass
         except asyncio.TimeoutError:
-            await msg.clear_reactions()
+            try:
+                await msg.clear_reactions()
+            except discord.HTTPException:
+                DOZER_LOGGER.debug(f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             return
 
     remove.example_usage = """
