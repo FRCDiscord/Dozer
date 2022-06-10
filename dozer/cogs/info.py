@@ -1,7 +1,7 @@
 """Provides commands for pulling certain information."""
 import math
 import typing
-from datetime import timezone, datetime
+from datetime import timezone, datetime, date
 from difflib import SequenceMatcher
 
 import discord
@@ -51,20 +51,22 @@ class Info(Cog):
         embed = discord.Embed(title=member.display_name, description=f'{member!s} ({member.id})', color=member.color)
         embed.set_thumbnail(url=member.avatar_url)
         embed.add_field(name='Bot Created' if member.bot else 'Account Created',
-                        value=member.created_at.strftime(datetime_format), inline=True)
+                        value=f"<t:{int(member.created_at.timestamp())}:f>", inline=True)
 
         if not levels_enabled:
             embed.add_field(name="Last Seen Here At", value="Levels Disabled")
         elif len(levels_data):
-            embed.add_field(name="Last Seen Here At", value=levels_data[0].last_given_at.strftime(datetime_format))
+
+            #
+            embed.add_field(name="Last Seen Here", value=f"<t:{int(levels_data[0].last_given_at.timestamp())}:R>")
             footers.append(f"Tracked Messages: {levels_data[0].total_messages}")
         else:
             embed.add_field(name="Last Seen Here At", value="Not available")
             footers.append("Tracked Messages: N/A")
 
-        embed.add_field(name='Member Joined', value=member.joined_at.strftime(datetime_format), inline=True)
+        embed.add_field(name='Member Joined', value=f"<t:{int(member.joined_at.timestamp())}:f>", inline=True)
         if member.premium_since is not None:
-            embed.add_field(name='Member Boosted', value=member.premium_since.strftime(datetime_format), inline=True)
+            embed.add_field(name='Member Boosted', value=f"<t:{int(member.premium_since.timestamp())}:f>", inline=True)
 
         status = 'DND' if member.status is discord.Status.dnd else member.status.name.title()
         if member.status is not discord.Status.offline:
@@ -140,7 +142,7 @@ class Info(Cog):
     async def role(self, ctx, role: discord.Role):
         """Retrieve info about a role in this guild"""
         embed = discord.Embed(title=f"Info for role: {role.name}", description=f"{role.mention} ({role.id})", color=role.color)
-        embed.add_field(name="Created on", value=role.created_at.strftime(datetime_format))
+        embed.add_field(name="Created on", value=f"<t:{int(role.created_at.timestamp())}:f>")
         embed.add_field(name="Position", value=role.position)
         embed.add_field(name="Color", value=str(role.color).upper())
         embed.add_field(name="Assigned members", value=f"{len(role.members)}", inline=False)
@@ -180,7 +182,7 @@ class Info(Cog):
 
         embed.set_thumbnail(url=guild.icon_url)
 
-        embed.add_field(name='Created at', value=guild.created_at.strftime(datetime_format))
+        embed.add_field(name='Created on', value=f"<t:{int(guild.created_at.timestamp())}:f>")
         embed.add_field(name='Owner', value=guild.owner)
         embed.add_field(name='Emoji', value="{} static, {} animated".format(static_emoji, animated_emoji))
         embed.add_field(name='Roles', value=str(len(guild.roles) - 1))  # Remove @everyone

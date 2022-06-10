@@ -93,6 +93,7 @@ class Moderation(Cog):
                 modlog_embed.add_field(name=field['name'], value=field['value'], inline=field['inline'])
         if duration:
             modlog_embed.add_field(name="Duration", value=duration)
+            modlog_embed.add_field(name="Expiration", value=f"<t:{round((datetime.datetime.now() + duration).timestamp())}:R>")
         if target is not None and dm:
             try:
                 await target.send(embed=modlog_embed)
@@ -484,19 +485,19 @@ class Moderation(Cog):
         for field_number, punishments in enumerate(chunk(deafens, 3)):
             embed.add_field(name=f"Deafens - {len(deafens)}", value='\n-\n'.join(
                 f"{get_mention(punishment.target_id)} ({get_name(punishment.target_id)} | {punishment.target_id}) "
-                f"\nRemaining time: {datetime.timedelta(seconds=round(punishment.target_ts - time.time()))} Reason: {punishment.reason}"
+                f"\nExpires: <t:{round(punishment.target_ts)}:R> Reason: {punishment.reason}"
                 for punishment in punishments) or 'None', inline=False)
 
         for field_number, punishments in enumerate(chunk(mutes, 3)):
             embed.add_field(name=f"Mutes - {len(mutes)}", value='\n-\n'.join(
                 f"{get_mention(punishment.target_id)} ({get_name(punishment.target_id)} | {punishment.target_id}) "
-                f"\nRemaining time: {datetime.timedelta(seconds=round(punishment.target_ts - time.time()))} Reason: {punishment.reason}"
+                f"\nExpires: <t:{round(punishment.target_ts)}:R> Reason: {punishment.reason}"
                 for punishment in punishments) or 'None', inline=False)
 
         for field_number, punishments in enumerate(chunk(self_deafens, 3)):
             embed.add_field(name=f"Self Deafens - {len(self_deafens)}", value='\n-\n'.join(
                 f"{get_mention(punishment.target_id)} ({get_name(punishment.target_id)} | {punishment.target_id}) "
-                f"\nRemaining time: {datetime.timedelta(seconds=round(punishment.target_ts - time.time()))} Reason: {punishment.reason}"
+               f"\nExpires: <t:{round(punishment.target_ts)}:R> Reason: {punishment.reason}"
                 for punishment in punishments) or 'None', inline=False)
 
         await ctx.send(embed=embed)
