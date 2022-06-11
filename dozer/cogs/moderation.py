@@ -70,8 +70,9 @@ class Moderation(Cog):
         """Kicks new members"""
         await self.nm_kick_internal()
 
-    async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member, None], reason, orig_channel=None,
-                      embed_color=discord.Color.red(), global_modlog=True, duration=None, dm=True, guild_override: int = None, extra_fields=None):
+    async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member, None], reason,
+                      updated_by: discord.Member = None, orig_channel=None, embed_color=discord.Color.red(), global_modlog=True, duration=None,
+                      dm=True, guild_override: int = None, extra_fields=None):
         """Generates a modlog embed"""
 
         if target is None:
@@ -87,6 +88,8 @@ class Moderation(Cog):
         if target is not None:
             modlog_embed.add_field(name=f"{action.capitalize()} user", value=f"{target.mention} ({target} | {target.id})", inline=False)
         modlog_embed.add_field(name="Performed by", value=f"{actor.mention} ({actor} | {actor.id})", inline=False)
+        if updated_by is not None:
+            modlog_embed.add_field(name="Updated by", value=f"{updated_by.mention} ({updated_by} | {updated_by.id})", inline=False)
         modlog_embed.add_field(name="Reason", value=reason or "No reason specified", inline=False)
         modlog_embed.timestamp = datetime.datetime.utcnow()
         if extra_fields is not None:
@@ -158,13 +161,14 @@ class Moderation(Cog):
             await PunishmentTimerRecords.delete(id=r.id)
             self.bot.loop.create_task(self.punishment_timer(seconds, target, PunishmentTimerRecords.type_map[punishment_type], reason, actor,
                                                             orig_channel))
-            getLogger('dozer').info(f"Restarted {PunishmentTimerRecords.type_map[punishment_type].__name__} of {target} in {guild}")
+            # getLogger('dozer').info(f"Restarted {PunishmentTimerRecords.type_map[punishment_type].__name__} of {target} in {guild}")
 
     async def restart_all_timers(self):
         """Restarts all timers"""
-        logging.info("Restarting all timers")
+        DOZER_LOGGER.info("Restarting all timers")
         for timer in self.punishment_timer_tasks:
-            logging.info(f"Stopping {timer}")
+            # timer: asyncio.Task
+            DOZER_LOGGER.info(f"Stopping \"{timer.get_name()}\"")
         for timer in self.punishment_timer_tasks:
             timer.cancel()
         self.punishment_timer_tasks = []
@@ -175,7 +179,10 @@ class Moderation(Cog):
         """Asynchronous task that sleeps for a set time to unmute/undeafen a member for a set period of time."""
 
         # Add this task to the list of active timer tasks
+        asyncio.current_task().set_name(f"PunishmentTimer for {target}")
         self.punishment_timer_tasks.append(asyncio.current_task())
+
+        DOZER_LOGGER.info(f"Starting {punishment.__name__} timer of \"{target}\" in \"{target.guild}\" will expire in {seconds} seconds")
 
         if seconds == 0:
             return
