@@ -145,6 +145,21 @@ class Moderation(Cog):
         # Make sure it is a positive number, and it doesn't exceed the max 32-bit int
         return max(0, min(2147483647, val))
 
+    async def start_punishment_timers(self):
+        q = await PunishmentTimerRecords.get_by()  # no filters: all
+        for r in q:
+            guild = self.bot.get_guild(r.guild_id)
+            actor = guild.get_member(r.actor_id)
+            target = guild.get_member(r.target_id)
+            orig_channel = self.bot.get_channel(r.orig_channel_id)
+            punishment_type = r.type_of_punishment
+            reason = r.reason or ""
+            seconds = max(int(r.target_ts - time.time()), 1)
+            await PunishmentTimerRecords.delete(id=r.id)
+            self.bot.loop.create_task(self.punishment_timer(seconds, target, PunishmentTimerRecords.type_map[punishment_type], reason, actor,
+                                                            orig_channel))
+            getLogger('dozer').info(f"Restarted {PunishmentTimerRecords.type_map[punishment_type].__name__} of {target} in {guild}")
+
     async def restart_all_timers(self):
         """Restarts all timers"""
         logging.info("Restarting all timers")
@@ -153,6 +168,7 @@ class Moderation(Cog):
         for timer in self.punishment_timer_tasks:
             timer.cancel()
         self.punishment_timer_tasks = []
+        await self.start_punishment_timers()
 
     async def punishment_timer(self, seconds, target: discord.Member, punishment, reason, actor: discord.Member, orig_channel=None,
                                global_modlog=True):
@@ -329,19 +345,7 @@ class Moderation(Cog):
     @Cog.listener('on_ready')
     async def on_ready(self):
         """Restore punishment timers on bot startup and trigger the nm purge cycle"""
-        q = await PunishmentTimerRecords.get_by()  # no filters: all
-        for r in q:
-            guild = self.bot.get_guild(r.guild_id)
-            actor = guild.get_member(r.actor_id)
-            target = guild.get_member(r.target_id)
-            orig_channel = self.bot.get_channel(r.orig_channel_id)
-            punishment_type = r.type_of_punishment
-            reason = r.reason or ""
-            seconds = max(int(r.target_ts - time.time()), 0.01)
-            await PunishmentTimerRecords.delete(id=r.id)
-            self.bot.loop.create_task(self.punishment_timer(seconds, target, PunishmentTimerRecords.type_map[punishment_type], reason, actor,
-                                                            orig_channel))
-            getLogger('dozer').info(f"Restarted {PunishmentTimerRecords.type_map[punishment_type].__name__} of {target} in {guild}")
+        await self.start_punishment_timers()
         await self.nm_kick.start()
 
     @Cog.listener('on_member_join')
