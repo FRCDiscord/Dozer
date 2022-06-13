@@ -236,7 +236,7 @@ class TBA(Cog):
 
     @command()
     @bot_has_permissions(embed_links=True)
-    async def weather(self, ctx, team_program, team_num:int):
+    async def weather(self, ctx, team_program, team_num: int):
         """Finds the current weather for a given team."""
 
         if team_program.lower() == "frc":
