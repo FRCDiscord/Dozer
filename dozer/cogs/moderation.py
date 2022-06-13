@@ -151,6 +151,7 @@ class Moderation(Cog):
         return max(0, min(2147483647, val))
 
     async def start_punishment_timers(self):
+        """Starts all punishment timers"""
         q = await PunishmentTimerRecords.get_by()  # no filters: all
         for r in q:
             guild = self.bot.get_guild(r.guild_id)

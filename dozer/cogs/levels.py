@@ -331,7 +331,7 @@ class Levels(Cog):
             roles = sorted(unsorted, key=lambda entry: entry.level)  # Sort roles based on level
             embeds = []
 
-            for page_num, page in enumerate(chunk(roles.__iter__(), 10)):
+            for page_num, page in enumerate(chunk(roles, 10)):
                 e = discord.Embed(title=f"Level roles for {ctx.guild}", color=blurple)
                 e.description = f"This server has {len(roles)} level roles"
                 for level_role in page:
