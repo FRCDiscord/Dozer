@@ -70,9 +70,9 @@ class Moderation(Cog):
         """Kicks new members"""
         await self.nm_kick_internal()
 
-    async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member, None], reason,
-                      updated_by: discord.Member = None, orig_channel=None, embed_color=discord.Color.red(), global_modlog=True, duration=None,
-                      dm=True, guild_override: int = None, extra_fields=None):
+    async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member, None], reason, orig_channel=None,
+                      embed_color=discord.Color.red(), global_modlog=True, duration=None,
+                      dm=True, guild_override: int = None, extra_fields=None, updated_by: discord.Member = None,):
         """Generates a modlog embed"""
 
         if target is None:
@@ -100,6 +100,8 @@ class Moderation(Cog):
             modlog_embed.add_field(name="Expiration", value=f"<t:{round((datetime.datetime.now() + duration).timestamp())}:R>")
         if target is not None and dm:
             try:
+                # Add source guild after Preformed by to embed if the modlog is being sent to a DM
+                modlog_embed.insert_field_at(2, name="Source Guild", value=f"**{target.guild.name}** ({target.guild.id})")
                 await target.send(embed=modlog_embed)
             except discord.Forbidden:
                 await orig_channel.send("Failed to DM modlog to user")
@@ -291,6 +293,7 @@ class Moderation(Cog):
         if results:
             await Mute.delete(member_id=member.id, guild_id=member.guild.id)
             await PunishmentTimerRecords.delete(target_id=member.id, guild_id=member.guild.id, type_of_punishment=Mute.type)
+            await self.restart_all_timers()
             await self.perm_override(member, send_messages=None, add_reactions=None, speak=None, stream=None)
             return True
         else:
@@ -341,6 +344,7 @@ class Moderation(Cog):
         if results:
             await self.perm_override(member=member, read_messages=None)
             await PunishmentTimerRecords.delete(target_id=member.id, guild_id=member.guild.id, type_of_punishment=Deafen.type)
+            await self.restart_all_timers()
             await Deafen.delete(member_id=member.id, guild_id=member.guild.id)
             truths = [True, results[0].self_inflicted]
             return truths
