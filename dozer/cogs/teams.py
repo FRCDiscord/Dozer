@@ -197,7 +197,7 @@ class Teams(Cog):
         )
         await new_settings.update_or_add()
         e = discord.Embed(color=blurple)
-        modetext = "Enabled" if enabled else "Disabled"
+        modetext = "Enabled" if not enabled else "Disabled"
         e.add_field(name='Success!', value=f"Automatic adding of team association is currently: **{modetext}**")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
