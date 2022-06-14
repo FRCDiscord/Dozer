@@ -1,0 +1,10 @@
+reviewers:
+  # The default reviewers
+  defaults:
+    - team:Dozer
+
+options:
+  ignore_draft: true
+  ignored_keywords:
+    - DO NOT REVIEW
+  enable_group_assignment: false
