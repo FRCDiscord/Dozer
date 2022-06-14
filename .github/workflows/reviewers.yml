@@ -3,7 +3,7 @@ reviewers:
   defaults:
     - repository-owners # group
 
-ptions:
+options:
   ignore_draft: true
   ignored_keywords:
     - DO NOT REVIEW
