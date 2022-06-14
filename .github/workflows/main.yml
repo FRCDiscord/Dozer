@@ -23,3 +23,6 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: Lint
         run: ci/ci.sh
+      
+      - uses: necojackarc/auto-request-review@v0.7.0
+        if: github.event_name == 'pull_request'
