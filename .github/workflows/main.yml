@@ -2,11 +2,7 @@
 
 name: CI
 
-on: 
-  push:
-    types: all
-  pull_request:
-    types: [opened, ready_for_review, reopened]
+on: [push, pull_request]
 
 jobs:
   lint:
