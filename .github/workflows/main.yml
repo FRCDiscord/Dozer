@@ -33,3 +33,5 @@ jobs:
         uses: necojackarc/auto-request-review@v0.7.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          config: .github/workflows/reviewers.yml
+
