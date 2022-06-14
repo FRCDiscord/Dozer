@@ -1,10 +1,60 @@
 reviewers:
   # The default reviewers
   defaults:
-    - team:Dozer
+    - repository-owners # group
+    - octocat # username
+    - team:default-reviewers # GitHub team
+
+  # Reviewer groups each of which has a list of GitHub usernames
+  groups:
+    repository-owners:
+      - me # username
+      - you # username
+      - team:owners # GitHub team
+    core-contributors:
+      - good-boy # username
+      - good-girl # username
+    js-lovers:
+      - js-man # username
+      - js-woman # username
+
+  # Reviewers per author.
+  # Keys are reviewees, each of which has an array of reviewers.
+  per_author:
+    engineers:
+      - engineers # group
+      - team:engineering-managers # GitHub team
+    lead_designer:
+      - js-lovers # group
+      - desinger_a # username
+    designer_a:
+      - lead_designer # username
+    designer_b:
+      - lead_desinger # username
+      - desinger_a # username
+
+files:
+  # Keys are glob expressions.
+  # You can assign groups defined above as well as GitHub usernames.
+  '**':
+    - repository-owners # group
+    - team:external-reviewers # GitHub team
+  '**/*.js':
+    - core-contributors # group
+    - js-lovers # group
+  '**/*.yml':
+    - core-contributors # group
+    - yamler # username
+  '.github/**':
+    - octopus # username
+    - cat # username
 
 options:
   ignore_draft: true
   ignored_keywords:
     - DO NOT REVIEW
   enable_group_assignment: false
+
+  # Randomly pick reviewers up to this number.
+  # Do not set this option if you'd like to assign all matching reviewers.
+  number_of_reviewers: 3
