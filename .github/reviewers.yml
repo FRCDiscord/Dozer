@@ -2,7 +2,6 @@ reviewers:
   # The default reviewers
   defaults:
     - JayFromProgramming
-    - team:Dozer
 
 options:
   ignore_draft: true
