@@ -1,6 +1,7 @@
 reviewers:
   # The default reviewers
   defaults:
+   - team:DozerDevs
    - team:SeniorDevs
 
 options:
