@@ -107,7 +107,7 @@ class Moderation(Cog):
         if target is not None and dm:
             try:
                 # Add source guild after Preformed by to embed if the modlog is being sent to a DM
-                modlog_embed.insert_field_at(2, name="Source Guild", value=f"**{target.guild.name}** ({target.guild.id})")
+                modlog_embed.insert_field_at(2, name="Source Guild", value=f"**{actor.guild.name}** ({actor.guild.id})")
                 await target.send(embed=modlog_embed)
             except discord.Forbidden:
                 await orig_channel.send("Failed to DM modlog to user")
