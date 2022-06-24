@@ -109,8 +109,11 @@ class Moderation(Cog):
                 # Add source guild after Preformed by to embed if the modlog is being sent to a DM
                 modlog_embed.insert_field_at(2, name="Source Guild", value=f"**{actor.guild.name}** ({actor.guild.id})")
                 await target.send(embed=modlog_embed)
+                # Remove the source guild line from the embed
             except discord.Forbidden:
                 await orig_channel.send("Failed to DM modlog to user")
+            finally:
+                modlog_embed.remove_field(2)
         modlog_channel = await GuildModLog.get_by(guild_id=actor.guild.id) if guild_override is None else \
             await GuildModLog.get_by(guild_id=guild_override)
         if orig_channel is not None:
@@ -169,10 +172,11 @@ class Moderation(Cog):
             punishment_type = r.type_of_punishment
             reason = r.reason or ""
             seconds = max(int(r.target_ts - time.time()), 1)
+            self_inflicted = r.self_inflicted
             await PunishmentTimerRecords.delete(id=r.id)
             self.bot.loop.create_task(self.punishment_timer(seconds, target, PunishmentTimerRecords.type_map[punishment_type], reason, actor,
-                                                            orig_channel))
-            # getLogger('dozer').info(f"Restarted {PunishmentTimerRecords.type_map[punishment_type].__name__} of {target} in {guild}")
+                                                            orig_channel, not self_inflicted))
+            DOZER_LOGGER.debug(f"Restarted {PunishmentTimerRecords.type_map[punishment_type].__name__} of {target} in {guild}")
 
     async def restart_all_timers(self):
         """Restarts all timers"""
@@ -194,7 +198,8 @@ class Moderation(Cog):
         asyncio.current_task().set_name(f"PunishmentTimer for {target}")
         self.punishment_timer_tasks.append(asyncio.current_task())
 
-        DOZER_LOGGER.info(f"Starting {punishment.__name__} timer of \"{target}\" in \"{target.guild}\" will expire in {seconds} seconds")
+        DOZER_LOGGER.info(f"Starting{' self' if not global_modlog else ''} {punishment.__name__} timer of \"{target}\" in \"{target.guild}\" will "
+                          f"expire in {seconds} seconds")
 
         if seconds == 0:
             return
@@ -207,7 +212,8 @@ class Moderation(Cog):
             orig_channel_id=orig_channel.id if orig_channel else 0,
             type_of_punishment=punishment.type,
             reason=reason,
-            target_ts=int(seconds + time.time())
+            target_ts=int(seconds + time.time()),
+            self_inflicted=not global_modlog
         )
         await ent.update_or_add()
 
@@ -1276,7 +1282,7 @@ class PunishmentTimerRecords(db.DatabaseTable):
             )""")
 
     def __init__(self, guild_id, actor_id, target_id, type_of_punishment, target_ts, orig_channel_id=None, reason=None,
-                 input_id=None):
+                 input_id=None, self_inflicted=False):
         super().__init__()
         self.id = input_id
         self.guild_id = guild_id
@@ -1286,6 +1292,7 @@ class PunishmentTimerRecords(db.DatabaseTable):
         self.target_ts = target_ts
         self.orig_channel_id = orig_channel_id
         self.reason = reason
+        self.self_inflicted = self_inflicted
 
     @classmethod
     async def get_by(cls, **kwargs):
@@ -1297,9 +1304,18 @@ class PunishmentTimerRecords(db.DatabaseTable):
                                          type_of_punishment=result.get("type_of_punishment"),
                                          target_ts=result.get("target_ts"),
                                          orig_channel_id=result.get("orig_channel_id"), reason=result.get("reason"),
-                                         input_id=result.get('id'))
+                                         input_id=result.get('id'), self_inflicted=result.get("self_inflicted"))
             result_list.append(obj)
         return result_list
+
+    async def version_1(self):
+        """DB migration v1"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            ALTER TABLE {self.__tablename__} ADD self_inflicted bool NOT NULL DEFAULT false;
+            """)
+
+    __versions__ = [version_1]
 
 
 def setup(bot):
