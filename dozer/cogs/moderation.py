@@ -12,10 +12,10 @@ import discord
 from discord.ext import tasks
 from discord.ext.commands import BadArgument, has_permissions, RoleConverter, guild_only
 
-from ..Components.CustomJoinLeaveMessages import send_log
 from ._utils import *
 from .general import blurple
 from .. import db
+from ..Components.CustomJoinLeaveMessages import send_log, CustomJoinLeaveMessages
 
 __all__ = ["SafeRoleConverter", "Moderation", "NewMemPurgeConfig", "GuildNewMember"]
 
@@ -421,8 +421,11 @@ class Moderation(Cog):
                     await message.reply(f"You must set a team number first. ex: `{ctx.prefix}setteam frc 0`")
                     return
 
+            custom_log_config = await CustomJoinLeaveMessages.get_by(guild_id=message.guild.id)
+
             await message.author.add_roles(message.guild.get_role(role_id))
-            await send_log(member=message.author)
+            if custom_log_config[0].send_on_verify:
+                await send_log(member=message.author)
 
     @Cog.listener('on_message_edit')
     async def on_message_edit(self, before, after):
@@ -803,7 +806,10 @@ class Moderation(Cog):
                 return
 
             await member.add_roles(role)
-            await send_log(member=member)
+
+            custom_join_config = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
+            if custom_join_config[0].send_on_verify:
+                await send_log(member=member)
             await ctx.send(f"Member verified on request of {ctx.author.display_name}")
 
     @command()
