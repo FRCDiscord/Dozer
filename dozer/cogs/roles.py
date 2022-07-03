@@ -22,8 +22,8 @@ class Roles(Cog):
 
     def __init__(self, bot):
         super().__init__(bot)
-        for command in self.giveme.walk_commands():
-            @command.before_invoke
+        for role_command in self.giveme.walk_commands():
+            @role_command.before_invoke
             async def givemeautopurge(self, ctx):
                 """Before invoking a giveme command, run a purge"""
                 if await self.ctx_purge(ctx):
@@ -127,7 +127,7 @@ class Roles(Cog):
     @Cog.listener('on_guild_role_update')
     async def on_role_edit(self, old, new):
         """Changes role names in database when they are changed in the guild"""
-        if self.normalize(old.name)!=self.normalize(new.name):
+        if self.normalize(old.name) != self.normalize(new.name):
             results = await GiveableRole.get_by(norm_name=self.normalize(old.name), guild_id=old.guild.id)
             if results:
                 DOZER_LOGGER.debug(f"Role {new.id} name updated. updating name")

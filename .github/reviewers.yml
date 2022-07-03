@@ -1,0 +1,12 @@
+reviewers:
+  # The default reviewers
+  defaults:
+   - team:DozerDevs
+   - team:SeniorDevs
+
+options:
+  ignore_draft: true
+  ignored_keywords:
+    - DO NOT REVIEW
+  enable_group_assignment: false
+
