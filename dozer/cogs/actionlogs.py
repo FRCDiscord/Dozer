@@ -410,6 +410,7 @@ class Actionlog(Cog):
             channel = ctx.guild.get_channel(config[0].channel_id)
             embed.add_field(name="Message Channel", value=channel.mention if channel else "None")
             embed.add_field(name="Ping on join", value=config[0].ping)
+            embed.add_field(name="Send on verify", value=config[0].send_on_verify)
             embed.add_field(name="Join template", value=config[0].join_message, inline=False)
             embed.add_field(name="Join Example", value=format_join_leave(config[0].join_message, ctx.author))
             embed.add_field(name="Leave template", value=config[0].leave_message, inline=False)
