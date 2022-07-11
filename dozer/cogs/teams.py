@@ -11,6 +11,7 @@ from dozer.context import DozerContext
 from ._utils import *
 from .info import blurple
 from .. import db
+from ..Components.TeamNumbers import TeamNumbers
 
 
 class Teams(Cog):
@@ -197,7 +198,7 @@ class Teams(Cog):
         )
         await new_settings.update_or_add()
         e = discord.Embed(color=blurple)
-        modetext = "Enabled" if enabled else "Disabled"
+        modetext = "Enabled" if not enabled else "Disabled"
         e.add_field(name='Success!', value=f"Automatic adding of team association is currently: **{modetext}**")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
@@ -310,7 +311,6 @@ class TeamNumbers(db.DatabaseTable):
                 LIMIT 10"""
         async with db.Pool.acquire() as conn:
             return await conn.fetch(query, user_ids)
-
 
 def setup(bot):
     """Adds this cog to the main bot"""
