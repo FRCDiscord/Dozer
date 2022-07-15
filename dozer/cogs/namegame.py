@@ -8,10 +8,12 @@ from functools import wraps
 
 import discord
 import tbapi
+from discord.ext import commands
 from discord.ext.commands import has_permissions
 from fuzzywuzzy import fuzz
 
 from dozer.bot import DOZER_LOGGER
+from dozer.context import DozerContext
 from ._utils import *
 from .. import db
 
@@ -20,6 +22,7 @@ SUPPORTED_MODES = ["frc", "ftc"]
 
 def keep_alive(func):
     """Keeps the wrapped async function alive; functions must have self and ctx as args"""
+
     @wraps(func)
     async def wrapper(self, ctx, *args, **kwargs):
         """Wraps namegame"""
@@ -39,8 +42,9 @@ def keep_alive(func):
 
 def game_is_running(func):
     """Check if there's an active game in a channel"""
+
     @wraps(func)
-    async def wrapper(self, ctx, *args, **kwargs):
+    async def wrapper(self, ctx: DozerContext, *args, **kwargs):
         """Wraps the checker"""
         if ctx.channel.id not in self.games:
             await ctx.send(f"There's not a game going on! Start one with `{ctx.prefix}ng startround`")
@@ -53,7 +57,8 @@ def game_is_running(func):
 
 class NameGameSession():
     """NameGame session object"""
-    def __init__(self, mode):
+
+    def __init__(self, mode: str):
         self.running = True
         self.pings_enabled = False
         self.players = OrderedDict()
@@ -81,7 +86,8 @@ class NameGameSession():
         self.vote_embed = None
         self.vote_task = None
 
-    def create_embed(self, title="", description="", color=discord.Color.blurple(), extra_fields=[], start=False):
+    def create_embed(self, title: str = "", description: str = "", color=discord.Color.blurple(), extra_fields=[],
+                     start: bool = False):
         """Creates an embed."""
         v = "Starting " if start else "Current "
         embed = discord.Embed()
@@ -97,7 +103,7 @@ class NameGameSession():
             embed.add_field(name=name, value=value)
         return embed
 
-    def check_name(self, ctx, team, name):
+    def check_name(self, ctx: DozerContext, team, name: str):
         """Checks the name of the team"""
         tba_parser = ctx.cog.tba_parser
         ftc_teams = ctx.cog.ftc_teams
@@ -157,7 +163,8 @@ class NameGameSession():
 
 class NameGame(Cog):
     """Namegame commands"""
-    def __init__(self, bot):
+
+    def __init__(self, bot: commands.Bot):
         super().__init__(bot)
         with gzip.open("ftc_teams.pickle.gz") as f:
             raw_teams = pickle.load(f)
@@ -168,7 +175,7 @@ class NameGame(Cog):
         self.tba_parser = tbapi.TBAParser(tba_config['key'], cache=False)
 
     @group(invoke_without_command=True)
-    async def ng(self, ctx):
+    async def ng(self, ctx: DozerContext):
         """Show info about and participate in a robotics team namegame.
         Run the help command on each of the subcommands for more detailed help.
         List of subcommands:
@@ -188,7 +195,7 @@ class NameGame(Cog):
 
     @ng.command()
     @bot_has_permissions(embed_links=True)
-    async def info(self, ctx):
+    async def info(self, ctx: DozerContext):
         """Show a description of the robotics team name game and how to play."""
         game_embed = discord.Embed()
         game_embed.color = discord.Color.magenta()
@@ -229,7 +236,7 @@ class NameGame(Cog):
     """
 
     @ng.group(invoke_without_command=True)
-    async def config(self, ctx):
+    async def config(self, ctx: DozerContext):
         """Configuration for namegame"""
         await ctx.send(f"""`{ctx.prefix}ng config` reference:
                 `{ctx.prefix}ng config defaultmode [mode]` - set tbe default game mode used when startround is used with no arguments
@@ -238,7 +245,7 @@ class NameGame(Cog):
 
     @config.command()
     @has_permissions(manage_guild=True)
-    async def defaultmode(self, ctx, mode: str = None):
+    async def defaultmode(self, ctx: DozerContext, mode: str = None):
         """Configuration of the default game mode (FRC, FTC, etc.)"""
         query = await NameGameConfig.get_by(guild_id=ctx.guild.id)
         config = query[0] if len(query) == 1 else None
@@ -260,7 +267,7 @@ class NameGame(Cog):
 
     @config.command()
     @has_permissions(manage_guild=True)
-    async def setchannel(self, ctx, channel: discord.TextChannel = None):
+    async def setchannel(self, ctx: DozerContext, channel: discord.TextChannel = None):
         """Sets the namegame channel"""
         query = await NameGameConfig.get_by(guild_id=ctx.guild.id)
         config = query[0] if len(query) == 1 else None
@@ -284,14 +291,15 @@ class NameGame(Cog):
 
     @config.command()
     @has_permissions(manage_guild=True)
-    async def clearsetchannel(self, ctx):
+    async def clearsetchannel(self, ctx: DozerContext):
         """Clears the set namegame channel"""
         query = await NameGameConfig.get_by(guild_id=ctx.guild.id)
         config = query[0] if len(query) == 1 else None
         if config is not None:
             # update_or_add ignores attributes set to None. To set the column to None, we delete the record and insert
             # a new one with channel set to None.
-            new_namegame_config = NameGameConfig(channel_id=None, guild_id=ctx.guild.id, pings_enabled=config.pings_enabled,
+            new_namegame_config = NameGameConfig(channel_id=None, guild_id=ctx.guild.id,
+                                                 pings_enabled=config.pings_enabled,
                                                  mode=config.mode)
             await NameGameConfig.delete(guild_id=ctx.guild.id)
             await new_namegame_config.update_or_add()
@@ -299,7 +307,7 @@ class NameGame(Cog):
 
     @config.command()
     @has_permissions(manage_guild=True)
-    async def setpings(self, ctx, enabled: bool):
+    async def setpings(self, ctx: DozerContext, enabled: bool):
         """Sets whether or not pings are enabled"""
         query = await NameGameConfig.get_by(guild_id=ctx.guild.id)
         config = query[0] if len(query) == 1 else None
@@ -313,7 +321,7 @@ class NameGame(Cog):
 
     @config.command()
     @has_permissions(manage_guild=True)
-    async def leaderboardedit(self, ctx, mode: str, user: discord.User, wins: int):
+    async def leaderboardedit(self, ctx: DozerContext, mode: str, user: discord.User, wins: int):
         """Edits the leaderboard"""
         if mode not in SUPPORTED_MODES:
             await ctx.send(
@@ -330,7 +338,7 @@ class NameGame(Cog):
 
     @config.command()
     @has_permissions(manage_guild=True)
-    async def leaderboardclear(self, ctx, mode: str):
+    async def leaderboardclear(self, ctx: DozerContext, mode: str):
         """Clears the leaderboard"""
         if mode not in SUPPORTED_MODES:
             await ctx.send(
@@ -353,7 +361,7 @@ class NameGame(Cog):
 
     @ng.command()
     @game_is_running
-    async def unheck(self, ctx):
+    async def unheck(self, ctx: DozerContext):
         """
         Emergency removal of a haywire session.
         """
@@ -371,12 +379,12 @@ class NameGame(Cog):
         self.games.pop(game)
 
     @ng.command()
-    async def modes(self, ctx):
+    async def modes(self, ctx: DozerContext):
         """Returns a list of supported modes"""
         await ctx.send(f"Supported game modes: `{', '.join(SUPPORTED_MODES)}`")
 
     @ng.command()
-    async def startround(self, ctx, mode: str = None):
+    async def startround(self, ctx: DozerContext, mode: str = None):
         """
         Starts a namegame session.
         One can select the robotics program by specifying one of "FRC" or "FTC".
@@ -429,7 +437,7 @@ class NameGame(Cog):
 
     @ng.command()
     @game_is_running
-    async def addplayer(self, ctx):
+    async def addplayer(self, ctx: DozerContext):
         """Add players to the current game.
         Only works if the user is currently playing."""
         if ctx.channel.id not in self.games:
@@ -466,7 +474,7 @@ class NameGame(Cog):
 
     @ng.command()
     @game_is_running
-    async def pick(self, ctx, team: int, *, name):
+    async def pick(self, ctx: DozerContext, team: int, *, name: str):
         """Attempt to pick a team in a game."""
         game = self.games[ctx.channel.id]
 
@@ -552,7 +560,7 @@ class NameGame(Cog):
 
     @ng.command()
     @game_is_running
-    async def drop(self, ctx):
+    async def drop(self, ctx: DozerContext):
         """Drops a player from the current game by eliminating them. Once dropped, they can no longer rejoin."""
         game = self.games[ctx.channel.id]
         async with game.state_lock:
@@ -573,7 +581,7 @@ class NameGame(Cog):
 
     @ng.command()
     @game_is_running
-    async def skip(self, ctx):
+    async def skip(self, ctx: DozerContext):
         """Skips the current player if the player wishes to forfeit their turn."""
         game = self.games[ctx.channel.id]
         async with game.state_lock:
@@ -588,7 +596,7 @@ class NameGame(Cog):
 
     @ng.command()
     @game_is_running
-    async def gameinfo(self, ctx):
+    async def gameinfo(self, ctx: DozerContext):
         """Display info about the currently running game."""
         game = self.games[ctx.channel.id]
         await self.display_info(ctx, game)
@@ -598,7 +606,7 @@ class NameGame(Cog):
     """
 
     @ng.command()
-    async def leaderboard(self, ctx, mode: str = None):
+    async def leaderboard(self, ctx: DozerContext, mode: str = None):
         """Display top numbers of wins for the specified game mode"""
         if mode is None:
             config = await NameGameConfig.get_by(guild_id=ctx.guild.id)
@@ -618,7 +626,7 @@ class NameGame(Cog):
     `{prefix}ng leaderboard ftc` - display the namegame winning leaderboards for FTC.
     """
 
-    async def strike(self, ctx, game, player):
+    async def strike(self, ctx: DozerContext, game: NameGameSession, player: discord.Member):
         """Gives a player a strike."""
         if game.strike(player):
             await ctx.send(f"Player {player.mention} is ELIMINATED!")
@@ -649,7 +657,7 @@ class NameGame(Cog):
         if not game.running:
             self.games.pop(ctx.channel.id)
 
-    async def display_info(self, ctx, game):
+    async def display_info(self, ctx: DozerContext, game: NameGameSession):
         """Displays info about the current game"""
         info_embed = discord.Embed(title="Current Game Info", color=discord.Color.blue())
         info_embed.add_field(name="Game Type", value=game.mode.upper())
@@ -663,32 +671,32 @@ class NameGame(Cog):
         info_embed.add_field(name="Teams Picked", value=game.get_picked())
         await ctx.send(embed=info_embed)
 
-    async def skip_player(self, ctx, game, player, msg=None):
+    async def skip_player(self, ctx: DozerContext, game: NameGameSession, player: discord.Member, msg=None):
         """Skips a player"""
         if msg is not None:
             await ctx.send(msg)
         game.vote_time = -1
         game.next_turn()
         await self.send_turn_embed(ctx, game,
-                                   title=f"Player {player.display_name} was skipped and now has {game.players[player]+1} strike(s)!",
+                                   title=f"Player {player.display_name} was skipped and now has {game.players[player] + 1} strike(s)!",
                                    color=discord.Color.red())
         if player != game.current_player:
             await self.notify(ctx, game, f"{game.current_player.mention}, you're up! Current number: {game.number}")
         await self.strike(ctx, game, player)
 
     # send an embed that starts a new turn
-    async def send_turn_embed(self, ctx, game, **kwargs):
+    async def send_turn_embed(self, ctx: DozerContext, game: NameGameSession, **kwargs):
         """Sends an embed that starts a new turn"""
         game.turn_embed = game.create_embed(**kwargs)
         game.turn_msg = await ctx.send(embed=game.turn_embed)
 
-    async def notify(self, ctx, game, msg):
+    async def notify(self, ctx: DozerContext, game: NameGameSession, msg: str):
         """Notifies people in the channel when it's their turn."""
         if game.pings_enabled:
             await ctx.send(msg)
 
     @Cog.listener()
-    async def on_reaction_add(self, reaction, user):
+    async def on_reaction_add(self, reaction: discord.Reaction, user: discord.Member):
         """When reactions are added, trigger the voting handler"""
         if reaction.message.channel.id not in self.games:
             return
@@ -725,7 +733,7 @@ class NameGame(Cog):
                     game.vote_time = -1
 
     @Cog.listener()
-    async def on_reaction_remove(self, reaction, user):
+    async def on_reaction_remove(self, reaction: discord.Reaction, user: discord.Member):
         """When a reaction is removed, do vote handling"""
         if reaction.message.channel.id not in self.games:
             return
@@ -736,7 +744,7 @@ class NameGame(Cog):
                 return
             await self._on_reaction(game, reaction, user, -1)
 
-    async def _on_reaction(self, game, reaction, user, inc):
+    async def _on_reaction(self, game: NameGameSession, reaction: discord.Reaction, user: discord.Member, inc: int):
         """Handles pass/fail reactions"""
         if reaction.message.id == game.vote_msg.id and user in game.players:
             if reaction.emoji == '❌':
@@ -747,7 +755,7 @@ class NameGame(Cog):
         return game
 
     @keep_alive
-    async def game_turn_countdown(self, ctx, game):
+    async def game_turn_countdown(self, ctx: DozerContext, game):
         """Counts down the time remaining left in the turn"""
         await asyncio.sleep(1)
         async with game.state_lock:
@@ -769,7 +777,7 @@ class NameGame(Cog):
             game.turn_task = self.bot.loop.create_task(self.game_turn_countdown(ctx, game))
 
     @keep_alive
-    async def game_vote_countdown(self, ctx, game):
+    async def game_vote_countdown(self, ctx: DozerContext, game: NameGameSession):
         """Counts down the time remaining left to vote"""
         await asyncio.sleep(1)
         async with game.state_lock:
@@ -804,7 +812,7 @@ class NameGameConfig(db.DatabaseTable):
             pings_enabled bigint NOT NULL
             )""")
 
-    def __init__(self, guild_id, mode, pings_enabled, channel_id=None):
+    def __init__(self, guild_id: int, mode: str, pings_enabled: int, channel_id: int = None):
         super().__init__()
         self.channel_id = channel_id
         self.mode = mode
@@ -839,7 +847,7 @@ class NameGameLeaderboard(db.DatabaseTable):
             PRIMARY KEY (user_id, game_mode)
             )""")
 
-    def __init__(self, user_id, game_mode, wins):
+    def __init__(self, user_id: int, game_mode: str, wins: int):
         super().__init__()
         self.game_mode = game_mode
         self.user_id = user_id

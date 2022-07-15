@@ -1,11 +1,13 @@
 """Establish a system of filters that allow run-time specified filters to applied to all messages in a guild,
 with whitelisted role exceptions."""
 
-import datetime
 import re
+
 import discord
+from discord.ext import commands
 from discord.ext.commands import guild_only, has_permissions
 
+from dozer.context import DozerContext
 from ._utils import *
 from .. import db
 
@@ -18,14 +20,14 @@ class Filter(Cog):
     """
     filter_dict = {}
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         super().__init__(bot)
         self.word_filter_setting = db.ConfigCache(WordFilterSetting)
         self.word_filter_role_whitelist = db.ConfigCache(WordFilterRoleWhitelist)
 
     """Helper Functions"""
 
-    async def check_dm_filter(self, ctx, embed):
+    async def check_dm_filter(self, ctx: DozerContext, embed: discord.Embed):
         """Send an embed, if the setting in the DB allows for it"""
         results = await WordFilterSetting.get_by(guild_id=ctx.guild.id, setting_type="dm")
         if results:
@@ -39,17 +41,18 @@ class Filter(Cog):
         else:
             await ctx.send(embed=embed)
 
-    async def load_filters(self, guild_id):
+    async def load_filters(self, guild_id: int):
         """Load all filters for a selected guild """
         results = await WordFilter.get_by(guild_id=guild_id, enabled=True)
         self.filter_dict[guild_id] = {}
         for wordfilter in results:
             self.filter_dict[guild_id][wordfilter.filter_id] = re.compile(wordfilter.pattern, re.IGNORECASE)
 
-    async def check_filters_messages(self, message):
+    async def check_filters_messages(self, message: discord.Message):
         """Check all the filters for a certain message (with it's guild)"""
         if message.author.id == self.bot.user.id or not hasattr(message.author, 'roles'):
             return
+
         roles = await self.word_filter_role_whitelist.query_all(guild_id=message.guild.id)
         whitelisted_ids = set(role.role_id for role in roles)
         if any(x.id in whitelisted_ids for x in message.author.roles):
@@ -67,7 +70,7 @@ class Filter(Cog):
                     await message.delete()
                     deleted = True
 
-    async def check_filters_nicknames(self, member_before, member_after):
+    async def check_filters_nicknames(self, member_before: discord.Member, member_after: discord.Member):
         """Check all filters for a members nickname change"""
         if member_after.id == self.bot.user.id or not hasattr(member_after, 'roles'):
             return
@@ -99,17 +102,17 @@ class Filter(Cog):
     """Event Handlers"""
 
     @Cog.listener('on_message')
-    async def on_message(self, message):
+    async def on_message(self, message: discord.Message):
         """Send the message handler out"""
         await self.check_filters_messages(message)
 
     @Cog.listener('on_message_edit')
-    async def on_message_edit(self, _, after):
+    async def on_message_edit(self, _: discord.Message, after: discord.Message):
         """Send the message handler out, but for edits"""
         await self.check_filters_messages(after)
 
     @Cog.listener("on_member_update")
-    async def on_member_update(self, before, after):
+    async def on_member_update(self, before: discord.Member, after: discord.Member):
         """Called whenever a member gets updated"""
         if before.nick != after.nick:
             await self.check_filters_nicknames(before, after)
@@ -118,7 +121,7 @@ class Filter(Cog):
 
     @group(invoke_without_command=True)
     @guild_only()
-    async def filter(self, ctx, advanced: bool = False):
+    async def filter(self, ctx: DozerContext, advanced: bool = False):
         """List and manage filtered words"""
         results = await WordFilter.get_by(guild_id=ctx.guild.id, enabled=True)
 
@@ -152,7 +155,7 @@ class Filter(Cog):
     @guild_only()
     @has_permissions(manage_guild=True)
     @filter.command()
-    async def add(self, ctx, pattern, friendly_name=None):
+    async def add(self, ctx: DozerContext, pattern: str, friendly_name=None):
         """Add a pattern to the filter using RegEx. Any word can be added and is tested case-insensitive."""
         try:
             re.compile(pattern)
@@ -173,7 +176,7 @@ class Filter(Cog):
     @guild_only()
     @has_permissions(manage_guild=True)
     @filter.command()
-    async def edit(self, ctx, filter_id: int, pattern):
+    async def edit(self, ctx: DozerContext, filter_id: int, pattern):
         """Edit an already existing filter using a new pattern. A filter's friendly name cannot be edited."""
         try:
             re.compile(pattern)
@@ -213,7 +216,7 @@ class Filter(Cog):
     @guild_only()
     @has_permissions(manage_guild=True)
     @filter.command()
-    async def remove(self, ctx, filter_id: int):
+    async def remove(self, ctx: DozerContext, filter_id: int):
         """Remove a pattern from the filter list."""
         result = await WordFilter.get_by(filter_id=filter_id)
         if len(result) == 0:
@@ -234,14 +237,14 @@ class Filter(Cog):
     @guild_only()
     @has_permissions(manage_guild=True)
     @filter.command(name="dm")
-    async def dm_config(self, ctx, config: bool):
+    async def dm_config(self, ctx: DozerContext, config: str):
         """Set whether filter words should be DMed when used in bot messages"""
-        config = str(int(config)) # turns into "1" or "0" idk man
+        config: str = str(int(config))  # turns into "1" or "0" idk man
         results = await WordFilterSetting.get_by(guild_id=ctx.guild.id, setting_type="dm")
         if results:
             before_setting = results[0].value
             # Due to the settings table having a serial ID, inserts always succeed, so update_or_add can't be used to
-            # update in place. Instead we have to delete and reinsert the record.
+            # update in place. Instead, we have to delete and reinsert the record.
             await WordFilterSetting.delete(guild_id=results[0].guild_id, setting_type=results[0].setting_type)
         else:
             before_setting = None
@@ -249,13 +252,15 @@ class Filter(Cog):
         await result.update_or_add()
         self.word_filter_setting.invalidate_entry(guild_id=ctx.guild.id, setting_type="dm")
         await ctx.send(
-            "The DM setting for this guild has been changed from {} to {}.".format(before_setting == "1", result.value == "1"))
+            "The DM setting for this guild has been changed from {} to {}.".format(before_setting == "1",
+                                                                                   result.value == "1"))
 
-    dm_config.example_usage = "`{prefix}filter dm_config True` - Makes all messages containining filter lists to be sent through DMs"
+    dm_config.example_usage = "`{prefix}filter dm_config True` - Makes all messages containining filter lists to be " \
+                              "sent through DMs "
 
     @guild_only()
     @filter.group(invoke_without_command=True)
-    async def whitelist(self, ctx):
+    async def whitelist(self, ctx: DozerContext):
         """List all whitelisted roles for this server"""
         results = await WordFilterRoleWhitelist.get_by(guild_id=ctx.guild.id)
         role_objects = [ctx.guild.get_role(db_role.role_id) for db_role in results]
@@ -272,7 +277,7 @@ class Filter(Cog):
     @guild_only()
     @has_permissions(manage_roles=True)
     @whitelist.command(name="add")
-    async def whitelist_add(self, ctx, *, role: discord.Role):
+    async def whitelist_add(self, ctx: DozerContext, *, role: discord.Role):
         """Add a role to the whitelist"""
         result = await WordFilterRoleWhitelist.get_by(role_id=role.id)
         if len(result) != 0:
@@ -288,7 +293,7 @@ class Filter(Cog):
     @guild_only()
     @has_permissions(manage_roles=True)
     @whitelist.command(name="remove")
-    async def whitelist_remove(self, ctx, *, role: discord.Role):
+    async def whitelist_remove(self, ctx: DozerContext, *, role: discord.Role):
         """Remove a role from the whitelist"""
         result = await WordFilterRoleWhitelist.get_by(role_id=role.id)
         if len(result) == 0:
@@ -313,7 +318,7 @@ def setup(bot):
 class WordFilter(db.DatabaseTable):
     """Object for each filter"""
     __tablename__ = 'word_filters'
-    __uniques__ = 'filter_id'
+    __uniques__ = ['filter_id']
 
     @classmethod
     async def initial_create(cls):
@@ -328,7 +333,7 @@ class WordFilter(db.DatabaseTable):
             pattern varchar NOT NULL
             )""")
 
-    def __init__(self, guild_id, friendly_name, pattern, enabled=True, filter_id=None):
+    def __init__(self, guild_id: int, friendly_name: str, pattern: str, enabled: bool = True, filter_id: int = None):
         super().__init__()
         self.filter_id = filter_id
         self.guild_id = guild_id
@@ -342,7 +347,8 @@ class WordFilter(db.DatabaseTable):
         result_list = []
         for result in results:
             obj = WordFilter(guild_id=result.get("guild_id"), friendly_name=result.get("friendly_name"),
-                             pattern=result.get("pattern"), enabled=result.get("enabled"), filter_id=result.get("filter_id"))
+                             pattern=result.get("pattern"), enabled=result.get("enabled"),
+                             filter_id=result.get("filter_id"))
             result_list.append(obj)
         return result_list
 
@@ -350,7 +356,7 @@ class WordFilter(db.DatabaseTable):
 class WordFilterSetting(db.DatabaseTable):
     """Each filter-related setting"""
     __tablename__ = 'word_filter_settings'
-    __uniques__ = 'id'
+    __uniques__ = ['id']
 
     @classmethod
     async def initial_create(cls):
@@ -364,7 +370,7 @@ class WordFilterSetting(db.DatabaseTable):
             value varchar NOT NULL
             )""")
 
-    def __init__(self, guild_id, setting_type, value):
+    def __init__(self, guild_id: int, setting_type: str, value: str):
         super().__init__()
         self.guild_id = guild_id
         self.setting_type = setting_type
@@ -384,7 +390,7 @@ class WordFilterSetting(db.DatabaseTable):
 class WordFilterRoleWhitelist(db.DatabaseTable):
     """Object for each whitelisted role"""
     __tablename__ = 'word_filter_role_whitelist'
-    __uniques__ = 'role_id'
+    __uniques__ = ['role_id']
 
     @classmethod
     async def initial_create(cls):
@@ -396,7 +402,7 @@ class WordFilterRoleWhitelist(db.DatabaseTable):
             role_id bigint PRIMARY KEY NOT NULL 
             )""")
 
-    def __init__(self, guild_id, role_id):
+    def __init__(self, guild_id: int, role_id: int):
         super().__init__()
         self.role_id = role_id
         self.guild_id = guild_id

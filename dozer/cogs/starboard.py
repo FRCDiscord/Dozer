@@ -1,11 +1,13 @@
 """Cog to post specific 'Hall of Fame' messages in a specific channel"""
+import asyncio
 import logging
 import typing
-import asyncio
 
 import discord
+from discord.ext import commands
 from discord.ext.commands import guild_only, has_permissions
 
+from dozer.context import DozerContext
 from ._utils import *
 from .. import db
 
@@ -16,7 +18,7 @@ DOZER_LOGGER = logging.getLogger('dozer')
 VIDEO_FORMATS = ['.mp4', '.mov', 'webm']
 
 
-async def is_cancelled(emoji, message, me, author=None):
+async def is_cancelled(emoji, message: discord.Message, me, author: discord.Member = None):
     """Determine if the message has cancellation reacts"""
     if author is None:
         author = message.author
@@ -33,7 +35,7 @@ async def is_cancelled(emoji, message, me, author=None):
     return False
 
 
-def make_starboard_embed(msg: discord.Message, reaction_count):
+def make_starboard_embed(msg: discord.Message, reaction_count: int):
     """Makes a starboard embed."""
     e = discord.Embed(color=msg.author.color, title=f"New Starred Message in #{msg.channel.name}",
                       description=msg.content, url=msg.jump_url)
@@ -45,7 +47,8 @@ def make_starboard_embed(msg: discord.Message, reaction_count):
     if len(msg.attachments) > 1:
         e.add_field(name="Attachments:", value="\n".join([f"[{a.filename}]({a.url})" for a in msg.attachments]))
     elif len(msg.attachments) == 1:
-        if msg.attachments[0].width is not None and msg.attachments[0].filename[-4:] not in VIDEO_FORMATS and not msg.attachments[0].is_spoiler():
+        if msg.attachments[0].width is not None and msg.attachments[0].filename[-4:] not in VIDEO_FORMATS and not \
+                msg.attachments[0].is_spoiler():
             e.set_image(url=msg.attachments[0].url)
         else:
             e.add_field(name="Attachment:", value=f"[{msg.attachments[0].filename}]({msg.attachments[0].url})")
@@ -58,12 +61,12 @@ def make_starboard_embed(msg: discord.Message, reaction_count):
 class Starboard(Cog):
     """Cog to post specific 'Hall of Fame' messages in a specific channel"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         super().__init__(bot)
         self.config_cache = db.ConfigCache(StarboardConfig)
         self.locked_messages = set()
 
-    def make_config_embed(self, ctx, title, config):
+    def make_config_embed(self, ctx: DozerContext, title, config):
         """Makes a config embed."""
         channel = self.bot.get_channel(config.channel_id)
         if channel is None:
@@ -79,7 +82,7 @@ class Starboard(Cog):
         e.set_footer(text=f"For more information, try {ctx.prefix}help starboard")
         return e
 
-    async def send_to_starboard(self, config, message, reaction_count, add_react=True):
+    async def send_to_starboard(self, config, message: discord.Message, reaction_count: int, add_react: bool = True):
         """Given a message which may or may not exist, send it to the starboard"""
         starboard_channel = message.guild.get_channel(config.channel_id)
         if starboard_channel is None:
@@ -109,7 +112,7 @@ class Starboard(Cog):
                 return
             await sent_msg.edit(embed=make_starboard_embed(message, reaction_count - 1))
 
-    async def remove_from_starboard(self, config, starboard_message, cancel=False):
+    async def remove_from_starboard(self, config, starboard_message: discord.Message, cancel: bool = False):
         """Given a starboard message or snowflake, remove that message and remove it from the DB"""
         db_msgs = await StarboardMessage.get_by(starboard_message_id=starboard_message.id)
         if len(db_msgs):
@@ -123,7 +126,7 @@ class Starboard(Cog):
                     pass
             await StarboardMessage.delete(message_id=db_msgs[0].message_id)
 
-    async def starboard_check(self, reaction, member):
+    async def starboard_check(self, reaction: discord.Reaction, member: discord.Member):
         """Provides all logic for checking and updating the Starboard"""
         msg = reaction.message
         if not msg.guild:
@@ -186,16 +189,16 @@ class Starboard(Cog):
         self.locked_messages.remove(msg)
 
     @Cog.listener()
-    async def on_raw_reaction_add(self, payload):
+    async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
         """Raw API event for reaction add, passes event to action handler"""
         await self.on_raw_reaction_action(payload)
 
     @Cog.listener()
-    async def on_raw_reaction_remove(self, payload):
+    async def on_raw_reaction_remove(self, payload: discord.RawReactionActionEvent):
         """Raw API event for reaction remove, passes event to action handler"""
         await self.on_raw_reaction_action(payload)
 
-    async def on_raw_reaction_action(self, payload):
+    async def on_raw_reaction_action(self, payload: discord.RawReactionActionEvent):
         """Convert the payload into a reaction event and pass the reaction event onto our handler"""
         for msg in self.bot.cached_messages:
             if msg.id == payload.message_id:
@@ -216,7 +219,7 @@ class Starboard(Cog):
 
     @guild_only()
     @group(invoke_without_command=True, aliases=['hof'])
-    async def starboard(self, ctx):
+    async def starboard(self, ctx: DozerContext):
         """Show the current server's starboard configuration.
          A starboard (or a hall of fame) is a channel the bot will repost messages in if they receive a certain number\
          of configured reactions.
@@ -239,9 +242,9 @@ class Starboard(Cog):
     @has_permissions(manage_guild=True, manage_channels=True)
     @bot_has_permissions(add_reactions=True, embed_links=True)
     @starboard.command()
-    async def config(self, ctx, channel: discord.TextChannel, star_emoji: typing.Union[discord.Emoji, str],
-                     threshold: int,
-                     cancel_emoji: typing.Union[discord.Emoji, str] = None):
+    async def config(self, ctx: DozerContext, channel: discord.TextChannel,
+                     star_emoji: typing.Union[discord.Emoji, str],
+                     threshold: int, cancel_emoji: typing.Union[discord.Emoji, str] = None):
         """Modify the settings for this server's starboard"""
         if str(star_emoji) == str(cancel_emoji):
             await ctx.send("The Star Emoji and Cancel Emoji cannot be the same!")
@@ -274,7 +277,7 @@ class Starboard(Cog):
     @guild_only()
     @has_permissions(manage_guild=True, manage_channels=True)
     @starboard.command()
-    async def disable(self, ctx):
+    async def disable(self, ctx: DozerContext):
         """Turn off the starboard if it is enabled"""
         config = await StarboardConfig.get_by(guild_id=ctx.guild.id)
         if not config:
@@ -292,7 +295,7 @@ class Starboard(Cog):
     @guild_only()
     @has_permissions(manage_messages=True)
     @starboard.command()
-    async def add(self, ctx, message_id, channel: discord.TextChannel = None):
+    async def add(self, ctx: DozerContext, message_id: int, channel: discord.TextChannel = None):
         """Add a message to the starboard manually"""
         config = await self.config_cache.query_one(guild_id=ctx.guild.id)
         if config is None:
@@ -345,7 +348,7 @@ class StarboardConfig(db.DatabaseTable):
             threshold bigint NOT NULL
             )""")
 
-    def __init__(self, guild_id, channel_id, star_emoji, threshold, cancel_emoji=None):
+    def __init__(self, guild_id: int, channel_id: int, star_emoji: str, threshold: int, cancel_emoji: str = None):
         super().__init__()
         self.guild_id = guild_id
         self.channel_id = channel_id
@@ -382,7 +385,7 @@ class StarboardMessage(db.DatabaseTable):
             author_id bigint NOT NULL
             )""")
 
-    def __init__(self, message_id, channel_id, starboard_message_id, author_id):
+    def __init__(self, message_id: int, channel_id: int, starboard_message_id: int, author_id: int):
         super().__init__()
         self.message_id = message_id
         self.channel_id = channel_id

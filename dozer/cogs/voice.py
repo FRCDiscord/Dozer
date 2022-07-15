@@ -2,6 +2,7 @@
 import discord
 from discord.ext.commands import has_permissions, BadArgument
 
+from dozer.context import DozerContext
 from ._utils import *
 from .info import blurple
 from .. import db
@@ -11,7 +12,7 @@ class Voice(Cog):
     """Commands interacting with voice."""
 
     @staticmethod
-    async def auto_ptt_check(voice_channel):
+    async def auto_ptt_check(voice_channel: discord.VoiceChannel):
         """Handles voice activity when members join/leave voice channels"""
         total_users = len(voice_channel.channel.members)
         config = await AutoPTT.get_by(channel_id=voice_channel.channel.id)
@@ -25,7 +26,8 @@ class Voice(Cog):
             await voice_channel.channel.set_permissions(target=everyone, overwrite=perms)
 
     @Cog.listener('on_voice_state_update')  # Used for VoiceBind
-    async def on_voice_state_update(self, member, before, after):
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState,
+                                    after: discord.VoiceState):
         """Handles voicebinds when members join/leave voice channels"""
         # skip this if we have no perms, or if it's something like a mute/deafen
         if member.guild.me.guild_permissions.manage_roles and before.channel != after.channel:
@@ -43,7 +45,7 @@ class Voice(Cog):
                     await member.add_roles(member.guild.get_role(config[0].role_id))
 
     @Cog.listener('on_voice_state_update')  # Used for auto PTT
-    async def on_PTT_check(self, member, before, after):
+    async def on_PTT_check(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
         """Runs the autoPTTcheck when a user leaves and/or joins a vc"""
         # skip this if we have no perms to edit voice channel
         total_users = 0
@@ -60,7 +62,7 @@ class Voice(Cog):
     @command()
     @bot_has_permissions(manage_channels=True)
     @has_permissions(manage_channels=True)
-    async def autoptt(self, ctx, voice_channel: discord.VoiceChannel, ptt_threshold: int):
+    async def autoptt(self, ctx: DozerContext, voice_channel: discord.VoiceChannel, ptt_threshold: int):
         """Configures AutoPtt limit for when members join/leave voice channels ptt is enabled"""
 
         e = discord.Embed(color=blurple)
@@ -99,7 +101,7 @@ class Voice(Cog):
     @command()
     @bot_has_permissions(manage_roles=True)
     @has_permissions(manage_roles=True)
-    async def voicebind(self, ctx, voice_channel: discord.VoiceChannel, *, role: discord.Role):
+    async def voicebind(self, ctx: DozerContext, voice_channel: discord.VoiceChannel, *, role: discord.Role):
         """Associates a voice channel with a role, so users joining a voice channel will automatically be given a specified role or roles."""
 
         config = await Voicebinds.get_by(channel_id=voice_channel.id)
@@ -121,7 +123,7 @@ class Voice(Cog):
     @command()
     @bot_has_permissions(manage_roles=True)
     @has_permissions(manage_roles=True)
-    async def voiceunbind(self, ctx, voice_channel: discord.VoiceChannel):
+    async def voiceunbind(self, ctx: DozerContext, voice_channel: discord.VoiceChannel):
         """Dissasociates a voice channel with a role previously binded with the voicebind command."""
         config = await Voicebinds.get_by(channel_id=voice_channel.id)
         if len(config) != 0:
@@ -140,7 +142,7 @@ class Voice(Cog):
 
     @command()
     @bot_has_permissions(manage_roles=True)
-    async def voicebindlist(self, ctx):
+    async def voicebindlist(self, ctx: DozerContext):
         """Lists all the voice channel to role bindings for the current server"""
         embed = discord.Embed(title="List of voice bindings for \"{}\"".format(ctx.guild), color=discord.Color.blue())
         for config in await Voicebinds.get_by(guild_id=ctx.guild.id):
@@ -172,7 +174,7 @@ class Voicebinds(db.DatabaseTable):
             role_id bigint null
             )""")
 
-    def __init__(self, guild_id, channel_id, role_id, row_id=None):
+    def __init__(self, guild_id: int, channel_id: int, role_id: int, row_id: int = None):
         super().__init__()
         if row_id is not None:
             self.id = row_id
@@ -208,7 +210,7 @@ class AutoPTT(db.DatabaseTable):
             ptt_limit bigint null
             )""")
 
-    def __init__(self, channel_id, ptt_limit):
+    def __init__(self, channel_id: int, ptt_limit: int):
         super().__init__()
         self.channel_id = channel_id
         self.ptt_limit = ptt_limit

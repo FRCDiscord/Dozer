@@ -1,16 +1,14 @@
 """Initializes the bot and deals with the configuration file"""
 
+import asyncio
 import json
 import os
 import sys
-import asyncio
 
 import discord
 import sentry_sdk
 
 from .db import db_init, db_migrate
-
-from . import db
 
 config = {
     'prefix': '&', 'developers': [],
@@ -61,8 +59,8 @@ with open('config.json', 'w') as f:
     json.dump(config, f, indent='\t')
 
 if config['sentry_url'] != "":
-    sentry_sdk.init(
-        config['sentry_url'],
+    sentry_sdk.init(  # pylint: disable=abstract-class-instantiated  # noqa: E0110
+        str(config['sentry_url']),
         traces_sample_rate=1.0,
     )
 
@@ -78,10 +76,9 @@ from . import Dozer  # After version check
 
 intents = discord.Intents.default()
 intents.members = True
-intents.presences = config['presences_intents']
+intents.presences = bool(config['presences_intents'])
 
 bot = Dozer(config, intents=intents, max_messages=config['cache_size'])
-
 
 for ext in os.listdir('dozer/cogs'):
     if not ext.startswith(('_', '.')):
