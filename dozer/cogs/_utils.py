@@ -4,13 +4,16 @@ import inspect
 import logging
 import typing
 from collections.abc import Mapping
+from typing import Dict, Union
 
 import discord
 from discord.ext import commands
 
 from dozer import db
+from dozer.context import DozerContext
 
-__all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk', 'dev_check', 'DynamicPrefixEntry']
+__all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk', 'dev_check',
+           'DynamicPrefixEntry']
 
 DOZER_LOGGER = logging.getLogger("dozer")
 
@@ -81,7 +84,7 @@ def group(**kwargs):
 class Cog(commands.Cog):
     """Initiates cogs."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
         super().__init__()
         self.bot = bot
 
@@ -89,7 +92,7 @@ class Cog(commands.Cog):
 def dev_check():
     """Function decorator to check that the calling user is a developer"""
 
-    async def predicate(ctx):
+    async def predicate(ctx: DozerContext):
         if ctx.author.id not in ctx.bot.config['developers']:
             raise commands.NotOwner('you are not a developer!')
         return True
@@ -118,7 +121,7 @@ class Reactor:
     """
     _stop_reaction = object()
 
-    def __init__(self, ctx, initial_reactions, *, auto_remove=True, timeout=60):
+    def __init__(self, ctx: DozerContext, initial_reactions, *, auto_remove: bool = True, timeout: int = 60):
         """
         ctx: command context
         initial_reactions: iterable of emoji to react with on start
@@ -142,7 +145,8 @@ class Reactor:
             await self.message.add_reaction(emoji)
         while True:
             try:
-                reaction, reacting_member = await self.bot.wait_for('reaction_add', check=self._check_reaction, timeout=self.timeout)
+                reaction, reacting_member = await self.bot.wait_for('reaction_add', check=self._check_reaction,
+                                                                    timeout=self.timeout)
             except asyncio.TimeoutError:
                 break
 
@@ -170,8 +174,9 @@ class Reactor:
         """Listener for stop reactions."""
         self._action = self._stop_reaction
 
-    def _check_reaction(self, reaction, member):
-        return reaction.message.id == self.message.id and member.id == self.caller.id
+    def _check_reaction(self, reaction: discord.Reaction, member: discord.Member):
+        if self.message is not None:
+            return reaction.message.id == self.message.id and member.id == self.caller.id
 
 
 class Paginator(Reactor):
@@ -198,7 +203,8 @@ class Paginator(Reactor):
         '\N{BLACK SQUARE FOR STOP}'  # :stop_button:
     )
 
-    def __init__(self, ctx, initial_reactions, pages, *, start=0, auto_remove=True, timeout=60):
+    def __init__(self, ctx: DozerContext, initial_reactions, pages, *, start: int = 0, auto_remove: bool = True,
+                 timeout: int = 60):
         all_reactions = list(initial_reactions)
         ind = all_reactions.index(Ellipsis)
         all_reactions[ind:ind + 1] = self.pagination_reactions
@@ -232,23 +238,24 @@ class Paginator(Reactor):
                 else:  # Only valid option left is 4
                     self.stop()
 
-    def go_to_page(self, page):
+    def go_to_page(self, page: Union[int, str]):
         """Goes to a specific help page"""
         if isinstance(page, int):
             page = page % self.len_pages
             if page < 0:
                 page += self.len_pages
         self.page = page
-        self.do(self.message.edit(embed=self.pages[self.page]))
+        if self.message is not None:
+            self.do(self.message.edit(embed=self.pages[self.page]))
 
-    def next(self, amt=1):
+    def next(self, amt: int = 1):
         """Goes to the next help page"""
         if isinstance(self.page, int):
             self.go_to_page(self.page + amt)
         else:
             self.go_to_page(amt - 1)
 
-    def prev(self, amt=1):
+    def prev(self, amt: int = 1):
         """Goes to the previous help page"""
         if isinstance(self.page, int):
             self.go_to_page(self.page - amt)
@@ -256,16 +263,16 @@ class Paginator(Reactor):
             self.go_to_page(-amt)
 
 
-async def paginate(ctx, pages, *, start=0, auto_remove=True, timeout=60):
+async def paginate(ctx: DozerContext, pages, *, start: int = 0, auto_remove: bool = True, timeout: int = 60):
     """
     Simple pagination based on Paginator. Pagination is handled normally and other reactions are ignored.
     """
-    paginator = Paginator(ctx, (...,), pages, start=start, auto_remove=auto_remove, timeout=timeout)
+    paginator = Paginator(ctx, ..., pages, start=start, auto_remove=auto_remove, timeout=timeout)
     async for reaction in paginator:
         pass  # The normal pagination reactions are handled - just drop anything else
 
 
-def chunk(iterable, size):
+def chunk(iterable, size: int):
     """
     Break an iterable into chunks of a fixed size. Returns an iterable of iterables.
     Almost-inverse of itertools.chain.from_iterable - passing the output of this into that function will reconstruct the original iterable.
@@ -279,7 +286,7 @@ def chunk(iterable, size):
 def bot_has_permissions(**required):
     """Decorator to check if bot has certain permissions when added to a command"""
 
-    def predicate(ctx):
+    def predicate(ctx: DozerContext):
         """Function to tell the bot if it has the right permissions"""
         given = ctx.channel.permissions_for((ctx.guild or ctx.channel).me)
         missing = [name for name, value in required.items() if getattr(given, name) != value]
@@ -309,11 +316,11 @@ def bot_has_permissions(**required):
 class PrefixHandler:
     """Handles dynamic prefixes"""
 
-    def __init__(self, default_prefix):
+    def __init__(self, default_prefix: str):
         self.default_prefix = default_prefix
-        self.prefix_cache = {}
+        self.prefix_cache: Dict[int, DynamicPrefixEntry] = {}
 
-    def handler(self, bot, message):
+    def handler(self, bot, message: discord.Message):
         """Process the dynamic prefix for each message"""
         dynamic = self.prefix_cache.get(message.guild.id) if message.guild else self.default_prefix
         # <@!> is a nickname mention which discord.py doesn't make by default
@@ -330,7 +337,7 @@ class PrefixHandler:
 class DynamicPrefixEntry(db.DatabaseTable):
     """Holds the custom prefixes for guilds"""
     __tablename__ = 'dynamic_prefixes'
-    __uniques__ = 'guild_id'
+    __uniques__ = ['guild_id']
 
     @classmethod
     async def initial_create(cls):
@@ -343,7 +350,7 @@ class DynamicPrefixEntry(db.DatabaseTable):
                 PRIMARY KEY (guild_id)
                 )""")
 
-    def __init__(self, guild_id, prefix):
+    def __init__(self, guild_id: int, prefix: str):
         super().__init__()
         self.guild_id = guild_id
         self.prefix = prefix

@@ -11,6 +11,7 @@ import discord
 from discord.ext import tasks
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 
+from dozer.context import DozerContext
 from ._utils import *
 from .. import db
 from ..sources import DataBasedSource, Source, sources
@@ -81,8 +82,8 @@ class News(Cog):
 
                 if sub.data is None:
                     sub.data = 'source'
-
-                if sub.data not in channel_dict.keys():
+                keys = channel_dict.keys()
+                if sub.data not in keys:
                     channel_dict[sub.data] = {}
 
                 channel_dict[sub.data][channel] = sub.kind
@@ -113,7 +114,7 @@ class News(Cog):
                            f" seconds.")
 
     @get_new_posts.error
-    async def log_exception(self, _exception):
+    async def log_exception(self, _exception: Exception):
         """Catch error in the news loop and attempt to restart"""
         DOZER_LOGGER.error(f"News fetch encountered an error: \"{_exception}\", attempting to restart")
         self.get_new_posts.restart()
@@ -125,7 +126,8 @@ class News(Cog):
         self.sources = {}
         if self.http_source:
             await self.http_source.close()
-        self.http_source = aiohttp.ClientSession(headers={'Connection': 'keep-alive', 'User-Agent': 'Dozer RSS Feed Reader'})
+        self.http_source = aiohttp.ClientSession(
+            headers={'Connection': 'keep-alive', 'User-Agent': 'Dozer RSS Feed Reader'})
         # JVN's blog will 403 you if you use the default user agent, so replacing it with this will yield a parsable result.
         for source in self.enabled_sources:
             try:
@@ -141,13 +143,13 @@ class News(Cog):
                 DOZER_LOGGER.error(f"Parsing error in source {source.short_name}: {err}")
 
     @Cog.listener()
-    async def on_guild_channel_delete(self, channel):
+    async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
         """Called when a channel is deleted, so it can be removed from the newsfeed"""
         await NewsSubscription.delete(channel_id=channel.id)
 
     @group(invoke_without_command=True)
     @guild_only()
-    async def news(self, ctx):
+    async def news(self, ctx: DozerContext):
         """Show help for news subscriptions"""
         embed = discord.Embed(title="How to subscribe to News Sources",
                               description="Dozer has built in news scrapers to allow you to review up to date news"
@@ -177,7 +179,7 @@ class News(Cog):
     @news.command()
     @has_permissions(manage_guild=True)
     @guild_only()
-    async def add(self, ctx, channel: discord.TextChannel, source: Source, kind='embed', data=None):
+    async def add(self, ctx: DozerContext, channel: discord.TextChannel, source: Source, kind='embed', data=None):
         """Add a new subscription of a given source to a channel."""
 
         if data is None and kind not in self.kinds and isinstance(source, DataBasedSource):
@@ -257,7 +259,7 @@ class News(Cog):
     @news.command()
     @has_permissions(manage_guild=True)
     @guild_only()
-    async def remove(self, ctx, channel: discord.TextChannel, source: Source, data=None):
+    async def remove(self, ctx: DozerContext, channel: discord.TextChannel, source: Source, data=None):
         """Remove a subscription of a given source from a specific channel"""
         if isinstance(source, DataBasedSource):
             if data is None:
@@ -320,7 +322,7 @@ class News(Cog):
      `{prefix}news remove #reddit reddit frc` - Remove the subscription of /r/FRC to #reddit"""
 
     @news.command(name='sources')
-    async def list_sources(self, ctx):
+    async def list_sources(self, ctx: DozerContext):
         """List all available sources to subscribe to."""
         embed = discord.Embed(title="All available sources to subscribe to.")
 
@@ -339,7 +341,7 @@ class News(Cog):
 
     @news.command(name='subscriptions', aliases=('subs', 'channels'))
     @guild_only()
-    async def list_subscriptions(self, ctx, channel: discord.TextChannel = None):
+    async def list_subscriptions(self, ctx: DozerContext, channel: discord.TextChannel = None):
         """List all subscriptions that the current server are subscribed to"""
         if channel is not None:
             results = await NewsSubscription.get_by(guild_id=ctx.guild.id, channel_id=ctx.channel.id)
@@ -384,7 +386,7 @@ class News(Cog):
 
     @news.command()
     @dev_check()
-    async def restart_loop(self, ctx):
+    async def restart_loop(self, ctx: DozerContext):
         """Restart the news check loop"""
         self.get_new_posts.stop()
         self.get_new_posts.change_interval(minutes=self.bot.config['news']['check_interval'])
@@ -395,7 +397,7 @@ class News(Cog):
 
     @news.command()
     @dev_check()
-    async def next_run(self, ctx):
+    async def next_run(self, ctx: DozerContext):
         """Print out the next time the news check loop will run"""
         next_run = self.get_new_posts.next_iteration
         if next_run is None:
@@ -410,7 +412,7 @@ class News(Cog):
 
     @news.command()
     @dev_check()
-    async def get_exception(self, ctx):
+    async def get_exception(self, ctx: DozerContext):
         """If the news check loop has failed, print out the exception and traceback"""
         try:
             exception = self.get_new_posts.get_task().exception()
@@ -453,7 +455,7 @@ class NewsSubscription(db.DatabaseTable):
             kind varchar NOT NULL
             )""")
 
-    def __init__(self, channel_id, guild_id, source, kind, data=None, sub_id=None):
+    def __init__(self, channel_id: int, guild_id: int, source: str, kind: str, data: str = None, sub_id: int = None):
         super().__init__()
         self.id = sub_id
         self.channel_id = channel_id

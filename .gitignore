@@ -20,3 +20,6 @@ venv/
 
 #VSCode
 settings.json
+
+#for mypy
+/.mypy_cache/

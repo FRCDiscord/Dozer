@@ -6,10 +6,10 @@ from discord.ext.commands import BadArgument
 class Source:
     """Abstract base class for a data source."""
 
-    full_name = "Source Name"
-    short_name = "src"
-    base_url = None
-    aliases = tuple()
+    full_name: str = "Source Name"
+    short_name: str = "src"
+    base_url: str = ""
+    aliases: tuple = tuple()
     description = "Description"
     disabled = False
 
@@ -99,9 +99,10 @@ class DataBasedSource(Source):
         behaviour, change the implementation of __str__ in your subclass.
             full_name: The string that will be displayed to the user of your cleaned, verified data.
         """
-        def __init__(self, short_name, full_name):
-            self.short_name = short_name
-            self.full_name = full_name
+
+        def __init__(self, short_name: str, full_name: str):
+            self.short_name: str = short_name
+            self.full_name: str = full_name
 
         def __str__(self):
             return self.short_name

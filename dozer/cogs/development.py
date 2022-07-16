@@ -1,13 +1,14 @@
 """Commands specific to development. Only approved developers can use these commands."""
 import copy
+import logging
 import re
 import subprocess
-import logging
+
 import discord
 import rstcloth
-
 from discord.ext.commands import NotOwner
 
+from dozer.context import DozerContext
 from ._utils import *
 
 DOZER_LOGGER = logging.getLogger("dozer")
@@ -23,13 +24,13 @@ class Development(Cog):
         eval_globals[module] = __import__(module)
     eval_globals['__builtins__'] = __import__('builtins')
 
-    def cog_check(self, ctx):  # All of this cog is only available to devs
+    def cog_check(self, ctx: DozerContext):  # All of this cog is only available to devs
         if ctx.author.id not in ctx.bot.config['developers']:
             raise NotOwner('you are not a developer!')
         return True
 
     @command()
-    async def reload(self, ctx, cog):
+    async def reload(self, ctx: DozerContext, cog: str):
         """Reloads a cog."""
         extension = 'dozer.cogs.' + cog
         msg = await ctx.send('Reloading extension %s' % extension)
@@ -41,7 +42,7 @@ class Development(Cog):
     """
 
     @command()
-    async def document(self, ctx):
+    async def document(self, ctx: DozerContext):
         """Dump documentation for Sphinx processing"""
         for x in self.bot.cogs:
             cog = ctx.bot.get_cog(x)
@@ -55,12 +56,13 @@ class Development(Cog):
         # make a call to Sphinx to build
         subprocess.call("make html", shell=True, cwd='docs')
         await ctx.send("Documentation cycle run")
+
     document.example_usage = """
     `{prefix}document` - Runs the documentation cycle
     """
 
     @command(name='eval')
-    async def evaluate(self, ctx, *, code):
+    async def evaluate(self, ctx: DozerContext, *, code: str):
         """
         Evaluates Python.
         Await is valid and `{ctx}` is the command context.
@@ -70,7 +72,8 @@ class Development(Cog):
         else:
             code = code.strip('`').strip()  # Remove single-line code blocks, if necessary
 
-        DOZER_LOGGER.info(f"Evaluating code at request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
+        DOZER_LOGGER.info(
+            f"Evaluating code at request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
         DOZER_LOGGER.info("-" * 32)
         for line in code.splitlines():
             DOZER_LOGGER.info(line)
@@ -98,15 +101,16 @@ class Development(Cog):
     """
 
     @command(name='su', pass_context=True)
-    async def pseudo(self, ctx, user: discord.Member, *, command):
+    async def pseudo(self, ctx: DozerContext, user: discord.Member, *, command: str):
         """Execute a command as another user."""
         msg = copy.copy(ctx.message)
         msg.author = user
         msg.content = command
         context = await self.bot.get_context(msg)
-        context.is_pseudo = True # adds new flag to bypass ratelimit
+        context.is_pseudo = True  # adds new flag to bypass ratelimit
         # let's also add a log of who ran pseudo
-        DOZER_LOGGER.info(f"Running pseudo on request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
+        DOZER_LOGGER.info(
+            f"Running pseudo on request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
         DOZER_LOGGER.info("-" * 32)
         DOZER_LOGGER.info(ctx.message.content)
         DOZER_LOGGER.info("-" * 32)
@@ -117,7 +121,7 @@ class Development(Cog):
     """
 
 
-def load_function(code, globals_, locals_):
+def load_function(code: str, globals_, locals_):
     """Loads the user-evaluted code as a function so it can be executed."""
     function_header = 'async def evaluated_function(ctx):'
 
