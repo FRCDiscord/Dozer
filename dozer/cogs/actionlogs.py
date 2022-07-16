@@ -12,7 +12,9 @@ from dozer.context import DozerContext
 
 from ._utils import *
 from .general import blurple
+from .moderation import GuildNewMember
 from .. import db
+from ..Components.CustomJoinLeaveMessages import CustomJoinLeaveMessages, format_join_leave, send_log
 
 DOZER_LOGGER = logging.getLogger(__name__)
 
@@ -53,7 +55,10 @@ class Actionlog(Cog):
         if len(nm_config) == 0:
             await send_log(member)
         else:
+            print(nm_config[0])
             if nm_config[0].require_team:
+                return
+            elif nm_config[0].send_on_verify:
                 return
             else:
                 await send_log(member)
@@ -409,6 +414,7 @@ class Actionlog(Cog):
             channel = ctx.guild.get_channel(config[0].channel_id)
             embed.add_field(name="Message Channel", value=channel.mention if channel else "None")
             embed.add_field(name="Ping on join", value=config[0].ping)
+            embed.add_field(name="Send on verify", value=config[0].send_on_verify)
             embed.add_field(name="Join template", value=config[0].join_message, inline=False)
             embed.add_field(name="Join Example", value=format_join_leave(config[0].join_message, ctx.author))
             embed.add_field(name="Leave template", value=config[0].leave_message, inline=False)
@@ -447,11 +453,27 @@ class Actionlog(Cog):
         if len(config):
             config[0].ping = not config[0].ping
         else:
-            config[0] = CustomJoinLeaveMessages(guild_id=ctx.guild.id, ping=True)
+            config = [CustomJoinLeaveMessages(guild_id=ctx.guild.id, ping=True)]
         await config[0].update_or_add()
 
         e = discord.Embed(color=blurple)
         e.add_field(name='Success!', value=f"Ping on join is set to: {config[0].ping}")
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        await ctx.send(embed=e)
+
+    @memberlogconfig.command()
+    @has_permissions(manage_guild=True)
+    async def togglesendonverify(self, ctx):
+        """Toggles if a join log is sent on user joining or on completing verification"""
+        config = await CustomJoinLeaveMessages.get_by(guild_id=ctx.guild.id)
+        if len(config):
+            config[0].send_on_verify = not config[0].send_on_verify
+        else:
+            config = [CustomJoinLeaveMessages(guild_id=ctx.guild.id, send_on_verify=True)]
+        await config[0].update_or_add()
+
+        e = discord.Embed(color=blurple)
+        e.add_field(name='Success!', value=f"Send on verify is set to: {config[0].send_on_verify}")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 

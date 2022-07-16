@@ -1,7 +1,9 @@
 """Holder for the custom join/leave messages database class and the associated methods"""
-from dozer import db
-import discord
 from logging import getLogger
+
+import discord
+
+from dozer import db
 
 DOZER_LOGGER = getLogger(__name__)
 
@@ -52,16 +54,18 @@ class CustomJoinLeaveMessages(db.DatabaseTable):
             CREATE TABLE {cls.__tablename__} (
             guild_id bigint PRIMARY KEY NOT NULL,	            
             memberlog_channel bigint NOT NULL,	   
-            name varchar NOT NULL
+            name varchar NOT NULL,
+            send_on_verify boolean
             )""")
 
-    def __init__(self, guild_id, channel_id=None, ping=None, join_message=None, leave_message=None):
+    def __init__(self, guild_id, channel_id=None, ping=None, join_message=None, leave_message=None, send_on_verify=False):
         super().__init__()
         self.guild_id = guild_id
         self.channel_id = channel_id
         self.ping = ping
         self.join_message = join_message
         self.leave_message = leave_message
+        self.send_on_verify = send_on_verify
 
     @classmethod
     async def get_by(cls, **kwargs):
@@ -71,7 +75,8 @@ class CustomJoinLeaveMessages(db.DatabaseTable):
             obj = CustomJoinLeaveMessages(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
                                           ping=result.get("ping"),
                                           join_message=result.get("join_message"),
-                                          leave_message=result.get("leave_message"))
+                                          leave_message=result.get("leave_message"),
+                                          send_on_verify=result.get("send_on_verify"))
             result_list.append(obj)
         return result_list
 
@@ -90,4 +95,9 @@ class CustomJoinLeaveMessages(db.DatabaseTable):
                 add IF NOT EXISTS leave_message text default null;
             """)
 
-    __versions__ = [version_1]
+    async def version_2(self):
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"alter table {self.__tablename__} "
+                               f"add if not exists send_on_verify boolean default null;")
+
+    __versions__ = [version_1, version_2]

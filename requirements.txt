@@ -1,7 +1,7 @@
 asyncpg~=0.23.0
 py-cord
+aiotba~=0.0.3.post1
 tbapi~=1.3.1b5
-aiotba~=0.0.2.post1
 googlemaps~=4.4.2
 datetime~=4.3
 geopy~=2.0.0
