@@ -7,6 +7,7 @@ import discord
 import discord.utils
 from discord.ext import commands
 from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgument, guild_only
+from discord.utils import escape_markdown
 from discord_slash import cog_ext, SlashContext
 
 from dozer.context import DozerContext
@@ -518,7 +519,7 @@ class Roles(Cog):
         self.bot.loop.create_task(self.removal_timer(ent))
         e = discord.Embed(color=blurple)
         e.add_field(name='Success!', value='I gave {} to {}, for {}!'.format(role.mention, member.mention, length))
-        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
     tempgive.example_usage = """
@@ -535,7 +536,7 @@ class Roles(Cog):
         await member.add_roles(role)
         e = discord.Embed(color=blurple)
         e.add_field(name='Success!', value='I gave {} to {}!'.format(role, member))
-        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
     give.example_usage = """
@@ -561,7 +562,7 @@ class Roles(Cog):
         await member.remove_roles(role)
         e = discord.Embed(color=blurple)
         e.add_field(name='Success!', value='I took {} from {}!'.format(role, member))
-        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
     take.example_usage = """
@@ -627,7 +628,7 @@ class Roles(Cog):
             link = f"https://discordapp.com/channels/{gid}/{cid}/{mid}"
             embed.add_field(name=f"Custom Message: {mid}", value=f"[Contains {total} role watchers]({link})",
                             inline=False)
-        embed.description = f"{ctx.bot.user.display_name} is tracking ({len(rolemenus) + len(combined_unbound)}) " \
+        embed.description = f"{escape_markdown(ctx.bot.user.display_name)} is tracking ({len(rolemenus) + len(combined_unbound)}) " \
                             f"reaction role message(s) in **{ctx.guild}**"
         await ctx.send(embed=embed)
 
@@ -661,7 +662,7 @@ class Roles(Cog):
         link = f"https://discordapp.com/channels/{ctx.guild.id}/{message.channel.id}/{message.id}"
         e.add_field(name='Success!',
                     value=f"I added created role menu [\"{name}\"]({link}) in channel {channel.mention}")
-        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
     createmenu.example_usage = """
@@ -715,7 +716,7 @@ class Roles(Cog):
         link = f"https://discordapp.com/channels/{ctx.guild.id}/{message.channel.id}/{message_id}"
         shortcut = f"[{menu.name}]({link})" if menu else f"[{message_id}]({link})"
         e.add_field(name='Success!', value=f"I added {role.mention} to message \"{shortcut}\" with reaction {emoji}")
-        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
     addrole.example_usage = """
@@ -748,7 +749,7 @@ class Roles(Cog):
         link = f"https://discordapp.com/channels/{ctx.guild.id}/{message.channel.id}/{message_id}"
         shortcut = f"[{menu.name}]({link})" if menu else f"[{message_id}]({link})"
         e.add_field(name='Success!', value=f"I removed {role.mention} from message {shortcut}")
-        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
     delrole.example_usage = """

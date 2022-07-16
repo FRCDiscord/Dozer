@@ -11,6 +11,7 @@ from typing import Union
 import discord
 from discord.ext import tasks, commands
 from discord.ext.commands import BadArgument, has_permissions, RoleConverter, guild_only
+from discord.utils import escape_markdown
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -497,7 +498,7 @@ class Moderation(Cog):
 
         e = discord.Embed(title='Timeout - {}s'.format(duration), description='This channel has been timed out.',
                           color=discord.Color.blue())
-        e.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar_url_as(format='png', size=32))
+        e.set_author(name=escape_markdown(ctx.author.display_name), icon_url=ctx.author.avatar_url_as(format='png', size=32))
         msg = await ctx.send(embed=e)
 
         await asyncio.sleep(duration)

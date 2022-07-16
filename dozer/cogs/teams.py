@@ -5,6 +5,7 @@ import json
 import discord
 from aiotba.http import AioTBAError
 from discord.ext.commands import BadArgument, guild_only, has_permissions
+from discord.utils import escape_markdown
 from discord_slash import cog_ext, SlashContext
 
 from dozer.context import DozerContext
@@ -73,7 +74,7 @@ class Teams(Cog):
             raise BadArgument("Couldn't find any team associations for that user!")
         else:
             e = discord.Embed(type='rich')
-            e.title = 'Teams for {}'.format(user.display_name)
+            e.title = 'Teams for {}'.format(escape_markdown(user.display_name))
             e.description = "Teams: \n"
             for i in teams:
                 e.description = "{} {} Team {} \n".format(e.description, i.team_type.upper(), i.team_number)
@@ -113,7 +114,7 @@ class Teams(Cog):
             for member in members:
                 mem = ctx.guild.get_member(member.user_id)
                 if mem is not None:
-                    newmemstr = "{} {} \n".format(mem.display_name, mem.mention)
+                    newmemstr = "{} {} \n".format(escape_markdown(mem.display_name), mem.mention)
                     if len(newmemstr + memstr) > 1023:
                         e.add_field(name=f"Team {team}", value=memstr)
                         memstr = ""
@@ -157,7 +158,7 @@ class Teams(Cog):
             for i in users:
                 user = ctx.guild.get_member(i.user_id)
                 if user is not None:
-                    memstr = "{} {} \n".format(user.display_name, user.mention)
+                    memstr = "{} {} \n".format(escape_markdown(user.display_name), user.mention)
                     if len(e.description + memstr) > 2047:
                         extra_mems += memstr
                     else:
@@ -200,7 +201,7 @@ class Teams(Cog):
         e = discord.Embed(color=blurple)
         modetext = "Enabled" if not enabled else "Disabled"
         e.add_field(name='Success!', value=f"Automatic adding of team association is currently: **{modetext}**")
-        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
     @Cog.listener('on_member_join')

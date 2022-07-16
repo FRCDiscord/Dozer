@@ -3,6 +3,7 @@ import inspect
 
 import discord
 from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions, NotOwner, guild_only
+from discord.utils import escape_markdown
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -203,7 +204,7 @@ class General(Cog):
         await self.bot.dynamic_prefix.refresh()
         e = discord.Embed(color=blurple)
         e.add_field(name='Success!', value=f"`{ctx.guild}`'s prefix has set to `{prefix}`!")
-        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
 

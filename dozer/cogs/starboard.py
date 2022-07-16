@@ -6,6 +6,7 @@ import typing
 import discord
 from discord.ext import commands
 from discord.ext.commands import guild_only, has_permissions
+from discord.utils import escape_markdown
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -39,7 +40,7 @@ def make_starboard_embed(msg: discord.Message, reaction_count: int):
     """Makes a starboard embed."""
     e = discord.Embed(color=msg.author.color, title=f"New Starred Message in #{msg.channel.name}",
                       description=msg.content, url=msg.jump_url)
-    e.set_author(name=msg.author.display_name, icon_url=msg.author.avatar_url)
+    e.set_author(name=escape_markdown(msg.author.display_name), icon_url=msg.author.avatar_url)
 
     view_link = f" [[view]]({msg.jump_url})"
     e.add_field(name="Link:", value=view_link)

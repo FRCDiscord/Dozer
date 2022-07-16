@@ -5,6 +5,8 @@ from asyncio import sleep
 
 import discord
 from discord.ext.commands import cooldown, BucketType, guild_only, BadArgument, MissingPermissions
+from discord.utils import escape_markdown
+from discord_slash import cog_ext, SlashContext
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -115,11 +117,10 @@ class Fun(Cog):
         if opponent_levels.total_xp < wager:
             raise BadArgument(f"{opponent} does not have enough XP to fulfill the wager")
 
-        embed = discord.Embed(
-            description=f"{ctx.author.mention} has challenged {opponent.mention} to a fight with a wager of"
-                        f" {wager}xp")
-        embed.set_footer(text=f"{opponent.display_name} react to the ✅ to agree to the fight")
-        embed.set_author(name=f"{ctx.author.display_name} vs {opponent.display_name}")
+        embed = discord.Embed(description=f"{ctx.author.mention} has challenged {opponent.mention} to a fight with a wager of"
+                                          f" {wager}xp")
+        embed.set_footer(text=f"{escape_markdown(opponent.display_name)} react to the ✅ to agree to the fight")
+        embed.set_author(name=f"{escape_markdown(ctx.author.display_name)} vs {escape_markdown(opponent.display_name)}")
 
         msg = await ctx.send(embed=embed)
         try:

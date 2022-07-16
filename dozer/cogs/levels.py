@@ -2,6 +2,8 @@
 
 import asyncio
 import functools
+
+
 import itertools
 import logging
 import math
@@ -11,6 +13,7 @@ from datetime import timedelta, timezone, datetime
 
 import aiohttp
 import discord
+from discord.utils import escape_markdown
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
 from discord_slash import cog_ext, SlashContext
@@ -254,7 +257,7 @@ class Levels(Cog):
         member = guild.get_member(user_id)
         if member:
             if member.status == discord.Status.offline:
-                return f"[{member.display_name}](https://discordapp.com/users/{member.id})"
+                return f"[{escape_markdown(member.display_name)}](https://discordapp.com/users/{member.id})"
             else:
                 return str(member.mention)  # This only works if presence intents are enabled
         else:  # Still try to see if the bot can find the user to get their name
@@ -393,7 +396,7 @@ class Levels(Cog):
         await self.sync_member(ctx.guild.id, member.id)  # Sync just this member to the db
         e = discord.Embed(color=blurple)
         e.add_field(name='Success!', value=f"I set {member}'s level to {level}")
-        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
     @adjustlevels.command(aliases=["addxp"])
@@ -408,7 +411,7 @@ class Levels(Cog):
         await self.sync_member(ctx.guild.id, member.id)
         e = discord.Embed(color=blurple)
         e.add_field(name='Success!', value=f"I adjusted {member}'s xp by {xp_amount} points")
-        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
     @adjustlevels.command()
@@ -424,7 +427,7 @@ class Levels(Cog):
         await self.sync_member(ctx.guild.id, give_member.id)
         e = discord.Embed(color=blurple)
         e.add_field(name='Success!', value=f"I swapped {take_member}'s xp with {give_member}")
-        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
     @adjustlevels.command()
@@ -442,7 +445,7 @@ class Levels(Cog):
         await self.sync_member(ctx.guild.id, take_member.id)
         e = discord.Embed(color=blurple)
         e.add_field(name='Success!', value=f"I added {take_member}'s xp to {give_member}")
-        e.set_footer(text='Triggered by ' + ctx.author.display_name)
+        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
     @group(invoke_without_command=True, aliases=["configurelevels", "levelconfig", "rankconfig"])
@@ -562,7 +565,7 @@ class Levels(Cog):
 
             e = discord.Embed(color=blurple)
             e.add_field(name='Success!', value=f"{role.mention} will be given to users who reach level {level}")
-            e.set_footer(text='Triggered by ' + ctx.author.display_name)
+            e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
             await ctx.send(embed=e)
 
     setrolelevel.example_usage = """
@@ -582,7 +585,7 @@ class Levels(Cog):
                 e.add_field(name='Success!', value=f"{role.mention} was removed from the levels database")
             else:
                 e.add_field(name='Failed!', value=f"{role.mention} was not found in the levels database!")
-            e.set_footer(text='Triggered by ' + ctx.author.display_name)
+            e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
             await ctx.send(embed=e)
 
     removerolelevel.example_usage = """
@@ -680,10 +683,9 @@ class Levels(Cog):
             else:
                 rank = count
 
-            embed.description = (
-                f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
-                f"#{rank} of {count} in this server")
-        embed.set_author(name=member.display_name, icon_url=member.avatar_url_as(format='png', size=64))
+            embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
+                                 f"#{rank} of {count} in this server")
+        embed.set_author(name=escape_markdown(member.display_name), icon_url=member.avatar_url_as(format='png', size=64))
         await ctx.send(embed=embed)
 
     rank.example_usage = """
@@ -725,7 +727,7 @@ class Levels(Cog):
             embeds = []
             for page_num, page in enumerate(chunk(records, 10)):
                 embed = discord.Embed(title=f"Rankings for {ctx.guild}", color=discord.Color.blue())
-                embed.description = '\n'.join(f"#{rank}: {self._fmt_member(ctx.guild, user_id)}"
+                embed.description = '\n'.join(f"#{rank}: {escape_markdown(self._fmt_member(ctx.guild, user_id))}"
                                               f" (lvl {self.level_for_total_xp(total_xp)}, {total_xp} XP)"
                                               for (user_id, total_xp, rank) in page)
                 embed.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(records) / 10)}")

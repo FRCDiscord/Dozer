@@ -9,10 +9,11 @@ from urllib.parse import quote as urlquote, urljoin
 import aiohttp
 import aiotba
 import async_timeout
-import discord
 import googlemaps
+import discord
 from discord.ext import commands
 from discord.ext.commands import BadArgument
+from discord.utils import escape_markdown
 from discord_slash import cog_ext, SlashContext
 from geopy.geocoders import Nominatim
 
@@ -24,6 +25,7 @@ class TBA(Cog):
     """Commands that talk to The Blue Alliance"""
 
     def __init__(self, bot: commands.Bot):
+
         super().__init__(bot)
         tba_config = bot.config['tba']
         self.gmaps_key = bot.config['gmaps_key']
@@ -78,12 +80,12 @@ class TBA(Cog):
                     value='{0.city}, {0.state_prov} {0.postal_code}, {0.country}'.format(team_data))
         e.add_field(name='Website', value=team_data.website)
         if team_district_data:
-            e.add_field(name='District', value=f"{team_district.display_name} [{team_district.abbreviation.upper()}]")
+            e.add_field(name='District', value=f"{escape_markdown(team_district.display_name)} [{team_district.abbreviation.upper()}]")
         try:
             e.add_field(name='Championship', value=team_data.home_championship[max(team_data.home_championship.keys())])
         except AttributeError:
             e.add_field(name='Championship', value="Unknown")
-        e.set_footer(text='Triggered by {}'.format(ctx.author.display_name))
+        e.set_footer(text='Triggered by {}'.format(escape_markdown(ctx.author.display_name)))
         await ctx.send(embed=e)
 
     team.example_usage = """
@@ -217,7 +219,7 @@ class TBA(Cog):
                          url='https://www.thebluealliance.com/team/{}'.format(team_num),
                          icon_url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
             e.add_field(name='Raw Data', value="```py\n {}```".format(pformat(team_data.__dict__)))
-            e.set_footer(text='Triggered by {}'.format(ctx.author.display_name))
+            e.set_footer(text='Triggered by {}'.format(escape_markdown(ctx.author.display_name)))
             await ctx.send(embed=e)
         except aiotba.http.AioTBAError:
             raise BadArgument('Team {} does not exist.'.format(team_num))
