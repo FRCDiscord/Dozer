@@ -1,12 +1,13 @@
 """Given an arbitrary RSS feed, get new posts from it"""
-import re
 import datetime
+import re
 import xml.etree.ElementTree
 
 import aiohttp
 import discord
 
 from .AbstractSources import Source
+
 
 def clean_html(raw_html):
     """Clean all HTML tags.
@@ -18,16 +19,16 @@ def clean_html(raw_html):
 
 class RSSSource(Source):
     """Given an arbitrary RSS feed, get new posts from it"""
-    url = None
+    url: str = ""
     color = discord.colour.Color.blurple()
     date_formats = ["%a, %d %b %Y %H:%M:%S %z",
                     "%a, %d %b %Y %H:%M:%S %Z"]  # format for datetime.strptime()
-    base_url = None
-    read_more_str = "...\n Read More"
+    base_url: str = ""
+    read_more_str: str = "...\n Read More"
 
     def __init__(self, aiohttp_session: aiohttp.ClientSession, bot):
         super().__init__(aiohttp_session, bot)
-        self.guids_seen = set()
+        self.guids_seen: set = set()
 
     async def first_run(self):
         """Fetch the current posts in the feed and add them to the guids_seen set"""
@@ -116,7 +117,7 @@ class RSSSource(Source):
             data['date'] = datetime.datetime.now()
 
         desc = clean_html(data['description'])
-        #length = 1024 - len(self.read_more_str)
+        # length = 1024 - len(self.read_more_str)
         length = 500
         if len(desc) >= length:
             data['description'] = desc[0:length] + self.read_more_str
@@ -153,8 +154,8 @@ class RSSSource(Source):
 
 class FRCBlogPosts(RSSSource):
     """Official blog posts from the FIRST Robotics Competition"""
-    url = "https://www.firstinspires.org/robotics/frc/blog-rss"
-    base_url = "https://www.firstinspires.org/robotics/frc/blog/"
+    url: str = "https://www.firstinspires.org/robotics/frc/blog-rss"
+    base_url: str = "https://www.firstinspires.org/robotics/frc/blog/"
     full_name = "FRC Blog Posts"
     short_name = "frc"
     description = "Official blog posts from the FIRST Robotics Competition"
@@ -189,7 +190,8 @@ class FRCQA(RSSSource):
     short_name = "frc-qa"
     description = "Answers from the official FIRST Robotics Competition Q&A system"
     color = discord.colour.Color.dark_blue()
-    
+
+
 class FTCQA(RSSSource):
     """Answers from the official FIRST Tech Challenge Q&A system"""
     url = "https://ftc-qa.firstinspires.org/rss/answers.rss"
@@ -226,7 +228,7 @@ class JVNBlog(RSSSource):
     base_url = "https://johnvneun.com/"
     full_name = "JVN's Blog"
     short_name = "jvn"
-    aliases = ['148', 'robowranglers']
+    aliases = '148', 'robowranglers'
     description = "Blog posts by John V Neun, 148 Head Engineer"
     color = discord.colour.Color(value=000000)
 
@@ -237,7 +239,7 @@ class SpectrumBlog(RSSSource):
     base_url = "http://spectrum3847.org/category/blog/"
     full_name = "Spectrum Blog"
     short_name = "spectrum"
-    aliases = ['3847']
+    aliases = '3847'
     description = "Blog Posts from team 3847, Spectrum"
     color = discord.colour.Color.purple()
 

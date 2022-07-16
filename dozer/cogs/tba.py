@@ -11,18 +11,21 @@ import aiotba
 import async_timeout
 import googlemaps
 import discord
+from discord.ext import commands
 from discord.ext.commands import BadArgument
 from discord.utils import escape_markdown
 from discord_slash import cog_ext, SlashContext
 from geopy.geocoders import Nominatim
 
+from dozer.context import DozerContext
 from ._utils import *
 
 
 class TBA(Cog):
     """Commands that talk to The Blue Alliance"""
 
-    def __init__(self, bot):
+    def __init__(self, bot: commands.Bot):
+
         super().__init__(bot)
         tba_config = bot.config['tba']
         self.gmaps_key = bot.config['gmaps_key']
@@ -38,7 +41,7 @@ class TBA(Cog):
         await self.team(ctx, team_num=team_number)
 
     @group(invoke_without_command=True)
-    async def tba(self, ctx, team_num: int):
+    async def tba(self, ctx: DozerContext, team_num: int):
         """
         Get FRC-related information from The Blue Alliance.
         If no subcommand is specified, the `team` subcommand is inferred, and the argument is taken as a team number.
@@ -51,7 +54,7 @@ class TBA(Cog):
 
     @tba.command()
     @bot_has_permissions(embed_links=True)
-    async def team(self, ctx, team_num: int):
+    async def team(self, ctx: DozerContext, team_num: int):
         """Get information on an FRC team by number."""
         # only teams with a null city are those that have only a number and a "Team {team number}" name
         try:
@@ -91,7 +94,7 @@ class TBA(Cog):
 
     @tba.command()
     @bot_has_permissions(embed_links=True)
-    async def eventsfor(self, ctx, team_num: int, year: int = None):
+    async def eventsfor(self, ctx: DozerContext, team_num: int, year: int = None):
         """Get the events a team is registered for a given year. Defaults to current (or upcoming) year."""
         if year is None:
             year = (await self.session.status()).current_season
@@ -115,7 +118,7 @@ class TBA(Cog):
 
     @tba.command()
     @bot_has_permissions(embed_links=True)
-    async def media(self, ctx, team_num: int, year: int = None):
+    async def media(self, ctx: DozerContext, team_num: int, year: int = None):
         """Get media of a team for a given year. Defaults to current year."""
         if year is None:
             year = datetime.datetime.today().year
@@ -172,7 +175,7 @@ class TBA(Cog):
 
     @tba.command()
     @bot_has_permissions(embed_links=True)
-    async def awards(self, ctx, team_num: int, year: int = None):
+    async def awards(self, ctx: DozerContext, team_num: int, year: int = None):
         """Gets a list of awards the specified team has won during a year. """
         async with ctx.typing():
             try:
@@ -204,7 +207,7 @@ class TBA(Cog):
     """
 
     @tba.command()
-    async def raw(self, ctx, team_num: int):
+    async def raw(self, ctx: DozerContext, team_num: int):
         """
         Get raw TBA API output for a team.
         This command is really only useful for development.
@@ -238,7 +241,7 @@ class TBA(Cog):
 
     @command()
     @bot_has_permissions(embed_links=True)
-    async def weather(self, ctx, team_program, team_num: int):
+    async def weather(self, ctx: DozerContext, team_program: str, team_num: int):
         """Finds the current weather for a given team."""
 
         if team_program.lower() == "frc":
@@ -287,7 +290,7 @@ class TBA(Cog):
         await self.timezone(ctx, team_program=team_program, team_num=team_number)
 
     @command()
-    async def timezone(self, ctx, team_program, team_num: int):
+    async def timezone(self, ctx: DozerContext, team_program: str, team_num: int):
         """
         Get the timezone of a team based on the team number.
         """

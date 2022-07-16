@@ -50,11 +50,15 @@ URL_REG = re.compile(r'https?://(?:www\.)?.+')
 
 class NoChannelProvided(commands.CommandError):
     """Error raised when no suitable voice channel was supplied."""
+
+
 #    pass
 
 
 class IncorrectChannelError(commands.CommandError):
     """Error raised when commands are issued outside of the players session channel."""
+
+
 #    pass
 
 
@@ -391,7 +395,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
                 if not m.bot and m.guild_permissions.kick_members:
                     player.dj = m
                     return
-            player.dj = None # no DJ if no mods in channel
+            player.dj = None  # no DJ if no mods in channel
 
         elif after.channel == channel and player.dj not in channel.members:
             player.dj = member
@@ -472,6 +476,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             raise NoChannelProvided
 
         await player.connect(channel.id)
+
     connect.example_usage = """
     `{prefix}connect <channel>` - connects the music module to a given channel
     `{prefix}connect` - connects the music module to the channel you're in
@@ -491,6 +496,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         for song in tempqueue:
             await player.queue.put(song)
         await ctx.send(f"Removed {removed_song} from queue")
+
     removefromqueue.example_usage = """
     `{prefix}removefromqueue 5` - removes the 5th song from the queue
     """
@@ -524,8 +530,9 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await player.queue.put(track)
 
         if not player.is_playing:
-            await player.set_volume(10) # Prevent Dozer from destroying ears
+            await player.set_volume(10)  # Prevent Dozer from destroying ears
             await player.do_next()
+
     play.example_usage = """
     `{prefix}play Steampowered - plays the first result for Steampowered
     """
@@ -553,6 +560,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await player.set_pause(True)
         else:
             await ctx.send(f'{ctx.author.mention} has voted to pause the player.')
+
     pause.example_usage = """
     `{prefix}pause - pauses the music
     """
@@ -580,6 +588,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await player.set_pause(False)
         else:
             await ctx.send(f'{ctx.author.mention} has voted to resume the player.')
+
     resume.example_usage = """
     `{prefix}resume - resumes the music
     """
@@ -613,6 +622,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await player.stop()
         else:
             await ctx.send(f'{ctx.author.mention} has voted to skip the song.')
+
     skip.example_usage = """
     `{prefix}skip - skips the current song
     """
@@ -637,6 +647,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await player.teardown()
         else:
             await ctx.send(f'{ctx.author.mention} has voted to stop the player.')
+
     stop.example_usage = """
     `{prefix}stop - stops the music and makes the bot leave
     """
@@ -657,6 +668,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         await player.set_volume(vol)
         await ctx.send(f'Set the volume to **{vol}**%')
+
     volume.example_usage = """
     `{prefix}volume 50 - sets the volume to 50%
     """
@@ -686,6 +698,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             random.shuffle(player.queue._queue)
         else:
             await ctx.send(f'{ctx.author.mention} has voted to shuffle the playlist.')
+
     shuffle.example_usage = """
     `{prefix}shuffle - shuffles the music queue
     """
@@ -705,6 +718,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await ctx.send('Maximum volume reached')
 
         await player.set_volume(vol)
+
     vol_up.example_usage = """
     `{prefix}vol_up - turns the volume up by 10
     """
@@ -724,6 +738,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             await ctx.send('Player is currently muted')
 
         await player.set_volume(vol)
+
     vol_down.example_usage = """
     `{prefix}vol_down - brings the volume down by 10
     """
@@ -752,6 +767,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
 
         await ctx.send(f'Successfully changed equalizer to {equalizer}')
         await player.set_eq(eq)
+
     equalizer.example_usage = """
     `{prefix}equalizer piano - makes the music sound like a piano
     `{prefix}equalizer boost - makes the music sound boosted
@@ -775,6 +791,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
         paginator = menus.MenuPages(source=pages, timeout=None, delete_message_after=False)
 
         await paginator.start(ctx)
+
     queue.example_usage = """
     `{prefix}queue - displays the queue
     """
@@ -788,6 +805,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             return
 
         await player.invoke_controller()
+
     nowplaying.example_usage = """
     `{prefix}nowplaying - shows the currently playing song
     """
@@ -824,6 +842,7 @@ class Music(commands.Cog, wavelink.WavelinkMixin):
             else:
                 player.dj = m
                 return await ctx.send(f'{member.mention} is now the DJ.')
+
     swap_dj.example_usage = """
     `{prefix}swap_dj - swaps the DJ to a random person in the call
     `{prefix}swap_dj tweirtx - swaps the DJ to tweirtx (if they are in the call)

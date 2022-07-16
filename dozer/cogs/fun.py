@@ -8,6 +8,7 @@ from discord.ext.commands import cooldown, BucketType, guild_only, BadArgument, 
 from discord.utils import escape_markdown
 from discord_slash import cog_ext, SlashContext
 
+from dozer.context import DozerContext
 from ._utils import *
 from .general import blurple
 
@@ -15,7 +16,7 @@ from .general import blurple
 class Fun(Cog):
     """Fun commands"""
 
-    async def battle(self, ctx, opponent: discord.Member, delete_result=True):
+    async def battle(self, ctx: DozerContext, opponent: discord.Member, delete_result: bool = True):
         """Start a fight with another user."""
         attacks = [
             "**{opponent}** was hit on the head by **{attacker}** ",
@@ -54,11 +55,13 @@ class Fun(Cog):
                 damage = damage * 2
             hps[opp_idx] = max(hps[opp_idx] - damage, 0)
             messages.append(
-                await ctx.send(f"{random.choice(attacks).format(opponent=players[opp_idx].name, attacker=players[turn].name)} *[-{damage} hp]"
-                               f" [{hps[opp_idx]} HP remaining]*"))
+                await ctx.send(
+                    f"{random.choice(attacks).format(opponent=players[opp_idx].name, attacker=players[turn].name)} *[-{damage} hp]"
+                    f" [{hps[opp_idx]} HP remaining]*"))
             await sleep(1.5)
             turn = opp_idx
-        win_embed = discord.Embed(description=f"{players[turn].mention} lost! GG {players[(turn + 1) % 2].mention}!", color=blurple)
+        win_embed = discord.Embed(description=f"{players[turn].mention} lost! GG {players[(turn + 1) % 2].mention}!",
+                                  color=blurple)
         win_msg = await ctx.send(embed=win_embed)
         await sleep(5)
         if delete_result:
@@ -83,7 +86,7 @@ class Fun(Cog):
     @discord.ext.commands.cooldown(1, 5, BucketType.channel)
     @discord.ext.commands.max_concurrency(1, per=BucketType.channel, wait=False)
     @command()
-    async def fight(self, ctx, opponent: discord.Member, wager: int = 0):
+    async def fight(self, ctx: DozerContext, opponent: discord.Member, wager: int = 0):
         """Start a fight with another user."""
 
         levels = self.bot.get_cog("Levels")

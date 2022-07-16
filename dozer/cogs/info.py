@@ -1,7 +1,7 @@
 """Provides commands for pulling certain information."""
 import math
 import typing
-from datetime import timezone, datetime
+from datetime import timezone, datetime, date
 from difflib import SequenceMatcher
 
 import discord
@@ -10,6 +10,7 @@ from discord.ext.commands import cooldown, BucketType, guild_only
 from discord.utils import escape_markdown
 from discord_slash import cog_ext, SlashContext
 
+from dozer.context import DozerContext
 from ._utils import *
 from .levels import MemberXP, GuildXPSettings
 
@@ -30,7 +31,7 @@ class Info(Cog):
     @command(aliases=['user', 'memberinfo', 'userinfo'])
     @guild_only()
     @bot_has_permissions(embed_links=True)
-    async def member(self, ctx, *, member: discord.Member = None):
+    async def member(self, ctx: DozerContext, *, member: discord.Member = None):
         """Retrieve information about a member of the guild.
          If no arguments are passed, information about the author is used.
          **This command works without mentions.** Remove the '@' before your mention so you don't ping the person unnecessarily.
@@ -52,20 +53,22 @@ class Info(Cog):
         embed = discord.Embed(title=escape_markdown(member.display_name), description=f'{member!s} ({member.id})', color=member.color)
         embed.set_thumbnail(url=member.avatar_url)
         embed.add_field(name='Bot Created' if member.bot else 'Account Created',
-                        value=member.created_at.strftime(datetime_format), inline=True)
+                        value=f"<t:{int(member.created_at.timestamp())}:f>", inline=True)
 
         if not levels_enabled:
             embed.add_field(name="Last Seen Here At", value="Levels Disabled")
         elif len(levels_data):
-            embed.add_field(name="Last Seen Here At", value=levels_data[0].last_given_at.strftime(datetime_format))
+
+            #
+            embed.add_field(name="Last Seen Here", value=f"<t:{int(levels_data[0].last_given_at.timestamp())}:R>")
             footers.append(f"Tracked Messages: {levels_data[0].total_messages}")
         else:
             embed.add_field(name="Last Seen Here At", value="Not available")
             footers.append("Tracked Messages: N/A")
 
-        embed.add_field(name='Member Joined', value=member.joined_at.strftime(datetime_format), inline=True)
+        embed.add_field(name='Member Joined', value=f"<t:{int(member.joined_at.timestamp())}:f>", inline=True)
         if member.premium_since is not None:
-            embed.add_field(name='Member Boosted', value=member.premium_since.strftime(datetime_format), inline=True)
+            embed.add_field(name='Member Boosted', value=f"<t:{int(member.premium_since.timestamp())}:f>", inline=True)
 
         status = 'DND' if member.status is discord.Status.dnd else member.status.name.title()
         if member.status is not discord.Status.offline:
@@ -109,7 +112,8 @@ class Info(Cog):
         matcher = SequenceMatcher(lambda c: not c.isalnum(), autojunk=False)
         filtered = [activities[0]]
         for activity in activities[1:]:  # Expensive metadata is computed about seq2, so change it less frequently
-            matcher.set_seq2(str(activity.name))  # Activity must be string, otherwise None will be passed into the matcher. An that breaks stuff
+            matcher.set_seq2(
+                str(activity.name))  # Activity must be string, otherwise None will be passed into the matcher. An that breaks stuff
             for filtered_activity in filtered:
                 matcher.set_seq1(str(filtered_activity.name))
                 if matcher.quick_ratio() < 0.6 and matcher.ratio() < 0.6:  # Use quick_ratio if we can as ratio is slow
@@ -138,10 +142,10 @@ class Info(Cog):
     @command()
     @guild_only()
     @cooldown(1, 10, BucketType.channel)
-    async def role(self, ctx, role: discord.Role):
+    async def role(self, ctx: DozerContext, role: discord.Role):
         """Retrieve info about a role in this guild"""
         embed = discord.Embed(title=f"Info for role: {role.name}", description=f"{role.mention} ({role.id})", color=role.color)
-        embed.add_field(name="Created on", value=role.created_at.strftime(datetime_format))
+        embed.add_field(name="Created on", value=f"<t:{int(role.created_at.timestamp())}:f>")
         embed.add_field(name="Position", value=role.position)
         embed.add_field(name="Color", value=str(role.color).upper())
         embed.add_field(name="Assigned members", value=f"{len(role.members)}", inline=False)
@@ -154,7 +158,7 @@ class Info(Cog):
 
     @command()
     @guild_only()
-    async def rolemembers(self, ctx, role: discord.Role):
+    async def rolemembers(self, ctx: DozerContext, role: discord.Role):
         """Retrieve members who have this role"""
         embeds = []
         for page_num, page in enumerate(chunk(role.members, 10)):
@@ -172,16 +176,17 @@ class Info(Cog):
     @guild_only()
     @cooldown(1, 10, BucketType.channel)
     @command(aliases=['server', 'guildinfo', 'serverinfo'])
-    async def guild(self, ctx):
+    async def guild(self, ctx: DozerContext):
         """Retrieve information about this guild."""
         guild = ctx.guild
         static_emoji = sum(not e.animated for e in ctx.guild.emojis)
         animated_emoji = sum(e.animated for e in ctx.guild.emojis)
-        embed = discord.Embed(title=f"Info for guild: {guild.name}", description=f"Members: {guild.member_count}", color=blurple)
+        embed = discord.Embed(title=f"Info for guild: {guild.name}", description=f"Members: {guild.member_count}",
+                              color=blurple)
 
         embed.set_thumbnail(url=guild.icon_url)
 
-        embed.add_field(name='Created at', value=guild.created_at.strftime(datetime_format))
+        embed.add_field(name='Created on', value=f"<t:{int(guild.created_at.timestamp())}:f>")
         embed.add_field(name='Owner', value=guild.owner)
         embed.add_field(name='Emoji', value="{} static, {} animated".format(static_emoji, animated_emoji))
         embed.add_field(name='Roles', value=str(len(guild.roles) - 1))  # Remove @everyone

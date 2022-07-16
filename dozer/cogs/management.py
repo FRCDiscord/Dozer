@@ -12,6 +12,8 @@ from dateutil import parser
 from discord.ext.commands import has_permissions, BadArgument
 from discord.utils import escape_markdown
 
+from dozer.bot import Dozer
+from dozer.context import DozerContext
 from ._utils import *
 from .general import blurple
 from .. import db
@@ -24,7 +26,7 @@ TIMEZONE_FILE = "timezones.json"
 class Management(Cog):
     """A cog housing Guild management/utility commands."""
 
-    def __init__(self, bot):
+    def __init__(self, bot: Dozer):
         super().__init__(bot)
         self.started_timers = False
         self.timers = {}
@@ -59,12 +61,14 @@ class Management(Cog):
         await self.send_scheduled_msg(db_entry)
         await db_entry.delete(request_id=db_entry.request_id)
 
-    async def send_scheduled_msg(self, db_entry, channel_override=None):
+    async def send_scheduled_msg(self, db_entry, channel_override: int = None):
         """Formats and sends scheduled message"""
-        embed = discord.Embed(title=db_entry.header if db_entry.header else "Scheduled Message", description=db_entry.content)
+        embed = discord.Embed(title=db_entry.header if db_entry.header else "Scheduled Message",
+                              description=db_entry.content)
         guild = self.bot.get_guild(db_entry.guild_id)
         if not guild:
-            DOZER_LOGGER.warning(f"Attempted to schedulesend message in guild({db_entry.guild_id}); Guild no longer exist")
+            DOZER_LOGGER.warning(
+                f"Attempted to schedulesend message in guild({db_entry.guild_id}); Guild no longer exist")
             return
         channel = guild.get_channel(db_entry.channel_id if not channel_override else channel_override)
         if not channel:
@@ -84,7 +88,7 @@ class Management(Cog):
 
     @group(invoke_without_command=True)
     @has_permissions(manage_messages=True)
-    async def schedulesend(self, ctx):
+    async def schedulesend(self, ctx: DozerContext):
         """Allows a message to be sent at a particular time
         Commands: add, delete, list
         """
@@ -92,7 +96,7 @@ class Management(Cog):
 
     @schedulesend.command()
     @has_permissions(manage_messages=True)
-    async def add(self, ctx, channel: discord.TextChannel, time, *, content):
+    async def add(self, ctx: DozerContext, channel: discord.TextChannel, time, *, content):
         """Allows a message to be sent at a particular time
         Headers are distinguished by the characters `-/-`
         """
@@ -138,7 +142,7 @@ class Management(Cog):
 
     @schedulesend.command()
     @has_permissions(manage_messages=True)
-    async def delete(self, ctx, entry_id: int):
+    async def delete(self, ctx: DozerContext, entry_id: int):
         """Delete a scheduled message"""
         entries = await ScheduledMessages.get_by(entry_id=entry_id)
         e = discord.Embed(color=blurple)
@@ -164,7 +168,7 @@ class Management(Cog):
 
     @schedulesend.command()
     @has_permissions(manage_messages=True)
-    async def list(self, ctx):
+    async def list(self, ctx: DozerContext):
         """Displays currently scheduled messages"""
         messages = await ScheduledMessages.get_by(guild_id=ctx.guild.id)
         pages = []
@@ -207,7 +211,8 @@ class ScheduledMessages(db.DatabaseTable):
             PRIMARY KEY (entry_id, request_id)
             )""")
 
-    def __init__(self, guild_id, channel_id, time, content, request_id, header=None, requester_id=None, entry_id=None):
+    def __init__(self, guild_id: int, channel_id: int, time: datetime.time, content: str, request_id: str,
+                 header: str = None, requester_id: int = None, entry_id: int = None):
         super().__init__()
         self.guild_id = guild_id
         self.channel_id = channel_id
@@ -223,8 +228,10 @@ class ScheduledMessages(db.DatabaseTable):
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
-            obj = ScheduledMessages(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"), header=result.get("header"),
-                                    requester_id=result.get("requester_id"), time=result.get("time"), content=result.get("content"),
+            obj = ScheduledMessages(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
+                                    header=result.get("header"),
+                                    requester_id=result.get("requester_id"), time=result.get("time"),
+                                    content=result.get("content"),
                                     entry_id=result.get("entry_id"), request_id=result.get("request_id"))
             result_list.append(obj)
         return result_list

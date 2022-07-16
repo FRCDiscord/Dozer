@@ -1,6 +1,7 @@
 """Get new posts from any arbitrary subreddit"""
 import datetime
 import logging
+
 import aiohttp
 import discord
 
@@ -24,6 +25,7 @@ class RedditSource(DataBasedSource):
 
     class SubReddit(DataBasedSource.DataPoint):
         """Represents a single subreddit with associated detail"""
+
         def __init__(self, name, url, color):
             super().__init__(name, url)
             self.name = name
