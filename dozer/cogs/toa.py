@@ -9,8 +9,8 @@ import aiohttp
 import async_timeout
 import discord
 from discord.ext import commands
-from discord_slash import cog_ext, SlashContext
 from discord.utils import escape_markdown
+from discord_slash import cog_ext, SlashContext
 
 from dozer.context import DozerContext
 from ._utils import *

@@ -8,12 +8,9 @@ import time
 import discord
 from discord.ext import commands
 from discord.ext.commands import has_permissions, BadArgument
-
 from discord.utils import escape_markdown
-from ..Components.CustomJoinLeaveMessages import CustomJoinLeaveMessages, format_join_leave, send_log
-from .moderation import GuildNewMember
-from dozer.context import DozerContext
 
+from dozer.context import DozerContext
 from ._utils import *
 from .general import blurple
 from .moderation import GuildNewMember
