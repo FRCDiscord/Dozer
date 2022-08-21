@@ -18,21 +18,6 @@ from ..Components.TeamNumbers import TeamNumbers
 class Teams(Cog):
     """Commands for making and seeing robotics team associations."""
 
-    # @cog_ext.cog_slash(name="setteam", description="Sets an association with your team in the database.")
-    # async def slash_setteam(self, ctx: SlashContext, team_type: str, team_number: int):
-    #     """setteam slash handler"""
-    #     await self.setteam(ctx, team_type=team_type, team_number=team_number)
-    #
-    # @cog_ext.cog_slash(name="removeteam", description="Removes an association with your team in the database.")
-    # async def slash_removeteam(self, ctx: SlashContext, team_type: str, team_number: int):
-    #     """removeteamteam slash handler"""
-    #     await self.removeteam(ctx, team_type=team_type, team_number=team_number)
-    #
-    # @cog_ext.cog_slash(name="teamsfor", description="Allows you to see the teams for the selected user or yourself.")
-    # async def slash_teamsfor(self, ctx: SlashContext, member: discord.Member = None):
-    #     """Teamsfor slash handler"""
-    #     await self.teamsfor(ctx, user=member)
-
     @command()
     async def setteam(self, ctx: DozerContext, team_type: str, team_number: int):
         """Sets an association with your team in the database."""
@@ -66,7 +51,7 @@ class Teams(Cog):
     @command()
     @guild_only()
     async def teamsfor(self, ctx: DozerContext, user: discord.Member = None):
-        """Allows you to see the teams for the mentioned user. If no user is mentioned, your teams are displayed."""
+        """Allows you to see the teams for the mentioned user, or yourself if nobody is mentioned."""
         if user is None:
             user = ctx.author
         teams = await TeamNumbers.get_by(user_id=user.id)

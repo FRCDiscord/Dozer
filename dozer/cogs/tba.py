@@ -266,12 +266,8 @@ class TBA(Cog):
         url = "https://wttr.in/{}".format(
             urlquote("{}+{}+{}_0_{}.png".format(td.city, td.state_prov, td.country, units)))
 
-        if isinstance(ctx, SlashContext):
-            async with self.http_session.get(url) as resp:
-                image_data = io.BytesIO(await resp.read())
-        else:
-            async with ctx.typing(), self.http_session.get(url) as resp:
-                image_data = io.BytesIO(await resp.read())
+        async with ctx.typing(), self.http_session.get(url) as resp:
+            image_data = io.BytesIO(await resp.read())
 
         file_name = f"weather_{team_program.lower()}{team_num}.png"
         e = discord.Embed(title=f"Current weather for {team_program.upper()} Team {team_num}:", url=url)

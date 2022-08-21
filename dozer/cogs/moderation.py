@@ -714,7 +714,7 @@ class Moderation(Cog):
     @discord.ext.commands.cooldown(rate=10, per=2,
                                    type=discord.ext.commands.BucketType.guild)  # 10 seconds per 2 members in the guild
     async def selfdeafen(self, ctx: DozerContext, *, reason: str = "No reason provided"):
-        """Deafen yourself for a given time period to prevent you from reading or sending messages; useful as a study tool."""
+        """Deafen yourself for a given time period to prevent you from reading or sending messages."""
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
             reason = self.hm_regex.sub("", reason) or "No reason provided"

@@ -8,6 +8,8 @@ from typing import Pattern
 
 import discord
 import os
+
+from discord.app_commands import CommandTree
 from discord.ext import commands
 from sentry_sdk import capture_exception
 
@@ -61,6 +63,7 @@ class Dozer(commands.Bot):
                 await self.load_extension('dozer.cogs.' + ext[:-3])  # Remove '.py'
         await db_init(self.config['db_url'])
         await db_migrate()
+        await self.tree.sync()
 
     async def on_ready(self):
         """Things to run when the bot has initialized and signed in"""
