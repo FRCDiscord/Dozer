@@ -146,6 +146,6 @@ def load_function(code: str, globals_, locals_):
                 raise err
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the development cog to the bot."""
-    bot.add_cog(Development(bot))
+    await bot.add_cog(Development(bot))

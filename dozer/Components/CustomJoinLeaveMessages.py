@@ -15,7 +15,7 @@ async def send_log(member):
         channel = member.guild.get_channel(config[0].channel_id)
         if channel:
             embed = discord.Embed(color=0x00FF00)
-            embed.set_author(name='Member Joined', icon_url=member.avatar_url_as(format='png', size=32))
+            embed.set_author(name='Member Joined', icon_url=member.avatar_as(format='png', size=32))
             embed.description = format_join_leave(config[0].join_message, member)
             embed.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
             try:

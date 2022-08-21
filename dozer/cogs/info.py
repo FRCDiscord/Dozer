@@ -51,7 +51,7 @@ class Info(Cog):
         levels_enabled = levels_settings[0].enabled if len(levels_settings) else False
 
         embed = discord.Embed(title=escape_markdown(member.display_name), description=f'{member!s} ({member.id})', color=member.color)
-        embed.set_thumbnail(url=member.avatar_url)
+        embed.set_thumbnail(url=member.avatar)
         embed.add_field(name='Bot Created' if member.bot else 'Account Created',
                         value=f"<t:{int(member.created_at.timestamp())}:f>", inline=True)
 
@@ -203,6 +203,6 @@ class Info(Cog):
     """
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the info cog to the bot"""
-    bot.add_cog(Info(bot))
+    await bot.add_cog(Info(bot))

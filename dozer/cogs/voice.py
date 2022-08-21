@@ -228,6 +228,6 @@ class AutoPTT(db.DatabaseTable):
         return result_list
 
 
-def setup(bot):
+async def setup(bot):
     """Add this cog to the main bot."""
-    bot.add_cog(Voice(bot))
+    await bot.add_cog(Voice(bot))

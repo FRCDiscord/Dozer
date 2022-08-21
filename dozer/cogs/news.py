@@ -430,10 +430,9 @@ class News(Cog):
     get_exception.example_usage = "`{prefix}news get_exception` - Get the exception that the loop failed with"
 
 
-def setup(bot):
+async def setup(bot):
     """Setup cog"""
-
-    bot.add_cog(News(bot))
+    await bot.add_cog(News(bot))
 
 
 class NewsSubscription(db.DatabaseTable):

@@ -62,13 +62,11 @@ class Group(CommandMixin, commands.HybridGroup):
 
     def command(self, *args, **kwargs):
         """Initiates a command"""
-        kwargs.setdefault('cls', Command)
         return super(Group, self).command(*args, **kwargs)
 
     def group(self, *args, **kwargs):
         """Initiates a command group"""
-        kwargs.setdefault('cls', Group)
-        return super(Group, self).command(*args, **kwargs)
+        return super(Group, self).group(*args, **kwargs)
 
 
 def command(**kwargs):

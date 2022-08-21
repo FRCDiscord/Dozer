@@ -498,7 +498,7 @@ class Moderation(Cog):
 
         e = discord.Embed(title='Timeout - {}s'.format(duration), description='This channel has been timed out.',
                           color=discord.Color.blue())
-        e.set_author(name=escape_markdown(ctx.author.display_name), icon_url=ctx.author.avatar_url_as(format='png', size=32))
+        e.set_author(name=escape_markdown(ctx.author.display_name), icon_url=ctx.author.avatar_as(format='png', size=32))
         msg = await ctx.send(embed=e)
 
         await asyncio.sleep(duration)
@@ -1330,6 +1330,6 @@ class PunishmentTimerRecords(db.DatabaseTable):
     __versions__ = [version_1]
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the moderation cog to the bot."""
-    bot.add_cog(Moderation(bot))
+    await bot.add_cog(Moderation(bot))

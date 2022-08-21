@@ -40,7 +40,7 @@ def make_starboard_embed(msg: discord.Message, reaction_count: int):
     """Makes a starboard embed."""
     e = discord.Embed(color=msg.author.color, title=f"New Starred Message in #{msg.channel.name}",
                       description=msg.content, url=msg.jump_url)
-    e.set_author(name=escape_markdown(msg.author.display_name), icon_url=msg.author.avatar_url)
+    e.set_author(name=escape_markdown(msg.author.display_name), icon_url=msg.author.avatar)
 
     view_link = f" [[view]]({msg.jump_url})"
     e.add_field(name="Link:", value=view_link)
@@ -244,8 +244,8 @@ class Starboard(Cog):
     @bot_has_permissions(add_reactions=True, embed_links=True)
     @starboard.command()
     async def config(self, ctx: DozerContext, channel: discord.TextChannel,
-                     star_emoji: typing.Union[discord.Emoji, str],
-                     threshold: int, cancel_emoji: typing.Union[discord.Emoji, str] = None):
+                     star_emoji: discord.Emoji,
+                     threshold: int, cancel_emoji: discord.Emoji = None):
         """Modify the settings for this server's starboard"""
         if str(star_emoji) == str(cancel_emoji):
             await ctx.send("The Star Emoji and Cancel Emoji cannot be the same!")
@@ -326,9 +326,9 @@ class Starboard(Cog):
     """
 
 
-def setup(bot):
+async def setup(bot):
     """Add this cog to the bot"""
-    bot.add_cog(Starboard(bot))
+    await bot.add_cog(Starboard(bot))
 
 
 class StarboardConfig(db.DatabaseTable):

@@ -346,6 +346,6 @@ class TBA(Cog):
     """
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the TBA cog to the bot"""
-    bot.add_cog(TBA(bot))
+    await bot.add_cog(TBA(bot))

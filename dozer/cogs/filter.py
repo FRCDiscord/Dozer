@@ -306,10 +306,9 @@ class Filter(Cog):
     whitelist_remove.example_usage = "`{prefix}filter whitelist remove Admins` - Makes it so that Admins are caught by the filter again."
 
 
-def setup(bot):
+async def setup(bot):
     """Setup cog"""
-
-    bot.add_cog(Filter(bot))
+    await bot.add_cog(Filter(bot))
 
 
 """Database Tables"""

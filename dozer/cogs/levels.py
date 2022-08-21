@@ -43,7 +43,7 @@ class Levels(Cog):
         self.guild_settings = {}
         self._level_roles = {}
         self._xp_cache = {}  # dct[(guild_id, user_id)] = MemberXPCache(...)
-        self._loop.create_task(self.preload_cache())
+        # self._loop.create_task(self.preload_cache())
         self.session = aiohttp.ClientSession(loop=bot.loop)
         self.sync_task.start()
 
@@ -685,7 +685,7 @@ class Levels(Cog):
 
             embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
                                  f"#{rank} of {count} in this server")
-        embed.set_author(name=escape_markdown(member.display_name), icon_url=member.avatar_url_as(format='png', size=64))
+        embed.set_author(name=escape_markdown(member.display_name), icon_url=member.avatar_as(format='png', size=64))
         await ctx.send(embed=embed)
 
     rank.example_usage = """
@@ -896,6 +896,7 @@ class GuildXPSettings(db.DatabaseTable):
     __versions__ = [version_1]
 
 
-def setup(bot):
+async def setup(bot):
     """Add the levels cog to a bot."""
-    bot.add_cog(Levels(bot))
+    print("Bypassing levels for now")  # TODO
+    # await bot.add_cog(Levels(bot))

@@ -313,6 +313,7 @@ class TeamNumbers(db.DatabaseTable):
         async with db.Pool.acquire() as conn:
             return await conn.fetch(query, user_ids)
 
-def setup(bot):
+
+async def setup(bot):
     """Adds this cog to the main bot"""
-    bot.add_cog(Teams(bot))
+    await bot.add_cog(Teams(bot))

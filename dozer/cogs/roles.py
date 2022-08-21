@@ -675,7 +675,7 @@ class Roles(Cog):
     @guild_only()
     async def addrole(self, ctx: DozerContext, channel: typing.Optional[discord.TextChannel], message_id: int,
                       role: discord.Role,
-                      emoji: typing.Union[discord.Emoji, str]):
+                      emoji: discord.Emoji):
         """Adds a reaction role to a message or a role menu"""
         if isinstance(emoji, discord.Emoji) and emoji.guild_id != ctx.guild.id:
             raise BadArgument(f"The emoji {emoji} is a custom emoji not from this server!")
@@ -952,6 +952,6 @@ class TempRoleTimerRecords(db.DatabaseTable):
         return result_list
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the roles cog to the main bot project."""
-    bot.add_cog(Roles(bot))
+    await bot.add_cog(Roles(bot))
