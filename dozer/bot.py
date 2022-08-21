@@ -7,12 +7,15 @@ import traceback
 from typing import Pattern
 
 import discord
+import os
 from discord.ext import commands
 from sentry_sdk import capture_exception
 
 from . import utils
 from .cogs import _utils
 from .context import DozerContext
+from .db import db_init, db_migrate
+
 
 DOZER_LOGGER = logging.getLogger('dozer')
 DOZER_LOGGER.level = logging.INFO
@@ -51,6 +54,13 @@ class Dozer(commands.Bot):
             DOZER_HANDLER.level = logging.DEBUG
         self._restarting = False
         self.check(self.global_checks)
+
+    async def setup_hook(self) -> None:
+        for ext in os.listdir('dozer/cogs'):
+            if not ext.startswith(('_', '.')):
+                await self.load_extension('dozer.cogs.' + ext[:-3])  # Remove '.py'
+        await db_init(self.config['db_url'])
+        await db_migrate()
 
     async def on_ready(self):
         """Things to run when the bot has initialized and signed in"""

@@ -1,6 +1,5 @@
 """Initializes the bot and deals with the configuration file"""
 
-import asyncio
 import json
 import os
 import sys
@@ -8,7 +7,6 @@ import sys
 import discord
 import sentry_sdk
 
-from .db import db_init, db_migrate
 
 config = {
     'prefix': '&', 'developers': [],
@@ -64,7 +62,6 @@ if config['sentry_url'] != "":
         traces_sample_rate=1.0,
     )
 
-asyncio.get_event_loop().run_until_complete(db_init(config['db_url']))
 
 if 'discord_token' not in config:
     sys.exit('Discord token must be supplied in configuration')
@@ -87,9 +84,6 @@ async def load_cogs():
         if not ext.startswith(('_', '.')):
             await bot.load_extension('dozer.cogs.' + ext[:-3])  # Remove '.py'
 
-
-asyncio.get_event_loop().run_until_complete(load_cogs())
-asyncio.get_event_loop().run_until_complete(db_migrate())
 
 bot.run()
 
