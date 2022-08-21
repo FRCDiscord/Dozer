@@ -16,7 +16,7 @@ import discord
 from discord.utils import escape_markdown
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
-from discord_slash import cog_ext, SlashContext
+# from discord_slash import cog_ext, SlashContext
 
 from dozer.bot import Dozer
 from dozer.context import DozerContext
@@ -638,10 +638,10 @@ class Levels(Cog):
                                                                                 f"Notification channel: {lvl_up_msgs}")
             await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="rank", description="Returns your dozer rank")
-    async def slash_rank(self, ctx: SlashContext, member: discord.Member = None):
-        """Ranks slash handler"""
-        await self.rank(ctx, member=member)
+    #@cog_ext.cog_slash(name="rank", description="Returns your dozer rank")
+    #async def slash_rank(self, ctx: SlashContext, member: discord.Member = None):
+    #    """Ranks slash handler"""
+    #    await self.rank(ctx, member=member)
 
     @command(aliases=["rnak", "level"])
     @guild_only()

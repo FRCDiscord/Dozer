@@ -820,7 +820,8 @@ class Moderation(Cog):
 
     @command()
     @has_permissions(administrator=True)
-    async def nmconfig(self, ctx: DozerContext, channel_mention: discord.TextChannel, role: discord.Role, *, message):
+    async def nmconfig(self, ctx: DozerContext, channel_mention: discord.TextChannel, role: discord.Role, *, message,
+                       requireteam=None):
         """Sets the config for the new members channel"""
         config = await GuildNewMember.get_by(guild_id=ctx.guild.id)
         if len(config) != 0:

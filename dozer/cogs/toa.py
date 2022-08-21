@@ -10,7 +10,7 @@ import async_timeout
 import discord
 from discord.ext import commands
 from discord.utils import escape_markdown
-from discord_slash import cog_ext, SlashContext
+# from discord_slash import cog_ext, SlashContext
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -65,10 +65,10 @@ class TOA(Cog):
         self.http_session = aiohttp.ClientSession()
         self.parser = TOAParser(bot.config['toa']['key'], self.http_session, app_name=bot.config['toa']['app_name'])
 
-    @cog_ext.cog_slash(name="toa", description="Get information on an FTC team by number.")
-    async def slash_toa(self, ctx: SlashContext, team_number: int):
-        """toa slash handler"""
-        await self.team(ctx, team_num=team_number)
+    #@cog_ext.cog_slash(name="toa", description="Get information on an FTC team by number.")
+    #async def slash_toa(self, ctx: SlashContext, team_number: int):
+     #   """toa slash handler"""
+      #  await self.team(ctx, team_num=team_number)
 
     @group(invoke_without_command=True)
     async def toa(self, ctx: DozerContext, team_num: int):

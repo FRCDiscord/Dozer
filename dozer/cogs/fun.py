@@ -6,7 +6,7 @@ from asyncio import sleep
 import discord
 from discord.ext.commands import cooldown, BucketType, guild_only, BadArgument, MissingPermissions
 from discord.utils import escape_markdown
-from discord_slash import cog_ext, SlashContext
+# from discord_slash import cog_ext, SlashContext
 
 from dozer.context import DozerContext
 from ._utils import *

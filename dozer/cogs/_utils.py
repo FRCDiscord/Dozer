@@ -7,7 +7,9 @@ from collections.abc import Mapping
 from typing import Dict, Union
 
 import discord
+from discord.app_commands import AppCommand
 from discord.ext import commands
+from discord.ext.commands import HybridCommand
 
 from dozer import db
 from dozer.context import DozerContext
@@ -51,11 +53,11 @@ class CommandMixin:
         self._example_usage = self.__original_kwargs__['example_usage'] = inspect.cleandoc(usage)
 
 
-class Command(CommandMixin, commands.Command):
+class Command(CommandMixin, HybridCommand):
     """Represents a command"""
 
 
-class Group(CommandMixin, commands.Group):
+class Group(CommandMixin, commands.HybridGroup):
     """Class for command groups"""
 
     def command(self, *args, **kwargs):

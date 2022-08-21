@@ -8,7 +8,6 @@ from typing import Pattern
 
 import discord
 from discord.ext import commands
-from discord_slash import SlashCommand
 from sentry_sdk import capture_exception
 
 from . import utils
@@ -22,9 +21,9 @@ DOZER_HANDLER.level = logging.INFO
 DOZER_LOGGER.addHandler(DOZER_HANDLER)
 DOZER_HANDLER.setFormatter(fmt=logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s'))
 
-if discord.version_info.major < 1:
+if discord.version_info.major < 2:
     DOZER_LOGGER.error("Your installed discord.py version is too low "
-                       "%d.%d.%d, please upgrade to at least 1.0.0a",
+                       "%d.%d.%d, please upgrade to at least 2.0.0",
                        discord.version_info.major,
                        discord.version_info.minor,
                        discord.version_info.micro)
@@ -40,12 +39,12 @@ class InvalidContext(commands.CheckFailure):
 
 class Dozer(commands.Bot):
     """Botty things that are critical to Dozer working"""
-    _global_cooldown = commands.Cooldown(1, 1, commands.BucketType.user)  # One command per second per user
+    _global_cooldown = commands.Cooldown(1, 1)  # One command per second per user
 
     def __init__(self, config: dict, *args, **kwargs):
         self.dynamic_prefix = _utils.PrefixHandler(config['prefix'])
         super().__init__(command_prefix=self.dynamic_prefix.handler, *args, **kwargs)
-        self.slash = SlashCommand(self, sync_commands=True, override_type=True)
+        # self.slash = SlashCommand(self, sync_commands=True, override_type=True)
         self.config = config
         if self.config['debug']:
             DOZER_LOGGER.level = logging.DEBUG

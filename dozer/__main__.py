@@ -77,13 +77,18 @@ from . import Dozer  # After version check
 intents = discord.Intents.default()
 intents.members = True
 intents.presences = bool(config['presences_intents'])
+intents.message_content = True
 
 bot = Dozer(config, intents=intents, max_messages=config['cache_size'])
 
-for ext in os.listdir('dozer/cogs'):
-    if not ext.startswith(('_', '.')):
-        bot.load_extension('dozer.cogs.' + ext[:-3])  # Remove '.py'
 
+async def load_cogs():
+    for ext in os.listdir('dozer/cogs'):
+        if not ext.startswith(('_', '.')):
+            await bot.load_extension('dozer.cogs.' + ext[:-3])  # Remove '.py'
+
+
+asyncio.get_event_loop().run_until_complete(load_cogs())
 asyncio.get_event_loop().run_until_complete(db_migrate())
 
 bot.run()
