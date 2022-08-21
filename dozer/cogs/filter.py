@@ -259,7 +259,7 @@ class Filter(Cog):
                               "sent through DMs "
 
     @guild_only()
-    @filter.group(invoke_without_command=True)
+    @group(invoke_without_command=True, parent=filter)
     async def whitelist(self, ctx: DozerContext):
         """List all whitelisted roles for this server"""
         results = await WordFilterRoleWhitelist.get_by(guild_id=ctx.guild.id)

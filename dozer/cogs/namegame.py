@@ -236,7 +236,7 @@ class NameGame(Cog):
     `{prefix}ng help` - show a description on how the robotics team namegame works
     """
 
-    @ng.group(invoke_without_command=True)
+    @group(invoke_without_command=True, parent=ng)
     async def config(self, ctx: DozerContext):
         """Configuration for namegame"""
         await ctx.send(f"""`{ctx.prefix}ng config` reference:
