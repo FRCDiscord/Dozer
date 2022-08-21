@@ -49,7 +49,6 @@ class Dozer(commands.Bot):
     def __init__(self, config: dict, *args, **kwargs):
         self.dynamic_prefix = _utils.PrefixHandler(config['prefix'])
         super().__init__(command_prefix=self.dynamic_prefix.handler, *args, **kwargs)
-        # self.slash = SlashCommand(self, sync_commands=True, override_type=True)
         self.config = config
         if self.config['debug']:
             DOZER_LOGGER.level = logging.DEBUG
@@ -97,12 +96,12 @@ class Dozer(commands.Bot):
             await context.send('{}, {}'.format(context.author.mention, exception.args[0]))
         elif isinstance(exception, commands.MissingPermissions):
             permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in
-                                exception.missing_perms]
+                                exception.missing_permissions]
             await context.send('{}, you need {} permissions to run this command!'.format(
                 context.author.mention, utils.pretty_concat(permission_names)))
         elif isinstance(exception, commands.BotMissingPermissions):
             permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in
-                                exception.missing_perms]
+                                exception.missing_permissions]
             await context.send('{}, I need {} permissions to run this command!'.format(
                 context.author.mention, utils.pretty_concat(permission_names)))
         elif isinstance(exception, commands.CommandOnCooldown):
@@ -138,10 +137,6 @@ class Dozer(commands.Bot):
         print('Ignoring exception in {}'.format(event_method), file=sys.stderr)
         traceback.print_exc()
         capture_exception()
-
-    async def on_slash_command_error(self, ctx: DozerContext, ex: Exception):
-        """Passes slash command errors to primary command handler"""
-        await self.on_command_error(ctx, ex)
 
     @staticmethod
     def format_error(ctx: DozerContext, err: Exception, *, word_re: Pattern = re.compile('[A-Z][a-z]+')):

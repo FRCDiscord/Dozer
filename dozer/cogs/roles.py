@@ -8,7 +8,6 @@ import discord.utils
 from discord.ext import commands
 from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgument, guild_only
 from discord.utils import escape_markdown
-# from discord_slash import cog_ext, SlashContext
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -279,12 +278,6 @@ class Roles(Cog):
     `{prefix}giveme Java, Python` - gives you the roles called Java and Python, if they exist
     """
 
-   # @cog_ext.cog_subcommand(base="giveme", name="role", description="Give yourself roles from the list.")
-    #async def slash_giveme(self, ctx: SlashContext, *, roles):
-    #    """giveme slash handler"""
-    #    ctx.prefix = "/"
-    #    await self.giveme(ctx, roles=roles)
-
     @giveme.command()
     @bot_has_permissions(manage_roles=True)
     @has_permissions(manage_roles=True)
@@ -407,12 +400,6 @@ class Roles(Cog):
     `{prefix}giveme remove Java, Python` - removes the roles called "Java" and "Python" from you
     """
 
-    #@cog_ext.cog_subcommand(base="giveme", name="remove", description="Take a giveable role from yourself.")
-    #async def slash_givemeremove(self, ctx: SlashContext, roles):
-    #    """giveme remove slash handler"""
-    #    ctx.prefix = "/"
-    #    await self.remove(ctx, roles=roles)
-
     @giveme.command()
     @bot_has_permissions(manage_roles=True)
     @has_permissions(manage_guild=True)
@@ -454,11 +441,6 @@ class Roles(Cog):
     list_roles.example_usage = """
     `{prefix}giveme list` - lists all giveable roles
     """
-
-    #@cog_ext.cog_subcommand(base="giveme", name="list", description="Get a list of roles you can give yourself.")
-    #async def slash_givemelist(self, ctx: SlashContext):
-    #    """giveme list slash handler"""
-    #    await self.list_roles(ctx)
 
     @staticmethod
     def normalize(name):
@@ -543,15 +525,6 @@ class Roles(Cog):
     `{prefix}give cooldude#1234 Java` - gives cooldude any role, giveable or not, named Java
     """
 
-    #@cog_ext.cog_slash(name="give", description="Gives role(s) to given members.")
-    #async def slash_give(self, ctx: SlashContext, member: discord.Member, role: discord.Role):
-    #    """give slash handler"""
-    #    ctx.prefix = "/"
-    #    if ctx.author.permissions_in(ctx.channel).manage_roles:
-    #        await self.give(ctx, member, role=role)
-    #    else:
-    #        raise PermissionError("You do not have manage roles!")
-
     @command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
@@ -568,15 +541,6 @@ class Roles(Cog):
     take.example_usage = """
     `{prefix}take cooldude#1234 Java` - takes any role named Java, giveable or not, from cooldude
     """
-
-    # @cog_ext.cog_slash(name="take", description="Takes role(s) from given members.")
-    # async def slash_take(self, ctx: SlashContext, member: discord.Member, role: discord.Role):
-    #     """take slash handler"""
-    #     ctx.prefix = "/"
-    #     if ctx.author.permissions_in(ctx.channel).manage_roles:
-    #         await self.take(ctx, member, role=role)
-    #     else:
-    #         raise PermissionError("You do not have manage roles!")
 
     async def update_role_menu(self, ctx: DozerContext, menu: int):
         """Updates a reaction role menu"""

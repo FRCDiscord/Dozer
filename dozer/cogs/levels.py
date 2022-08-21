@@ -16,7 +16,6 @@ import discord
 from discord.utils import escape_markdown
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
-# from discord_slash import cog_ext, SlashContext
 
 from dozer.bot import Dozer
 from dozer.context import DozerContext
@@ -638,11 +637,6 @@ class Levels(Cog):
                                                                                 f"Notification channel: {lvl_up_msgs}")
             await ctx.send(embed=embed)
 
-    #@cog_ext.cog_slash(name="rank", description="Returns your dozer rank")
-    #async def slash_rank(self, ctx: SlashContext, member: discord.Member = None):
-    #    """Ranks slash handler"""
-    #    await self.rank(ctx, member=member)
-
     @command(aliases=["rnak", "level"])
     @guild_only()
     @discord.ext.commands.cooldown(rate=1, per=5, type=discord.ext.commands.BucketType.user)
@@ -692,12 +686,6 @@ class Levels(Cog):
     `{prefix}rank`: show your ranking
     `{prefix}rank coolgal#1234`: show another user's ranking
     """
-
-    # Disabled until slash command pagination is fixed by discord
-    # @cog_ext.cog_slash(name="leaderboard", description="Returns the guilds dozer leaderboard")
-    # async def slash_levels(self, ctx: SlashContext, start_member: discord.Member = None):
-    #     """Leaderboard slash handler"""
-    #     await self.levels(ctx, start_member)
 
     @command(aliases=["ranks", "leaderboard"])
     @guild_only()

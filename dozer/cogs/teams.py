@@ -6,7 +6,6 @@ import discord
 from aiotba.http import AioTBAError
 from discord.ext.commands import BadArgument, guild_only, has_permissions
 from discord.utils import escape_markdown
-# from discord_slash import cog_ext, SlashContext
 
 from dozer.context import DozerContext
 from ._utils import *

@@ -14,7 +14,6 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import BadArgument
 from discord.utils import escape_markdown
-# from discord_slash import cog_ext, SlashContext
 from geopy.geocoders import Nominatim
 
 from dozer.context import DozerContext
@@ -34,11 +33,6 @@ class TBA(Cog):
         # self.parser = tbapi.TBAParser(tba_config['key'], cache=False)
 
     col = discord.Color.from_rgb(63, 81, 181)
-
-    # @cog_ext.cog_slash(name="tba", description="Get information on an FRC team by number.")
-    # async def slash_tba(self, ctx: SlashContext, team_number: int):
-    #     """tba slash handler"""
-    #     await self.team(ctx, team_num=team_number)
 
     @group(invoke_without_command=True)
     async def tba(self, ctx: DozerContext, team_num: int):
@@ -234,11 +228,6 @@ class TBA(Cog):
         state_prov: str
         city: str
 
-    # @cog_ext.cog_slash(name="weather", description="Get the weather for a given team.")
-    # async def slash_weather(self, ctx: SlashContext, team_program, team_number: int):
-    #     """weather slash handler"""
-    #     await self.weather(ctx, team_program=team_program, team_num=team_number)
-
     @command()
     @bot_has_permissions(embed_links=True)
     async def weather(self, ctx: DozerContext, team_program: str, team_num: int):
@@ -279,11 +268,6 @@ class TBA(Cog):
     `{prefix}weather frc 5052` - show the current weather for FRC team 5052, The RoboLobos
     `{prefix}weather ftc 15470` - show the current weather for FTC team 15470 
     """
-
-    # @cog_ext.cog_slash(name="timezone", description="Get the local time of a team")
-    # async def slash_timezone(self, ctx: SlashContext, team_program, team_number: int):
-    #     """timezone slash handler"""
-    #     await self.timezone(ctx, team_program=team_program, team_num=team_number)
 
     @command()
     async def timezone(self, ctx: DozerContext, team_program: str, team_num: int):
