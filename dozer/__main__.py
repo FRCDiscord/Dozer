@@ -69,8 +69,8 @@ asyncio.get_event_loop().run_until_complete(db_init(config['db_url']))
 if 'discord_token' not in config:
     sys.exit('Discord token must be supplied in configuration')
 
-if sys.version_info < (3, 6):
-    sys.exit('Dozer requires Python 3.6 or higher to run. This is version %s.' % '.'.join(sys.version_info[:3]))
+if sys.version_info < (3, 8):
+    sys.exit('Dozer requires Python 3.8 or higher to run. This is version %s.' % '.'.join(sys.version_info[:3]))
 
 from . import Dozer  # After version check
 

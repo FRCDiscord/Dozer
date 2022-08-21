@@ -39,12 +39,12 @@ class Levels(Cog):
 
     def __init__(self, bot: Dozer):
         super().__init__(bot)
-        self._loop = bot.loop
+        self._loop = asyncio.get_running_loop()
+        self._loop.create_task(self.preload_cache())
+        self.session = aiohttp.ClientSession(loop=self._loop)
         self.guild_settings = {}
         self._level_roles = {}
         self._xp_cache = {}  # dct[(guild_id, user_id)] = MemberXPCache(...)
-        # self._loop.create_task(self.preload_cache())
-        self.session = aiohttp.ClientSession(loop=bot.loop)
         self.sync_task.start()
 
     @staticmethod
@@ -898,5 +898,4 @@ class GuildXPSettings(db.DatabaseTable):
 
 async def setup(bot):
     """Add the levels cog to a bot."""
-    print("Bypassing levels for now")  # TODO
-    # await bot.add_cog(Levels(bot))
+    await bot.add_cog(Levels(bot))
