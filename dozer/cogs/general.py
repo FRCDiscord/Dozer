@@ -37,9 +37,12 @@ class General(Cog):
                          read_message_history=True)  # Message history is for internals of paginate()
     async def base_help(self, ctx: DozerContext, *, target=None):
         """Show this message."""
-        target = target.split(" ")
-        if not target:  # No commands - general help
+        try:
+            target = target.split(" ")
+        except AttributeError:  # No commands - general help
             await self._help_all(ctx)
+        if target is None:
+            pass
         elif len(target) == 1:  # Cog or command
             target_name = target[0]
             if target_name in ctx.bot.cogs:
