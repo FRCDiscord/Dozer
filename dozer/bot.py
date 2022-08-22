@@ -47,6 +47,7 @@ class Dozer(commands.Bot):
     _global_cooldown = commands.Cooldown(1, 1)  # One command per second per user
 
     def __init__(self, config: dict, *args, **kwargs):
+        self.wavelink = None
         self.dynamic_prefix = _utils.PrefixHandler(config['prefix'])
         super().__init__(command_prefix=self.dynamic_prefix.handler, *args, **kwargs)
         self.config = config
