@@ -18,7 +18,7 @@ config = {
         'key': 'Put TOA API key here',
         'app_name': 'Dozer',
     },
-    'db_url': 'postgres://dozer_user:simplepass@postgres_ip',
+    'db_url': 'postgres://dozer_user:simplepass@postgres',
     'gmaps_key': "PUT GOOGLE MAPS API KEY HERE",
     'discord_token': "Put Discord API Token here.",
     'news': {
@@ -35,7 +35,7 @@ config = {
     },
     'lavalink': {
         'enabled': False,
-        'host': '127.0.0.1',
+        'host': 'lavalink',
         'port': 2333,
         'password': 'youshallnotpass',
         'identifier': 'MAIN',
