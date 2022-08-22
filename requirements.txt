@@ -15,3 +15,4 @@ rstcloth~=0.3.1
 discord-py-slash-command
 aiohttp~=3.6.2
 humanize~=3.8.0
+pre-commit~=2.20.0

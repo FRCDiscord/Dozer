@@ -1,0 +1,10 @@
+repos:
+- repo: local
+  hooks:
+    - id: pylint
+      name: pylint
+      entry: pylint
+      language: system
+      types: [python]
+#      args:
+#        - "dozer" ## dozer is the module to run pylint on
