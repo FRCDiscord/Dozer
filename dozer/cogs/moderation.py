@@ -1208,8 +1208,7 @@ class GuildNewMember(db.DatabaseTable):
             guild_id bigint PRIMARY KEY,
             channel_id bigint NOT NULL,
             role_id bigint NOT NULL,
-            message varchar NOT NULL,
-            require_team bool NOT NULL DEFAULT false
+            message varchar NOT NULL
             )""")
 
     def __init__(self, guild_id: int, channel_id: int, role_id: int, message: str, require_team: bool):
