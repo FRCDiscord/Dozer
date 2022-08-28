@@ -7,9 +7,10 @@ from collections.abc import Mapping
 from typing import Dict, Union
 
 import discord
-from discord.app_commands import AppCommand
+from discord import app_commands
 from discord.ext import commands
 from discord.ext.commands import HybridCommand
+from discord.ext.commands.core import MISSING
 
 from dozer import db
 from dozer.context import DozerContext
@@ -57,18 +58,6 @@ class Command(CommandMixin, HybridCommand):
     """Represents a command"""
 
 
-class Group(CommandMixin, commands.HybridGroup):
-    """Class for command groups"""
-
-    def command(self, *args, **kwargs):
-        """Initiates a command"""
-        return super(Group, self).command(*args, **kwargs)
-
-    def group(self, *args, **kwargs):
-        """Initiates a command group"""
-        return super(Group, self).group(*args, **kwargs)
-
-
 def command(**kwargs):
     """Represents bot commands"""
     kwargs.setdefault('cls', Command)
@@ -79,6 +68,44 @@ def group(**kwargs):
     """Links command groups"""
     kwargs.setdefault('cls', Group)
     return commands.group(**kwargs)
+
+
+class Group(CommandMixin, commands.HybridGroup):
+    """Class for command groups"""
+
+    def command(
+        self,
+        name: Union[str, app_commands.locale_str] = MISSING,
+        *args: typing.Any,
+        with_app_command: bool = True,
+        **kwargs: typing.Any,
+    ):
+        """Initiates a command"""
+
+        def decorator(func):
+            kwargs.setdefault('parent', self)
+            result = command(name=name, *args, with_app_command=with_app_command, **kwargs)(func)
+            self.add_command(result)
+            return result
+
+        return decorator
+
+    def group(
+        self,
+        name: Union[str, app_commands.locale_str] = MISSING,
+        *args: typing.Any,
+        with_app_command: bool = True,
+        **kwargs: typing.Any,
+    ):
+        """Initiates a command group"""
+
+        def decorator(func):
+            kwargs.setdefault('parent', self)
+            result = group(name=name, *args, with_app_command=with_app_command, **kwargs)(func)
+            self.add_command(result)
+            return result
+
+        return decorator
 
 
 class Cog(commands.Cog):

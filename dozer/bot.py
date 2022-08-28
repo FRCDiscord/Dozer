@@ -9,12 +9,12 @@ from typing import Pattern
 import discord
 import os
 
-from discord.app_commands import CommandTree
 from discord.ext import commands
 from sentry_sdk import capture_exception
 
 from . import utils
 from .cogs import _utils
+from .cogs._utils import CommandMixin
 from .context import DozerContext
 from .db import db_init, db_migrate
 
@@ -71,7 +71,10 @@ class Dozer(commands.Bot):
         await self.dynamic_prefix.refresh()
         perms = 0
         for cmd in self.walk_commands():
-            perms |= cmd.required_permissions.value
+            if isinstance(cmd, CommandMixin):
+                perms |= cmd.required_permissions.value
+            else:
+                DOZER_LOGGER.warning(f"Command {cmd} not subclass of Dozer type.")
         DOZER_LOGGER.debug('Bot Invite: {}'.format(utils.oauth_url(self.user.id, discord.Permissions(perms))))
         if self.config['is_backup']:
             status = discord.Status.dnd
