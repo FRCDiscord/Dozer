@@ -204,6 +204,7 @@ class Reactor:
     def _check_reaction(self, reaction: discord.Reaction, member: discord.Member):
         if self.message is not None:
             return reaction.message.id == self.message.id and member.id == self.caller.id
+        return None
 
 
 class Paginator(Reactor):

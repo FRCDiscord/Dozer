@@ -61,12 +61,6 @@ disable=raw-checker-failed,
         suppressed-message,
         useless-suppression,
         deprecated-pragma,
-        div-method,
-        idiv-method,
-        rdiv-method,
-        exception-message-attribute,
-        invalid-str-codec,
-        next-method-defined,
         unused-wildcard-import,
         invalid-name,
         unused-import,
@@ -99,7 +93,8 @@ disable=raw-checker-failed,
         consider-using-f-string,
         unspecified-encoding,
         consider-using-in,
-        trailing-whitespace
+        trailing-whitespace,
+        keyword-arg-before-vararg
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
@@ -272,13 +267,6 @@ max-line-length=150
 
 # Maximum number of lines in a module
 max-module-lines=1300
-
-# List of optional constructs for which whitespace checking is disabled. `dict-
-# separator` is used to allow tabulation in dicts, etc.: {1  : 1,\n222: 2}.
-# `trailing-comma` allows a space between comma and closing bracket: (a, ).
-# `empty-line` allows space-only lines.
-no-space-check=trailing-comma,
-               dict-separator
 
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.

@@ -40,7 +40,7 @@ class News(Cog):
         self.get_new_posts.change_interval(minutes=self.bot.config['news']['check_interval'])
         self.get_new_posts.start()
 
-    def cog_unload(self):
+    async def cog_unload(self):
         """Attempt to gracefully shut down the loop. Doesn't generally work. """
         self.get_new_posts.cancel()
 

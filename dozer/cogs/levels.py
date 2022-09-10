@@ -234,7 +234,7 @@ class Levels(Cog):
         """Do preparation work before starting the periodic timer to sync XP with the database."""
         await self.bot.wait_until_ready()
 
-    def cog_unload(self):
+    async def cog_unload(self):
         """Detach from the running bot and cancel long-running code as the cog is unloaded."""
         self.sync_task.stop()
 

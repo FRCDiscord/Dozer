@@ -80,6 +80,7 @@ bot = Dozer(config, intents=intents, max_messages=config['cache_size'])
 
 
 async def load_cogs():
+    """Loads cogs for startup"""
     for ext in os.listdir('dozer/cogs'):
         if not ext.startswith(('_', '.')):
             await bot.load_extension('dozer.cogs.' + ext[:-3])  # Remove '.py'

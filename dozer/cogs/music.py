@@ -1,3 +1,4 @@
+"""Music commands, currently disabled"""
 import logging
 
 from discord.ext import commands
@@ -7,6 +8,7 @@ from dozer.cogs._utils import command
 
 
 class Music(commands.Cog):
+    """Music commands cog"""
     def __init__(self, bot):
         self.bot = bot
         if not self.bot.config['lavalink']['enabled']:
@@ -29,6 +31,7 @@ class Music(commands.Cog):
         await ctx.send("Left the voice channel.")
 
     async def join(self, ctx: commands.Context):
+        """Joins the voice channel"""
         print(ctx.author.voice)
         await ctx.guild.change_voice_state(channel=ctx.author.voice.channel, self_deaf=True, self_mute=False)
         print("Awaiting connection")
