@@ -364,7 +364,7 @@ class PrefixHandler:
 class DynamicPrefixEntry(db.DatabaseTable):
     """Holds the custom prefixes for guilds"""
     __tablename__ = 'dynamic_prefixes'
-    __uniques__ = ['guild_id']
+    __uniques__ = 'guild_id'
 
     @classmethod
     async def initial_create(cls):

@@ -317,7 +317,7 @@ async def setup(bot):
 class WordFilter(db.DatabaseTable):
     """Object for each filter"""
     __tablename__ = 'word_filters'
-    __uniques__ = ['filter_id']
+    __uniques__ = 'filter_id'
 
     @classmethod
     async def initial_create(cls):
@@ -355,7 +355,7 @@ class WordFilter(db.DatabaseTable):
 class WordFilterSetting(db.DatabaseTable):
     """Each filter-related setting"""
     __tablename__ = 'word_filter_settings'
-    __uniques__ = ['id']
+    __uniques__ = 'id'
 
     @classmethod
     async def initial_create(cls):
@@ -389,7 +389,7 @@ class WordFilterSetting(db.DatabaseTable):
 class WordFilterRoleWhitelist(db.DatabaseTable):
     """Object for each whitelisted role"""
     __tablename__ = 'word_filter_role_whitelist'
-    __uniques__ = ['role_id']
+    __uniques__ = 'role_id'
 
     @classmethod
     async def initial_create(cls):
