@@ -161,7 +161,7 @@ class Info(Cog):
         embed = discord.Embed(title=f"Info for guild: {guild.name}", description=f"Members: {guild.member_count}",
                               color=blurple)
 
-        embed.set_thumbnail(url=guild.icon_url)
+        embed.set_thumbnail(url=guild.icon.url if guild.icon is not None else None)
 
         embed.add_field(name='Created on', value=f"<t:{int(guild.created_at.timestamp())}:f>")
         embed.add_field(name='Owner', value=guild.owner)

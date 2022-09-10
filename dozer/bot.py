@@ -170,6 +170,5 @@ class Dozer(commands.Bot):
     async def shutdown(self, restart: bool = False):
         """Shuts down the bot"""
         self._restarting = restart
-        await self.logout()
         await self.close()
         self.loop.stop()
