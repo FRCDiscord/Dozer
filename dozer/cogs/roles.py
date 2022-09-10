@@ -24,8 +24,8 @@ class Roles(Cog):
 
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
-        for command in self.giveme.walk_commands():
-            @command.before_invoke
+        for loop_command in self.giveme.walk_commands():
+            @loop_command.before_invoke
             async def givemeautopurge(self, ctx: DozerContext):
                 """Before invoking a giveme command, run a purge"""
                 if await self.ctx_purge(ctx):
