@@ -155,7 +155,7 @@ class Reactor:
         auto_remove: if True, reactions are removed once processed
         timeout: time, in seconds, to wait before stopping automatically. Set to None to wait forever.
         """
-        self.dest = ctx.channel
+        self.dest = ctx.interaction.followup if ctx.interaction else ctx.channel
         self.bot = ctx.bot
         self.caller = ctx.author
         self.me = ctx.guild.get_member(self.bot.user.id)

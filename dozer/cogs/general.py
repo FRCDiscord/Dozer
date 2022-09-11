@@ -37,6 +37,7 @@ class General(Cog):
                          read_message_history=True)  # Message history is for internals of paginate()
     async def base_help(self, ctx: DozerContext, *, target=None):
         """Show this message."""
+        await ctx.defer()
         try:
             target = target.split(" ")
         except AttributeError:  # No commands - general help

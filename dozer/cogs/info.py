@@ -142,6 +142,7 @@ class Info(Cog):
     @guild_only()
     async def rolemembers(self, ctx: DozerContext, role: discord.Role):
         """Retrieve members who have this role"""
+        await ctx.defer()
         embeds = []
         for page_num, page in enumerate(chunk(role.members, 10)):
             embed = discord.Embed(title=f"Members for role: {role.name}", color=role.color)
