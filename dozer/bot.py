@@ -6,8 +6,8 @@ import sys
 import traceback
 from typing import Pattern
 
-import discord
 import os
+import discord
 
 from discord.ext import commands
 from sentry_sdk import capture_exception
@@ -87,11 +87,11 @@ class Dozer(commands.Bot):
             DOZER_LOGGER.warning("You are running an older version of the discord.py rewrite (with breaking changes)! "
                                  "To upgrade, run `pip install -r requirements.txt --upgrade`")
 
-    async def get_context(self, message: discord.Message, *, cls=DozerContext):
+    async def get_context(self, message: discord.Message, *, cls=DozerContext):  # pylint: disable=arguments-differ
         ctx = await super().get_context(message, cls=cls)
         return ctx
 
-    async def on_command_error(self, context: DozerContext, exception):
+    async def on_command_error(self, context: DozerContext, exception):  # pylint: disable=arguments-differ
         if isinstance(exception, commands.NoPrivateMessage):
             await context.send('{}, This command cannot be used in DMs.'.format(context.author.mention))
         elif isinstance(exception, commands.UserInputError):

@@ -109,7 +109,7 @@ class Info(Cog):
             for filtered_activity in filtered:
                 matcher.set_seq1(str(filtered_activity.name))
                 if matcher.quick_ratio() < 0.6 and matcher.ratio() < 0.6:  # Use quick_ratio if we can as ratio is slow
-                    filtered.append(activity)
+                    filtered.append(activity)  # pylint: disable=modified-iterating-list
                     break
 
         return [format_activity(activity) for activity in filtered]
