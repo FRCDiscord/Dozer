@@ -419,7 +419,7 @@ class News(Cog):
             if exception is None:
                 await ctx.send("No exception occurred.")
             else:
-                tb_str = traceback.format_exception(etype=type(exception), value=exception, tb=exception.__traceback__)
+                tb_str = traceback.format_exception(exc=type(exception), value=exception, tb=exception.__traceback__)
                 await ctx.send(f"```{''.join(tb_str)}```")
         except CancelledError:
             await ctx.send("Task has been cancelled.")
