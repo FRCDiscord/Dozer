@@ -6,14 +6,18 @@ import sys
 import traceback
 from typing import Pattern
 
+import os
 import discord
+
 from discord.ext import commands
-from discord_slash import SlashCommand
 from sentry_sdk import capture_exception
 
 from . import utils
 from .cogs import _utils
+from .cogs._utils import CommandMixin
 from .context import DozerContext
+from .db import db_init, db_migrate
+
 
 DOZER_LOGGER = logging.getLogger('dozer')
 DOZER_LOGGER.level = logging.INFO
@@ -22,9 +26,9 @@ DOZER_HANDLER.level = logging.INFO
 DOZER_LOGGER.addHandler(DOZER_HANDLER)
 DOZER_HANDLER.setFormatter(fmt=logging.Formatter('[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s'))
 
-if discord.version_info.major < 1:
+if discord.version_info.major < 2:
     DOZER_LOGGER.error("Your installed discord.py version is too low "
-                       "%d.%d.%d, please upgrade to at least 1.0.0a",
+                       "%d.%d.%d, please upgrade to at least 2.0.0",
                        discord.version_info.major,
                        discord.version_info.minor,
                        discord.version_info.micro)
@@ -40,12 +44,12 @@ class InvalidContext(commands.CheckFailure):
 
 class Dozer(commands.Bot):
     """Botty things that are critical to Dozer working"""
-    _global_cooldown = commands.Cooldown(1, 1, commands.BucketType.user)  # One command per second per user
+    _global_cooldown = commands.Cooldown(1, 1)  # One command per second per user
 
     def __init__(self, config: dict, *args, **kwargs):
+        self.wavelink = None
         self.dynamic_prefix = _utils.PrefixHandler(config['prefix'])
         super().__init__(command_prefix=self.dynamic_prefix.handler, *args, **kwargs)
-        self.slash = SlashCommand(self, sync_commands=True, override_type=True)
         self.config = config
         if self.config['debug']:
             DOZER_LOGGER.level = logging.DEBUG
@@ -53,13 +57,24 @@ class Dozer(commands.Bot):
         self._restarting = False
         self.check(self.global_checks)
 
+    async def setup_hook(self) -> None:
+        for ext in os.listdir('dozer/cogs'):
+            if not ext.startswith(('_', '.')):
+                await self.load_extension('dozer.cogs.' + ext[:-3])  # Remove '.py'
+        await db_init(self.config['db_url'])
+        await db_migrate()
+        await self.tree.sync()
+
     async def on_ready(self):
         """Things to run when the bot has initialized and signed in"""
         DOZER_LOGGER.info('Signed in as {}#{} ({})'.format(self.user.name, self.user.discriminator, self.user.id))
         await self.dynamic_prefix.refresh()
         perms = 0
         for cmd in self.walk_commands():
-            perms |= cmd.required_permissions.value
+            if isinstance(cmd, CommandMixin):
+                perms |= cmd.required_permissions.value
+            else:
+                DOZER_LOGGER.warning(f"Command {cmd} not subclass of Dozer type.")
         DOZER_LOGGER.debug('Bot Invite: {}'.format(utils.oauth_url(self.user.id, discord.Permissions(perms))))
         if self.config['is_backup']:
             status = discord.Status.dnd
@@ -72,11 +87,11 @@ class Dozer(commands.Bot):
             DOZER_LOGGER.warning("You are running an older version of the discord.py rewrite (with breaking changes)! "
                                  "To upgrade, run `pip install -r requirements.txt --upgrade`")
 
-    async def get_context(self, message: discord.Message, *, cls=DozerContext):
+    async def get_context(self, message: discord.Message, *, cls=DozerContext):  # pylint: disable=arguments-differ
         ctx = await super().get_context(message, cls=cls)
         return ctx
 
-    async def on_command_error(self, context: DozerContext, exception):
+    async def on_command_error(self, context: DozerContext, exception):  # pylint: disable=arguments-differ
         if isinstance(exception, commands.NoPrivateMessage):
             await context.send('{}, This command cannot be used in DMs.'.format(context.author.mention))
         elif isinstance(exception, commands.UserInputError):
@@ -85,12 +100,12 @@ class Dozer(commands.Bot):
             await context.send('{}, {}'.format(context.author.mention, exception.args[0]))
         elif isinstance(exception, commands.MissingPermissions):
             permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in
-                                exception.missing_perms]
+                                exception.missing_permissions]
             await context.send('{}, you need {} permissions to run this command!'.format(
                 context.author.mention, utils.pretty_concat(permission_names)))
         elif isinstance(exception, commands.BotMissingPermissions):
             permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in
-                                exception.missing_perms]
+                                exception.missing_permissions]
             await context.send('{}, I need {} permissions to run this command!'.format(
                 context.author.mention, utils.pretty_concat(permission_names)))
         elif isinstance(exception, commands.CommandOnCooldown):
@@ -127,10 +142,6 @@ class Dozer(commands.Bot):
         traceback.print_exc()
         capture_exception()
 
-    async def on_slash_command_error(self, ctx: DozerContext, ex: Exception):
-        """Passes slash command errors to primary command handler"""
-        await self.on_command_error(ctx, ex)
-
     @staticmethod
     def format_error(ctx: DozerContext, err: Exception, *, word_re: Pattern = re.compile('[A-Z][a-z]+')):
         """Turns an exception into a user-friendly (or -friendlier, at least) error message."""
@@ -159,6 +170,5 @@ class Dozer(commands.Bot):
     async def shutdown(self, restart: bool = False):
         """Shuts down the bot"""
         self._restarting = restart
-        await self.logout()
         await self.close()
         self.loop.stop()

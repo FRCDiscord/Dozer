@@ -237,6 +237,6 @@ class ScheduledMessages(db.DatabaseTable):
         return result_list
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the Management cog to the bot"""
-    bot.add_cog(Management(bot))
+    await bot.add_cog(Management(bot))

@@ -103,7 +103,7 @@ class Voice(Cog):
     @bot_has_permissions(manage_roles=True)
     @has_permissions(manage_roles=True)
     async def voicebind(self, ctx: DozerContext, voice_channel: discord.VoiceChannel, *, role: discord.Role):
-        """Associates a voice channel with a role, so users joining a voice channel will automatically be given a specified role or roles."""
+        """Binds a voice channel with a role, so users joining voice channels will be given desired role(s)."""
 
         config = await Voicebinds.get_by(channel_id=voice_channel.id)
         if len(config) != 0:
@@ -228,6 +228,6 @@ class AutoPTT(db.DatabaseTable):
         return result_list
 
 
-def setup(bot):
+async def setup(bot):
     """Add this cog to the main bot."""
-    bot.add_cog(Voice(bot))
+    await bot.add_cog(Voice(bot))

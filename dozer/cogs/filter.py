@@ -259,7 +259,7 @@ class Filter(Cog):
                               "sent through DMs "
 
     @guild_only()
-    @filter.group(invoke_without_command=True)
+    @group(invoke_without_command=True, parent=filter)
     async def whitelist(self, ctx: DozerContext):
         """List all whitelisted roles for this server"""
         results = await WordFilterRoleWhitelist.get_by(guild_id=ctx.guild.id)
@@ -306,10 +306,9 @@ class Filter(Cog):
     whitelist_remove.example_usage = "`{prefix}filter whitelist remove Admins` - Makes it so that Admins are caught by the filter again."
 
 
-def setup(bot):
+async def setup(bot):
     """Setup cog"""
-
-    bot.add_cog(Filter(bot))
+    await bot.add_cog(Filter(bot))
 
 
 """Database Tables"""
@@ -318,7 +317,7 @@ def setup(bot):
 class WordFilter(db.DatabaseTable):
     """Object for each filter"""
     __tablename__ = 'word_filters'
-    __uniques__ = ['filter_id']
+    __uniques__ = 'filter_id'
 
     @classmethod
     async def initial_create(cls):
@@ -356,7 +355,7 @@ class WordFilter(db.DatabaseTable):
 class WordFilterSetting(db.DatabaseTable):
     """Each filter-related setting"""
     __tablename__ = 'word_filter_settings'
-    __uniques__ = ['id']
+    __uniques__ = 'id'
 
     @classmethod
     async def initial_create(cls):
@@ -390,7 +389,7 @@ class WordFilterSetting(db.DatabaseTable):
 class WordFilterRoleWhitelist(db.DatabaseTable):
     """Object for each whitelisted role"""
     __tablename__ = 'word_filter_role_whitelist'
-    __uniques__ = ['role_id']
+    __uniques__ = 'role_id'
 
     @classmethod
     async def initial_create(cls):

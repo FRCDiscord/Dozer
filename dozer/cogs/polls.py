@@ -74,6 +74,6 @@ class Polls(Cog):
         "the 3 listed options. ")
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the Polls cog to the bot."""
-    bot.add_cog(Polls(bot))
+    await bot.add_cog(Polls(bot))

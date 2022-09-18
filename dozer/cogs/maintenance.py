@@ -63,6 +63,6 @@ class Maintenance(Cog):
     """
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the maintenance cog to the bot process."""
-    bot.add_cog(Maintenance(bot))
+    await bot.add_cog(Maintenance(bot))

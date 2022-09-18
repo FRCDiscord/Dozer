@@ -8,12 +8,9 @@ import time
 import discord
 from discord.ext import commands
 from discord.ext.commands import has_permissions, BadArgument
-
 from discord.utils import escape_markdown
-from ..Components.CustomJoinLeaveMessages import CustomJoinLeaveMessages, format_join_leave, send_log
-from .moderation import GuildNewMember
-from dozer.context import DozerContext
 
+from dozer.context import DozerContext
 from ._utils import *
 from .general import blurple
 from .moderation import GuildNewMember
@@ -75,7 +72,7 @@ class Actionlog(Cog):
             channel = member.guild.get_channel(config[0].channel_id)
             if channel:
                 embed = discord.Embed(color=0xFF0000)
-                embed.set_author(name='Member Left', icon_url=member.avatar_url_as(format='png', size=32))
+                embed.set_author(name='Member Left', icon_url=member.avatar_as(format='png', size=32))
                 embed.description = format_join_leave(config[0].leave_message, member)
                 embed.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
                 try:
@@ -96,7 +93,7 @@ class Actionlog(Cog):
 
         embed = discord.Embed(title="Nickname Changed",
                               color=0x00FFFF)
-        embed.set_author(name=after, icon_url=after.avatar_url)
+        embed.set_author(name=after, icon_url=after.avatar)
         embed.add_field(name="Before", value=before.nick, inline=False)
         embed.add_field(name="After", value=after.nick, inline=False)
 
@@ -261,7 +258,7 @@ class Actionlog(Cog):
         embed = discord.Embed(title="Message Deleted",
                               description=f"Message Deleted In: {message.channel.mention}\nSent by: {message.author.mention}",
                               color=0xFF0000, timestamp=message.created_at)
-        embed.set_author(name=message.author, icon_url=message.author.avatar_url)
+        embed.set_author(name=message.author, icon_url=message.author.avatar)
         if audit:
             if audit.target == message.author:
                 audit_member = await message.guild.fetch_member(audit.user.id)
@@ -338,7 +335,7 @@ class Actionlog(Cog):
                                   description=f"[MESSAGE]({link}) From {before.author.mention}"
                                               f"\nEdited In: {before.channel.mention}", color=0xFFC400,
                                   timestamp=after.edited_at)
-            embed.set_author(name=before.author, icon_url=before.author.avatar_url)
+            embed.set_author(name=before.author, icon_url=before.author.avatar)
             embed.set_footer(text=f"Message ID: {channel_id} - {message_id}\nUserID: {user_id}")
             if len(before.content) + len(after.content) < 5000:
                 embed = await embed_paginatorinator("Original", embed, before.content)
@@ -372,7 +369,7 @@ class Actionlog(Cog):
         """Logs raw member ban events, even if not banned via &ban"""
         audit = await self.check_audit(guild, discord.AuditLogAction.ban)
         embed = discord.Embed(title="User Banned", color=0xff6700)
-        embed.set_thumbnail(url=user.avatar_url)
+        embed.set_thumbnail(url=user.avatar)
         embed.add_field(name="Banned user", value=f"{user}|({user.id})")
         if audit and audit.target == user:
             acton_member = await guild.fetch_member(audit.user.id)
@@ -632,59 +629,6 @@ class NicknameLock(db.DatabaseTable):
             result_list.append(obj)
         return result_list
 
-class CustomJoinLeaveMessages(db.DatabaseTable):
-    """Holds custom join leave messages"""
-    __tablename__ = 'memberlogconfig'
-    __uniques__ = 'guild_id'
-
-    @classmethod
-    async def initial_create(cls):
-        """Create the table in the database"""
-        async with db.Pool.acquire() as conn:
-            await conn.execute(f"""
-            CREATE TABLE {cls.__tablename__} (
-            guild_id bigint PRIMARY KEY NOT NULL,	            
-            memberlog_channel bigint NOT NULL,	   
-            name varchar NOT NULL
-            )""")
-
-    def __init__(self, guild_id: int, channel_id: int = None, ping=None, join_message: str = None,
-                 leave_message: str = None):
-        super().__init__()
-        self.guild_id = guild_id
-        self.channel_id = channel_id
-        self.ping = ping
-        self.join_message = join_message
-        self.leave_message = leave_message
-
-    @classmethod
-    async def get_by(cls, **kwargs):
-        results = await super().get_by(**kwargs)
-        result_list = []
-        for result in results:
-            obj = CustomJoinLeaveMessages(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
-                                          ping=result.get("ping"),
-                                          join_message=result.get("join_message"),
-                                          leave_message=result.get("leave_message"))
-            result_list.append(obj)
-        return result_list
-
-    async def version_1(self):
-        """DB migration v1"""
-        async with db.Pool.acquire() as conn:
-            await conn.execute(f"""
-            alter table memberlogconfig rename column memberlog_channel to channel_id;
-            alter table memberlogconfig alter column channel_id drop not null;
-            alter table {self.__tablename__} drop column IF EXISTS name;
-            alter table {self.__tablename__}
-                add IF NOT EXISTS ping boolean default False;
-            alter table {self.__tablename__}
-                add IF NOT EXISTS join_message text default null;
-            alter table {self.__tablename__}
-                add IF NOT EXISTS leave_message text default null;
-            """)
-
-    __versions__ = [version_1]
 
 class GuildMessageLog(db.DatabaseTable):
     """Holds config info for message logs"""
@@ -719,6 +663,6 @@ class GuildMessageLog(db.DatabaseTable):
         return result_list
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the actionlog cog to the bot."""
-    bot.add_cog(Actionlog(bot))
+    await bot.add_cog(Actionlog(bot))

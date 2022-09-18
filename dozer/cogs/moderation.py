@@ -498,7 +498,7 @@ class Moderation(Cog):
 
         e = discord.Embed(title='Timeout - {}s'.format(duration), description='This channel has been timed out.',
                           color=discord.Color.blue())
-        e.set_author(name=escape_markdown(ctx.author.display_name), icon_url=ctx.author.avatar_url_as(format='png', size=32))
+        e.set_author(name=escape_markdown(ctx.author.display_name), icon_url=ctx.author.avatar_as(format='png', size=32))
         msg = await ctx.send(embed=e)
 
         await asyncio.sleep(duration)
@@ -714,7 +714,7 @@ class Moderation(Cog):
     @discord.ext.commands.cooldown(rate=10, per=2,
                                    type=discord.ext.commands.BucketType.guild)  # 10 seconds per 2 members in the guild
     async def selfdeafen(self, ctx: DozerContext, *, reason: str = "No reason provided"):
-        """Deafen yourself for a given time period to prevent you from reading or sending messages; useful as a study tool."""
+        """Deafen yourself for a given time period to prevent you from reading or sending messages."""
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
             reason = self.hm_regex.sub("", reason) or "No reason provided"
@@ -820,7 +820,8 @@ class Moderation(Cog):
 
     @command()
     @has_permissions(administrator=True)
-    async def nmconfig(self, ctx: DozerContext, channel_mention: discord.TextChannel, role: discord.Role, *, message):
+    async def nmconfig(self, ctx: DozerContext, channel_mention: discord.TextChannel, role: discord.Role, *, message,
+                       requireteam=None):
         """Sets the config for the new members channel"""
         config = await GuildNewMember.get_by(guild_id=ctx.guild.id)
         if len(config) != 0:
@@ -1207,8 +1208,7 @@ class GuildNewMember(db.DatabaseTable):
             guild_id bigint PRIMARY KEY,
             channel_id bigint NOT NULL,
             role_id bigint NOT NULL,
-            message varchar NOT NULL,
-            require_team bool NOT NULL DEFAULT false
+            message varchar NOT NULL
             )""")
 
     def __init__(self, guild_id: int, channel_id: int, role_id: int, message: str, require_team: bool):
@@ -1329,6 +1329,6 @@ class PunishmentTimerRecords(db.DatabaseTable):
     __versions__ = [version_1]
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the moderation cog to the bot."""
-    bot.add_cog(Moderation(bot))
+    await bot.add_cog(Moderation(bot))

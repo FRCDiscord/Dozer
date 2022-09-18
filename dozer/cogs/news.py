@@ -40,7 +40,7 @@ class News(Cog):
         self.get_new_posts.change_interval(minutes=self.bot.config['news']['check_interval'])
         self.get_new_posts.start()
 
-    def cog_unload(self):
+    async def cog_unload(self):
         """Attempt to gracefully shut down the loop. Doesn't generally work. """
         self.get_new_posts.cancel()
 
@@ -419,7 +419,7 @@ class News(Cog):
             if exception is None:
                 await ctx.send("No exception occurred.")
             else:
-                tb_str = traceback.format_exception(etype=type(exception), value=exception, tb=exception.__traceback__)
+                tb_str = traceback.format_exception(exc=type(exception), value=exception, tb=exception.__traceback__)
                 await ctx.send(f"```{''.join(tb_str)}```")
         except CancelledError:
             await ctx.send("Task has been cancelled.")
@@ -430,10 +430,9 @@ class News(Cog):
     get_exception.example_usage = "`{prefix}news get_exception` - Get the exception that the loop failed with"
 
 
-def setup(bot):
+async def setup(bot):
     """Setup cog"""
-
-    bot.add_cog(News(bot))
+    await bot.add_cog(News(bot))
 
 
 class NewsSubscription(db.DatabaseTable):
