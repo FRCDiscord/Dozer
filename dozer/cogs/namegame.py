@@ -236,7 +236,7 @@ class NameGame(Cog):
     `{prefix}ng help` - show a description on how the robotics team namegame works
     """
 
-    @ng.group(invoke_without_command=True)
+    @group(invoke_without_command=True, parent=ng)
     async def config(self, ctx: DozerContext):
         """Configuration for namegame"""
         await ctx.send(f"""`{ctx.prefix}ng config` reference:
@@ -266,7 +266,7 @@ class NameGame(Cog):
                 await config.update_or_add()
             await ctx.send(f"Default game mode updated to `{mode}`")
 
-    @config.command()
+    # @config.command()
     @has_permissions(manage_guild=True)
     async def setchannel(self, ctx: DozerContext, channel: discord.TextChannel = None):
         """Sets the namegame channel"""
@@ -290,7 +290,7 @@ class NameGame(Cog):
             await config.update_or_add()
             await ctx.send(f"Namegame channel set to {channel.mention}!")
 
-    @config.command()
+#    @config.command()
     @has_permissions(manage_guild=True)
     async def clearsetchannel(self, ctx: DozerContext):
         """Clears the set namegame channel"""
@@ -306,7 +306,7 @@ class NameGame(Cog):
             await new_namegame_config.update_or_add()
         await ctx.send("Namegame channel cleared!")
 
-    @config.command()
+    # @config.command()
     @has_permissions(manage_guild=True)
     async def setpings(self, ctx: DozerContext, enabled: bool):
         """Sets whether or not pings are enabled"""
@@ -320,7 +320,7 @@ class NameGame(Cog):
         await config.update_or_add()
         await ctx.send(f"Pings enabled set to `{enabled}`!")
 
-    @config.command()
+    # @config.command()
     @has_permissions(manage_guild=True)
     async def leaderboardedit(self, ctx: DozerContext, mode: str, user: discord.User, wins: int):
         """Edits the leaderboard"""
@@ -337,7 +337,7 @@ class NameGame(Cog):
         await record.update_or_add()
         await ctx.send(f"{escape_markdown(user.display_name)}'s wins now set to: **{wins}**")
 
-    @config.command()
+#    @config.command()
     @has_permissions(manage_guild=True)
     async def leaderboardclear(self, ctx: DozerContext, mode: str):
         """Clears the leaderboard"""
@@ -865,6 +865,6 @@ class NameGameLeaderboard(db.DatabaseTable):
         return result_list
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the namegame cog to the bot"""
-    bot.add_cog(NameGame(bot))
+    await bot.add_cog(NameGame(bot))

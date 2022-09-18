@@ -6,7 +6,6 @@ from asyncio import sleep
 import discord
 from discord.ext.commands import cooldown, BucketType, guild_only, BadArgument, MissingPermissions
 from discord.utils import escape_markdown
-from discord_slash import cog_ext, SlashContext
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -75,12 +74,6 @@ class Fun(Cog):
                 await msg.delete()
 
         return players[turn], players[(turn + 1) % 2]
-
-    # Removed until discord fixes the slash command bugs
-    # @cog_ext.cog_slash(name="fight", description="Fight another member, with an optional wager")
-    # async def slash_fight(self, ctx: SlashContext, opponent: discord.Member, wager: int = 0):
-    #     """Fight slash handler"""
-    #     await self.fight(ctx, opponent, wager)
 
     @guild_only()
     @discord.ext.commands.cooldown(1, 5, BucketType.channel)
@@ -191,6 +184,6 @@ class Fun(Cog):
         """
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the fun cog to Dozer"""
-    bot.add_cog(Fun(bot))
+    await bot.add_cog(Fun(bot))

@@ -7,7 +7,10 @@ from collections.abc import Mapping
 from typing import Dict, Union
 
 import discord
+from discord import app_commands
 from discord.ext import commands
+from discord.ext.commands import HybridCommand
+from discord.ext.commands.core import MISSING
 
 from dozer import db
 from dozer.context import DozerContext
@@ -51,22 +54,8 @@ class CommandMixin:
         self._example_usage = self.__original_kwargs__['example_usage'] = inspect.cleandoc(usage)
 
 
-class Command(CommandMixin, commands.Command):
+class Command(CommandMixin, HybridCommand):
     """Represents a command"""
-
-
-class Group(CommandMixin, commands.Group):
-    """Class for command groups"""
-
-    def command(self, *args, **kwargs):
-        """Initiates a command"""
-        kwargs.setdefault('cls', Command)
-        return super(Group, self).command(*args, **kwargs)
-
-    def group(self, *args, **kwargs):
-        """Initiates a command group"""
-        kwargs.setdefault('cls', Group)
-        return super(Group, self).command(*args, **kwargs)
 
 
 def command(**kwargs):
@@ -79,6 +68,44 @@ def group(**kwargs):
     """Links command groups"""
     kwargs.setdefault('cls', Group)
     return commands.group(**kwargs)
+
+
+class Group(CommandMixin, commands.HybridGroup):
+    """Class for command groups"""
+
+    def command(
+        self,
+        name: Union[str, app_commands.locale_str] = MISSING,
+        *args: typing.Any,
+        with_app_command: bool = True,
+        **kwargs: typing.Any,
+    ):
+        """Initiates a command"""
+
+        def decorator(func):
+            kwargs.setdefault('parent', self)
+            result = command(name=name, *args, with_app_command=with_app_command, **kwargs)(func)
+            self.add_command(result)
+            return result
+
+        return decorator
+
+    def group(
+        self,
+        name: Union[str, app_commands.locale_str] = MISSING,
+        *args: typing.Any,
+        with_app_command: bool = True,
+        **kwargs: typing.Any,
+    ):
+        """Initiates a command group"""
+
+        def decorator(func):
+            kwargs.setdefault('parent', self)
+            result = group(name=name, *args, with_app_command=with_app_command, **kwargs)(func)
+            self.add_command(result)
+            return result
+
+        return decorator
 
 
 class Cog(commands.Cog):
@@ -128,7 +155,7 @@ class Reactor:
         auto_remove: if True, reactions are removed once processed
         timeout: time, in seconds, to wait before stopping automatically. Set to None to wait forever.
         """
-        self.dest = ctx.channel
+        self.dest = ctx.interaction.followup if ctx.interaction else ctx.channel
         self.bot = ctx.bot
         self.caller = ctx.author
         self.me = ctx.guild.get_member(self.bot.user.id)
@@ -177,6 +204,7 @@ class Reactor:
     def _check_reaction(self, reaction: discord.Reaction, member: discord.Member):
         if self.message is not None:
             return reaction.message.id == self.message.id and member.id == self.caller.id
+        return None
 
 
 class Paginator(Reactor):
@@ -267,7 +295,7 @@ async def paginate(ctx: DozerContext, pages, *, start: int = 0, auto_remove: boo
     """
     Simple pagination based on Paginator. Pagination is handled normally and other reactions are ignored.
     """
-    paginator = Paginator(ctx, ..., pages, start=start, auto_remove=auto_remove, timeout=timeout)
+    paginator = Paginator(ctx, [...], pages, start=start, auto_remove=auto_remove, timeout=timeout)
     async for reaction in paginator:
         pass  # The normal pagination reactions are handled - just drop anything else
 
@@ -337,7 +365,7 @@ class PrefixHandler:
 class DynamicPrefixEntry(db.DatabaseTable):
     """Holds the custom prefixes for guilds"""
     __tablename__ = 'dynamic_prefixes'
-    __uniques__ = ['guild_id']
+    __uniques__ = 'guild_id'
 
     @classmethod
     async def initial_create(cls):

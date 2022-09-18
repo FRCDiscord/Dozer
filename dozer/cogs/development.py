@@ -34,7 +34,7 @@ class Development(Cog):
         """Reloads a cog."""
         extension = 'dozer.cogs.' + cog
         msg = await ctx.send('Reloading extension %s' % extension)
-        self.bot.reload_extension(extension)
+        await self.bot.reload_extension(extension)
         await msg.edit(content='Reloaded extension %s' % extension)
 
     reload.example_usage = """
@@ -146,6 +146,6 @@ def load_function(code: str, globals_, locals_):
                 raise err
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the development cog to the bot."""
-    bot.add_cog(Development(bot))
+    await bot.add_cog(Development(bot))

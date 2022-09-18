@@ -16,7 +16,6 @@ import discord
 from discord.utils import escape_markdown
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
-from discord_slash import cog_ext, SlashContext
 
 from dozer.bot import Dozer
 from dozer.context import DozerContext
@@ -39,12 +38,12 @@ class Levels(Cog):
 
     def __init__(self, bot: Dozer):
         super().__init__(bot)
-        self._loop = bot.loop
+        self._loop = asyncio.get_running_loop()
+        self._loop.create_task(self.preload_cache())
+        self.session = aiohttp.ClientSession(loop=self._loop)
         self.guild_settings = {}
         self._level_roles = {}
         self._xp_cache = {}  # dct[(guild_id, user_id)] = MemberXPCache(...)
-        self._loop.create_task(self.preload_cache())
-        self.session = aiohttp.ClientSession(loop=bot.loop)
         self.sync_task.start()
 
     @staticmethod
@@ -235,7 +234,7 @@ class Levels(Cog):
         """Do preparation work before starting the periodic timer to sync XP with the database."""
         await self.bot.wait_until_ready()
 
-    def cog_unload(self):
+    async def cog_unload(self):
         """Detach from the running bot and cancel long-running code as the cog is unloaded."""
         self.sync_task.stop()
 
@@ -638,11 +637,6 @@ class Levels(Cog):
                                                                                 f"Notification channel: {lvl_up_msgs}")
             await ctx.send(embed=embed)
 
-    @cog_ext.cog_slash(name="rank", description="Returns your dozer rank")
-    async def slash_rank(self, ctx: SlashContext, member: discord.Member = None):
-        """Ranks slash handler"""
-        await self.rank(ctx, member=member)
-
     @command(aliases=["rnak", "level"])
     @guild_only()
     @discord.ext.commands.cooldown(rate=1, per=5, type=discord.ext.commands.BucketType.user)
@@ -685,19 +679,13 @@ class Levels(Cog):
 
             embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
                                  f"#{rank} of {count} in this server")
-        embed.set_author(name=escape_markdown(member.display_name), icon_url=member.avatar_url_as(format='png', size=64))
+        embed.set_author(name=escape_markdown(member.display_name), icon_url=member.avatar_as(format='png', size=64))
         await ctx.send(embed=embed)
 
     rank.example_usage = """
     `{prefix}rank`: show your ranking
     `{prefix}rank coolgal#1234`: show another user's ranking
     """
-
-    # Disabled until slash command pagination is fixed by discord
-    # @cog_ext.cog_slash(name="leaderboard", description="Returns the guilds dozer leaderboard")
-    # async def slash_levels(self, ctx: SlashContext, start_member: discord.Member = None):
-    #     """Leaderboard slash handler"""
-    #     await self.levels(ctx, start_member)
 
     @command(aliases=["ranks", "leaderboard"])
     @guild_only()
@@ -896,6 +884,6 @@ class GuildXPSettings(db.DatabaseTable):
     __versions__ = [version_1]
 
 
-def setup(bot):
+async def setup(bot):
     """Add the levels cog to a bot."""
-    bot.add_cog(Levels(bot))
+    await bot.add_cog(Levels(bot))

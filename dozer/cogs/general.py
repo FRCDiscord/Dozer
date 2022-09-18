@@ -35,10 +35,15 @@ class General(Cog):
     @command(name='help', aliases=['about'])
     @bot_has_permissions(add_reactions=True, embed_links=True,
                          read_message_history=True)  # Message history is for internals of paginate()
-    async def base_help(self, ctx: DozerContext, *target):
+    async def base_help(self, ctx: DozerContext, *, target=None):
         """Show this message."""
-        if not target:  # No commands - general help
+        await ctx.defer()
+        try:
+            target = target.split(" ")
+        except AttributeError:  # No commands - general help
             await self._help_all(ctx)
+        if target is None:
+            pass
         elif len(target) == 1:  # Cog or command
             target_name = target[0]
             if target_name in ctx.bot.cogs:
@@ -66,7 +71,7 @@ class General(Cog):
         """Gets the help message for all commands."""
         info = discord.Embed(title='Dozer: Info', description='A guild management bot for FIRST Discord servers',
                              color=discord.Color.blue())
-        info.set_thumbnail(url=self.bot.user.avatar_url)
+        info.set_thumbnail(url=self.bot.user.avatar)
         info.add_field(name='About',
                        value="Dozer: A collaborative bot for FIRST Discord servers, developed by the FRC Discord Server Development Team")
         info.add_field(name='About `{}{}`'.format(ctx.prefix, ctx.invoked_with), value=inspect.cleandoc("""
@@ -208,7 +213,7 @@ class General(Cog):
         await ctx.send(embed=e)
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the general cog to the bot"""
     bot.remove_command('help')
-    bot.add_cog(General(bot))
+    await bot.add_cog(General(bot))
