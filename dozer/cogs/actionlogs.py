@@ -72,7 +72,7 @@ class Actionlog(Cog):
             channel = member.guild.get_channel(config[0].channel_id)
             if channel:
                 embed = discord.Embed(color=0xFF0000)
-                embed.set_author(name='Member Left', icon_url=member.avatar_as(format='png', size=32))
+                embed.set_author(name='Member Left', icon_url=member.avatar.replace(format='png', size=32))
                 embed.description = format_join_leave(config[0].leave_message, member)
                 embed.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
                 try:
