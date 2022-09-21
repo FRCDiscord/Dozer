@@ -4,14 +4,14 @@ import io
 import itertools
 import json
 from pprint import pformat
+from typing import TYPE_CHECKING
 from urllib.parse import quote as urlquote, urljoin
 
 import aiohttp
 import aiotba
 import async_timeout
-import googlemaps
 import discord
-from discord.ext import commands
+import googlemaps
 from discord.ext.commands import BadArgument
 from discord.utils import escape_markdown
 from geopy.geocoders import Nominatim
@@ -19,11 +19,14 @@ from geopy.geocoders import Nominatim
 from dozer.context import DozerContext
 from ._utils import *
 
+if TYPE_CHECKING:
+    from dozer import Dozer
+
 
 class TBA(Cog):
     """Commands that talk to The Blue Alliance"""
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: "Dozer"):
 
         super().__init__(bot)
         tba_config = bot.config['tba']

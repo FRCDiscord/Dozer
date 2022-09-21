@@ -6,6 +6,7 @@ import re
 import time
 import typing
 from logging import getLogger
+from typing import TYPE_CHECKING
 from typing import Union
 
 import discord
@@ -18,6 +19,9 @@ from ._utils import *
 from .general import blurple
 from .. import db
 from ..Components.CustomJoinLeaveMessages import send_log, CustomJoinLeaveMessages
+
+if TYPE_CHECKING:
+    from dozer import Dozer
 
 __all__ = ["SafeRoleConverter", "Moderation", "NewMemPurgeConfig", "GuildNewMember"]
 
@@ -45,7 +49,7 @@ class SafeRoleConverter(RoleConverter):
 class Moderation(Cog):
     """A cog to handle moderation tasks."""
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: "Dozer"):
         super().__init__(bot)
         self.links_config = db.ConfigCache(GuildMessageLinks)
         self.punishment_timer_tasks = []

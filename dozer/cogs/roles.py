@@ -2,10 +2,10 @@
 import asyncio
 import time
 import typing
+from typing import TYPE_CHECKING
 
 import discord
 import discord.utils
-from discord.ext import commands
 from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgument, guild_only
 from discord.utils import escape_markdown
 
@@ -16,13 +16,16 @@ from .. import db
 from ..bot import DOZER_LOGGER
 from ..db import *
 
+if TYPE_CHECKING:
+    from dozer import Dozer
+
 blurple = discord.Color.blurple()
 
 
 class Roles(Cog):
     """Commands for role management."""
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: "Dozer"):
         super().__init__(bot)
         for loop_command in self.giveme.walk_commands():
             @loop_command.before_invoke  # pylint: disable=cell-var-from-loop

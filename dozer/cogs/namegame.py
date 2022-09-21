@@ -5,18 +5,21 @@ import pickle
 import traceback
 from collections import OrderedDict
 from functools import wraps
+from typing import TYPE_CHECKING
 
 import discord
 import tbapi
-from discord.utils import escape_markdown
-from discord.ext import commands
 from discord.ext.commands import has_permissions
+from discord.utils import escape_markdown
 from fuzzywuzzy import fuzz
 
 from dozer.bot import DOZER_LOGGER
 from dozer.context import DozerContext
 from ._utils import *
 from .. import db
+
+if TYPE_CHECKING:
+    from dozer import Dozer
 
 SUPPORTED_MODES = ["frc", "ftc"]
 
@@ -165,7 +168,7 @@ class NameGameSession():
 class NameGame(Cog):
     """Namegame commands"""
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: "Dozer"):
         super().__init__(bot)
         with gzip.open("ftc_teams.pickle.gz") as f:
             raw_teams = pickle.load(f)

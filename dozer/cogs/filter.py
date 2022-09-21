@@ -2,14 +2,17 @@
 with whitelisted role exceptions."""
 
 import re
+from typing import TYPE_CHECKING
 
 import discord
-from discord.ext import commands
 from discord.ext.commands import guild_only, has_permissions
 
 from dozer.context import DozerContext
 from ._utils import *
 from .. import db
+
+if TYPE_CHECKING:
+    from dozer import Dozer
 
 
 class Filter(Cog):
@@ -20,7 +23,7 @@ class Filter(Cog):
     """
     filter_dict = {}
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: "Dozer"):
         super().__init__(bot)
         self.word_filter_setting = db.ConfigCache(WordFilterSetting)
         self.word_filter_role_whitelist = db.ConfigCache(WordFilterRoleWhitelist)

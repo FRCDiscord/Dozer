@@ -5,6 +5,7 @@ import logging
 import typing
 from collections.abc import Mapping
 from typing import Dict, Union
+from typing import TYPE_CHECKING
 
 import discord
 from discord import app_commands
@@ -14,6 +15,9 @@ from discord.ext.commands.core import MISSING
 
 from dozer import db
 from dozer.context import DozerContext
+
+if TYPE_CHECKING:
+    from dozer import Dozer
 
 __all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk', 'dev_check',
            'DynamicPrefixEntry']
@@ -111,9 +115,9 @@ class Group(CommandMixin, commands.HybridGroup):
 class Cog(commands.Cog):
     """Initiates cogs."""
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: "Dozer"):
         super().__init__()
-        self.bot = bot
+        self.bot: "Dozer" = bot
 
 
 def dev_check():

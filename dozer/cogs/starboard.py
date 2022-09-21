@@ -1,16 +1,18 @@
 """Cog to post specific 'Hall of Fame' messages in a specific channel"""
 import asyncio
 import logging
-import typing
+from typing import TYPE_CHECKING
 
 import discord
-from discord.ext import commands
 from discord.ext.commands import guild_only, has_permissions
 from discord.utils import escape_markdown
 
 from dozer.context import DozerContext
 from ._utils import *
 from .. import db
+
+if TYPE_CHECKING:
+    from dozer import Dozer
 
 MAX_EMBED = 1024
 LOCK_TIME = .1
@@ -62,7 +64,7 @@ def make_starboard_embed(msg: discord.Message, reaction_count: int):
 class Starboard(Cog):
     """Cog to post specific 'Hall of Fame' messages in a specific channel"""
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: "Dozer"):
         super().__init__(bot)
         self.config_cache = db.ConfigCache(StarboardConfig)
         self.locked_messages = set()

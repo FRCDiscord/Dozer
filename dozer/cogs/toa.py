@@ -3,16 +3,19 @@
 import json
 from asyncio import sleep
 from datetime import datetime
+from typing import TYPE_CHECKING
 from urllib.parse import urljoin
 
 import aiohttp
 import async_timeout
 import discord
-from discord.ext import commands
 from discord.utils import escape_markdown
 
 from dozer.context import DozerContext
 from ._utils import *
+
+if TYPE_CHECKING:
+    from dozer import Dozer
 
 embed_color = discord.Color(0xf89808)
 
@@ -59,7 +62,7 @@ class TOAParser:
 class TOA(Cog):
     """TOA commands"""
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: "Dozer"):
         super().__init__(bot)
         self.http_session = aiohttp.ClientSession()
         self.parser = TOAParser(bot.config['toa']['key'], self.http_session, app_name=bot.config['toa']['app_name'])

@@ -1,14 +1,19 @@
 """Music commands, currently disabled"""
 import logging
+from typing import TYPE_CHECKING
 
-from discord.ext import commands
 import lavaplayer
+from discord.ext import commands
 
 from dozer.cogs._utils import command
+
+if TYPE_CHECKING:
+    from dozer import Dozer
 
 
 class Music(commands.Cog):
     """Music commands cog"""
+
     def __init__(self, bot):
         self.bot = bot
         if not self.bot.config['lavalink']['enabled']:
@@ -128,7 +133,7 @@ class Music(commands.Cog):
         await ctx.send("Repeated the queue.")
 
 
-async def setup(bot: commands.Bot):
+async def setup(bot: "Dozer"):
     """Adds the cog to the bot"""
     # await bot.add_cog(Music(bot))
     logging.getLogger("dozer").info("Music cog is temporarily disabled due to code bugs.")

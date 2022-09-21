@@ -4,9 +4,9 @@ import datetime
 import logging
 import math
 import time
+from typing import TYPE_CHECKING
 
 import discord
-from discord.ext import commands
 from discord.ext.commands import has_permissions, BadArgument
 from discord.utils import escape_markdown
 
@@ -17,6 +17,8 @@ from .moderation import GuildNewMember
 from .. import db
 from ..Components.CustomJoinLeaveMessages import CustomJoinLeaveMessages, format_join_leave, send_log
 
+if TYPE_CHECKING:
+    from dozer import Dozer
 DOZER_LOGGER = logging.getLogger(__name__)
 
 
@@ -34,7 +36,7 @@ async def embed_paginatorinator(content_name, embed, text):
 class Actionlog(Cog):
     """A cog to handle guild events tasks"""
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: "Dozer"):
         super().__init__(bot)
         self.edit_delete_config = db.ConfigCache(GuildMessageLog)
         self.bulk_delete_buffer = {}
