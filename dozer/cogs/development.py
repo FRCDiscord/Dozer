@@ -87,11 +87,11 @@ class Development(Cog):
             ret = await locals_['evaluated_function'](ctx)
 
             e.title = 'Python Evaluation - Success'
-            e.color = 0x00FF00
+            e.colour = 0x00FF00
             e.add_field(name='Output', value='```\n%s (%s)\n```' % (repr(ret), type(ret).__name__), inline=False)
         except Exception as err:
             e.title = 'Python Evaluation - Error'
-            e.color = 0xFF0000
+            e.colour = 0xFF0000
             e.add_field(name='Error', value='```\n%s\n```' % repr(err))
         await ctx.send('', embed=e)
 

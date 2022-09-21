@@ -97,7 +97,7 @@ class NameGameSession():
         embed = discord.Embed()
         embed.title = title
         embed.description = description
-        embed.color = color
+        embed.colour = color
         embed.add_field(name="Players", value=", ".join([escape_markdown(p.display_name) for p in self.players.keys()]) or "n/a")
         embed.add_field(name=v + "Player", value=self.current_player)
         embed.add_field(name=v + "Number", value=self.number or "Wildcard")
@@ -202,7 +202,7 @@ class NameGame(Cog):
     async def info(self, ctx: DozerContext):
         """Show a description of the robotics team name game and how to play."""
         game_embed = discord.Embed()
-        game_embed.color = discord.Color.magenta()
+        game_embed.colour = discord.Color.magenta()
         game_embed.title = "How to play"
         game_embed.description = "This is a very simple little game where players will name a team number and name that " \
                                  "starts with the last digit of the last named team. Some more specific rules are below:"
@@ -540,7 +540,7 @@ class NameGame(Cog):
                 game.vote_player = ctx.author
                 game.vote_correct = False
                 vote_embed = discord.Embed()
-                vote_embed.color = discord.Color.gold()
+                vote_embed.colour = discord.Color.gold()
                 vote_embed.title = "A vote is needed!"
                 vote_embed.description = "A player has made a choice with less than 50% similarity. The details of the " \
                                          "pick are below. Click on the two emoji to vote if this is correct or not. A" \
@@ -649,7 +649,7 @@ class NameGame(Cog):
                 record = NameGameLeaderboard(user_id=winner.id, wins=1, game_mode=game.mode)
             await record.update_or_add()
             win_embed = discord.Embed()
-            win_embed.color = discord.Color.gold()
+            win_embed.colour = discord.Color.gold()
             win_embed.title = "We have a winner!"
             win_embed.add_field(name="Winning Player", value=winner)
             win_embed.add_field(name="Wins Total", value=record.wins)

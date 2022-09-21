@@ -132,7 +132,7 @@ class Filter(Cog):
             embed = discord.Embed(title="Filters for {}".format(ctx.guild.name))
             embed.description = "No filters found for this guild! Add one using `{}filter add <regex> [name]`".format(
                 ctx.prefix)
-            embed.color = discord.Color.red()
+            embed.colour = discord.Color.red()
             await ctx.send(embed=embed)
             return
 
@@ -145,7 +145,7 @@ class Filter(Cog):
         embed = discord.Embed()
         embed.title = "Filters for {}".format(ctx.guild.name)
         embed.add_field(name="Filters", value=filter_text)
-        embed.color = discord.Color.dark_orange()
+        embed.colour = discord.Color.dark_orange()
         await self.check_dm_filter(ctx, embed)
 
     filter.example_usage = """`{prefix}filter add test` - Adds test as a filter.
