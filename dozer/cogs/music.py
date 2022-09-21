@@ -1,14 +1,14 @@
 """Music commands, currently disabled"""
-import logging
-
-from discord.ext import commands
 import lavaplayer
+from discord.ext import commands
+from loguru import logger
 
 from dozer.cogs._utils import command
 
 
 class Music(commands.Cog):
     """Music commands cog"""
+
     def __init__(self, bot):
         self.bot = bot
         if not self.bot.config['lavalink']['enabled']:
@@ -131,4 +131,4 @@ class Music(commands.Cog):
 async def setup(bot: commands.Bot):
     """Adds the cog to the bot"""
     # await bot.add_cog(Music(bot))
-    logging.getLogger("dozer").info("Music cog is temporarily disabled due to code bugs.")
+    logger.info("Music cog is temporarily disabled due to code bugs.")

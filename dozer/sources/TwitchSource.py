@@ -1,14 +1,12 @@
 """News source to send a notification whenever a twitch streamer goes live."""
 
 import datetime
-import logging
 
 import discord
 from dateutil import parser
+from loguru import logger
 
 from .AbstractSources import DataBasedSource
-
-DOZER_LOGGER = logging.getLogger('dozer')
 
 
 class TwitchSource(DataBasedSource):
@@ -55,7 +53,7 @@ class TwitchSource(DataBasedSource):
         try:
             self.access_token = response['access_token']
         except KeyError:
-            DOZER_LOGGER.critical(f"Error in {self.full_name} Token Get: {response['message']}")
+            logger.critical(f"Error in {self.full_name} Token Get: {response['message']}")
             self.disabled = True
             return
 
@@ -77,7 +75,7 @@ class TwitchSource(DataBasedSource):
 
         if response.status == 401:
             if 'WWW-Authenticate' in response.headers:
-                DOZER_LOGGER.info("Twitch token expired when request made, request new token and retrying.")
+                logger.info("Twitch token expired when request made, request new token and retrying.")
                 await self.get_token()
                 return await self.request(url, headers=headers, *args, **kwargs)
 
@@ -132,7 +130,7 @@ class TwitchSource(DataBasedSource):
     async def get_new_posts(self):
         """Assemble all the current user IDs, get any game names and return the embeds and strings"""
         if datetime.datetime.now() > self.expiry_time:
-            DOZER_LOGGER.info("Refreshing Twitch token due to expiry time")
+            logger.info("Refreshing Twitch token due to expiry time")
             await self.get_token()
 
         params = []

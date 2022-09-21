@@ -1,7 +1,6 @@
 """Provides guild logging functions for Dozer."""
 import asyncio
 import datetime
-import logging
 import math
 import time
 
@@ -9,6 +8,7 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import has_permissions, BadArgument
 from discord.utils import escape_markdown
+from loguru import logger
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -16,8 +16,6 @@ from .general import blurple
 from .moderation import GuildNewMember
 from .. import db
 from ..Components.CustomJoinLeaveMessages import CustomJoinLeaveMessages, format_join_leave, send_log
-
-DOZER_LOGGER = logging.getLogger(__name__)
 
 
 async def embed_paginatorinator(content_name, embed, text):
@@ -78,7 +76,7 @@ class Actionlog(Cog):
                 try:
                     await channel.send(embed=embed)
                 except discord.Forbidden:
-                    DOZER_LOGGER.warning(
+                    logger.warning(
                         f"Guild {member.guild}({member.guild.id}) has invalid permissions for join/leave logs")
 
     @Cog.listener("on_member_update")
@@ -202,7 +200,7 @@ class Actionlog(Cog):
                 try:
                     await channel.send(embed=embed)
                 except discord.HTTPException as e:
-                    DOZER_LOGGER.debug(f"Bulk delete embed failed to send: {e}")
+                    logger.debug(f"Bulk delete embed failed to send: {e}")
                 embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000,
                                       timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
                 page_character_count = len(message.content)
@@ -223,7 +221,7 @@ class Actionlog(Cog):
         try:
             await channel.send(embed=embed)
         except discord.HTTPException as e:
-            DOZER_LOGGER.debug(f"Bulk delete embed failed to send: {e}")
+            logger.debug(f"Bulk delete embed failed to send: {e}")
         header_embed.description = f"{len(message_ids)} Messages Deleted In: {message_channel.mention}\n" \
                                    f"Messages cached: {len(cached_messages)}/{len(message_ids)} \n" \
                                    f"Messages logged: {message_count}/{len(message_ids)}"

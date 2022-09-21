@@ -1,7 +1,6 @@
 """Commands and management for news subscriptions"""
 
 import datetime
-import logging
 import traceback
 from asyncio import CancelledError, InvalidStateError
 from xml.etree import ElementTree
@@ -10,13 +9,12 @@ import aiohttp
 import discord
 from discord.ext import tasks
 from discord.ext.commands import guild_only, has_permissions, BadArgument
+from loguru import logger
 
 from dozer.context import DozerContext
 from ._utils import *
 from .. import db
 from ..sources import DataBasedSource, Source, sources
-
-DOZER_LOGGER = logging.getLogger('dozer')
 
 
 def str_or_none(obj):
@@ -47,18 +45,18 @@ class News(Cog):
     @tasks.loop()
     async def get_new_posts(self):
         """Attempt to get current subscriptions and post new posts in the respective channels"""
-        DOZER_LOGGER.debug('Getting new news posts.')
+        logger.debug('Getting new news posts.')
         to_delete = [source.short_name for source in self.sources.values() if source.disabled]
         for name in to_delete:
             del self.sources[name]
 
         for source in self.sources.values():
 
-            DOZER_LOGGER.debug(f"Getting source {source.full_name}")
+            logger.debug(f"Getting source {source.full_name}")
             subs = await NewsSubscription.get_by(source=source.short_name)
 
             if not subs:
-                DOZER_LOGGER.debug(f"Skipping source {source.full_name} due to no subscriptions")
+                logger.debug(f"Skipping source {source.full_name} due to no subscriptions")
                 continue
 
             channel_dict = {}
@@ -75,9 +73,9 @@ class News(Cog):
             for sub in subs:
                 channel = self.bot.get_channel(sub.channel_id)
                 if channel is None:
-                    DOZER_LOGGER.error(f"Channel {sub.channel_id} (sub ID {sub.id}) returned None. Not removing this"
-                                       f"in case it's a discord error, but if discord is fine it's recommended to "
-                                       f"remove this channel manually.")
+                    logger.error(f"Channel {sub.channel_id} (sub ID {sub.id}) returned None. Not removing this"
+                                 f"in case it's a discord error, but if discord is fine it's recommended to "
+                                 f"remove this channel manually.")
                     continue
 
                 if sub.data is None:
@@ -92,7 +90,7 @@ class News(Cog):
             try:
                 posts = await source.get_new_posts()
             except ElementTree.ParseError:
-                DOZER_LOGGER.error(f"XML Parser errored out on source f{source.full_name}")
+                logger.error(f"XML Parser errored out on source f{source.full_name}")
                 continue
             if posts is None:
                 continue
@@ -109,16 +107,16 @@ class News(Cog):
                             await channel.send(post)
 
         next_run = self.get_new_posts.next_iteration
-        DOZER_LOGGER.debug(f"Done with getting news. Next run in "
-                           f"{(next_run - datetime.datetime.now(datetime.timezone.utc)).total_seconds()}"
-                           f" seconds.")
+        logger.debug(f"Done with getting news. Next run in "
+                     f"{(next_run - datetime.datetime.now(datetime.timezone.utc)).total_seconds()}"
+                     f" seconds.")
 
     @get_new_posts.error
     async def log_exception(self, _exception: Exception):
         """Catch error in the news loop and attempt to restart"""
-        DOZER_LOGGER.error(f"News fetch encountered an error: \"{_exception}\", attempting to restart")
+        logger.error(f"News fetch encountered an error: \"{_exception}\", attempting to restart")
         self.get_new_posts.restart()
-        DOZER_LOGGER.debug("News fetch successfully restarted")
+        logger.debug("News fetch successfully restarted")
 
     @get_new_posts.before_loop
     async def startup(self):
@@ -140,7 +138,7 @@ class News(Cog):
                     await self.sources[source.short_name].first_run()
             except ElementTree.ParseError as err:
                 del self.sources[source.short_name]
-                DOZER_LOGGER.error(f"Parsing error in source {source.short_name}: {err}")
+                logger.error(f"Parsing error in source {source.short_name}: {err}")
 
     @Cog.listener()
     async def on_guild_channel_delete(self, channel: discord.abc.GuildChannel):
@@ -218,7 +216,7 @@ class News(Cog):
 
             added = await source.add_data(data_obj)
             if not added:
-                DOZER_LOGGER.error(f"Failed to add data {data_obj} to source {source.full_name}")
+                logger.error(f"Failed to add data {data_obj} to source {source.full_name}")
                 await ctx.send("Failed to add new data source. Please contact the Dozer Administrators.")
                 return
 
@@ -278,8 +276,8 @@ class News(Cog):
                                f"{data_obj} found.")
                 return
             elif len(sub) > 1:
-                DOZER_LOGGER.error(f"More that one subscription of {source.full_name} for channel "
-                                   f"{channel.mention} with data {data} found when attempting to delete.")
+                logger.error(f"More that one subscription of {source.full_name} for channel "
+                             f"{channel.mention} with data {data} found when attempting to delete.")
                 await ctx.send(f"More that one subscription of {source.full_name} for channel {channel.mention} "
                                f"with data {data} found. Please contact the Dozer administrator for help.")
                 return
@@ -288,7 +286,7 @@ class News(Cog):
             if len(data_exists) > 1:
                 removed = await source.remove_data(data_obj)
                 if not removed:
-                    DOZER_LOGGER.error(f"Failed to remove data {data_obj} from source {source.full_name}")
+                    logger.error(f"Failed to remove data {data_obj} from source {source.full_name}")
                     await ctx.send("Failed to remove data source. Please contact the Dozer Administrators.")
                     return
 
@@ -302,8 +300,8 @@ class News(Cog):
                 if isinstance(source, DataBasedSource):
                     raise BadArgument("There ware multiple subscriptions found. Try again with a data parameter.")
                 else:
-                    DOZER_LOGGER.error(f"More than one subscription of {source.full_name} for channel "
-                                       f"{channel.mention} found when attempting to delete.")
+                    logger.error(f"More than one subscription of {source.full_name} for channel "
+                                 f"{channel.mention} found when attempting to delete.")
                     raise BadArgument(f"More than one subscription of {source.full_name} for channel "
                                       f"{channel.mention} was found. Please contact the Dozer administrators for help.")
 
@@ -360,7 +358,7 @@ class News(Cog):
         for result in results:
             channel = ctx.bot.get_channel(result.channel_id)
             if channel is None:
-                DOZER_LOGGER.error(f"Channel ID {result.channel_id} for subscription ID {result.id} not found.")
+                logger.error(f"Channel ID {result.channel_id} for subscription ID {result.id} not found.")
                 continue
 
             try:
@@ -419,7 +417,7 @@ class News(Cog):
             if exception is None:
                 await ctx.send("No exception occurred.")
             else:
-                tb_str = traceback.format_exception(exc=type(exception), value=exception, tb=exception.__traceback__)
+                tb_str = traceback.format_exception(etype=type(exception), value=exception, tb=exception.__traceback__)
                 await ctx.send(f"```{''.join(tb_str)}```")
         except CancelledError:
             await ctx.send("Task has been cancelled.")

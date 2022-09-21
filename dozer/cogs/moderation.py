@@ -1,17 +1,16 @@
 """Provides moderation commands for Dozer."""
 import asyncio
 import datetime
-import logging
 import re
 import time
 import typing
-from logging import getLogger
 from typing import Union
 
 import discord
 from discord.ext import tasks, commands
 from discord.ext.commands import BadArgument, has_permissions, RoleConverter, guild_only
 from discord.utils import escape_markdown
+from loguru import logger
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -25,7 +24,7 @@ from ..Components.TeamNumbers import TeamNumbers
 
 MAX_PURGE = 1000
 
-DOZER_LOGGER = logging.getLogger(__name__)
+
 
 
 class SafeRoleConverter(RoleConverter):
@@ -54,7 +53,7 @@ class Moderation(Cog):
 
     async def nm_kick_internal(self, guild: discord.Guild = None):
         """Kicks people who have not done the new member process within a set amount of time."""
-        DOZER_LOGGER.debug("Starting nm_kick cycle...")
+        logger.debug("Starting nm_kick cycle...")
         if not guild:
             entries = await NewMemPurgeConfig.get_by()
         else:
@@ -129,7 +128,7 @@ class Moderation(Cog):
                     try:
                         await channel.send(embed=modlog_embed)
                     except discord.Forbidden as e:
-                        DOZER_LOGGER.warning(
+                        logger.warning(
                             f"Unable to send modlog in guild \"{channel.guild}\" ({channel.guild.id}) reason {e}")
         else:
             if orig_channel is not None:
@@ -144,7 +143,7 @@ class Moderation(Cog):
                 try:
                     await channel.set_permissions(target=member, overwrite=None if overwrite.is_empty() else overwrite)
                 except discord.Forbidden as e:
-                    DOZER_LOGGER.error(
+                    logger.error(
                         f"Failed to catch missing perms in {channel} ({channel.id}) Guild: {channel.guild.id}; Error: {e}")
 
 
@@ -180,15 +179,15 @@ class Moderation(Cog):
             self.bot.loop.create_task(
                 self.punishment_timer(seconds, target, PunishmentTimerRecords.type_map[punishment_type], reason, actor,
                                       orig_channel))
-            getLogger('dozer').info(
+            logger.info(
                 f"Restarted {PunishmentTimerRecords.type_map[punishment_type].__name__} of {target} in {guild}")
 
     async def restart_all_timers(self):
         """Restarts all timers"""
-        DOZER_LOGGER.info("Restarting all timers")
+        logger.info("Restarting all timers")
         for timer in self.punishment_timer_tasks:
             # timer: asyncio.Task
-            DOZER_LOGGER.info(f"Stopping \"{timer.get_name()}\"")
+            logger.info(f"Stopping \"{timer.get_name()}\"")
         for timer in self.punishment_timer_tasks:
             timer.cancel()
         self.punishment_timer_tasks = []
@@ -203,8 +202,8 @@ class Moderation(Cog):
         asyncio.current_task().set_name(f"PunishmentTimer for {target}")
         self.punishment_timer_tasks.append(asyncio.current_task())
 
-        DOZER_LOGGER.info(f"Starting{' self' if not global_modlog else ''} {punishment.__name__} timer of \"{target}\" in \"{target.guild}\" will "
-                          f"expire in {seconds} seconds")
+        logger.info(f"Starting{' self' if not global_modlog else ''} {punishment.__name__} timer of \"{target}\" in \"{target.guild}\" will "
+                    f"expire in {seconds} seconds")
 
         if seconds == 0:
             return
