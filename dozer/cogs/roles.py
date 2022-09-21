@@ -263,7 +263,7 @@ class Roles(Cog):
                 await msg.delete()
             except discord.HTTPException:
                 DOZER_LOGGER.debug(
-                    f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
+                    f"Unable to delete message to {ctx.author} in guild {ctx.guild} Reason: HTTPException")
             try:
                 await ctx.message.delete()
             except discord.Forbidden:
@@ -273,7 +273,7 @@ class Roles(Cog):
                 await msg.clear_reactions()
             except discord.HTTPException:
                 DOZER_LOGGER.debug(
-                    f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
+                    f"Unable to clear reactions from message to {ctx.author} in guild {ctx.guild} Reason: HTTPException")
             return
 
     giveme.example_usage = """
@@ -385,7 +385,7 @@ class Roles(Cog):
                 await msg.delete()
             except discord.HTTPException:
                 DOZER_LOGGER.debug(
-                    f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
+                    f"Unable to delete message to {ctx.author} in guild {ctx.guild} Reason: HTTPException")
             try:
                 await ctx.message.delete()
             except discord.Forbidden:
@@ -395,7 +395,7 @@ class Roles(Cog):
                 await msg.clear_reactions()
             except discord.HTTPException:
                 DOZER_LOGGER.debug(
-                    f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
+                    f"Unable to clear reactions from message to {ctx.author} in guild {ctx.guild} Reason: HTTPException")
             return
 
     remove.example_usage = """
@@ -474,7 +474,7 @@ class Roles(Cog):
             await ctx.send('Role "{0}" deleted from list!'.format(name))
 
     delete.example_usage = """
-    `{prefix}giveme removefromlist Java` - removes the role "Java" from the list of giveable roles but does not remove it from the server or members who have it 
+    `{prefix}giveme removefromlist Java` - removes the role "Java" from the list of giveable roles.
     """
 
     @command()
@@ -488,7 +488,7 @@ class Roles(Cog):
         if role > ctx.me.top_role:
             raise BadArgument('Cannot give roles higher than my top role!')
 
-        remove_time = self.calculate_epoch_time(length)
+        remove_time = self.calculate_epoch_time(str(length))
         if remove_time < time.time():
             raise BadArgument('Cannot use negative role time')
 
@@ -545,7 +545,7 @@ class Roles(Cog):
     `{prefix}take cooldude#1234 Java` - takes any role named Java, giveable or not, from cooldude
     """
 
-    async def update_role_menu(self, ctx: DozerContext, menu: int):
+    async def update_role_menu(self, ctx: DozerContext, menu: "RoleMenu"):
         """Updates a reaction role menu"""
         menu_message = await self.safe_message_fetch(ctx, menu=menu)
 

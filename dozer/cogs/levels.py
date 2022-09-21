@@ -3,7 +3,6 @@
 import asyncio
 import functools
 
-
 import itertools
 import logging
 import math
@@ -20,9 +19,9 @@ from discord.ext.tasks import loop
 from dozer.bot import Dozer
 from dozer.context import DozerContext
 from ._utils import *
-
-blurple = discord.Color.blurple()
 from .. import db
+blurple = discord.Color.blurple()
+
 
 DOZER_LOGGER = logging.getLogger(__name__)
 

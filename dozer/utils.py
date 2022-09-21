@@ -5,10 +5,10 @@ from urllib.parse import urlencode
 
 import discord
 
-__all__ = ['clean', 'is_clean']
+__all__ = ['clean', 'is_clean', 'oauth_url', 'pretty_concat']
 
 mass_mention = re.compile('@(everyone|here)')
-member_mention = re.compile(r'<@\!?(\d+)>')
+member_mention = re.compile(r'<@?(\d+)>')
 role_mention = re.compile(r'<@&(\d+)>')
 channel_mention = re.compile(r'<#(\d+)>')
 
@@ -51,7 +51,7 @@ def clean_member_name(ctx, member_id):
 
 def clean_role_name(ctx, role_id):
     """Cleans role pings from messages."""
-    role = discord.utils.get(ctx.guild.roles, id=role_id)  # Guild.get_role doesn't exist
+    role: discord.Role = discord.utils.get(ctx.guild.roles, id=role_id)  # Guild.get_role doesn't exist
     if role is None:
         return '<@&\N{ZERO WIDTH SPACE}%d>' % role_id
     elif is_clean(ctx, role.name):

@@ -1,5 +1,6 @@
 """General, basic commands that are common for Discord bots"""
 import inspect
+from typing import Optional
 
 import discord
 from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions, NotOwner, guild_only
@@ -111,7 +112,7 @@ class General(Cog):
                               (command for command in ctx.bot.commands if command.cog is cog),
                               cog_name=type(cog).__name__)
 
-    async def _show_help(self, ctx: DozerContext, start_page: discord.Embed, title: str, description: str,
+    async def _show_help(self, ctx: DozerContext, start_page: Optional[discord.Embed], title: str, description: str,
                          footer: str, commands, **format_args):
         """Creates and sends a template help message, with arguments filled in."""
         format_args['prefix'] = ctx.prefix
@@ -154,12 +155,12 @@ class General(Cog):
             elif start_page is not None:
                 info_emoji = '\N{INFORMATION SOURCE}'
                 p = Paginator(ctx, (info_emoji, ...), pages, start='info',
-                              auto_remove=ctx.channel.permissions_for(ctx.me))
+                              auto_remove=ctx.channel.permissions_for(ctx.me).manage_messages)
                 async for reaction in p:
                     if reaction == info_emoji:
                         p.go_to_page('info')
             else:
-                await paginate(ctx, pages, auto_remove=ctx.channel.permissions_for(ctx.me))
+                await paginate(ctx, pages, auto_remove=ctx.channel.permissions_for(ctx.me).manage_messages)
         elif start_page:  # No commands - command without subcommands or empty cog - but a usable info page
             await ctx.send(embed=start_page)
         else:  # No commands, and no info page
@@ -194,7 +195,7 @@ class General(Cog):
         perms = 0
         for cmd in ctx.bot.walk_commands():
             perms |= cmd.required_permissions.value
-        await ctx.send('<{}>'.format(oauth_url(ctx.me.id, discord.Permissions(perms))))
+        await ctx.send('<{}>'.format(oauth_url(str(ctx.me.id), discord.Permissions(perms))))
 
     @command(aliases=["setprefix"])
     @guild_only()

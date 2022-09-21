@@ -13,7 +13,7 @@ class Voice(Cog):
     """Commands interacting with voice."""
 
     @staticmethod
-    async def auto_ptt_check(voice_channel: discord.VoiceChannel):
+    async def auto_ptt_check(voice_channel: discord.VoiceState):
         """Handles voice activity when members join/leave voice channels"""
         total_users = len(voice_channel.channel.members)
         config = await AutoPTT.get_by(channel_id=voice_channel.channel.id)
@@ -117,9 +117,8 @@ class Voice(Cog):
         await ctx.send("Role `{role}` will now be given to users in voice channel `{voice_channel}`!".format(role=role,
                                                                                                              voice_channel=voice_channel))
 
-    voicebind.example_usage = """
-    `{prefix}voicebind "General #1" voice-general-1` - sets up Dozer to give users  `voice-general-1` when they join voice channel "General #1", which will be removed when they leave.
-    """
+    voicebind.example_usage = '`{prefix}voicebind "General #1" voice-general-1` - sets up Dozer to give users `voice-general-1` ' \
+                              'when they join voice channel "General #1", which will be removed when they leave. '
 
     @command()
     @bot_has_permissions(manage_roles=True)

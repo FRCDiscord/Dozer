@@ -59,7 +59,7 @@ def game_is_running(func):
     return wrapper
 
 
-class NameGameSession():
+class NameGameSession:
     """NameGame session object"""
 
     def __init__(self, mode: str):
@@ -90,7 +90,7 @@ class NameGameSession():
         self.vote_embed = None
         self.vote_task = None
 
-    def create_embed(self, title: str = "", description: str = "", color=discord.Color.blurple(), extra_fields=[],
+    def create_embed(self, title: str = "", description: str = "", color: discord.Colour = discord.Color.blurple(), extra_fields=[],
                      start: bool = False):
         """Creates an embed."""
         v = "Starting " if start else "Current "
@@ -759,7 +759,7 @@ class NameGame(Cog):
         return game
 
     @keep_alive
-    async def game_turn_countdown(self, ctx: DozerContext, game):
+    async def game_turn_countdown(self, ctx: DozerContext, game: NameGameSession):
         """Counts down the time remaining left in the turn"""
         await asyncio.sleep(1)
         async with game.state_lock:

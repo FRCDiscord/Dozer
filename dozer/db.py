@@ -1,12 +1,12 @@
 """Provides database storage for the Dozer Discord bot"""
 import logging
-from typing import List, Dict
+from typing import List, Dict, Callable
 
 import asyncpg
 
 DOZER_LOGGER = logging.getLogger(__name__)
 
-Pool = None
+Pool: asyncpg.Pool
 
 
 async def db_init(db_url):
@@ -54,7 +54,7 @@ async def db_migrate():
 class DatabaseTable:
     """Defines a database table"""
     __tablename__: str = ''
-    __versions__: List[int] = []
+    __versions__: List[Callable] = []
     __uniques__: List[str] = []
 
     # Declare the migrate/create functions

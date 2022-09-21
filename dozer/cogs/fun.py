@@ -120,7 +120,7 @@ class Fun(Cog):
             await msg.add_reaction("✅")
             await msg.add_reaction("❌")
         except discord.Forbidden:
-            raise MissingPermissions(f"**{ctx.bot.user}** does not have the permission to add reacts")
+            raise MissingPermissions(['ADD_REACTIONS'])
         try:
             emoji = None
 

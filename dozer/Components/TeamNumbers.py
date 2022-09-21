@@ -38,7 +38,7 @@ class TeamNumbers(db.DatabaseTable):
         async with db.Pool.acquire() as conn:
             statement = f"""
             INSERT INTO {self.__tablename__} ({", ".join(keys)})
-            VALUES({','.join(f'${i+1}' for i in range(len(values)))}) 
+            VALUES({','.join(f'${i + 1}' for i in range(len(values)))}) 
             """
             await conn.execute(statement, *values)
 

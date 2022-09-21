@@ -83,7 +83,7 @@ class Moderation(Cog):
 
     async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member, None],
                       reason, orig_channel=None,
-                      embed_color=discord.Color.red(), global_modlog: bool = True, duration: bool = None,
+                      embed_color=discord.Color.red(), global_modlog: bool = True, duration: datetime.timedelta = None,
                       dm: bool = True, guild_override: int = None, extra_fields=None, updated_by: discord.Member = None):
         """Generates a modlog embed"""
 
@@ -150,7 +150,6 @@ class Moderation(Cog):
                 except discord.Forbidden as e:
                     DOZER_LOGGER.error(
                         f"Failed to catch missing perms in {channel} ({channel.id}) Guild: {channel.guild.id}; Error: {e}")
-
 
     hm_regex = re.compile(r"((?P<years>\d+)y)?((?P<months>\d+)M)?((?P<weeks>\d+)w)?((?P<days>\d+)d)?((?P<hours>\d+)h)?((?P<minutes>\d+)m)?(("
                           r"?P<seconds>\d+)s)?")
@@ -842,8 +841,8 @@ class Moderation(Cog):
 
         role_name = role.name
         await ctx.send(
-            "New Member Channel configured as: {channel}. Role configured as: {role}. Team numbers required: {"
-            "required}. Message: {message}".format(
+            "New Member Channel configured as: {channel}. Role configured as: {role}. Team numbers required: "
+            "{required}. Message: {message}".format(
                 channel=channel_mention.name, role=role_name, required=requireteam, message=message))
 
     nmconfig.example_usage = """
@@ -1055,9 +1054,9 @@ class Deafen(db.DatabaseTable):
 
     def __init__(self, member_id: int, guild_id: int, self_inflicted: bool):
         super().__init__()
-        self.member_id = member_id
-        self.guild_id = guild_id
-        self.self_inflicted = self_inflicted
+        self.member_id: int = member_id
+        self.guild_id: int = guild_id
+        self.self_inflicted: bool = self_inflicted
 
     @classmethod
     async def get_by(cls, **kwargs):
@@ -1088,9 +1087,9 @@ class GuildModLog(db.DatabaseTable):
 
     def __init__(self, guild_id: int, modlog_channel: int, name: str):
         super().__init__()
-        self.guild_id = guild_id
-        self.modlog_channel = modlog_channel
-        self.name = name
+        self.guild_id: int = guild_id
+        self.modlog_channel: int = modlog_channel
+        self.name: str = name
 
     @classmethod
     async def get_by(cls, **kwargs):
@@ -1120,8 +1119,8 @@ class CrossBanSubscriptions(db.DatabaseTable):
             )""")
 
     def __init__(self, subscriber_id: int, subscription_id: int):
-        self.subscriber_id = subscriber_id
-        self.subscription_id = subscription_id
+        self.subscriber_id: int = subscriber_id
+        self.subscription_id: int = subscription_id
 
     @classmethod
     async def get_by(cls, **kwargs):
@@ -1297,7 +1296,7 @@ class PunishmentTimerRecords(db.DatabaseTable):
             )""")
 
     def __init__(self, guild_id: int, actor_id: int, target_id: int, type_of_punishment: int, target_ts: int,
-                 orig_channel_id: int = None, reason: str = None, input_id: int = None, self_inflicted: bool =False):
+                 orig_channel_id: int = None, reason: str = None, input_id: int = None, self_inflicted: bool = False):
         super().__init__()
         self.id = input_id
         self.guild_id = guild_id

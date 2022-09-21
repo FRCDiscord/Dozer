@@ -4,7 +4,7 @@ import logging
 import re
 import sys
 import traceback
-from typing import Pattern
+from typing import Pattern, Optional, Union, Generator
 
 import os
 import discord
@@ -17,7 +17,6 @@ from .cogs import _utils
 from .cogs._utils import CommandMixin
 from .context import DozerContext
 from .db import db_init, db_migrate
-
 
 DOZER_LOGGER = logging.getLogger('dozer')
 DOZER_LOGGER.level = logging.INFO
@@ -75,7 +74,7 @@ class Dozer(commands.Bot):
                 perms |= cmd.required_permissions.value
             else:
                 DOZER_LOGGER.warning(f"Command {cmd} not subclass of Dozer type.")
-        DOZER_LOGGER.debug('Bot Invite: {}'.format(utils.oauth_url(self.user.id, discord.Permissions(perms))))
+        DOZER_LOGGER.debug('Bot Invite: {}'.format(utils.oauth_url(str(self.user.id), discord.Permissions(perms))))
         if self.config['is_backup']:
             status = discord.Status.dnd
         else:
@@ -87,7 +86,7 @@ class Dozer(commands.Bot):
             DOZER_LOGGER.warning("You are running an older version of the discord.py rewrite (with breaking changes)! "
                                  "To upgrade, run `pip install -r requirements.txt --upgrade`")
 
-    async def get_context(self, message: discord.Message, *, cls=DozerContext):  # pylint: disable=arguments-differ
+    async def get_context(self, message: discord.Message, *, cls=DozerContext) -> DozerContext:  # pylint: disable=arguments-differ
         ctx = await super().get_context(message, cls=cls)
         return ctx
 
@@ -161,6 +160,12 @@ class Dozer(commands.Bot):
         if retry_after and not hasattr(ctx, "is_pseudo"):  # bypass ratelimit for su'ed commands
             raise InvalidContext('Global rate-limit exceeded!')
         return True
+
+    def get_command(self, name: str) -> Optional[Union[_utils.Command, _utils.Group]]:  # pylint: disable=arguments-differ
+        return super().get_command(name)
+
+    def walk_commands(self) -> Generator[Union[_utils.Command, _utils.Group]]:
+        return super().walk_commands()
 
     def run(self, *args, **kwargs):
         token = self.config['discord_token']

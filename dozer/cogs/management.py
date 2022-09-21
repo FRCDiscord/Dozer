@@ -211,7 +211,7 @@ class ScheduledMessages(db.DatabaseTable):
             PRIMARY KEY (entry_id, request_id)
             )""")
 
-    def __init__(self, guild_id: int, channel_id: int, time: datetime.time, content: str, request_id: str,
+    def __init__(self, guild_id: int, channel_id: int, time: datetime.time, content: str, request_id: int,
                  header: str = None, requester_id: int = None, entry_id: int = None):
         super().__init__()
         self.guild_id = guild_id

@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from dozer import Dozer
 
 __all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk', 'dev_check',
-           'DynamicPrefixEntry']
+           'DynamicPrefixEntry', 'CommandMixin']
 
 DOZER_LOGGER = logging.getLogger("dozer")
 
@@ -88,7 +88,7 @@ class Group(CommandMixin, commands.HybridGroup):
 
         def decorator(func):
             kwargs.setdefault('parent', self)
-            result = command(name=name, *args, with_app_command=with_app_command, **kwargs)(func)
+            result = command(name=name, with_app_command=with_app_command, **kwargs)(func)
             self.add_command(result)
             return result
 
@@ -105,7 +105,7 @@ class Group(CommandMixin, commands.HybridGroup):
 
         def decorator(func):
             kwargs.setdefault('parent', self)
-            result = group(name=name, *args, with_app_command=with_app_command, **kwargs)(func)
+            result = group(name=name, with_app_command=with_app_command, **kwargs)(func)
             self.add_command(result)
             return result
 
@@ -167,7 +167,7 @@ class Reactor:
         self._remove_reactions = auto_remove and ctx.channel.permissions_for(
             self.me).manage_messages  # Check for required permissions
         self.timeout = timeout
-        self._action = None
+        self._action: typing.Coroutine = None
         self.message = None
 
     async def __aiter__(self):
@@ -235,7 +235,7 @@ class Paginator(Reactor):
         '\N{BLACK SQUARE FOR STOP}'  # :stop_button:
     )
 
-    def __init__(self, ctx: DozerContext, initial_reactions, pages, *, start: int = 0, auto_remove: bool = True,
+    def __init__(self, ctx: DozerContext, initial_reactions, pages, *, start: Union[int, str] = 0, auto_remove: bool = True,
                  timeout: int = 60):
         all_reactions = list(initial_reactions)
         ind = all_reactions.index(Ellipsis)
@@ -354,15 +354,16 @@ class PrefixHandler:
 
     def handler(self, bot, message: discord.Message):
         """Process the dynamic prefix for each message"""
-        dynamic = self.prefix_cache.get(message.guild.id) if message.guild else self.default_prefix
+        dynamic = self.prefix_cache.get(message.guild.id) if message.guild else None
         # <@!> is a nickname mention which discord.py doesn't make by default
-        return [f"<@!{bot.user.id}> ", bot.user.mention, dynamic if dynamic else self.default_prefix]
+        return [f"<@!{bot.user.id}> ", f"<@!{bot.user.id}>", bot.user.mention, bot.user.mention + " ",
+                dynamic.prefix if dynamic else self.default_prefix]
 
     async def refresh(self):
         """Refreshes the prefix cache"""
         prefixes = await DynamicPrefixEntry.get_by()  # no filters, get all
         for prefix in prefixes:
-            self.prefix_cache[prefix.guild_id] = prefix.prefix
+            self.prefix_cache[prefix.guild_id] = prefix
         DOZER_LOGGER.info(f"{len(prefixes)} prefixes loaded from database")
 
 
