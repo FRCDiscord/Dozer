@@ -17,16 +17,15 @@ from discord.utils import escape_markdown
 
 from dozer.context import DozerContext
 from ._utils import *
+from .actionlogs import CustomJoinLeaveMessages, send_log
 from .general import blurple
+from .teams import TeamNumbers
 from .. import db
-from ..Components.CustomJoinLeaveMessages import send_log, CustomJoinLeaveMessages
 
 if TYPE_CHECKING:
     from dozer import Dozer
 
 __all__ = ["SafeRoleConverter", "Moderation", "NewMemPurgeConfig", "GuildNewMember"]
-
-from ..Components.TeamNumbers import TeamNumbers
 
 MAX_PURGE = 1000
 
@@ -867,7 +866,7 @@ class Moderation(Cog):
 
     @command()
     @has_permissions(administrator=True)
-    async def memberconfig(self, ctx: DozerContext, *, member_role: SafeRoleConverter):
+    async def memberconfig(self, ctx: DozerContext, *, member_role: discord.Role):
         """
         Set the member role for the guild.
         The member role is the role used for the timeout command. It should be a role that all members of the server have.
@@ -896,7 +895,7 @@ class Moderation(Cog):
     @command()
     @has_permissions(administrator=True)
     @bot_has_permissions(manage_messages=True)
-    async def linkscrubconfig(self, ctx: DozerContext, *, link_role: SafeRoleConverter):
+    async def linkscrubconfig(self, ctx: DozerContext, *, link_role: discord.Role):
         """
         Set a role that users must have in order to post links.
         This accepts the safe default role conventions that the memberconfig command does.

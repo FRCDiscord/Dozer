@@ -16,7 +16,6 @@ from ._utils import *
 from .general import blurple
 from .moderation import GuildNewMember
 from .. import db
-from ..Components.CustomJoinLeaveMessages import CustomJoinLeaveMessages, format_join_leave, send_log
 
 if TYPE_CHECKING:
     from dozer import Dozer
@@ -55,14 +54,15 @@ class Actionlog(Cog):
     @Cog.listener('on_member_join')
     async def on_member_join(self, member: discord.Member):
         """Logs that a member joined, with optional custom message"""
-        nm_config: List[GuildNewMember] = await GuildNewMember.get_by(guild_id=member.guild.id)
+        guild_new_member_settings: List[GuildNewMember] = await GuildNewMember.get_by(guild_id=member.guild.id)
+        nm_config: List["CustomJoinLeaveMessages"] = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
+        if len(guild_new_member_settings) == 0:
+            await send_log(member)
         if len(nm_config) == 0:
             await send_log(member)
         else:
-            print(nm_config[0])
-            if nm_config[0].require_team:
-                return
-            elif nm_config[0].send_on_verify:
+            print(guild_new_member_settings[0])
+            if guild_new_member_settings[0].require_team and nm_config[0].send_on_verify == True:
                 return
             else:
                 await send_log(member)
@@ -133,8 +133,8 @@ class Actionlog(Cog):
     @Cog.listener()
     async def on_raw_bulk_message_delete(self, payload):
         """Log bulk message deletes"""
-        guild = self.bot.get_guild(int(payload.guild_id))
-        message_channel = self.bot.get_channel(int(payload.channel_id))
+        guild: Guild = self.bot.get_guild(int(payload.guild_id))
+        message_channel: discord.TextChannel = self.bot.get_channel(int(payload.channel_id))
         message_ids = payload.message_ids
         cached_messages = payload.cached_messages
 
@@ -600,7 +600,7 @@ class Actionlog(Cog):
 class NicknameLock(db.DatabaseTable):
     """Holds nickname lock info"""
     __tablename__ = "nickname_locks"
-    __uniques__ = "guild_id, member_id"
+    __uniques__ = ["guild_id", "member_id"]
 
     @classmethod
     async def initial_create(cls):
@@ -617,10 +617,10 @@ class NicknameLock(db.DatabaseTable):
 
     def __init__(self, guild_id: int, member_id: int, locked_name: str, timeout: float = None):
         super().__init__()
-        self.guild_id = guild_id
-        self.member_id = member_id
-        self.locked_name = locked_name
-        self.timeout = timeout
+        self.guild_id: int = guild_id
+        self.member_id: int = member_id
+        self.locked_name: str = locked_name
+        self.timeout: float = timeout
 
     @classmethod
     async def get_by(cls, **kwargs) -> List["NicknameLock"]:
@@ -651,9 +651,9 @@ class GuildMessageLog(db.DatabaseTable):
 
     def __init__(self, guild_id: int, name: str, messagelog_channel: int):
         super().__init__()
-        self.guild_id = guild_id
-        self.name = name
-        self.messagelog_channel = messagelog_channel
+        self.guild_id: int = guild_id
+        self.name: str = name
+        self.messagelog_channel: int = messagelog_channel
 
     @classmethod
     async def get_by(cls, **kwargs) -> List["GuildMessageLog"]:
@@ -664,6 +664,101 @@ class GuildMessageLog(db.DatabaseTable):
                                   messagelog_channel=result.get("messagelog_channel"))
             result_list.append(obj)
         return result_list
+
+
+async def send_log(member):
+    """Sends the message for when a user joins or leave a guild"""
+    config = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
+    if len(config):
+        channel = member.guild.get_channel(config[0].channel_id)
+        if channel:
+            embed: discord.Embed = discord.Embed(color=0x00FF00)
+            embed.set_author(name='Member Joined', icon_url=member.avatar.replace(format='png', size=32))
+            embed.description = format_join_leave(config[0].join_message, member)
+            embed.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
+            try:
+                await channel.send(content=member.mention if config[0].ping else None, embed=embed)
+            except discord.Forbidden:
+                DOZER_LOGGER.warning(
+                    f"Guild {member.guild}({member.guild.id}) has invalid permissions for join/leave logs")
+
+
+def format_join_leave(template: str, member: discord.Member):
+    """Formats join leave message templates
+    {guild} = guild name
+    {user} = user's name plus discriminator ex. SnowPlow#5196
+    {user_name} = user's name without discriminator
+    {user_mention} = user's mention
+    {user_id} = user's ID
+    """
+    if template:
+        return template.format(guild=member.guild, user=str(member), user_name=member.name,
+                               user_mention=member.mention, user_id=member.id)
+    else:
+        return "{user_mention}\n{user} ({user_id})".format(user=str(member), user_mention=member.mention,
+                                                           user_id=member.id)
+
+
+class CustomJoinLeaveMessages(db.DatabaseTable):
+    """Holds custom join leave messages"""
+    __tablename__ = 'memberlogconfig'
+    __uniques__ = ['guild_id']
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            guild_id bigint PRIMARY KEY NOT NULL,	            
+            memberlog_channel bigint NOT NULL,	   
+            name varchar NOT NULL,
+            send_on_verify boolean
+            )""")
+
+    def __init__(self, guild_id, channel_id=None, ping=None, join_message=None, leave_message=None, send_on_verify=False):
+        super().__init__()
+        self.guild_id = guild_id
+        self.channel_id = channel_id
+        self.ping = ping
+        self.join_message = join_message
+        self.leave_message = leave_message
+        self.send_on_verify = send_on_verify
+
+    @classmethod
+    async def get_by(cls, **kwargs) -> List["CustomJoinLeaveMessages"]:
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = CustomJoinLeaveMessages(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
+                                          ping=result.get("ping"),
+                                          join_message=result.get("join_message"),
+                                          leave_message=result.get("leave_message"),
+                                          send_on_verify=result.get("send_on_verify"))
+            result_list.append(obj)
+        return result_list
+
+    async def version_1(self):
+        """DB migration v1"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            alter table memberlogconfig rename column memberlog_channel to channel_id;
+            alter table memberlogconfig alter column channel_id drop not null;
+            alter table {self.__tablename__} drop column IF EXISTS name;
+            alter table {self.__tablename__}
+                add IF NOT EXISTS ping boolean default False;
+            alter table {self.__tablename__}
+                add IF NOT EXISTS join_message text default null;
+            alter table {self.__tablename__}
+                add IF NOT EXISTS leave_message text default null;
+            """)
+
+    async def version_2(self):
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"alter table {self.__tablename__} "
+                               f"add if not exists send_on_verify boolean default null;")
+
+    __versions__ = [version_1, version_2]
 
 
 async def setup(bot):
