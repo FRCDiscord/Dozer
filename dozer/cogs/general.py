@@ -53,17 +53,17 @@ class General(Cog):
             if target_name in ctx.bot.cogs:
                 await self._help_cog(ctx, ctx.bot.cogs[target_name])
             else:
-                command = ctx.bot.get_command(target_name)
-                if command is None:
+                target_command = ctx.bot.get_command(target_name)
+                if target_command is None:
                     raise BadArgument('that command/cog does not exist!')
                 else:
-                    await self._help_command(ctx, command)
+                    await self._help_command(ctx, target_command)
         else:  # Command with subcommand
-            command = ctx.bot.get_command(' '.join(target))
-            if command is None:
+            target_command = ctx.bot.get_command(' '.join(target))
+            if target_command is None:
                 raise BadArgument('that command does not exist!')
             else:
-                await self._help_command(ctx, command)
+                await self._help_command(ctx, target_command)
 
     base_help.example_usage = """
     `{prefix}help` - General help message
@@ -94,25 +94,25 @@ class General(Cog):
         info.set_footer(text='Dozer Help | all commands | Info page')
         await self._show_help(ctx, info, 'Dozer: Commands', '', 'all commands', ctx.bot.commands)
 
-    async def _help_command(self, ctx: DozerContext, command: _utils.Command):
+    async def _help_command(self, ctx: DozerContext, target_command: _utils.Command):
         """Gets the help message for one command."""
-        info: Embed = Embed(title='Command: {}{} {}'.format(ctx.prefix, command.qualified_name, command.signature),
-                            description=command.help or (
-                                None if command.example_usage else 'No information provided.'),
+        info: Embed = Embed(title='Command: {}{} {}'.format(ctx.prefix, target_command.qualified_name, target_command.signature),
+                            description=target_command.help or (
+                                None if target_command.example_usage else 'No information provided.'),
                             color=discord.Color.blue())
-        usage: Union[str, None] = command.example_usage
+        usage: Union[str, None] = target_command.example_usage
         if usage:
             info.add_field(name='Usage', value=usage.format(prefix=ctx.prefix, name=ctx.invoked_with), inline=False)
-        info.set_footer(text='Dozer Help | {!r} command | Info'.format(command.qualified_name))
+        info.set_footer(text='Dozer Help | {!r} command | Info'.format(target_command.qualified_name))
         await self._show_help(ctx, info, 'Subcommands: {prefix}{name} {signature}', '', '{name!r} command',
-                              command.commands if isinstance(command, Group) else set(),
-                              name=command.qualified_name, signature=command.signature)
+                              target_command.commands if isinstance(target_command, Group) else set(),
+                              name=target_command.qualified_name, signature=target_command.signature)
 
     async def _help_cog(self, ctx: DozerContext, cog: Cog):
         """Gets the help message for one cog."""
         await self._show_help(ctx, None, 'Category: {cog_name}', inspect.cleandoc(cog.__doc__ or ''),
                               '{cog_name!r} category',
-                              (command for command in ctx.bot.commands if command.cog is cog),
+                              (target_command for target_command in ctx.bot.commands if target_command.cog is cog),
                               cog_name=type(cog).__name__)
 
     async def _show_help(self, ctx: DozerContext, start_page: Optional[Embed], title: str, description: str,
@@ -137,15 +137,15 @@ class General(Cog):
                 format_args['page_num'] = page_num + 1
                 page = Embed(title=title.format(**format_args), description=description.format(**format_args),
                              color=discord.Color.blue())
-                for command in page_commands:
-                    if command.short_doc:
-                        embed_value = command.short_doc
-                    elif command.example_usage:  # Usage provided - show the user the command to see it
+                for target_command in page_commands:
+                    if target_command.short_doc:
+                        embed_value = target_command.short_doc
+                    elif target_command.example_usage:  # Usage provided - show the user the command to see it
                         embed_value = 'Use `{0.prefix}{0.invoked_with} {1.qualified_name}` for more information.'.format(
-                            ctx, command)
+                            ctx, target_command)
                     else:
                         embed_value = 'No information provided.'
-                    page.add_field(name='{}{} {}'.format(ctx.prefix, command.qualified_name, command.signature),
+                    page.add_field(name='{}{} {}'.format(ctx.prefix, target_command.qualified_name, target_command.signature),
                                    value=embed_value, inline=False)
                 page.set_footer(text=footer.format(**format_args))
                 pages.append(page)

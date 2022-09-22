@@ -3,7 +3,7 @@ import asyncio
 import inspect
 import logging
 from collections.abc import Mapping
-from typing import Dict, Union, Optional, Any, Coroutine, Callable, List
+from typing import Dict, Union, Optional, Any, Coroutine, Callable, List, Generator
 from typing import TYPE_CHECKING
 
 import discord
@@ -117,6 +117,9 @@ class Cog(commands.Cog):
     def __init__(self, bot: "Dozer"):
         super().__init__()
         self.bot: "Dozer" = bot
+
+    def walk_commands(self) -> Generator[Union[Group, Command]]:
+        return super().walk_commands()
 
 
 def dev_check():

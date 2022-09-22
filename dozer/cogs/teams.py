@@ -10,8 +10,10 @@ from discord.utils import escape_markdown
 
 from dozer.context import DozerContext
 from ._utils import *
-from .info import blurple
+
 from .. import db
+
+blurple = discord.Color.blurple()
 
 
 class Teams(Cog):

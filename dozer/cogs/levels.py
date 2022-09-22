@@ -458,7 +458,7 @@ class Levels(Cog):
             notify_channel = ctx.guild.get_channel(settings.lvl_up_msgs)
 
             enabled = "Enabled" if settings.enabled else "Disabled"
-            embed.set_author(name=ctx.guild, icon_url=ctx.guild.icon_url)
+            embed.set_author(name=ctx.guild, icon_url=ctx.guild.icon.url)
             embed.add_field(name=f"Levels are {enabled} for {ctx.guild}", value=f"XP min: {settings.xp_min}\n"
                                                                                 f"XP max: {settings.xp_max}\n"
                                                                                 f"Cooldown: {settings.xp_cooldown} Seconds\n"
@@ -626,7 +626,7 @@ class Levels(Cog):
             await self.update_server_settings_cache()
             lvl_up_msgs = ctx.guild.get_channel(ent.lvl_up_msgs)
             embed = discord.Embed(color=blurple)
-            embed.set_author(name=ctx.guild, icon_url=ctx.guild.icon_url)
+            embed.set_author(name=ctx.guild, icon_url=ctx.guild.icon.url)
             embed.set_footer(text='Triggered by ' + ctx.author.display_name)
             enabled = "Enabled" if ent.enabled else "Disabled"
             embed.add_field(name=f"Levels are {enabled} for {ctx.guild}", value=f"XP min: {ent.xp_min}\n"

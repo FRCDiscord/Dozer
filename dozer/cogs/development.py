@@ -9,6 +9,7 @@ import rstcloth
 from discord.ext.commands import NotOwner
 
 from dozer.context import DozerContext
+from . import _utils
 from ._utils import *
 
 DOZER_LOGGER = logging.getLogger("dozer")
@@ -45,7 +46,7 @@ class Development(Cog):
     async def document(self, ctx: DozerContext):
         """Dump documentation for Sphinx processing"""
         for x in self.bot.cogs:
-            cog = ctx.bot.get_cog(x)
+            cog: _utils.Cog = ctx.bot.get_cog(x)
             comrst = rstcloth.RstCloth()
             comrst.title(x)
             for command in cog.walk_commands():

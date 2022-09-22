@@ -1,14 +1,13 @@
 """Bot object for Dozer"""
 
 import logging
+import os
 import re
 import sys
 import traceback
 from typing import Pattern, Optional, Union, Generator
 
-import os
 import discord
-
 from discord.ext import commands
 from sentry_sdk import capture_exception
 
@@ -166,6 +165,9 @@ class Dozer(commands.Bot):
 
     def walk_commands(self) -> Generator[Union[_utils.Command, _utils.Group]]:
         return super().walk_commands()
+
+    def get_cog(self, name: str, /) -> Optional[_utils.Cog]:
+        return super().get_cog(name)
 
     def run(self, *args, **kwargs):
         token = self.config['discord_token']

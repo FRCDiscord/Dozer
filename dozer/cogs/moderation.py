@@ -17,7 +17,7 @@ from discord.utils import escape_markdown
 
 from dozer.context import DozerContext
 from ._utils import *
-from .actionlogs import CustomJoinLeaveMessages, send_log
+from .actionlogs import CustomJoinLeaveMessages, send_log, GuildNewMember
 from .general import blurple
 from .teams import TeamNumbers
 from .. import db
@@ -1198,56 +1198,6 @@ class NewMemPurgeConfig(db.DatabaseTable):
         return result_list
 
 
-class GuildNewMember(db.DatabaseTable):
-    """Holds new member info"""
-    __tablename__ = 'new_members'
-    __uniques__ = 'guild_id'
-
-    @classmethod
-    async def initial_create(cls):
-        """Create the table in the database"""
-        async with db.Pool.acquire() as conn:
-            await conn.execute(f"""
-            CREATE TABLE {cls.__tablename__} (
-            guild_id bigint PRIMARY KEY,
-            channel_id bigint NOT NULL,
-            role_id bigint NOT NULL,
-            message varchar NOT NULL
-            )""")
-
-    def __init__(self, guild_id: int, channel_id: int, role_id: int, message: str, require_team: bool):
-        super().__init__()
-        self.guild_id: int = guild_id
-        self.channel_id: int = channel_id
-        self.role_id: int = role_id
-        self.message: str = message
-        self.require_team: bool = require_team
-
-    @property
-    def type_of_punishment(self):
-        return type(self)
-
-    @classmethod
-    async def get_by(cls, **kwargs) -> List["GuildNewMember"]:
-        results = await super().get_by(**kwargs)
-        result_list = []
-        for result in results:
-            obj = GuildNewMember(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
-                                 role_id=result.get("role_id"), message=result.get("message"),
-                                 require_team=result.get("require_team"))
-            result_list.append(obj)
-        return result_list
-
-    async def version_1(self):
-        """DB migration v1"""
-        async with db.Pool.acquire() as conn:
-            await conn.execute(f"""
-            ALTER TABLE {self.__tablename__} ADD require_team bool NOT NULL DEFAULT false;
-            """)
-
-    __versions__ = [version_1]
-
-
 class GuildMessageLinks(db.DatabaseTable):
     """Contains information for link scrubbing"""
     __tablename__ = 'guild_msg_links'
@@ -1267,10 +1217,6 @@ class GuildMessageLinks(db.DatabaseTable):
         super().__init__()
         self.guild_id: int = guild_id
         self.role_id: int = role_id
-
-    @property
-    def type_of_punishment(self):
-        return type(self)
 
     @classmethod
     async def get_by(cls, **kwargs) -> List["GuildMessageLinks"]:

@@ -1,6 +1,7 @@
 """Get new posts from any arbitrary subreddit"""
 import datetime
 import logging
+from typing import Dict, Any
 
 import aiohttp
 import discord
@@ -28,16 +29,16 @@ class RedditSource(DataBasedSource):
 
         def __init__(self, name, url, color):
             super().__init__(name, url)
-            self.name = name
-            self.url = url
+            self.name: str = name
+            self.url: str = url
             self.color = color
 
     def __init__(self, aiohttp_session, bot):
         super().__init__(aiohttp_session, bot)
         self.access_token = None
         self.expiry_time = None
-        self.oauth_disabled = False
-        self.subreddits = {}
+        self.oauth_disabled: bool = False
+        self.subreddits: Dict[str, Any] = {}
         self.seen_posts = set()
 
     async def get_token(self):

@@ -14,7 +14,6 @@ from discord.utils import escape_markdown
 from dozer.context import DozerContext
 from ._utils import *
 from .general import blurple
-from .moderation import GuildNewMember
 from .. import db
 
 if TYPE_CHECKING:
@@ -62,7 +61,7 @@ class Actionlog(Cog):
             await send_log(member)
         else:
             print(guild_new_member_settings[0])
-            if guild_new_member_settings[0].require_team and nm_config[0].send_on_verify == True:
+            if guild_new_member_settings[0].require_team and nm_config[0].send_on_verify is True:
                 return
             else:
                 await send_log(member)
@@ -754,12 +753,57 @@ class CustomJoinLeaveMessages(db.DatabaseTable):
             """)
 
     async def version_2(self):
+        """Updates database stuff to version 2"""
         async with db.Pool.acquire() as conn:
             await conn.execute(f"alter table {self.__tablename__} "
                                f"add if not exists send_on_verify boolean default null;")
 
     __versions__ = [version_1, version_2]
 
+class GuildNewMember(db.DatabaseTable):
+    """Holds new member info"""
+    __tablename__ = 'new_members'
+    __uniques__ = 'guild_id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            guild_id bigint PRIMARY KEY,
+            channel_id bigint NOT NULL,
+            role_id bigint NOT NULL,
+            message varchar NOT NULL
+            )""")
+
+    def __init__(self, guild_id: int, channel_id: int, role_id: int, message: str, require_team: bool):
+        super().__init__()
+        self.guild_id: int = guild_id
+        self.channel_id: int = channel_id
+        self.role_id: int = role_id
+        self.message: str = message
+        self.require_team: bool = require_team
+
+    @classmethod
+    async def get_by(cls, **kwargs) -> List["GuildNewMember"]:
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = GuildNewMember(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
+                                 role_id=result.get("role_id"), message=result.get("message"),
+                                 require_team=result.get("require_team"))
+            result_list.append(obj)
+        return result_list
+
+    async def version_1(self):
+        """DB migration v1"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            ALTER TABLE {self.__tablename__} ADD require_team bool NOT NULL DEFAULT false;
+            """)
+
+    __versions__ = [version_1]
 
 async def setup(bot):
     """Adds the actionlog cog to the bot."""
