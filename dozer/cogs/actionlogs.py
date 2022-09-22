@@ -4,9 +4,10 @@ import datetime
 import logging
 import math
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import discord
+from discord import Guild
 from discord.ext.commands import has_permissions, BadArgument
 from discord.utils import escape_markdown
 
@@ -22,7 +23,7 @@ if TYPE_CHECKING:
 DOZER_LOGGER = logging.getLogger(__name__)
 
 
-async def embed_paginatorinator(content_name, embed, text):
+async def embed_paginatorinator(content_name: str, embed: discord.Embed, text: str):
     """Chunks up embed sections to fit within 1024 characters"""
     required_chunks = math.ceil(len(text) / 1024)
     c_embed = embed.copy()
@@ -38,11 +39,11 @@ class Actionlog(Cog):
 
     def __init__(self, bot: "Dozer"):
         super().__init__(bot)
-        self.edit_delete_config = db.ConfigCache(GuildMessageLog)
+        self.edit_delete_config: db.ConfigCache = db.ConfigCache(GuildMessageLog)
         self.bulk_delete_buffer = {}
 
     @staticmethod
-    async def check_audit(guild, event_type, event_time=None):
+    async def check_audit(guild: Guild, event_type, event_time=None):
         """Method for checking the audit log for events"""
         try:
             async for entry in guild.audit_logs(limit=1, after=event_time,
@@ -52,9 +53,9 @@ class Actionlog(Cog):
             return None
 
     @Cog.listener('on_member_join')
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: discord.Member):
         """Logs that a member joined, with optional custom message"""
-        nm_config = await GuildNewMember.get_by(guild_id=member.guild.id)
+        nm_config: List[GuildNewMember] = await GuildNewMember.get_by(guild_id=member.guild.id)
         if len(nm_config) == 0:
             await send_log(member)
         else:
@@ -114,7 +115,7 @@ class Actionlog(Cog):
 
     async def check_nickname_lock(self, before, after):
         """The handler for checking if a member is allowed to change their nickname"""
-        results = await NicknameLock.get_by(guild_id=after.guild.id, member_id=after.id)
+        results: List[NicknameLock] = await NicknameLock.get_by(guild_id=after.guild.id, member_id=after.id)
         if results:
             while time.time() <= results[0].timeout:
                 await asyncio.sleep(10)  # prevents nickname update spam
@@ -622,7 +623,7 @@ class NicknameLock(db.DatabaseTable):
         self.timeout = timeout
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["NicknameLock"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -655,7 +656,7 @@ class GuildMessageLog(db.DatabaseTable):
         self.messagelog_channel = messagelog_channel
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["GuildMessageLog"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:

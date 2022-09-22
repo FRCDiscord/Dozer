@@ -6,10 +6,11 @@ import re
 import time
 import typing
 from logging import getLogger
-from typing import TYPE_CHECKING
-from typing import Union
+from typing import List
+from typing import TYPE_CHECKING, Union, Optional, Type
 
 import discord
+from discord import Guild, Embed, User, Member
 from discord.ext import tasks, commands
 from discord.ext.commands import BadArgument, has_permissions, RoleConverter, guild_only
 from discord.utils import escape_markdown
@@ -52,7 +53,7 @@ class Moderation(Cog):
     def __init__(self, bot: "Dozer"):
         super().__init__(bot)
         self.links_config = db.ConfigCache(GuildMessageLinks)
-        self.punishment_timer_tasks = []
+        self.punishment_timer_tasks: List[asyncio.Task] = []
 
     """=== Helper functions ==="""
 
@@ -81,10 +82,10 @@ class Moderation(Cog):
         """Kicks new members"""
         await self.nm_kick_internal()
 
-    async def mod_log(self, actor: discord.Member, action: str, target: Union[discord.User, discord.Member, None],
+    async def mod_log(self, actor: Member, action: str, target: Union[User, Member, None],
                       reason, orig_channel=None,
                       embed_color=discord.Color.red(), global_modlog: bool = True, duration: datetime.timedelta = None,
-                      dm: bool = True, guild_override: int = None, extra_fields=None, updated_by: discord.Member = None):
+                      dm: bool = True, guild_override: int = None, extra_fields=None, updated_by: Member = None):
         """Generates a modlog embed"""
 
         if target is None:
@@ -92,7 +93,7 @@ class Moderation(Cog):
         else:
             title = f"User {action}!"
 
-        modlog_embed = discord.Embed(
+        modlog_embed = Embed(
             color=embed_color,
             title=title
 
@@ -139,7 +140,7 @@ class Moderation(Cog):
             if orig_channel is not None:
                 await orig_channel.send("Please configure modlog channel to enable modlog functionality")
 
-    async def perm_override(self, member: discord.Member, **overwrites):
+    async def perm_override(self, member: Member, **overwrites):
         """Applies the given overrides to the given member in their guild."""
         for channel in member.guild.channels:
             overwrite = channel.overwrites_for(member)
@@ -172,12 +173,12 @@ class Moderation(Cog):
         """Starts all punishment timers"""
         q = await PunishmentTimerRecords.get_by()  # no filters: all
         for r in q:
-            guild = self.bot.get_guild(r.guild_id)
-            actor = guild.get_member(r.actor_id)
-            target = guild.get_member(r.target_id)
-            orig_channel = self.bot.get_channel(r.orig_channel_id)
-            punishment_type = r.type_of_punishment
-            reason = r.reason or ""
+            guild: Guild = self.bot.get_guild(r.guild_id)
+            actor: Member = guild.get_member(r.actor_id)
+            target: Member = guild.get_member(r.target_id)
+            orig_channel: discord.TextChannel = self.bot.get_channel(r.orig_channel_id)
+            punishment_type: int = r.type_of_punishment
+            reason: str = r.reason or ""
             seconds = max(int(r.target_ts - time.time()), 0.01)
             await PunishmentTimerRecords.delete(id=r.id)
             self.bot.loop.create_task(
@@ -190,15 +191,15 @@ class Moderation(Cog):
         """Restarts all timers"""
         DOZER_LOGGER.info("Restarting all timers")
         for timer in self.punishment_timer_tasks:
-            # timer: asyncio.Task
+            timer: asyncio.Task
             DOZER_LOGGER.info(f"Stopping \"{timer.get_name()}\"")
         for timer in self.punishment_timer_tasks:
             timer.cancel()
         self.punishment_timer_tasks = []
         await self.start_punishment_timers()
 
-    async def punishment_timer(self, seconds: int, target: discord.Member, punishment, reason: str,
-                               actor: discord.Member, orig_channel=None,
+    async def punishment_timer(self, seconds: int, target: Member, punishment: Type[Union["Deafen", "Mute"]], reason: str,
+                               actor: Member, orig_channel=None,
                                global_modlog: bool = True):
         """Asynchronous task that sleeps for a set time to unmute/undeafen a member for a set period of time."""
 
@@ -213,7 +214,7 @@ class Moderation(Cog):
             return
 
         # register the timer
-        ent = PunishmentTimerRecords(
+        ent: PunishmentTimerRecords = PunishmentTimerRecords(
             guild_id=target.guild.id,
             actor_id=actor.id,
             target_id=target.id,
@@ -252,7 +253,7 @@ class Moderation(Cog):
     async def check_links(self, msg: discord.Message):
         """Checks messages for the links role if necessary, then checks if the author is allowed to send links in the server"""
         if msg.guild is None or not isinstance(msg.author,
-                                               discord.Member) or not msg.guild.me.guild_permissions.manage_messages:
+                                               Member) or not msg.guild.me.guild_permissions.manage_messages:
             return
         config = await self.links_config.query_one(guild_id=msg.guild.id)
         if config is None:
@@ -266,14 +267,14 @@ class Moderation(Cog):
             return True
         return False
 
-    async def run_cross_ban(self, ctx: DozerContext, user: discord.User, reason: str):
+    async def run_cross_ban(self, ctx: DozerContext, user: User, reason: str) -> List[Guild]:
         """Checks for guilds that are subscribed to the banned members guild"""
-        subscriptions = await CrossBanSubscriptions.get_by(subscription_id=ctx.guild.id)
-        bans = []
+        subscriptions: List[CrossBanSubscriptions] = await CrossBanSubscriptions.get_by(subscription_id=ctx.guild.id)
+        bans: List[Guild] = []
         for subscription in subscriptions:
-            sub_guild = self.bot.get_guild(subscription.subscriber_id)
+            sub_guild: Guild = self.bot.get_guild(subscription.subscriber_id)
             if sub_guild:
-                modlog_channel = await GuildModLog.get_by(guild_id=sub_guild.id)
+                modlog_channel: List[GuildModLog] = await GuildModLog.get_by(guild_id=sub_guild.id)
                 try:
                     await sub_guild.ban(user, reason=f"User Cross Banned from \"{ctx.guild}\" for: {reason}")
                     if modlog_channel:
@@ -292,8 +293,8 @@ class Moderation(Cog):
 
     """=== context-free backend functions ==="""
 
-    async def _mute(self, member: discord.Member, reason: str = "No reason provided", seconds: int = 0,
-                    actor: discord.Member = None, orig_channel=None):
+    async def _mute(self, member: Member, reason: str = "No reason provided", seconds: int = 0,
+                    actor: Member = None, orig_channel=None):
         """Mutes a user.
         member: the member to be muted
         reason: a reason string without a time specifier
@@ -318,7 +319,7 @@ class Moderation(Cog):
                                       orig_channel=orig_channel))
             return True
 
-    async def _unmute(self, member: discord.Member):
+    async def _unmute(self, member: Member):
         """Unmutes a user."""
         results = await Mute.get_by(guild_id=member.guild.id, member_id=member.id)
         if results:
@@ -331,7 +332,7 @@ class Moderation(Cog):
         else:
             return False  # member not muted
 
-    async def _deafen(self, member: discord.Member, reason: str = "No reason provided", seconds: int = 0,
+    async def _deafen(self, member: Member, reason: str = "No reason provided", seconds: int = 0,
                       self_inflicted: bool = False, actor=None,
                       orig_channel=None):
         """Deafens a user.
@@ -371,7 +372,7 @@ class Moderation(Cog):
                                       global_modlog=not self_inflicted))
             return True
 
-    async def _undeafen(self, member: discord.Member):
+    async def _undeafen(self, member: Member):
         """Undeafens a user."""
         results = await Deafen.get_by(guild_id=member.guild.id, member_id=member.id)
         if results:
@@ -394,7 +395,7 @@ class Moderation(Cog):
         await self.nm_kick.start()
 
     @Cog.listener('on_member_join')
-    async def on_member_join(self, member: discord.Member):
+    async def on_member_join(self, member: Member):
         """Logs that a member joined."""
         users = await Mute.get_by(guild_id=member.guild.id, member_id=member.id)
         if users:
@@ -445,7 +446,7 @@ class Moderation(Cog):
 
     @command()
     @has_permissions(kick_members=True)
-    async def warn(self, ctx: DozerContext, member: discord.Member, *, reason: str):
+    async def warn(self, ctx: DozerContext, member: Member, *, reason: str):
         """Sends a message to the mod log specifying the member has been warned without punishment."""
         await self.mod_log(actor=ctx.author, action="warned", target=member, orig_channel=ctx.channel, reason=reason)
 
@@ -469,12 +470,13 @@ class Moderation(Cog):
     @bot_has_permissions(manage_permissions=True)
     async def timeout(self, ctx: DozerContext, duration: float):
         """Set a timeout (no sending messages or adding reactions) on the current channel."""
-        settings = await MemberRole.get_by(guild_id=ctx.guild.id)
-        if len(settings) == 0:
+        results: List[MemberRole] = await MemberRole.get_by(guild_id=ctx.guild.id)
+        settings: MemberRole
+        if len(results) == 0:
             settings = MemberRole(guild_id=ctx.guild.id, member_role=MemberRole.nullify)
             await settings.update_or_add()
         else:
-            settings = settings[0]
+            settings = results[0]
         # None-safe - nonexistent or non-configured role return None
         member_role = ctx.guild.get_role(settings.member_role)
         if member_role is not None:
@@ -488,7 +490,7 @@ class Moderation(Cog):
 
         to_restore = [(target, ctx.channel.overwrites_for(target)) for target in targets]
         for target, overwrite in to_restore:
-            new_overwrite = discord.PermissionOverwrite.from_pair(*overwrite.pair())
+            new_overwrite: discord.PermissionOverwrite = discord.PermissionOverwrite.from_pair(*overwrite.pair())
             new_overwrite.update(send_messages=False, add_reactions=False)
             await ctx.channel.set_permissions(target, overwrite=new_overwrite)
 
@@ -499,8 +501,8 @@ class Moderation(Cog):
             await ctx.channel.set_permissions(allow_target, overwrite=new_overwrite)
             to_restore.append((allow_target, overwrite))
 
-        e = discord.Embed(title='Timeout - {}s'.format(duration), description='This channel has been timed out.',
-                          color=discord.Color.blue())
+        e = Embed(title='Timeout - {}s'.format(duration), description='This channel has been timed out.',
+                  color=discord.Color.blue())
         e.set_author(name=escape_markdown(ctx.author.display_name), icon_url=ctx.author.avatar.replace(format='png', size=32))
         msg = await ctx.send(embed=e)
 
@@ -522,10 +524,10 @@ class Moderation(Cog):
     @command(aliases=["purge"])
     @has_permissions(manage_messages=True)
     @bot_has_permissions(manage_messages=True, read_message_history=True)
-    async def prune(self, ctx: DozerContext, target: typing.Optional[discord.Member], num: int):
+    async def prune(self, ctx: DozerContext, target: typing.Optional[Member], num: int):
         """Bulk delete a set number of messages from the current channel."""
 
-        def check_target(message):
+        def check_target(message) -> bool:
             if target is None:
                 return True
             else:
@@ -556,28 +558,28 @@ class Moderation(Cog):
     @has_permissions(manage_roles=True)
     async def punishments(self, ctx: DozerContext):
         """List currently active mutes and deafens in a guild"""
-        punishments = await PunishmentTimerRecords.get_by(guild_id=ctx.guild.id)
-        deafen_records = await Deafen.get_by(guild_id=ctx.guild.id)
-        self_inflicted = [record.member_id for record in deafen_records if record.self_inflicted]
-        deafens = [punishment for punishment in punishments if
-                   punishment.type_of_punishment == 2 and punishment.target_id not in self_inflicted]
-        self_deafens = [punishment for punishment in punishments if
-                        punishment.type_of_punishment == 2 and punishment.target_id in self_inflicted]
-        mutes = [punishment for punishment in punishments if punishment.type_of_punishment == 1]
-        embed = discord.Embed(title=f"Active punishments in {ctx.guild}", color=blurple)
+        punishments: List[PunishmentTimerRecords] = await PunishmentTimerRecords.get_by(guild_id=ctx.guild.id)
+        deafen_records: List[Deafen] = await Deafen.get_by(guild_id=ctx.guild.id)
+        self_inflicted: List[int] = [record.member_id for record in deafen_records if record.self_inflicted]
+        deafens: List[PunishmentTimerRecords] = [punishment for punishment in punishments if
+                                                 punishment.type_of_punishment == 2 and punishment.target_id not in self_inflicted]
+        self_deafens: List[PunishmentTimerRecords] = [punishment for punishment in punishments if
+                                                      punishment.type_of_punishment == 2 and punishment.target_id in self_inflicted]
+        mutes: List[PunishmentTimerRecords] = [punishment for punishment in punishments if punishment.type_of_punishment == 1]
+        embed: Embed = Embed(title=f"Active punishments in {ctx.guild}", color=blurple)
         embed.set_footer(text='Triggered by ' + ctx.author.display_name)
 
-        def get_mention(target_id):
-            member = ctx.guild.get_member(target_id)
+        def get_mention(target_id: int) -> str:
+            member: Member = ctx.guild.get_member(target_id)
             if member:
                 return member.mention
             else:
                 return "**Member left**"
 
-        def get_name(target_id):
-            user = ctx.bot.get_user(target_id)
+        def get_name(target_id) -> str:
+            user: User = ctx.bot.get_user(target_id)
             if user:
-                return user
+                return str(user)
             else:
                 return "**Unknown#NONE**"
 
@@ -608,7 +610,7 @@ class Moderation(Cog):
     @command()
     @has_permissions(ban_members=True)
     @bot_has_permissions(ban_members=True)
-    async def ban(self, ctx: DozerContext, user_mention: discord.User, *, reason: str = "No reason provided"):
+    async def ban(self, ctx: DozerContext, user_mention: User, *, reason: str = "No reason provided"):
         """Bans the user mentioned."""
         await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason,
                            orig_channel=ctx.channel, dm=False)
@@ -629,7 +631,7 @@ class Moderation(Cog):
     @command()
     @has_permissions(ban_members=True)
     @bot_has_permissions(ban_members=True)
-    async def unban(self, ctx: DozerContext, user_mention: discord.User, *, reason: str = "No reason provided"):
+    async def unban(self, ctx: DozerContext, user_mention: User, *, reason: str = "No reason provided"):
         """Unbans the user mentioned."""
         await ctx.guild.unban(user_mention, reason=reason)
         await self.mod_log(actor=ctx.author, action="unbanned", target=user_mention, reason=reason,
@@ -642,7 +644,7 @@ class Moderation(Cog):
     @command()
     @has_permissions(kick_members=True)
     @bot_has_permissions(kick_members=True)
-    async def kick(self, ctx: DozerContext, user_mention: discord.User, *, reason: str = "No reason provided"):
+    async def kick(self, ctx: DozerContext, user_mention: User, *, reason: str = "No reason provided"):
         """Kicks the user mentioned."""
         await self.mod_log(actor=ctx.author, action="kicked", target=user_mention, reason=reason,
                            orig_channel=ctx.channel)
@@ -655,7 +657,7 @@ class Moderation(Cog):
     @command()
     @has_permissions(manage_roles=True)
     @bot_has_permissions(manage_permissions=True)
-    async def mute(self, ctx: DozerContext, member_mentions: discord.Member, *, reason: str = "No reason provided"):
+    async def mute(self, ctx: DozerContext, member_mentions: Member, *, reason: str = "No reason provided"):
         """Mute a user to prevent them from sending messages"""
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
@@ -676,7 +678,7 @@ class Moderation(Cog):
     @command()
     @has_permissions(manage_roles=True)
     @bot_has_permissions(manage_permissions=True)
-    async def unmute(self, ctx: DozerContext, member_mentions: discord.Member, *, reason="No reason provided"):
+    async def unmute(self, ctx: DozerContext, member_mentions: Member, *, reason="No reason provided"):
         """Unmute a user to allow them to send messages again."""
         async with ctx.typing():
             if await self._unmute(member_mentions):
@@ -692,7 +694,7 @@ class Moderation(Cog):
     @command()
     @has_permissions(manage_roles=True)
     @bot_has_permissions(manage_permissions=True)
-    async def deafen(self, ctx: DozerContext, member_mentions: discord.Member, *, reason: str = "No reason provided"):
+    async def deafen(self, ctx: DozerContext, member_mentions: Member, *, reason: str = "No reason provided"):
         """Deafen a user to prevent them from both sending messages but also reading messages."""
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
@@ -738,7 +740,7 @@ class Moderation(Cog):
     @command()
     @has_permissions(manage_roles=True)
     @bot_has_permissions(manage_permissions=True)
-    async def undeafen(self, ctx: DozerContext, member_mentions: discord.Member, *, reason: str = "No reason provided"):
+    async def undeafen(self, ctx: DozerContext, member_mentions: Member, *, reason: str = "No reason provided"):
         """Undeafen a user to allow them to see message and send message again."""
         async with ctx.typing():
             result = await self._undeafen(member_mentions)
@@ -754,7 +756,7 @@ class Moderation(Cog):
     """
 
     @command()
-    async def voicekick(self, ctx: DozerContext, member: discord.Member, reason: str = "No reason provided"):
+    async def voicekick(self, ctx: DozerContext, member: Member, reason: str = "No reason provided"):
         """Kick a user from voice chat. This is most useful if their perms to rejoin have already been removed."""
         async with ctx.typing():
             if member.voice is None:
@@ -803,7 +805,7 @@ class Moderation(Cog):
 
     @command()
     @has_permissions(manage_guild=True)
-    async def verifymember(self, ctx, member: discord.Member):
+    async def verifymember(self, ctx, member: Member):
         """Command to verify a member who may not have a team number set, or who hasn't sent the required
         verification message. """
         config = await GuildNewMember.get_by(guild_id=ctx.guild.id)
@@ -901,12 +903,12 @@ class Moderation(Cog):
         """
         if link_role >= ctx.author.top_role:
             raise BadArgument('Link role cannot be higher than your top role!')
-
-        settings = await GuildMessageLinks.get_by(guild_id=ctx.guild.id)
-        if len(settings) == 0:
+        settings: GuildMessageLinks
+        results: List[GuildMessageLinks] = await GuildMessageLinks.get_by(guild_id=ctx.guild.id)
+        if len(results) == 0:
             settings = GuildMessageLinks(guild_id=ctx.guild.id, role_id=link_role.id)
         else:
-            settings = settings[0]
+            settings = results[0]
             settings.role_id = link_role.id
         await settings.update_or_add()
         self.links_config.invalidate_entry(guild_id=ctx.guild.id)
@@ -927,7 +929,7 @@ class Moderation(Cog):
         """Cross ban"""
         subscriptions = await CrossBanSubscriptions.get_by(subscriber_id=ctx.guild.id)
         subscribers = await CrossBanSubscriptions.get_by(subscription_id=ctx.guild.id)
-        embed = discord.Embed(title="Cross ban subscriptions", color=blurple)
+        embed = Embed(title="Cross ban subscriptions", color=blurple)
         for field_number, target_ids in enumerate(chunk(subscriptions, 10)):
             embed.add_field(name='Subscriptions',
                             value='\n'.join(f"{self.bot.get_guild(sub_id.subscription_id)} | {sub_id.subscription_id}"
@@ -945,16 +947,16 @@ class Moderation(Cog):
     @bot_has_permissions(ban_members=True)
     async def subscribe(self, ctx: DozerContext, guild_id: int):
         """Subscribe to a guild to cross ban from"""
-        guild = self.bot.get_guild(guild_id)
+        guild: Optional[Guild] = self.bot.get_guild(guild_id)
         if guild:
-            subscription = CrossBanSubscriptions(
+            subscription: CrossBanSubscriptions = CrossBanSubscriptions(
                 subscriber_id=ctx.guild.id,
                 subscription_id=guild.id
             )
             await subscription.update_or_add()
-            embed = discord.Embed(title='Success!',
-                                  description=f"**{ctx.guild}** is now subscribed to receive crossbans from **{guild}**",
-                                  color=blurple)
+            embed: Embed = Embed(title='Success!',
+                                 description=f"**{ctx.guild}** is now subscribed to receive crossbans from **{guild}**",
+                                 color=blurple)
             embed.set_footer(text='Triggered by ' + ctx.author.display_name)
             await ctx.send(embed=embed)
         else:
@@ -970,10 +972,10 @@ class Moderation(Cog):
         )
 
         if int(result.split(" ", 1)[1]) > 0:
-            guild = self.bot.get_guild(guild_id)
-            embed = discord.Embed(title='Success!',
-                                  description=f"**{ctx.guild}** is no longer subscribed to receive crossbans from **{guild}**",
-                                  color=blurple)
+            guild: Guild = self.bot.get_guild(guild_id)
+            embed = Embed(title='Success!',
+                          description=f"**{ctx.guild}** is no longer subscribed to receive crossbans from **{guild}**",
+                          color=blurple)
             embed.set_footer(text='Triggered by ' + ctx.author.display_name)
             await ctx.send(embed=embed)
         else:
@@ -1001,11 +1003,11 @@ class Mute(db.DatabaseTable):
 
     def __init__(self, member_id: int, guild_id: int):
         super().__init__()
-        self.member_id = member_id
-        self.guild_id = guild_id
+        self.member_id: int = member_id
+        self.guild_id: int = guild_id
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["Mute"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -1059,7 +1061,7 @@ class Deafen(db.DatabaseTable):
         self.self_inflicted: bool = self_inflicted
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["Deafen"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -1092,7 +1094,7 @@ class GuildModLog(db.DatabaseTable):
         self.name: str = name
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["GuildModLog"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -1123,7 +1125,7 @@ class CrossBanSubscriptions(db.DatabaseTable):
         self.subscription_id: int = subscription_id
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["CrossBanSubscriptions"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -1150,11 +1152,11 @@ class MemberRole(db.DatabaseTable):
 
     def __init__(self, guild_id: int, member_role: int = None):
         super().__init__()
-        self.guild_id = guild_id
-        self.member_role = member_role
+        self.guild_id: int = guild_id
+        self.member_role: int = member_role
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["MemberRole"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -1181,12 +1183,12 @@ class NewMemPurgeConfig(db.DatabaseTable):
 
     def __init__(self, guild_id: int, member_role: int, days: int):
         super().__init__()
-        self.guild_id = guild_id
-        self.member_role = member_role
-        self.days = days
+        self.guild_id: int = guild_id
+        self.member_role: int = member_role
+        self.days: int = days
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["NewMemPurgeConfig"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -1216,14 +1218,18 @@ class GuildNewMember(db.DatabaseTable):
 
     def __init__(self, guild_id: int, channel_id: int, role_id: int, message: str, require_team: bool):
         super().__init__()
-        self.guild_id = guild_id
-        self.channel_id = channel_id
-        self.role_id = role_id
-        self.message = message
-        self.require_team = require_team
+        self.guild_id: int = guild_id
+        self.channel_id: int = channel_id
+        self.role_id: int = role_id
+        self.message: str = message
+        self.require_team: bool = require_team
+
+    @property
+    def type_of_punishment(self):
+        return type(self)
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["GuildNewMember"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -1260,11 +1266,15 @@ class GuildMessageLinks(db.DatabaseTable):
 
     def __init__(self, guild_id: int, role_id: int = None):
         super().__init__()
-        self.guild_id = guild_id
-        self.role_id = role_id
+        self.guild_id: int = guild_id
+        self.role_id: int = role_id
+
+    @property
+    def type_of_punishment(self):
+        return type(self)
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["GuildMessageLinks"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -1298,18 +1308,18 @@ class PunishmentTimerRecords(db.DatabaseTable):
     def __init__(self, guild_id: int, actor_id: int, target_id: int, type_of_punishment: int, target_ts: int,
                  orig_channel_id: int = None, reason: str = None, input_id: int = None, self_inflicted: bool = False):
         super().__init__()
-        self.id = input_id
-        self.guild_id = guild_id
-        self.actor_id = actor_id
-        self.target_id = target_id
-        self.type_of_punishment = type_of_punishment
-        self.target_ts = target_ts
-        self.orig_channel_id = orig_channel_id
-        self.reason = reason
-        self.self_inflicted = self_inflicted
+        self.id: int = input_id
+        self.guild_id: int = guild_id
+        self.actor_id: int = actor_id
+        self.target_id: int = target_id
+        self.type_of_punishment: int = type_of_punishment
+        self.target_ts: int = target_ts
+        self.orig_channel_id: int = orig_channel_id
+        self.reason: str = reason
+        self.self_inflicted: bool = self_inflicted
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["PunishmentTimerRecords"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:

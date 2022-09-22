@@ -82,7 +82,7 @@ class Fun(Cog):
     async def fight(self, ctx: DozerContext, opponent: discord.Member, wager: int = 0):
         """Start a fight with another user."""
 
-        levels = self.bot.get_cog("Levels")
+        levels: Cog = self.bot.get_cog("Levels")
 
         if wager == 0:
             await self.battle(ctx, opponent, delete_result=False)

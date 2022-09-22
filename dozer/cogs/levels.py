@@ -2,24 +2,24 @@
 
 import asyncio
 import functools
-
 import itertools
 import logging
 import math
 import random
-import typing
 from datetime import timedelta, timezone, datetime
+from typing import List, Optional
 
 import aiohttp
 import discord
-from discord.utils import escape_markdown
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
+from discord.utils import escape_markdown
 
 from dozer.bot import Dozer
 from dozer.context import DozerContext
 from ._utils import *
 from .. import db
+
 blurple = discord.Color.blurple()
 
 
@@ -688,7 +688,7 @@ class Levels(Cog):
 
     @command(aliases=["ranks", "leaderboard"])
     @guild_only()
-    async def levels(self, ctx: DozerContext, start: typing.Optional[discord.Member]):
+    async def levels(self, ctx: DozerContext, start: Optional[discord.Member]):
         """Show the XP leaderboard for this server. Leaderboard refreshes every 5 minutes or so"""
 
         # Order by total_xp needs a tiebreaker, otherwise all records with equal XP will have the same rank
@@ -756,7 +756,7 @@ class XPRole(db.DatabaseTable):
         self.level = level
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["XPRole"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -794,7 +794,7 @@ class MemberXP(db.DatabaseTable):
         self.last_given_at = last_given_at
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["MemberXP"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -860,7 +860,7 @@ class GuildXPSettings(db.DatabaseTable):
         self.keep_old_roles = keep_old_roles
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["GuildXPSettings"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:

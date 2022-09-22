@@ -1,4 +1,6 @@
 """Provides commands for voice, currently only voice and text channel access bindings."""
+from typing import List
+
 import discord
 from discord.ext.commands import has_permissions, BadArgument
 from discord.utils import escape_markdown
@@ -183,7 +185,7 @@ class Voicebinds(db.DatabaseTable):
         self.role_id = role_id
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["Voicebinds"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -216,7 +218,7 @@ class AutoPTT(db.DatabaseTable):
         self.ptt_limit = ptt_limit
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["AutoPTT"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:

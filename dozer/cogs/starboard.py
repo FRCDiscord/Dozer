@@ -1,6 +1,7 @@
 """Cog to post specific 'Hall of Fame' messages in a specific channel"""
 import asyncio
 import logging
+from typing import List
 from typing import TYPE_CHECKING
 
 import discord
@@ -360,7 +361,7 @@ class StarboardConfig(db.DatabaseTable):
         self.threshold = threshold
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["StarboardConfig"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -396,7 +397,7 @@ class StarboardMessage(db.DatabaseTable):
         self.author_id = author_id
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["StarboardMessage"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:

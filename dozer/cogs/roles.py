@@ -182,7 +182,7 @@ class Roles(Cog):
                         value='\n'.join(sorted(cant_give)))
         try:
             dest_id = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
-            dest = member.guild.get_channel(dest_id[0].memberlog_channel)
+            dest = member.guild.get_channel(dest_id[0].channel_id)
             await dest.send(embed=e)
         except discord.Forbidden:
             pass
@@ -753,7 +753,7 @@ class RoleMenu(db.DatabaseTable):
         self.name = name
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["RoleMenu"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -791,7 +791,7 @@ class ReactionRole(db.DatabaseTable):
         self.reaction = reaction
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["ReactionRole"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -827,7 +827,7 @@ class GiveableRole(db.DatabaseTable):
         self.norm_name = norm_name
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["GiveableRole"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -868,7 +868,7 @@ class MissingRole(db.DatabaseTable):
         self.role_name = role_name
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["MissingRole"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -906,7 +906,7 @@ class TempRoleTimerRecords(db.DatabaseTable):
         self.removal_ts = removal_ts
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["TempRoleTimerRecords"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:

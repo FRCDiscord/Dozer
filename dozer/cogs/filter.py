@@ -2,7 +2,7 @@
 with whitelisted role exceptions."""
 
 import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import discord
 from discord.ext.commands import guild_only, has_permissions
@@ -344,7 +344,7 @@ class WordFilter(db.DatabaseTable):
         self.pattern = pattern
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["WordFilter"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -379,7 +379,7 @@ class WordFilterSetting(db.DatabaseTable):
         self.value = value
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["WordFilterSetting"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -410,7 +410,7 @@ class WordFilterRoleWhitelist(db.DatabaseTable):
         self.guild_id = guild_id
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["WordFilterRoleWhitelist"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:

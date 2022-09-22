@@ -5,7 +5,7 @@ import pickle
 import traceback
 from collections import OrderedDict
 from functools import wraps
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List
 
 import discord
 import tbapi
@@ -711,7 +711,7 @@ class NameGame(Cog):
             await self._on_reaction(game, reaction, user, 1)
 
             # also handle voting logic
-            ctx = await self.bot.get_context(reaction.message)
+            ctx: DozerContext = await self.bot.get_context(reaction.message)
             if game.vote_correct:
                 if game.fail_tally > .5 * len(game.players):
                     await ctx.send(f"The decision was overruled! Player {game.vote_player.mention} is given a strike!")
@@ -824,7 +824,7 @@ class NameGameConfig(db.DatabaseTable):
         self.pings_enabled = pings_enabled
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["NameGameConfig"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -858,7 +858,7 @@ class NameGameLeaderboard(db.DatabaseTable):
         self.wins = wins
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["NameGameLeaderboard"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:

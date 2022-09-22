@@ -128,14 +128,14 @@ class DatabaseTable:
     @classmethod
     async def get_by(cls, **filters):
         """Get a list of all records matching the given column=value criteria. This will grab all attributes, it's more
-        efficent to write your own SQL queries than use this one, but for a simple query this is fine."""
+        efficient to write your own SQL queries than use this one, but for a simple query this is fine."""
         async with Pool.acquire() as conn:
-            statement = f"SELECT * FROM {cls.__tablename__}"
+            statement: str = f"SELECT * FROM {cls.__tablename__}"
             if filters:
                 # note: this code relies on subsequent iterations of the same dict having the same iteration order.
                 # This is an implementation detail of CPython 3.6 and a language guarantee in Python 3.7+.
-                conditions = " AND ".join(f"{column_name} = ${i + 1}" for (i, column_name) in enumerate(filters))
-                statement = f"{statement} WHERE {conditions};"
+                conditions: str = " AND ".join(f"{column_name} = ${i + 1}" for (i, column_name) in enumerate(filters))
+                statement: str = f"{statement} WHERE {conditions};"
             else:
                 statement += ";"
             return await conn.fetch(statement, *filters.values())
@@ -196,6 +196,6 @@ class ConfigCache:
         if query_hash in self.cache:
             del self.cache[query_hash]
 
-    __versions__: Dict[str, int] = {}
+    __versions__: Dict[str, Callable] = {}
 
     __uniques__: List[str] = []

@@ -1,3 +1,5 @@
+from typing import List
+
 from dozer import db
 
 
@@ -43,7 +45,7 @@ class TeamNumbers(db.DatabaseTable):
             await conn.execute(statement, *values)
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["TeamNumbers"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:

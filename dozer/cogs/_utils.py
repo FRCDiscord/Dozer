@@ -2,9 +2,8 @@
 import asyncio
 import inspect
 import logging
-import typing
 from collections.abc import Mapping
-from typing import Dict, Union
+from typing import Dict, Union, Optional, Any, Coroutine, Callable, List
 from typing import TYPE_CHECKING
 
 import discord
@@ -30,12 +29,12 @@ class CommandMixin:
 
     # Keyword-arg dictionary passed to __init__ when copying/updating commands when Cog instances are created
     # inherited from discord.ext.command.Command
-    __original_kwargs__: typing.Dict[str, typing.Any]
+    __original_kwargs__: Dict[str, Any]
     _required_permissions = None
 
-    def __init__(self, func, **kwargs):
+    def __init__(self, func: Callable, **kwargs):
         super().__init__(func, **kwargs)
-        self.example_usage = kwargs.pop('example_usage', '')
+        self.example_usage: Optional[str] = kwargs.pop('example_usage', '')
         if hasattr(func, '__required_permissions__'):
             # This doesn't need to go into __original_kwargs__ because it'll be read from func each time
             self._required_permissions = func.__required_permissions__
@@ -80,9 +79,9 @@ class Group(CommandMixin, commands.HybridGroup):
     def command(
         self,
         name: Union[str, app_commands.locale_str] = MISSING,
-        *args: typing.Any,
+        *args: Any,
         with_app_command: bool = True,
-        **kwargs: typing.Any,
+        **kwargs: Any,
     ):
         """Initiates a command"""
 
@@ -97,9 +96,9 @@ class Group(CommandMixin, commands.HybridGroup):
     def group(
         self,
         name: Union[str, app_commands.locale_str] = MISSING,
-        *args: typing.Any,
+        *args: Any,
         with_app_command: bool = True,
-        **kwargs: typing.Any,
+        **kwargs: Any,
     ):
         """Initiates a command group"""
 
@@ -167,7 +166,7 @@ class Reactor:
         self._remove_reactions = auto_remove and ctx.channel.permissions_for(
             self.me).manage_messages  # Check for required permissions
         self.timeout = timeout
-        self._action: typing.Coroutine = None
+        self._action: Optional[Coroutine] = None
         self.message = None
 
     async def __aiter__(self):
@@ -389,7 +388,7 @@ class DynamicPrefixEntry(db.DatabaseTable):
         self.prefix = prefix
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["DynamicPrefixEntry"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:

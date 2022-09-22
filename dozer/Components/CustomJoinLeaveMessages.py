@@ -1,5 +1,6 @@
 """Holder for the custom join/leave messages database class and the associated methods"""
 from logging import getLogger
+from typing import List
 
 import discord
 
@@ -68,7 +69,7 @@ class CustomJoinLeaveMessages(db.DatabaseTable):
         self.send_on_verify = send_on_verify
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["CustomJoinLeaveMessages"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:

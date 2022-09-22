@@ -1,6 +1,7 @@
 """Commands for making and seeing robotics team associations."""
 
 import json
+from typing import List
 
 import discord
 from aiotba.http import AioTBAError
@@ -223,7 +224,7 @@ class AutoAssociation(db.DatabaseTable):
         self.team_on_join = team_on_join
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["AutoAssociation"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:

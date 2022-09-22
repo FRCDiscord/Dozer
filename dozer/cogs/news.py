@@ -4,10 +4,12 @@ import datetime
 import logging
 import traceback
 from asyncio import CancelledError, InvalidStateError
+from typing import List, TYPE_CHECKING
 from xml.etree import ElementTree
 
 import aiohttp
 import discord
+from discord import Embed
 from discord.ext import tasks
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 
@@ -15,6 +17,9 @@ from dozer.context import DozerContext
 from ._utils import *
 from .. import db
 from ..sources import DataBasedSource, Source, sources
+
+if TYPE_CHECKING:
+    from dozer import Dozer
 
 DOZER_LOGGER = logging.getLogger('dozer')
 
@@ -34,7 +39,7 @@ class News(Cog):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.updated = True
+        self.updated: bool = True
         self.http_source = None
         self.sources = {}
         self.get_new_posts.change_interval(minutes=self.bot.config['news']['check_interval'])
@@ -88,7 +93,7 @@ class News(Cog):
 
                 channel_dict[sub.data][channel] = sub.kind
 
-            # We've gotten all of the channels we need to post to, lets get the posts and post them now
+            # We've gotten all the channels we need to post to, lets get the posts and post them now
             try:
                 posts = await source.get_new_posts()
             except ElementTree.ParseError:
@@ -151,10 +156,10 @@ class News(Cog):
     @guild_only()
     async def news(self, ctx: DozerContext):
         """Show help for news subscriptions"""
-        embed = discord.Embed(title="How to subscribe to News Sources",
-                              description="Dozer has built in news scrapers to allow you to review up to date news"
-                                          "in specific channels. See below on how to manage your server's "
-                                          "subscriptions")
+        embed = Embed(title="How to subscribe to News Sources",
+                      description="Dozer has built in news scrapers to allow you to review up to date news"
+                                  "in specific channels. See below on how to manage your server's "
+                                  "subscriptions")
         embed.add_field(name="How to add a subscription",
                         value=f"To add a source, for example, Chief Delphi to a channel, you can use the command"
                               f"`{ctx.bot.command_prefix}news add #channel cd`")
@@ -179,7 +184,7 @@ class News(Cog):
     @news.command()
     @has_permissions(manage_guild=True)
     @guild_only()
-    async def add(self, ctx: DozerContext, channel: discord.TextChannel, source: Source, kind='embed', data=None):
+    async def add(self, ctx: DozerContext, channel: discord.TextChannel, source: Source, kind: str = 'embed', data=None):
         """Add a new subscription of a given source to a channel."""
 
         if data is None and kind not in self.kinds and isinstance(source, DataBasedSource):
@@ -242,8 +247,8 @@ class News(Cog):
                                    kind=kind, data=str_or_none(data_obj))
         await new_sub.update_or_add()
 
-        embed = discord.Embed(title=f"Channel #{channel.name} subscribed to {source.full_name}",
-                              description="New posts should be in this channel soon.")
+        embed = Embed(title=f"Channel #{channel.name} subscribed to {source.full_name}",
+                      description="New posts should be in this channel soon.")
         embed.add_field(name="Kind", value=kind)
         if isinstance(source, DataBasedSource):
             embed.add_field(name="Data", value=data_obj.full_name)
@@ -284,7 +289,7 @@ class News(Cog):
                                f"with data {data} found. Please contact the Dozer administrator for help.")
                 return
 
-            data_exists = await NewsSubscription.get_by(source=source.short_name, data=str(data_obj))
+            data_exists: List[NewsSubscription] = await NewsSubscription.get_by(source=source.short_name, data=str(data_obj))
             if len(data_exists) > 1:
                 removed = await source.remove_data(data_obj)
                 if not removed:
@@ -309,8 +314,8 @@ class News(Cog):
 
         await NewsSubscription.delete(id=sub[0].id)
 
-        embed = discord.Embed(title=f"Subscription of channel #{channel.name} to {source.full_name} removed",
-                              description="Posts from this source will no longer appear.")
+        embed = Embed(title=f"Subscription of channel #{channel.name} to {source.full_name} removed",
+                      description="Posts from this source will no longer appear.")
         if isinstance(source, DataBasedSource):
             embed.add_field(name="Data", value=sub[0].data)
 
@@ -324,7 +329,7 @@ class News(Cog):
     @news.command(name='sources')
     async def list_sources(self, ctx: DozerContext):
         """List all available sources to subscribe to."""
-        embed = discord.Embed(title="All available sources to subscribe to.")
+        embed = Embed(title="All available sources to subscribe to.")
 
         embed.description = f"To subscribe to any of these sources, use the `{ctx.prefix}news add " \
                             f"<channel> <source name>` command."
@@ -349,7 +354,7 @@ class News(Cog):
             results = await NewsSubscription.get_by(guild_id=ctx.guild.id)
 
         if not results:
-            embed = discord.Embed(title="News Subscriptions for {}".format(ctx.guild.name))
+            embed = Embed(title="News Subscriptions for {}".format(ctx.guild.name))
             embed.description = f"No news subscriptions found for this guild! Add one using `{self.bot.command_prefix}" \
                                 f"news add <channel> <source>`"
             embed.colour = discord.Color.red()
@@ -368,7 +373,7 @@ class News(Cog):
             except KeyError:
                 channels[channel] = [result]
 
-        embed = discord.Embed()
+        embed = Embed()
         embed.title = "News Subscriptions for {}".format(ctx.guild.name)
         embed.colour = discord.Color.dark_orange()
         for found_channel, lst in channels.items():
@@ -430,7 +435,7 @@ class News(Cog):
     get_exception.example_usage = "`{prefix}news get_exception` - Get the exception that the loop failed with"
 
 
-async def setup(bot):
+async def setup(bot: "Dozer"):
     """Setup cog"""
     await bot.add_cog(News(bot))
 
@@ -456,15 +461,15 @@ class NewsSubscription(db.DatabaseTable):
 
     def __init__(self, channel_id: int, guild_id: int, source: str, kind: str, data: str = None, sub_id: int = None):
         super().__init__()
-        self.id = sub_id
-        self.channel_id = channel_id
-        self.guild_id = guild_id
-        self.source = source
-        self.kind = kind
-        self.data = data
+        self.id: int = sub_id
+        self.channel_id: int = channel_id
+        self.guild_id: int = guild_id
+        self.source: str = source
+        self.kind: str = kind
+        self.data: str = data
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["NewsSubscription"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
