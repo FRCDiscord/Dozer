@@ -1,6 +1,7 @@
 """Provides some useful utilities for the Discord bot, mostly to do with cleaning."""
 
 import re
+from re import Pattern
 from typing import Optional, List
 from urllib.parse import urlencode
 
@@ -10,13 +11,13 @@ __all__ = ['clean', 'is_clean', 'oauth_url', 'pretty_concat']
 
 from dozer.context import DozerContext
 
-mass_mention = re.compile('@(everyone|here)')
-member_mention = re.compile(r'<@?(\d+)>')
-role_mention = re.compile(r'<@&(\d+)>')
-channel_mention = re.compile(r'<#(\d+)>')
+mass_mention: Pattern = re.compile('@(everyone|here)')
+member_mention: Pattern = re.compile(r'<@?(\d+)>')
+role_mention: Pattern = re.compile(r'<@&(\d+)>')
+channel_mention: Pattern = re.compile(r'<#(\d+)>')
 
 
-def clean(ctx: DozerContext, text: Optional[str] = None, *, mass: bool = True, member: bool = True, role: bool = True, channel: bool = True):
+def clean(ctx: DozerContext, text: Optional[str] = None, *, mass: bool = True, member: bool = True, role: bool = True, channel: bool = True) -> str:
     """Cleans the message of anything specified in the parameters passed."""
     if text is None:
         text: str = ctx.message.content
@@ -32,14 +33,14 @@ def clean(ctx: DozerContext, text: Optional[str] = None, *, mass: bool = True, m
     return cleaned_text
 
 
-def is_clean(ctx: DozerContext, text: Optional[str] = None):
+def is_clean(ctx: DozerContext, text: Optional[str] = None) -> bool:
     """Checks if the message is clean already and doesn't need to be cleaned."""
     if text is None:
         text = ctx.message.content
     return all(regex.search(text) is None for regex in (mass_mention, member_mention, role_mention, channel_mention))
 
 
-def clean_member_name(ctx: DozerContext, member_id: int):
+def clean_member_name(ctx: DozerContext, member_id: int) -> str:
     """Cleans a member's name from the message."""
     member = ctx.guild.get_member(member_id)
     if member is None:
@@ -52,7 +53,7 @@ def clean_member_name(ctx: DozerContext, member_id: int):
         return '<@\N{ZERO WIDTH SPACE}%d>' % member.id
 
 
-def clean_role_name(ctx: DozerContext, role_id: int):
+def clean_role_name(ctx: DozerContext, role_id: int) -> str:
     """Cleans role pings from messages."""
     role: discord.Role = discord.utils.get(ctx.guild.roles, id=role_id)  # Guild.get_role doesn't exist
     if role is None:
@@ -63,7 +64,7 @@ def clean_role_name(ctx: DozerContext, role_id: int):
         return '<@&\N{ZERO WIDTH SPACE}%d>' % role.id
 
 
-def clean_channel_name(ctx: DozerContext, channel_id: int):
+def clean_channel_name(ctx: DozerContext, channel_id: int) -> str:
     """Cleans channel mentions from messages."""
     channel = ctx.guild.get_channel(channel_id)
     if channel is None:
@@ -74,7 +75,7 @@ def clean_channel_name(ctx: DozerContext, channel_id: int):
         return '<#\N{ZERO WIDTH SPACE}%d>' % channel.id
 
 
-def pretty_concat(strings: List[str], single_suffix: str = '', multi_suffix: str = ''):
+def pretty_concat(strings: List[str], single_suffix: str = '', multi_suffix: str = '') -> str:
     """Concatenates things in a pretty way"""
     if len(strings) == 1:
         return strings[0] + single_suffix
@@ -84,7 +85,7 @@ def pretty_concat(strings: List[str], single_suffix: str = '', multi_suffix: str
         return '{}, and {}{}'.format(', '.join(strings[:-1]), strings[-1], multi_suffix)
 
 
-def oauth_url(client_id: str, permissions: discord.Permissions = None, guild: discord.Guild = None, redirect_uri: str = None):
+def oauth_url(client_id: str, permissions: discord.Permissions = None, guild: discord.Guild = None, redirect_uri: str = None) -> str:
     """A helper function that returns the OAuth2 URL for inviting the bot
     into guilds.
 
