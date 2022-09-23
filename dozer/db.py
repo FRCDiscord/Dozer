@@ -1,8 +1,9 @@
 """Provides database storage for the Dozer Discord bot"""
 import logging
-from typing import List, Dict, Callable
+from typing import List, Dict, Callable, Type, Tuple, Any
 
 import asyncpg
+from asyncpg import Record
 
 DOZER_LOGGER = logging.getLogger(__name__)
 
@@ -113,7 +114,7 @@ class DatabaseTable:
                 """
             await conn.execute(statement, *values)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         values = ""
         first = True
         for key, value in self.__dict__.items():
@@ -126,7 +127,7 @@ class DatabaseTable:
     # Class Methods
 
     @classmethod
-    async def get_by(cls, **filters):
+    async def get_by(cls, **filters) -> List[Record]:
         """Get a list of all records matching the given column=value criteria. This will grab all attributes, it's more
         efficient to write your own SQL queries than use this one, but for a simple query this is fine."""
         async with Pool.acquire() as conn:
@@ -162,12 +163,12 @@ class DatabaseTable:
 class ConfigCache:
     """Class that will reduce calls to sqlalchemy as much as possible. Has no growth limit (yet)"""
 
-    def __init__(self, table):
-        self.cache = {}
-        self.table = table
+    def __init__(self, table: Type[DatabaseTable]):
+        self.cache: Dict = {}
+        self.table: Type[DatabaseTable] = table
 
     @staticmethod
-    def _hash_dict(dic):
+    def _hash_dict(dic) -> Tuple[Tuple[Any, Any], ...]:
         """Makes a dict hashable by turning it into a tuple of tuples"""
         # sort the keys to make this repeatable; this allows consistency even when insertion order is different
         return tuple((k, dic[k]) for k in sorted(dic))

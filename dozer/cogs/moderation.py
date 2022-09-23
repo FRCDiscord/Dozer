@@ -10,7 +10,7 @@ from typing import List
 from typing import TYPE_CHECKING, Union, Optional, Type
 
 import discord
-from discord import Guild, Embed, User, Member
+from discord import Guild, Embed, User, Member, Message
 from discord.ext import tasks, commands
 from discord.ext.commands import BadArgument, has_permissions, RoleConverter, guild_only
 from discord.utils import escape_markdown
@@ -95,7 +95,6 @@ class Moderation(Cog):
         modlog_embed = Embed(
             color=embed_color,
             title=title
-
         )
         if target is not None:
             modlog_embed.add_field(name=f"{action.capitalize()} user",
@@ -526,15 +525,15 @@ class Moderation(Cog):
     async def prune(self, ctx: DozerContext, target: typing.Optional[Member], num: int):
         """Bulk delete a set number of messages from the current channel."""
 
-        def check_target(message) -> bool:
+        def check_target(message: Message) -> bool:
             if target is None:
                 return True
             else:
                 return message.author == target
 
         try:
-            msg = await ctx.message.channel.fetch_message(num)
-            deleted = await ctx.message.channel.purge(after=msg, limit=MAX_PURGE, check=check_target)
+            msg: Message = await ctx.message.channel.fetch_message(num)
+            deleted: List[Message] = await ctx.message.channel.purge(after=msg, limit=MAX_PURGE, check=check_target)
             await ctx.send(
                 f"Deleted {len(deleted)} messages under request of {ctx.message.author.mention}",
                 delete_after=5)
@@ -542,7 +541,7 @@ class Moderation(Cog):
             if num > MAX_PURGE:
                 await ctx.send("Message cannot be found or you're trying to purge too many messages.")
                 return
-            deleted = await ctx.message.channel.purge(limit=num + 1, check=check_target)
+            deleted: List[Message] = await ctx.message.channel.purge(limit=num + 1, check=check_target)
             await ctx.send(
                 f"Deleted {len(deleted) - 1} messages under request of {ctx.message.author.mention}",
                 delete_after=5)
