@@ -5,7 +5,7 @@ import os
 import re
 import sys
 import traceback
-from typing import Pattern, Optional, Union, Generator
+from typing import Pattern, Optional, Union, Generator, Type
 
 import discord
 from discord.ext import commands
@@ -89,7 +89,7 @@ class Dozer(commands.Bot):
         ctx = await super().get_context(message, cls=cls)
         return ctx
 
-    async def on_command_error(self, context: DozerContext, exception):  # pylint: disable=arguments-differ
+    async def on_command_error(self, context: DozerContext, exception: Type[Exception]):  # pylint: disable=arguments-differ
         if isinstance(exception, commands.NoPrivateMessage):
             await context.send('{}, This command cannot be used in DMs.'.format(context.author.mention))
         elif isinstance(exception, commands.UserInputError):
@@ -141,7 +141,7 @@ class Dozer(commands.Bot):
         capture_exception()
 
     @staticmethod
-    def format_error(ctx: DozerContext, err: Exception, *, word_re: Pattern = re.compile('[A-Z][a-z]+')):
+    def format_error(ctx: DozerContext, err: Exception, *, word_re: Pattern = re.compile('[A-Z][a-z]+')) -> str:
         """Turns an exception into a user-friendly (or -friendlier, at least) error message."""
         type_words = word_re.findall(type(err).__name__)
         type_msg = ' '.join(map(str.lower, type_words))
@@ -151,7 +151,7 @@ class Dozer(commands.Bot):
         else:
             return type_msg
 
-    def global_checks(self, ctx: DozerContext):
+    def global_checks(self, ctx: DozerContext) -> bool:
         """Checks that should be executed before passed to the command"""
         if ctx.author.bot:
             raise InvalidContext('Bots cannot run commands!')
