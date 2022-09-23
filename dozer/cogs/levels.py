@@ -459,7 +459,7 @@ class Levels(Cog):
             notify_channel = ctx.guild.get_channel(settings.lvl_up_msgs)
 
             enabled = "Enabled" if settings.enabled else "Disabled"
-            embed.set_author(name=ctx.guild, icon_url=ctx.guild.icon_url)
+            embed.set_author(name=ctx.guild, icon_url=ctx.guild.icon.url if ctx.guild.icon else None)
             embed.add_field(name=f"Levels are {enabled} for {ctx.guild}", value=f"XP min: {settings.xp_min}\n"
                                                                                 f"XP max: {settings.xp_max}\n"
                                                                                 f"Cooldown: {settings.xp_cooldown} Seconds\n"
@@ -627,7 +627,7 @@ class Levels(Cog):
             await self.update_server_settings_cache()
             lvl_up_msgs = ctx.guild.get_channel(ent.lvl_up_msgs)
             embed = discord.Embed(color=blurple)
-            embed.set_author(name=ctx.guild, icon_url=ctx.guild.icon_url)
+            embed.set_author(name=ctx.guild, icon_url=ctx.guild.icon.url if ctx.guild.icon else None)
             embed.set_footer(text='Triggered by ' + ctx.author.display_name)
             enabled = "Enabled" if ent.enabled else "Disabled"
             embed.add_field(name=f"Levels are {enabled} for {ctx.guild}", value=f"XP min: {ent.xp_min}\n"
@@ -679,7 +679,7 @@ class Levels(Cog):
 
             embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
                                  f"#{rank} of {count} in this server")
-        embed.set_author(name=escape_markdown(member.display_name), icon_url=member.avatar.replace(format='png', size=64))
+        embed.set_author(name=member.display_name, icon_url=member.avatar.replace(format='png', size=64))
         await ctx.send(embed=embed)
 
     rank.example_usage = """
@@ -715,7 +715,7 @@ class Levels(Cog):
             embeds = []
             for page_num, page in enumerate(chunk(records, 10)):
                 embed = discord.Embed(title=f"Rankings for {ctx.guild}", color=discord.Color.blue())
-                embed.description = '\n'.join(f"#{rank}: {escape_markdown(self._fmt_member(ctx.guild, user_id))}"
+                embed.description = '\n'.join(f"#{rank}: {(self._fmt_member(ctx.guild, user_id))}"
                                               f" (lvl {self.level_for_total_xp(total_xp)}, {total_xp} XP)"
                                               for (user_id, total_xp, rank) in page)
                 embed.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(records) / 10)}")
