@@ -237,7 +237,7 @@ class AutoAssociation(db.DatabaseTable):
 class TeamNumbers(db.DatabaseTable):
     """Database operations for tracking team associations."""
     __tablename__ = 'team_numbers'
-    __uniques__ = ['user_id', 'team_number', 'team_type']
+    __uniques__ = 'user_id, team_number, team_type'
 
     @classmethod
     async def initial_create(cls):

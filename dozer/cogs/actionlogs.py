@@ -599,7 +599,7 @@ class Actionlog(Cog):
 class NicknameLock(db.DatabaseTable):
     """Holds nickname lock info"""
     __tablename__ = "nickname_locks"
-    __uniques__ = ["guild_id", "member_id"]
+    __uniques__ = "guild_id, member_id"
 
     @classmethod
     async def initial_create(cls):
@@ -701,7 +701,7 @@ def format_join_leave(template: str, member: discord.Member):
 class CustomJoinLeaveMessages(db.DatabaseTable):
     """Holds custom join leave messages"""
     __tablename__ = 'memberlogconfig'
-    __uniques__ = ['guild_id']
+    __uniques__ = 'guild_id'
 
     @classmethod
     async def initial_create(cls):

@@ -5,6 +5,7 @@ import re
 from typing import TYPE_CHECKING, List
 
 import discord
+from asyncpg import Record
 from discord.ext.commands import guild_only, has_permissions
 
 from dozer.context import DozerContext
@@ -374,14 +375,14 @@ class WordFilterSetting(db.DatabaseTable):
 
     def __init__(self, guild_id: int, setting_type: str, value: str):
         super().__init__()
-        self.guild_id = guild_id
-        self.setting_type = setting_type
-        self.value = value
+        self.guild_id: int = guild_id
+        self.setting_type: str = setting_type
+        self.value: str = value
 
     @classmethod
     async def get_by(cls, **kwargs) -> List["WordFilterSetting"]:
-        results = await super().get_by(**kwargs)
-        result_list = []
+        results: List[Record] = await super().get_by(**kwargs)
+        result_list: List["WordFilterSetting"] = []
         for result in results:
             obj = WordFilterSetting(guild_id=result.get("guild_id"), setting_type=result.get("setting_type"),
                                     value=result.get('value'))

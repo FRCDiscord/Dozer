@@ -89,7 +89,7 @@ class Dozer(commands.Bot):
         ctx = await super().get_context(message, cls=cls)
         return ctx
 
-    async def on_command_error(self, context: DozerContext, exception: Type[Exception]):  # pylint: disable=arguments-differ
+    async def on_command_error(self, context: DozerContext, exception):  # pylint: disable=arguments-differ
         if isinstance(exception, commands.NoPrivateMessage):
             await context.send('{}, This command cannot be used in DMs.'.format(context.author.mention))
         elif isinstance(exception, commands.UserInputError):

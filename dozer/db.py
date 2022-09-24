@@ -1,6 +1,6 @@
 """Provides database storage for the Dozer Discord bot"""
 import logging
-from typing import List, Dict, Callable, Type, Tuple, Any
+from typing import List, Dict, Callable, Type, Tuple, Any, Union
 
 import asyncpg
 from asyncpg import Record
@@ -56,7 +56,7 @@ class DatabaseTable:
     """Defines a database table"""
     __tablename__: str = ''
     __versions__: List[Callable] = []
-    __uniques__: List[str] = []
+    __uniques__: str = []
 
     # Declare the migrate/create functions
     @classmethod
@@ -91,7 +91,6 @@ class DatabaseTable:
         updates = ""
         for key in keys:
             if key in self.__uniques__:
-                # Skip updating anything that has a unique constraint on it
                 continue
             updates += f"{key} = EXCLUDED.{key}"
             if keys.index(key) == len(keys) - 1:
@@ -199,4 +198,4 @@ class ConfigCache:
 
     __versions__: Dict[str, Callable] = {}
 
-    __uniques__: List[str] = []
+    __uniques__: str = []
