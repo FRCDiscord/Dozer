@@ -115,7 +115,8 @@ class General(Cog):
                               (target_command for target_command in ctx.bot.commands if target_command.cog is cog),
                               cog_name=type(cog).__name__)
 
-    async def _show_help(self, ctx: DozerContext, start_page: Optional[Embed], title: str, description: str,
+    @staticmethod
+    async def _show_help(ctx: DozerContext, start_page: Optional[Embed], title: str, description: str,
                          footer: str, commands, **format_args):
         """Creates and sends a template help message, with arguments filled in."""
         format_args['prefix'] = ctx.prefix

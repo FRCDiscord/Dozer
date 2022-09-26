@@ -31,7 +31,8 @@ class Filter(Cog):
 
     """Helper Functions"""
 
-    async def check_dm_filter(self, ctx: DozerContext, embed: discord.Embed):
+    @staticmethod
+    async def check_dm_filter(ctx: DozerContext, embed: discord.Embed):
         """Send an embed, if the setting in the DB allows for it"""
         results = await WordFilterSetting.get_by(guild_id=ctx.guild.id, setting_type="dm")
         if results:

@@ -198,7 +198,8 @@ class Roles(Cog):
             db_member = MissingRole(role_id=role.id, role_name=role.name, guild_id=guild_id, member_id=member_id)
             await db_member.update_or_add()
 
-    async def giveme_purge(self, rolelist):
+    @staticmethod
+    async def giveme_purge(rolelist):
         """Purges roles in the giveme database that no longer exist. The argument is a list of GiveableRole objects."""
         for role in rolelist:
             dbrole = await GiveableRole.get_by(role_id=role.role_id)

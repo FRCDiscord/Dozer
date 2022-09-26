@@ -198,7 +198,8 @@ class TwitchSource(DataBasedSource):
 
         return embed
 
-    def generate_plain_text(self, data, games):
+    @staticmethod
+    def generate_plain_text(data, games):
         """Given data on a stream and a dict of games, assemble a string"""
         try:
             display_name = data['display_name']

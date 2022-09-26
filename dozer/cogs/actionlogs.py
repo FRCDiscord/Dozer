@@ -112,7 +112,8 @@ class Actionlog(Cog):
                 await channel.send(embed=embed)
         await self.check_nickname_lock(before, after)
 
-    async def check_nickname_lock(self, before, after):
+    @staticmethod
+    async def check_nickname_lock(before, after):
         """The handler for checking if a member is allowed to change their nickname"""
         results: List[NicknameLock] = await NicknameLock.get_by(guild_id=after.guild.id, member_id=after.id)
         if results:

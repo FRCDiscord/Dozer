@@ -138,7 +138,8 @@ class Moderation(Cog):
             if orig_channel is not None:
                 await orig_channel.send("Please configure modlog channel to enable modlog functionality")
 
-    async def perm_override(self, member: Member, **overwrites):
+    @staticmethod
+    async def perm_override(member: Member, **overwrites):
         """Applies the given overrides to the given member in their guild."""
         for channel in member.guild.channels:
             overwrite = channel.overwrites_for(member)
@@ -242,7 +243,8 @@ class Moderation(Cog):
             await PunishmentTimerRecords.delete(guild_id=target.guild.id, target_id=target.id,
                                                 type_of_punishment=punishment.type)
 
-    async def _check_links_warn(self, msg: discord.Message, role: discord.Role):
+    @staticmethod
+    async def _check_links_warn(msg: discord.Message, role: discord.Role):
         """Warns a user that they can't send links."""
         warn_msg = await msg.channel.send(f"{msg.author.mention}, you need the `{role.name}` role to post links!")
         await asyncio.sleep(3)

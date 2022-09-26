@@ -5,7 +5,7 @@ import os
 import re
 import sys
 import traceback
-from typing import Pattern, Optional, Union, Generator, Type
+from typing import Pattern, Optional, Union, Generator
 
 import discord
 from discord.ext import commands
@@ -163,7 +163,7 @@ class Dozer(commands.Bot):
     def get_command(self, name: str) -> Optional[Union[_utils.Command, _utils.Group]]:  # pylint: disable=arguments-differ
         return super().get_command(name)
 
-    def walk_commands(self) -> Generator[Union[_utils.Command, _utils.Group]]:
+    def walk_commands(self) -> Generator[Union[_utils.Command, _utils.Group], None, None]:
         return super().walk_commands()
 
     def get_cog(self, name: str, /) -> Optional[_utils.Cog]:

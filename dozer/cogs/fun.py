@@ -2,6 +2,7 @@
 import asyncio
 import random
 from asyncio import sleep
+from typing import List
 
 import discord
 from discord.ext.commands import cooldown, BucketType, guild_only, BadArgument, MissingPermissions
@@ -15,7 +16,8 @@ from .general import blurple
 class Fun(Cog):
     """Fun commands"""
 
-    async def battle(self, ctx: DozerContext, opponent: discord.Member, delete_result: bool = True):
+    @staticmethod
+    async def battle(ctx: DozerContext, opponent: discord.Member, delete_result: bool = True):
         """Start a fight with another user."""
         attacks = [
             "**{opponent}** was hit on the head by **{attacker}** ",
@@ -43,7 +45,7 @@ class Fun(Cog):
 
         damages = [100, 150, 200, 300, 50, 250, 420]
         players = [ctx.author, opponent]
-        hps = [1400, 1400]
+        hps: List[int] = [1400, 1400]
         turn = random.randint(0, 1)
 
         messages = []

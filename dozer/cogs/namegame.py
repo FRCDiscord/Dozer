@@ -661,7 +661,8 @@ class NameGame(Cog):
         if not game.running:
             self.games.pop(ctx.channel.id)
 
-    async def display_info(self, ctx: DozerContext, game: NameGameSession):
+    @staticmethod
+    async def display_info(ctx: DozerContext, game: NameGameSession):
         """Displays info about the current game"""
         info_embed = discord.Embed(title="Current Game Info", color=discord.Color.blue())
         info_embed.add_field(name="Game Type", value=game.mode.upper())
@@ -689,12 +690,14 @@ class NameGame(Cog):
         await self.strike(ctx, game, player)
 
     # send an embed that starts a new turn
-    async def send_turn_embed(self, ctx: DozerContext, game: NameGameSession, **kwargs):
+    @staticmethod
+    async def send_turn_embed(ctx: DozerContext, game: NameGameSession, **kwargs):
         """Sends an embed that starts a new turn"""
         game.turn_embed = game.create_embed(**kwargs)
         game.turn_msg = await ctx.send(embed=game.turn_embed)
 
-    async def notify(self, ctx: DozerContext, game: NameGameSession, msg: str):
+    @staticmethod
+    async def notify(ctx: DozerContext, game: NameGameSession, msg: str):
         """Notifies people in the channel when it's their turn."""
         if game.pings_enabled:
             await ctx.send(msg)
@@ -748,7 +751,8 @@ class NameGame(Cog):
                 return
             await self._on_reaction(game, reaction, user, -1)
 
-    async def _on_reaction(self, game: NameGameSession, reaction: discord.Reaction, user: discord.Member, inc: int):
+    @staticmethod
+    async def _on_reaction(game: NameGameSession, reaction: discord.Reaction, user: discord.Member, inc: int):
         """Handles pass/fail reactions"""
         if reaction.message.id == game.vote_msg.id and user in game.players:
             if reaction.emoji == '❌':

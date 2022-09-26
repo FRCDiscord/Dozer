@@ -234,7 +234,8 @@ class RedditSource(DataBasedSource):
 
         return embed
 
-    def generate_plain_text(self, data):
+    @staticmethod
+    def generate_plain_text(data):
         """Given a dict of data, create a string"""
         return f"New post on {data['subreddit_name_prefixed']}: {data['title']}\n" \
                f"Read more at https://reddit.com{data['permalink']}"
