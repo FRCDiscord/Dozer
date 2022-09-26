@@ -7,10 +7,10 @@ import time
 import typing
 from logging import getLogger
 from typing import List
-from typing import TYPE_CHECKING, Union, Optional, Type
+from typing import TYPE_CHECKING, Union, Optional, Type, Set, Tuple
 
 import discord
-from discord import Guild, Embed, User, Member, Message
+from discord import Guild, Embed, User, Member, Message, Role, PermissionOverwrite, ClientUser
 from discord.ext import tasks, commands
 from discord.ext.commands import BadArgument, has_permissions, RoleConverter, guild_only
 from discord.utils import escape_markdown
@@ -142,6 +142,7 @@ class Moderation(Cog):
     async def perm_override(member: Member, **overwrites):
         """Applies the given overrides to the given member in their guild."""
         for channel in member.guild.channels:
+
             overwrite = channel.overwrites_for(member)
             if channel.permissions_for(member.guild.me).manage_roles:
                 overwrite.update(**overwrites)
@@ -154,7 +155,7 @@ class Moderation(Cog):
     hm_regex = re.compile(r"((?P<years>\d+)y)?((?P<months>\d+)M)?((?P<weeks>\d+)w)?((?P<days>\d+)d)?((?P<hours>\d+)h)?((?P<minutes>\d+)m)?(("
                           r"?P<seconds>\d+)s)?")
 
-    def hm_to_seconds(self, hm_str: str):
+    def hm_to_seconds(self, hm_str: str) -> int:
         """Converts an hour-minute string to seconds. For example, '1h15m' returns 4500"""
         matches = re.match(self.hm_regex, hm_str).groupdict()
         years = int(matches.get('years') or 0)
@@ -166,11 +167,13 @@ class Moderation(Cog):
         seconds = int(matches.get('seconds') or 0)
         val = int((years * 3.154e+7) + (months * 2.628e+6) + (weeks * 604800) + (days * 86400) + (hours * 3600) + (minutes * 60) + seconds)
         # Make sure it is a positive number, and it doesn't exceed the max 32-bit int
+        # Wait so dozer is going to die at 03:14:07 on Tuesday, 19 January 2038, well I guess that's someone else's problem.
+        # (yes right now its probably because of a discord non-compatibility, but once they support it we should probably fix it)
         return max(0, min(2147483647, val))
 
     async def start_punishment_timers(self):
         """Starts all punishment timers"""
-        q = await PunishmentTimerRecords.get_by()  # no filters: all
+        q: List[PunishmentTimerRecords] = await PunishmentTimerRecords.get_by()  # no filters: all
         for r in q:
             guild: Guild = self.bot.get_guild(r.guild_id)
             actor: Member = guild.get_member(r.actor_id)
@@ -178,7 +181,7 @@ class Moderation(Cog):
             orig_channel: discord.TextChannel = self.bot.get_channel(r.orig_channel_id)
             punishment_type: int = r.type_of_punishment
             reason: str = r.reason or ""
-            seconds = max(int(r.target_ts - time.time()), 0.01)
+            seconds = int(max(r.target_ts - time.time(), 0.01))
             await PunishmentTimerRecords.delete(id=r.id)
             self.bot.loop.create_task(
                 self.punishment_timer(seconds, target, PunishmentTimerRecords.type_map[punishment_type], reason, actor,
@@ -227,7 +230,7 @@ class Moderation(Cog):
 
         await asyncio.sleep(seconds)
 
-        user = await punishment.get_by(member_id=target.id)
+        user: List[Union[Deafen, Mute]] = await punishment.get_by(member_id=target.id)
         if len(user) != 0:
             await self.mod_log(actor=actor,
                                action="un" + punishment.past_participle,
@@ -244,13 +247,13 @@ class Moderation(Cog):
                                                 type_of_punishment=punishment.type)
 
     @staticmethod
-    async def _check_links_warn(msg: discord.Message, role: discord.Role):
+    async def _check_links_warn(msg: Message, role: Role):
         """Warns a user that they can't send links."""
-        warn_msg = await msg.channel.send(f"{msg.author.mention}, you need the `{role.name}` role to post links!")
+        warn_msg: Message = await msg.channel.send(f"{msg.author.mention}, you need the `{role.name}` role to post links!")
         await asyncio.sleep(3)
         await warn_msg.delete()
 
-    async def check_links(self, msg: discord.Message):
+    async def check_links(self, msg: Message):
         """Checks messages for the links role if necessary, then checks if the author is allowed to send links in the server"""
         if msg.guild is None or not isinstance(msg.author,
                                                Member) or not msg.guild.me.guild_permissions.manage_messages:
@@ -405,7 +408,7 @@ class Moderation(Cog):
             await self.perm_override(member, read_messages=False)
 
     @Cog.listener('on_message')
-    async def on_message(self, message: discord.Message):
+    async def on_message(self, message: Message):
         """Check things when messages come in."""
         if message.author.bot or message.guild is None or not message.guild.me.guild_permissions.manage_roles:
             return
@@ -438,7 +441,7 @@ class Moderation(Cog):
                 await send_log(member=message.author)
 
     @Cog.listener('on_message_edit')
-    async def on_message_edit(self, before: discord.Message, after: discord.Message):
+    async def on_message_edit(self, before: Message, after: Message):
         """Checks for links"""
         await self.check_links(after)
 
@@ -486,9 +489,9 @@ class Moderation(Cog):
                 '{0.author.mention}, the members role has not been configured. This may not work as expected. Use '
                 '`{0.prefix}help memberconfig` to see how to set this up.'.format(
                     ctx))
-            targets = set(sorted(ctx.guild.roles)[:ctx.author.top_role.position])
+            targets: Set[Role] = set(sorted(ctx.guild.roles)[:ctx.author.top_role.position])
 
-        to_restore = [(target, ctx.channel.overwrites_for(target)) for target in targets]
+        to_restore: List[Tuple[Union[Role, ClientUser, Member], PermissionOverwrite]] = [(target, ctx.channel.overwrites_for(target)) for target in targets]
         for target, overwrite in to_restore:
             new_overwrite: discord.PermissionOverwrite = discord.PermissionOverwrite.from_pair(*overwrite.pair())
             new_overwrite.update(send_messages=False, add_reactions=False)
@@ -496,7 +499,7 @@ class Moderation(Cog):
 
         for allow_target in (ctx.me, ctx.author):
             overwrite = ctx.channel.overwrites_for(allow_target)
-            new_overwrite = discord.PermissionOverwrite.from_pair(*overwrite.pair())
+            new_overwrite: discord.PermissionOverwrite = discord.PermissionOverwrite.from_pair(*overwrite.pair())
             new_overwrite.update(send_messages=True)
             await ctx.channel.set_permissions(allow_target, overwrite=new_overwrite)
             to_restore.append((allow_target, overwrite))
@@ -825,7 +828,7 @@ class Moderation(Cog):
 
     @command()
     @has_permissions(administrator=True)
-    async def nmconfig(self, ctx: DozerContext, channel_mention: discord.TextChannel, role: discord.Role, *, message,
+    async def nmconfig(self, ctx: DozerContext, channel_mention: discord.TextChannel, role: Role, *, message,
                        requireteam=None):
         """Sets the config for the new members channel"""
         config = await GuildNewMember.get_by(guild_id=ctx.guild.id)
@@ -854,7 +857,7 @@ class Moderation(Cog):
 
     @command()
     @has_permissions(administrator=True)
-    async def nmpurgeconfig(self, ctx: DozerContext, role: discord.Role, days: int):
+    async def nmpurgeconfig(self, ctx: DozerContext, role: Role, days: int):
         """Sets the config for the new members purge"""
         config = NewMemPurgeConfig(guild_id=ctx.guild.id, member_role=role.id, days=days)
         await config.update_or_add()
@@ -867,7 +870,7 @@ class Moderation(Cog):
 
     @command()
     @has_permissions(administrator=True)
-    async def memberconfig(self, ctx: DozerContext, *, member_role: discord.Role):
+    async def memberconfig(self, ctx: DozerContext, *, member_role: Role):
         """
         Set the member role for the guild.
         The member role is the role used for the timeout command. It should be a role that all members of the server have.
@@ -896,7 +899,7 @@ class Moderation(Cog):
     @command()
     @has_permissions(administrator=True)
     @bot_has_permissions(manage_messages=True)
-    async def linkscrubconfig(self, ctx: DozerContext, *, link_role: discord.Role):
+    async def linkscrubconfig(self, ctx: DozerContext, *, link_role: Role):
         """
         Set a role that users must have in order to post links.
         This accepts the safe default role conventions that the memberconfig command does.
@@ -1252,7 +1255,7 @@ class PunishmentTimerRecords(db.DatabaseTable):
             )""")
 
     def __init__(self, guild_id: int, actor_id: int, target_id: int, type_of_punishment: int, target_ts: int,
-                 orig_channel_id: int = None, reason: str = None, input_id: int = None, self_inflicted: bool = False):
+                 orig_channel_id: int = None, reason: Optional[str] = None, input_id: int = None, self_inflicted: bool = False):
         super().__init__()
         self.id: int = input_id
         self.guild_id: int = guild_id
@@ -1260,8 +1263,8 @@ class PunishmentTimerRecords(db.DatabaseTable):
         self.target_id: int = target_id
         self.type_of_punishment: int = type_of_punishment
         self.target_ts: int = target_ts
-        self.orig_channel_id: int = orig_channel_id
-        self.reason: str = reason
+        self.orig_channel_id: Optional[int] = orig_channel_id
+        self.reason: Optional[str] = reason
         self.self_inflicted: bool = self_inflicted
 
     @classmethod
