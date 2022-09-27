@@ -52,7 +52,7 @@ class Actionlog(Cog):
     @Cog.listener('on_member_join')
     async def on_member_join(self, member):
         """Logs that a member joined, with optional custom message"""
-        nm_config = await GuildNewMember.get_by(guild_id=member.guild.id)
+        nm_config = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
         if len(nm_config) == 0:
             await send_log(member)
         else:
