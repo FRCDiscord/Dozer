@@ -28,7 +28,7 @@ async def is_cancelled(emoji, message: discord.Message, me, author: discord.Memb
         if str(reaction) != emoji:
             continue
 
-        users = await reaction.users().flatten()
+        users = [user async for user in reaction.users()]
         if author in users or me in users:
             return True
         return False
