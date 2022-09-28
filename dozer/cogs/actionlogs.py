@@ -41,7 +41,7 @@ class Actionlog(Cog):
         self.bulk_delete_buffer = {}
 
     @staticmethod
-    async def check_audit(guild: Guild, event_type: AuditLogAction, event_time: Optional[datetime]=None):
+    async def check_audit(guild: Guild, event_type: AuditLogAction, event_time: Optional[datetime] = None):
         """Method for checking the audit log for events"""
         try:
             async for entry in guild.audit_logs(limit=1, after=event_time,
@@ -370,12 +370,12 @@ class Actionlog(Cog):
     @Cog.listener('on_member_ban')
     async def on_member_ban(self, guild: discord.Guild, user: discord.User):
         """Logs raw member ban events, even if not banned via &ban"""
-        audit = await self.check_audit(guild, discord.AuditLogAction.ban)
-        embed = Embed(title="User Banned", color=0xff6700)
+        audit: Optional[AuditLogEntry] = await self.check_audit(guild, discord.AuditLogAction.ban)
+        embed: Embed = Embed(title="User Banned", color=0xff6700)
         embed.set_thumbnail(url=user.avatar)
         embed.add_field(name="Banned user", value=f"{user}|({user.id})")
         if audit and audit.target == user:
-            acton_member = await guild.fetch_member(audit.user.id)
+            acton_member: Member = await guild.fetch_member(audit.user.id)
             embed.description = f"User banned by: {acton_member.mention}\n{acton_member}|({acton_member.id})"
             embed.add_field(name="Reason", value=audit.reason, inline=False)
             embed.set_footer(text=f"Actor ID: {acton_member.id}\nTarget ID: {user.id}")
@@ -393,9 +393,10 @@ class Actionlog(Cog):
     @has_permissions(administrator=True)
     async def messagelogconfig(self, ctx: DozerContext, channel_mentions: discord.TextChannel):
         """Set the modlog channel for a server by passing the channel id"""
-        config = await GuildMessageLog.get_by(guild_id=ctx.guild.id)
-        if len(config) != 0:
-            config = config[0]
+        results: List[GuildMessageLog] = await GuildMessageLog.get_by(guild_id=ctx.guild.id)
+        config: GuildMessageLog
+        if len(results) != 0:
+            config = results[0]
             config.name = ctx.guild.name
             config.messagelog_channel = channel_mentions.id
         else:
@@ -509,6 +510,7 @@ class Actionlog(Cog):
         """Configure custom leave message template"""
         e: Embed = Embed(color=blurple)
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
+        config: CustomJoinLeaveMessages
         if template:
             config = CustomJoinLeaveMessages(
                 guild_id=ctx.guild.id,
@@ -586,7 +588,7 @@ class Actionlog(Cog):
         """Removes nickname lock from member"""
         deleted = await NicknameLock.delete(guild_id=ctx.guild.id, member_id=member.id)
         if int(deleted.split(" ", 1)[1]):
-            e = Embed(color=blurple)
+            e: Embed = Embed(color=blurple)
             e.add_field(name='Success!', value=f"Nickname lock for {member} has been removed")
             e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
             await ctx.send(embed=e)
@@ -616,12 +618,12 @@ class NicknameLock(db.DatabaseTable):
             UNIQUE (guild_id, member_id)
             )""")
 
-    def __init__(self, guild_id: int, member_id: int, locked_name: str, timeout: float = None):
+    def __init__(self, guild_id: int, member_id: int, locked_name: Optional[str], timeout: Optional[float] = None):
         super().__init__()
         self.guild_id: int = guild_id
         self.member_id: int = member_id
-        self.locked_name: str = locked_name
-        self.timeout: float = timeout
+        self.locked_name: Optional[str] = locked_name
+        self.timeout: Optional[float] = timeout
 
     @classmethod
     async def get_by(cls, **kwargs) -> List["NicknameLock"]:
@@ -667,7 +669,7 @@ class GuildMessageLog(db.DatabaseTable):
         return result_list
 
 
-async def send_log(member):
+async def send_log(member: Member):
     """Sends the message for when a user joins or leave a guild"""
     config = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
     if len(config):
@@ -717,10 +719,11 @@ class CustomJoinLeaveMessages(db.DatabaseTable):
             send_on_verify boolean
             )""")
 
-    def __init__(self, guild_id, channel_id=None, ping=None, join_message=None, leave_message=None, send_on_verify=False):
+    def __init__(self, guild_id: int, channel_id: int = None, ping: Optional[bool] = None, join_message: Optional[str] = None,
+                 leave_message: Optional[str] = None, send_on_verify: Optional[bool] = False):
         super().__init__()
         self.guild_id: int = guild_id
-        self.channel_id: int = channel_id
+        self.channel_id: Optional[int] = channel_id
         self.ping: Optional[bool] = ping
         self.join_message: Optional[str] = join_message
         self.leave_message: Optional[str] = leave_message
