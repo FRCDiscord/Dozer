@@ -120,7 +120,6 @@ class News(Cog):
         self.get_new_posts.restart()
         DOZER_LOGGER.debug("News fetch successfully restarted")
 
-    @get_new_posts.before_loop
     async def startup(self):
         """Initialize sources and start the loop after initialization"""
         self.sources = {}
@@ -425,7 +424,7 @@ class News(Cog):
             if exception is None:
                 await ctx.send("No exception occurred.")
             else:
-                tb_str = traceback.format_exception(exc=type(exception), value=exception, tb=exception.__traceback__)
+                tb_str = traceback.format_exception(exception)
                 await ctx.send(f"```{''.join(tb_str)}```")
         except CancelledError:
             await ctx.send("Task has been cancelled.")
