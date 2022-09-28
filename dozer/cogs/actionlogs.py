@@ -433,6 +433,12 @@ class Actionlog(Cog):
     """
 
     @memberlogconfig.command()
+    @has_permissions(administrator=True)
+    async def viewconfig(self, ctx: DozerContext):
+        """Command to view Join/Leave logs configuration."""
+        await self.memberlogconfig(ctx)
+
+    @memberlogconfig.command()
     @has_permissions(manage_guild=True)
     async def setchannel(self, ctx: DozerContext, channel: discord.TextChannel):
         """Configure join/leave channel"""

@@ -938,6 +938,12 @@ class Moderation(Cog):
         await ctx.send(embed=embed)
 
     @crossbans.command()
+    @has_permissions(manage_messages=True)
+    async def view_subs(self, ctx: DozerContext):
+        """View crossban subscriptions for the current server"""
+        await self.crossbans(ctx)
+
+    @crossbans.command()
     @has_permissions(administrator=True)
     @bot_has_permissions(ban_members=True)
     async def subscribe(self, ctx: DozerContext, guild_id: int):

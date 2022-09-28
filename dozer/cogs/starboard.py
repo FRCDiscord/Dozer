@@ -240,6 +240,17 @@ class Starboard(Cog):
     """
 
     @guild_only()
+    @starboard.command()
+    async def showconfig(self, ctx: DozerContext):
+        """Show the current server's starboard configuration.
+         A starboard (or a hall of fame) is a channel the bot will repost messages in if they receive a certain number\
+         of configured reactions.
+
+         To configure a starboard, use the `starboard config` subcommand.
+         """
+        await self.starboard(ctx)
+
+    @guild_only()
     @has_permissions(manage_guild=True, manage_channels=True)
     @bot_has_permissions(add_reactions=True, embed_links=True)
     @starboard.command()

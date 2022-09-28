@@ -177,6 +177,12 @@ class News(Cog):
     news.example_usage = "`{prefix}news` - Get a small guide on using the News system"
 
     @news.command()
+    @guild_only()
+    async def view_help(self, ctx: DozerContext):
+        """Show help for news subscriptions"""
+        await self.news(ctx)
+
+    @news.command()
     @has_permissions(manage_guild=True)
     @guild_only()
     async def add(self, ctx: DozerContext, channel: discord.TextChannel, source: Source, kind='embed', data=None):
