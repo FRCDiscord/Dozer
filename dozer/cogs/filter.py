@@ -412,8 +412,8 @@ class WordFilterRoleWhitelist(db.DatabaseTable):
 
     def __init__(self, guild_id: int, role_id: int):
         super().__init__()
-        self.role_id = role_id
-        self.guild_id = guild_id
+        self.role_id: int = role_id
+        self.guild_id: int = guild_id
 
     @classmethod
     async def get_by(cls, **kwargs) -> List["WordFilterRoleWhitelist"]:
