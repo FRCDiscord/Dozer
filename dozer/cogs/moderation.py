@@ -521,6 +521,7 @@ class Moderation(Cog):
     @bot_has_permissions(manage_messages=True, read_message_history=True)
     async def prune(self, ctx: DozerContext, target: typing.Optional[discord.Member], num: int):
         """Bulk delete a set number of messages from the current channel."""
+        await ctx.defer()
 
         def check_target(message):
             if target is None:
