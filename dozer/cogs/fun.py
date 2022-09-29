@@ -2,7 +2,7 @@
 import asyncio
 import random
 from asyncio import sleep
-from typing import List
+from typing import List, TYPE_CHECKING
 
 import discord
 from discord.ext.commands import cooldown, BucketType, guild_only, BadArgument, MissingPermissions
@@ -11,6 +11,9 @@ from discord.utils import escape_markdown
 from dozer.context import DozerContext
 from ._utils import *
 from .general import blurple
+
+if TYPE_CHECKING:
+    from dozer.cogs.levels import Levels
 
 
 class Fun(Cog):
@@ -84,7 +87,7 @@ class Fun(Cog):
     async def fight(self, ctx: DozerContext, opponent: discord.Member, wager: int = 0):
         """Start a fight with another user."""
 
-        levels: Cog = self.bot.get_cog("Levels")
+        levels: "Levels" = self.bot.get_cog("Levels")
 
         if wager == 0:
             await self.battle(ctx, opponent, delete_result=False)
@@ -157,8 +160,8 @@ class Fun(Cog):
                                                       f"\n{opponent.mention} now is at "
                                                       f"level {levels.level_for_total_xp(opponent_levels.total_xp)} ({opponent_levels.total_xp} XP)")
 
-                levels.sync_member(ctx.guild.id, ctx.author.id)
-                levels.sync_member(ctx.guild.id, opponent.id)
+                await levels.sync_member(ctx.guild.id, ctx.author.id)
+                await levels.sync_member(ctx.guild.id, opponent.id)
 
             elif emoji == "❌":
                 try:

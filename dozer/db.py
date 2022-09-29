@@ -1,6 +1,6 @@
 """Provides database storage for the Dozer Discord bot"""
 import logging
-from typing import List, Dict, Callable, Type, Tuple, Any, Union
+from typing import List, Dict, Callable, Type, Tuple, Any
 
 import asyncpg
 from asyncpg import Record
@@ -56,7 +56,7 @@ class DatabaseTable:
     """Defines a database table"""
     __tablename__: str = ''
     __versions__: List[Callable] = []
-    __uniques__: str = []
+    __uniques__: str = ""
 
     # Declare the migrate/create functions
     @classmethod
@@ -135,7 +135,7 @@ class DatabaseTable:
                 # note: this code relies on subsequent iterations of the same dict having the same iteration order.
                 # This is an implementation detail of CPython 3.6 and a language guarantee in Python 3.7+.
                 conditions: str = " AND ".join(f"{column_name} = ${i + 1}" for (i, column_name) in enumerate(filters))
-                statement: str = f"{statement} WHERE {conditions};"
+                statement = f"{statement} WHERE {conditions};"
             else:
                 statement += ";"
             return await conn.fetch(statement, *filters.values())
@@ -198,4 +198,4 @@ class ConfigCache:
 
     __versions__: Dict[str, Callable] = {}
 
-    __uniques__: str = []
+    __uniques__: str = ""

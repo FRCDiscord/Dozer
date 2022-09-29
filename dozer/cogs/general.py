@@ -1,7 +1,7 @@
 """General, basic commands that are common for Discord bots"""
 import datetime
 import inspect
-from typing import Optional, Union
+from typing import Optional, Union, List, Dict
 
 import discord
 from discord import AppInfo, Embed
@@ -133,11 +133,11 @@ class General(Cog):
                     continue
             command_chunks = list(chunk(sorted(filtered_commands, key=lambda cmd: cmd.name), 4))
             format_args['len_pages'] = len(command_chunks)
-            pages = []
+            pages: List[Union[Embed, Dict[str, Embed]]] = []
             for page_num, page_commands in enumerate(command_chunks):
                 format_args['page_num'] = page_num + 1
-                page = Embed(title=title.format(**format_args), description=description.format(**format_args),
-                             color=discord.Color.blue())
+                page: Embed = Embed(title=title.format(**format_args), description=description.format(**format_args),
+                                    color=discord.Color.blue())
                 for target_command in page_commands:
                     if target_command.short_doc:
                         embed_value = target_command.short_doc

@@ -2,14 +2,14 @@
 
 import re
 from re import Pattern
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from urllib.parse import urlencode
 
 import discord
+if TYPE_CHECKING:
+    from dozer.context import DozerContext
 
 __all__ = ['clean', 'is_clean', 'oauth_url', 'pretty_concat']
-
-from dozer.context import DozerContext
 
 mass_mention: Pattern = re.compile('@(everyone|here)')
 member_mention: Pattern = re.compile(r'<@?(\d+)>')
@@ -17,11 +17,14 @@ role_mention: Pattern = re.compile(r'<@&(\d+)>')
 channel_mention: Pattern = re.compile(r'<#(\d+)>')
 
 
-def clean(ctx: DozerContext, text: Optional[str] = None, *, mass: bool = True, member: bool = True, role: bool = True, channel: bool = True) -> str:
+def clean(ctx: "DozerContext", text: Optional[str] = None, *, mass: bool = True, member: bool = True, role: bool = True, channel: bool = True) -> str:
     """Cleans the message of anything specified in the parameters passed."""
+
     if text is None:
-        text: str = ctx.message.content
-    cleaned_text: str = text
+        filter_text: str = ctx.message.content
+    else:
+        filter_text: str = text
+    cleaned_text: str = filter_text
     if mass:
         cleaned_text = mass_mention.sub(lambda match: '@\N{ZERO WIDTH SPACE}' + match.group(1), cleaned_text)
     if member:
@@ -33,14 +36,14 @@ def clean(ctx: DozerContext, text: Optional[str] = None, *, mass: bool = True, m
     return cleaned_text
 
 
-def is_clean(ctx: DozerContext, text: Optional[str] = None) -> bool:
+def is_clean(ctx: "DozerContext", text: Optional[str] = None) -> bool:
     """Checks if the message is clean already and doesn't need to be cleaned."""
     if text is None:
         text = ctx.message.content
     return all(regex.search(text) is None for regex in (mass_mention, member_mention, role_mention, channel_mention))
 
 
-def clean_member_name(ctx: DozerContext, member_id: int) -> str:
+def clean_member_name(ctx: "DozerContext", member_id: int) -> str:
     """Cleans a member's name from the message."""
     member = ctx.guild.get_member(member_id)
     if member is None:
@@ -53,7 +56,7 @@ def clean_member_name(ctx: DozerContext, member_id: int) -> str:
         return '<@\N{ZERO WIDTH SPACE}%d>' % member.id
 
 
-def clean_role_name(ctx: DozerContext, role_id: int) -> str:
+def clean_role_name(ctx: "DozerContext", role_id: int) -> str:
     """Cleans role pings from messages."""
     role: discord.Role = discord.utils.get(ctx.guild.roles, id=role_id)  # Guild.get_role doesn't exist
     if role is None:
@@ -64,7 +67,7 @@ def clean_role_name(ctx: DozerContext, role_id: int) -> str:
         return '<@&\N{ZERO WIDTH SPACE}%d>' % role.id
 
 
-def clean_channel_name(ctx: DozerContext, channel_id: int) -> str:
+def clean_channel_name(ctx: "DozerContext", channel_id: int) -> str:
     """Cleans channel mentions from messages."""
     channel = ctx.guild.get_channel(channel_id)
     if channel is None:

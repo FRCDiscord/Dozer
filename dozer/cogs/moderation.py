@@ -491,7 +491,8 @@ class Moderation(Cog):
                     ctx))
             targets: Set[Role] = set(sorted(ctx.guild.roles)[:ctx.author.top_role.position])
 
-        to_restore: List[Tuple[Union[Role, ClientUser, Member], PermissionOverwrite]] = [(target, ctx.channel.overwrites_for(target)) for target in targets]
+        to_restore: List[Tuple[Union[Role, ClientUser, Member], PermissionOverwrite]] = \
+            [(target, ctx.channel.overwrites_for(target)) for target in targets]
         for target, overwrite in to_restore:
             new_overwrite: discord.PermissionOverwrite = discord.PermissionOverwrite.from_pair(*overwrite.pair())
             new_overwrite.update(send_messages=False, add_reactions=False)

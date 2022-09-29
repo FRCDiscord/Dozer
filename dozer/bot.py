@@ -5,10 +5,12 @@ import os
 import re
 import sys
 import traceback
-from typing import Pattern, Optional, Union, Generator
+from typing import Pattern, Optional, Union, Generator, Dict
 
 import discord
+from discord import Status, Message
 from discord.ext import commands
+from discord.ext.commands import Cooldown, CommandError, BucketType
 from sentry_sdk import capture_exception
 
 from . import utils
@@ -42,17 +44,17 @@ class InvalidContext(commands.CheckFailure):
 
 class Dozer(commands.Bot):
     """Botty things that are critical to Dozer working"""
-    _global_cooldown = commands.Cooldown(1, 1)  # One command per second per user
+    _global_cooldown: Cooldown = Cooldown(1, 1)  # One command per second per user
 
-    def __init__(self, config: dict, *args, **kwargs):
+    def __init__(self, config: Dict[str, Union[Dict[str, str], str]], *args, **kwargs):
         self.wavelink = None
-        self.dynamic_prefix = _utils.PrefixHandler(config['prefix'])
+        self.dynamic_prefix: _utils.PrefixHandler = _utils.PrefixHandler(str(config['prefix']))
         super().__init__(command_prefix=self.dynamic_prefix.handler, *args, **kwargs)
-        self.config = config
+        self.config: Dict[str, Union[Dict[str, str], str]] = config
         if self.config['debug']:
             DOZER_LOGGER.level = logging.DEBUG
             DOZER_HANDLER.level = logging.DEBUG
-        self._restarting = False
+        self._restarting: bool = False
         self.check(self.global_checks)
 
     async def setup_hook(self) -> None:
@@ -75,21 +77,22 @@ class Dozer(commands.Bot):
                 DOZER_LOGGER.warning(f"Command {cmd} not subclass of Dozer type.")
         DOZER_LOGGER.debug('Bot Invite: {}'.format(utils.oauth_url(str(self.user.id), discord.Permissions(perms))))
         if self.config['is_backup']:
-            status = discord.Status.dnd
+            status: Status = Status.dnd
         else:
-            status = discord.Status.online
-        activity = discord.Game(name=f"@{self.user.name} or '{self.config['prefix']}' in {len(self.guilds)} guilds")
+            status: Status = Status.online
+        activity: discord.Game = discord.Game(name=f"@{self.user.name} or '{self.config['prefix']}' in {len(self.guilds)} guilds")
         try:
             await self.change_presence(activity=activity, status=status)
         except TypeError:
             DOZER_LOGGER.warning("You are running an older version of the discord.py rewrite (with breaking changes)! "
                                  "To upgrade, run `pip install -r requirements.txt --upgrade`")
 
-    async def get_context(self, message: discord.Message, *, cls=DozerContext) -> DozerContext:  # pylint: disable=arguments-differ
+    async def get_context(self, message: Message, *, cls=DozerContext) -> DozerContext:  # pylint: disable=arguments-differ
         ctx = await super().get_context(message, cls=cls)
+        ctx.prefix = self.dynamic_prefix.handler(self, message)
         return ctx
 
-    async def on_command_error(self, context: DozerContext, exception):  # pylint: disable=arguments-differ
+    async def on_command_error(self, context: DozerContext, exception: CommandError):  # pylint: disable=arguments-differ
         if isinstance(exception, commands.NoPrivateMessage):
             await context.send('{}, This command cannot be used in DMs.'.format(context.author.mention))
         elif isinstance(exception, commands.UserInputError):
@@ -111,11 +114,14 @@ class Dozer(commands.Bot):
                 '{}, That command is on cooldown! Try again in {:.2f}s!'.format(context.author.mention,
                                                                                 exception.retry_after))
         elif isinstance(exception, commands.MaxConcurrencyReached):
-            types = {discord.ext.commands.BucketType.default: "`Global`",
-                     discord.ext.commands.BucketType.guild: "`Guild`",
-                     discord.ext.commands.BucketType.channel: "`Channel`",
-                     discord.ext.commands.BucketType.category: "`Category`",
-                     discord.ext.commands.BucketType.member: "`Member`", discord.ext.commands.BucketType.user: "`User`"}
+            types: Dict[BucketType, str] = {
+                BucketType.default: "`Global`",
+                BucketType.guild: "`Guild`",
+                BucketType.channel: "`Channel`",
+                BucketType.category: "`Category`",
+                BucketType.member: "`Member`",
+                BucketType.user: "`User`"
+            }
             await context.send(
                 '{}, That command has exceeded the max {} concurrency limit of `{}` instance! Please try again later.'.format(
                     context.author.mention, types[exception.per], exception.number))
@@ -134,7 +140,7 @@ class Dozer(commands.Bot):
                                    context.channel.recipient, context.message.content)
             DOZER_LOGGER.error(''.join(traceback.format_exception(type(exception), exception, exception.__traceback__)))
 
-    async def on_error(self, event_method, *args, **kwargs):
+    async def on_error(self, event_method: str, *args, **kwargs):
         """Don't ignore the error, causing Sentry to capture it."""
         print('Ignoring exception in {}'.format(event_method), file=sys.stderr)
         traceback.print_exc()
