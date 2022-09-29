@@ -1,6 +1,11 @@
 """Provide helper classes and end classes for source data"""
+from typing import TYPE_CHECKING
+
 import aiohttp
 from discord.ext.commands import BadArgument
+
+if TYPE_CHECKING:
+    from dozer import Dozer
 
 
 class Source:
@@ -10,10 +15,10 @@ class Source:
     short_name: str = "src"
     base_url: str = ""
     aliases: tuple = tuple()
-    description = "Description"
-    disabled = False
+    description: str = "Description"
+    disabled: bool = False
 
-    def __init__(self, aiohttp_session: aiohttp.ClientSession, bot):
+    def __init__(self, aiohttp_session: aiohttp.ClientSession, bot: "Dozer"):
         self.aliases += (self.full_name, self.short_name)
         self.http_session = aiohttp_session
         self.bot = bot

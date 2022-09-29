@@ -1,14 +1,27 @@
 """Get new posts from any arbitrary subreddit"""
-import datetime
 import logging
-from typing import Dict, Any
+from datetime import datetime, timedelta
+from typing import Dict, Optional, TYPE_CHECKING
 
 import aiohttp
-import discord
+from discord import Embed, Colour
 
 from .AbstractSources import DataBasedSource
 
+if TYPE_CHECKING:
+    from dozer import Dozer
+
 DOZER_LOGGER = logging.getLogger('dozer')
+
+
+class SubReddit(DataBasedSource.DataPoint):
+    """Represents a single subreddit with associated detail"""
+
+    def __init__(self, name: str, url: str, color: Colour):
+        super().__init__(name, url)
+        self.name: str = name
+        self.url: str = url
+        self.color: Colour = color
 
 
 class RedditSource(DataBasedSource):
@@ -22,33 +35,24 @@ class RedditSource(DataBasedSource):
     token_url = "https://www.reddit.com/api/v1/access_token"
     api_url = "https://oauth.reddit.com/"
     backup_api_url = "https://reddit.com/"
-    color = discord.Color.from_rgb(255, 69, 0)
+    color: Colour = Colour.from_rgb(255, 69, 0)
 
-    class SubReddit(DataBasedSource.DataPoint):
-        """Represents a single subreddit with associated detail"""
-
-        def __init__(self, name, url, color):
-            super().__init__(name, url)
-            self.name: str = name
-            self.url: str = url
-            self.color = color
-
-    def __init__(self, aiohttp_session, bot):
+    def __init__(self, aiohttp_session, bot: "Dozer"):
         super().__init__(aiohttp_session, bot)
-        self.access_token = None
-        self.expiry_time = None
+        self.access_token: Optional[str] = None
+        self.expiry_time: Optional[datetime] = None
         self.oauth_disabled: bool = False
-        self.subreddits: Dict[str, Any] = {}
-        self.seen_posts = set()
+        self.subreddits: Dict[str, SubReddit] = {}
+        self.seen_posts: set = set()
 
     async def get_token(self):
         """Using OAuth2, get a reddit bearer token. If this fails, fallback to non-oauth API"""
         client_id = self.bot.config['news']['reddit']['client_id']
         client_secret = self.bot.config['news']['reddit']['client_secret']
-        params = {
+        params: Dict[str, str] = {
             'grant_type': 'client_credentials'
         }
-        auth = aiohttp.BasicAuth(client_id, client_secret)
+        auth: aiohttp.BasicAuth = aiohttp.BasicAuth(client_id, client_secret)
         response = await self.http_session.post(self.token_url, params=params, auth=auth)
         response = await response.json()
         try:
@@ -59,13 +63,13 @@ class RedditSource(DataBasedSource):
             self.oauth_disabled = True
             return
 
-        expiry_seconds = response['expires_in']
-        time_delta = datetime.timedelta(seconds=expiry_seconds)
-        self.expiry_time = datetime.datetime.now() + time_delta
+        expiry_seconds: int = response['expires_in']
+        time_delta: timedelta = timedelta(seconds=expiry_seconds)
+        self.expiry_time = datetime.now() + time_delta
 
     async def request(self, url, *args, headers=None, **kwargs):
         """Make a request using OAuth2 (or not, if it's been disabled)"""
-        if not self.oauth_disabled and datetime.datetime.now() > self.expiry_time:
+        if not self.oauth_disabled and datetime.now() > self.expiry_time:
             DOZER_LOGGER.info("Refreshing Reddit token due to expiry time")
             await self.get_token()
 
@@ -90,20 +94,20 @@ class RedditSource(DataBasedSource):
         json = await response.json()
         return json
 
-    def create_subreddit_obj(self, data):
+    def create_subreddit_obj(self, data) -> SubReddit:
         """Given a dict, create a subreddit object"""
-        color = data['key_color']
-        if "#" in color:
-            color = color.replace("#", "")
+        color_str: str = data['key_color']
+        if "#" in color_str:
+            color_str = color_str.replace("#", "")
 
         try:
-            color = discord.Color(int(color, 16))
+            color: Colour = Colour(int(color_str, 16))
         except ValueError:
-            color = self.color
+            color: Colour = self.color
 
-        return RedditSource.SubReddit(data['display_name'], data['url'], color)
+        return SubReddit(data['display_name'], data['url'], color)
 
-    async def clean_data(self, text):
+    async def clean_data(self, text) -> SubReddit:
         """Make a request to the reddit API to verify the subreddit exists and clean it into a object"""
         try:
             return self.subreddits[text]
@@ -175,7 +179,7 @@ class RedditSource(DataBasedSource):
             self.subreddits[subreddit_obj.name] = subreddit_obj
         await self.get_new_posts(first_time=True)
 
-    async def get_new_posts(self, first_time=False):  # pylint: disable=arguments-differ
+    async def get_new_posts(self, first_time: bool = False) -> Dict:  # pylint: disable=arguments-differ
         """Make a API request for new posts and generate embed and strings for them"""
         if len(self.subreddits) == 0:
             return {}
@@ -205,9 +209,9 @@ class RedditSource(DataBasedSource):
 
         return posts
 
-    def generate_embed(self, data):
+    def generate_embed(self, data: Dict) -> Embed:
         """Given a dict of data, create a embed"""
-        embed = discord.Embed()
+        embed: Embed = Embed()
         embed.title = f"New post on {data['subreddit_name_prefixed']}!"
 
         embed.colour = self.subreddits[data['subreddit']].color
@@ -229,13 +233,13 @@ class RedditSource(DataBasedSource):
             except KeyError:
                 pass
 
-        time = datetime.datetime.utcfromtimestamp(data['created_utc'])
+        time = datetime.utcfromtimestamp(data['created_utc'])
         embed.timestamp = time
 
         return embed
 
     @staticmethod
-    def generate_plain_text(data):
+    def generate_plain_text(data: Dict) -> str:
         """Given a dict of data, create a string"""
         return f"New post on {data['subreddit_name_prefixed']}: {data['title']}\n" \
                f"Read more at https://reddit.com{data['permalink']}"

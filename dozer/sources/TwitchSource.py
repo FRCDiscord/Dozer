@@ -2,25 +2,28 @@
 
 import datetime
 import logging
+from typing import TYPE_CHECKING
 
 import discord
 from dateutil import parser
 
 from .AbstractSources import DataBasedSource
 
+if TYPE_CHECKING:
+    from dozer import Dozer
 DOZER_LOGGER = logging.getLogger('dozer')
 
 
 class TwitchSource(DataBasedSource):
     """News source to send a notification whenever a twitch streamer goes live."""
-    full_name = "Twitch"
-    short_name = "twitch"
-    base_url = "https://twitch.tv"
-    description = "Makes a post whenever a specified user goes live on Twitch"
+    full_name: str = "Twitch"
+    short_name: str = "twitch"
+    base_url: str = "https://twitch.tv"
+    description: str = "Makes a post whenever a specified user goes live on Twitch"
 
-    token_url = "https://id.twitch.tv/oauth2/token"
-    api_url = "https://api.twitch.tv/helix"
-    color = discord.Color.from_rgb(145, 70, 255)
+    token_url: str = "https://id.twitch.tv/oauth2/token"
+    api_url: str = "https://api.twitch.tv/helix"
+    color: discord.Colour = discord.Color.from_rgb(145, 70, 255)
 
     class TwitchUser(DataBasedSource.DataPoint):
         """A helper class to represent a single Twitch streamer"""
@@ -32,7 +35,7 @@ class TwitchSource(DataBasedSource):
             self.profile_image_url = profile_image_url
             self.login = login
 
-    def __init__(self, aiohttp_session, bot):
+    def __init__(self, aiohttp_session, bot: "Dozer"):
         super().__init__(aiohttp_session, bot)
         self.access_token = None
         self.client_id = None
