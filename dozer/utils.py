@@ -88,7 +88,8 @@ def pretty_concat(strings: List[str], single_suffix: str = '', multi_suffix: str
         return '{}, and {}{}'.format(', '.join(strings[:-1]), strings[-1], multi_suffix)
 
 
-def oauth_url(client_id: str, permissions: discord.Permissions = None, guild: discord.Guild = None, redirect_uri: str = None) -> str:
+def oauth_url(client_id: str, permissions: Optional[discord.Permissions] = None, guild: Optional[discord.Guild] = None,
+              redirect_uri: Optional[str] = None) -> str:
     """A helper function that returns the OAuth2 URL for inviting the bot
     into guilds.
 

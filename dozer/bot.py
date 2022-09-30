@@ -5,7 +5,7 @@ import os
 import re
 import sys
 import traceback
-from typing import Pattern, Optional, Union, Generator, Dict
+from typing import Pattern, Optional, Union, Generator, Dict, Any
 
 import discord
 from discord import Status, Message
@@ -50,7 +50,7 @@ class Dozer(commands.Bot):
         self.wavelink = None
         self.dynamic_prefix: _utils.PrefixHandler = _utils.PrefixHandler(str(config['prefix']))
         super().__init__(command_prefix=self.dynamic_prefix.handler, *args, **kwargs)
-        self.config: Dict[str, Union[Dict[str, str], str]] = config
+        self.config: Dict[str, Any] = config
         if self.config['debug']:
             DOZER_LOGGER.level = logging.DEBUG
             DOZER_HANDLER.level = logging.DEBUG

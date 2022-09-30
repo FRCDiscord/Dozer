@@ -1,19 +1,21 @@
 """Commands for making and seeing robotics team associations."""
 
 import json
-from typing import List
+from typing import List, Dict, Union, Tuple
 
 import discord
 from aiotba.http import AioTBAError
+from discord import Color, Embed
 from discord.ext.commands import BadArgument, guild_only, has_permissions
 from discord.utils import escape_markdown
+from tbapi import Team
 
 from dozer.context import DozerContext
 from ._utils import *
 
-from .. import db
+from dozer import db
 
-blurple = discord.Color.blurple()
+blurple: Color = discord.Color.blurple()
 
 
 class Teams(Cog):
@@ -22,9 +24,9 @@ class Teams(Cog):
     @command()
     async def setteam(self, ctx: DozerContext, team_type: str, team_number: int):
         """Sets an association with your team in the database."""
-        team_type = team_type.casefold()
-        dbcheck = await TeamNumbers.get_by(user_id=ctx.author.id, team_type=team_type, team_number=team_number)
-        if not dbcheck:
+        team_type: str = team_type.casefold()
+        dbcheck: List[TeamNumbers] = await TeamNumbers.get_by(user_id=ctx.author.id, team_type=team_type, team_number=team_number)
+        if not len(dbcheck):
             await TeamNumbers(user_id=ctx.author.id, team_number=team_number, team_type=team_type).update_or_add()
             await ctx.send("Team number set!")
         else:
@@ -37,8 +39,8 @@ class Teams(Cog):
     @command()
     async def removeteam(self, ctx: DozerContext, team_type: str, team_number: int):
         """Removes an association with a team in the database."""
-        team_type = team_type.casefold()
-        results = await TeamNumbers.get_by(user_id=ctx.author.id, team_type=team_type, team_number=team_number)
+        team_type: str = team_type.casefold()
+        results: List[TeamNumbers] = await TeamNumbers.get_by(user_id=ctx.author.id, team_type=team_type, team_number=team_number)
         if len(results) != 0:
             await TeamNumbers.delete(user_id=ctx.author.id, team_number=team_number, team_type=team_type)
             await ctx.send("Removed association with {} team {}".format(team_type, team_number))
@@ -55,11 +57,11 @@ class Teams(Cog):
         """Allows you to see the teams for the mentioned user, or yourself if nobody is mentioned."""
         if user is None:
             user = ctx.author
-        teams = await TeamNumbers.get_by(user_id=user.id)
+        teams: List[TeamNumbers] = await TeamNumbers.get_by(user_id=user.id)
         if len(teams) == 0:
             raise BadArgument("Couldn't find any team associations for that user!")
         else:
-            e = discord.Embed(type='rich')
+            e: Embed = Embed(type='rich')
             e.title = 'Teams for {}'.format(escape_markdown(user.display_name))
             e.description = "Teams: \n"
             for i in teams:
@@ -74,33 +76,34 @@ class Teams(Cog):
     @guild_only()
     @bot_has_permissions(add_reactions=True, embed_links=True,
                          read_message_history=True)
-    async def compcheck(self, ctx: DozerContext, event_type: str, event_key):
+    async def compcheck(self, ctx: DozerContext, event_type: str, event_key: str):
         """Allows you to see people in the Discord server that are going to a certain competition."""
         if event_type.lower() == "frc":
             try:
-                teams_raw = await ctx.bot.get_cog("TBA").session.event_teams(event_key)
-                teams = [team.team_number for team in teams_raw]
+                teams_raw: List[Team] = await ctx.bot.get_cog("TBA").session.event_teams(event_key)
+                teams: List[int] = [team.team_number for team in teams_raw]
             except AioTBAError:
                 raise BadArgument("Invalid event!")
         elif event_type.lower() == "ftc":
-            teams_raw = json.loads(await ctx.bot.get_cog("TOA").parser.req(f"/api/event/{event_key}/teams"))
+            teams_raw: List[Dict[str, Dict[str, Union[str, int]]]] = json.loads(
+                await ctx.bot.get_cog("TOA").parser.req(f"/api/event/{event_key}/teams"))
             try:
-                teams = [team['team']['team_number'] for team in teams_raw]
+                teams: List[int] = [team['team']['team_number'] for team in teams_raw]
             except TypeError:
                 raise BadArgument("Invalid event!")
         else:
             raise BadArgument("Unknown event type!")
-        found_mems = False
-        embeds = []
+        found_mems: bool = False
+        embeds: List[Embed] = []
         for team in teams:
-            e = discord.Embed(type='rich')
+            e: Embed = Embed(type='rich')
             e.title = 'Members going to {}'.format(event_key)
-            members = await TeamNumbers.get_by(team_type=event_type.lower(), team_number=team)
-            memstr = ""
+            members: List[TeamNumbers] = await TeamNumbers.get_by(team_type=event_type.lower(), team_number=team)
+            memstr: str = ""
             for member in members:
-                mem = ctx.guild.get_member(member.user_id)
+                mem: discord.Member = ctx.guild.get_member(member.user_id)
                 if mem is not None:
-                    newmemstr = "{} {} \n".format(escape_markdown(mem.display_name), mem.mention)
+                    newmemstr: str = "{} {} \n".format(escape_markdown(mem.display_name), mem.mention)
                     if len(newmemstr + memstr) > 1023:
                         e.add_field(name=f"Team {team}", value=memstr)
                         memstr = ""
@@ -109,7 +112,7 @@ class Teams(Cog):
             if len(memstr) > 0:
                 if len(e.fields) == 25:
                     embeds.append(e)
-                    e = discord.Embed(type='rich')
+                    e: Embed = Embed(type='rich')
                     e.title = 'Members going to {}'.format(event_key)
                 e.add_field(name=f"Team {team}", value=memstr)
                 embeds.append(e)
@@ -117,7 +120,7 @@ class Teams(Cog):
             await ctx.send("Couldn't find any team members for that event!")
             return
         else:
-            pagenum = 1
+            pagenum: int = 1
             for embed in embeds:
                 embed.set_footer(text=f"Page {pagenum} of {len(embeds)}")
                 pagenum += 1
@@ -132,17 +135,17 @@ class Teams(Cog):
     @guild_only()
     async def onteam(self, ctx: DozerContext, team_type: str, team_number: int):
         """Allows you to see who has associated themselves with a particular team."""
-        team_type = team_type.casefold()
-        users = await TeamNumbers.get_by(team_type=team_type, team_number=team_number)
+        team_type: str = team_type.casefold()
+        users: List[TeamNumbers] = await TeamNumbers.get_by(team_type=team_type, team_number=team_number)
         if len(users) == 0:
             await ctx.send("Nobody on that team found!")
         else:
-            e = discord.Embed(type='rich')
+            e: Embed = Embed(type='rich')
             e.title = 'Users on team {}'.format(team_number)
             e.description = "Users: \n"
-            extra_mems = ""
+            extra_mems: str = ""
             for i in users:
-                user = ctx.guild.get_member(i.user_id)
+                user: discord.Member = ctx.guild.get_member(i.user_id)
                 if user is not None:
                     memstr = "{} {} \n".format(escape_markdown(user.display_name), user.mention)
                     if len(e.description + memstr) > 2047:
@@ -161,9 +164,9 @@ class Teams(Cog):
     @guild_only()
     async def top(self, ctx: DozerContext):
         """Show the top 10 teams by number of members in this guild."""
-        users = [mem.id for mem in ctx.guild.members]
-        counts = await TeamNumbers.top10(users)
-        embed = discord.Embed(title=f'Top teams in {ctx.guild.name}', color=discord.Color.blue())
+        users: List[int] = [mem.id for mem in ctx.guild.members]
+        counts: List[Tuple[str, int, int]] = await TeamNumbers.top10(users)
+        embed: Embed = Embed(title=f'Top teams in {ctx.guild.name}', color=discord.Color.blue())
         embed.description = '\n'.join(
             f'{type_.upper()} team {num} ({count} member{"s" if count > 1 else ""})' for (type_, num, count) in counts)
         await ctx.send(embed=embed)
@@ -177,15 +180,15 @@ class Teams(Cog):
     @has_permissions(manage_guild=True)
     async def toggleautoteam(self, ctx: DozerContext):
         """Toggles automatic adding of team association to member nicknames"""
-        settings = await AutoAssociation.get_by(guild_id=ctx.guild.id)
-        enabled = settings[0].team_on_join if settings else True
-        new_settings = AutoAssociation(
+        settings: List[AutoAssociation] = await AutoAssociation.get_by(guild_id=ctx.guild.id)
+        enabled: bool = settings[0].team_on_join if settings else True
+        new_settings: AutoAssociation = AutoAssociation(
             guild_id=ctx.guild.id,
             team_on_join=not enabled
         )
         await new_settings.update_or_add()
-        e = discord.Embed(color=blurple)
-        modetext = "Enabled" if not enabled else "Disabled"
+        e: Embed = Embed(color=blurple)
+        modetext: str = "Enabled" if not enabled else "Disabled"
         e.add_field(name='Success!', value=f"Automatic adding of team association is currently: **{modetext}**")
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
@@ -193,12 +196,12 @@ class Teams(Cog):
     @Cog.listener('on_member_join')
     async def on_member_join(self, member: discord.Member):
         """Adds a user's team association to their name when they join (if exactly 1 association)"""
-        settings = await AutoAssociation.get_by(guild_id=member.guild.id)
-        enabled = settings[0].team_on_join if settings else True
+        settings: List[AutoAssociation] = await AutoAssociation.get_by(guild_id=member.guild.id)
+        enabled: bool = settings[0].team_on_join if settings else True
         if member.guild.me.guild_permissions.manage_nicknames and enabled:
-            query = await TeamNumbers.get_by(user_id=member.id)
+            query: List[TeamNumbers] = await TeamNumbers.get_by(user_id=member.id)
             if len(query) == 1:
-                nick = "{} {}{}".format(member.display_name, query[0].team_type, query[0].team_number)
+                nick: str = "{} {}{}".format(member.display_name, query[0].team_type, query[0].team_number)
                 if len(nick) <= 32:
                     await member.edit(nick=nick)
 
@@ -221,8 +224,8 @@ class AutoAssociation(db.DatabaseTable):
 
     def __init__(self, guild_id: int, team_on_join: bool = True):
         super().__init__()
-        self.guild_id = guild_id
-        self.team_on_join = team_on_join
+        self.guild_id: int = guild_id
+        self.team_on_join: bool = team_on_join
 
     @classmethod
     async def get_by(cls, **kwargs) -> List["AutoAssociation"]:
@@ -251,11 +254,11 @@ class TeamNumbers(db.DatabaseTable):
             PRIMARY KEY (user_id, team_number, team_type)
             )""")
 
-    def __init__(self, user_id, team_number, team_type):
+    def __init__(self, user_id: int, team_number: int, team_type: str):
         super().__init__()
-        self.user_id = user_id
-        self.team_number = team_number
-        self.team_type = team_type
+        self.user_id: int = user_id
+        self.team_number: int = team_number
+        self.team_type: str = team_type
 
     async def update_or_add(self):
         """Assign the attribute to this object, then call this method to either insert the object if it doesn't exist in
@@ -288,7 +291,7 @@ class TeamNumbers(db.DatabaseTable):
 
     # noinspection SqlResolve
     @classmethod
-    async def top10(cls, user_ids):
+    async def top10(cls, user_ids) -> List[Tuple[str, int, int]]:
         """Returns the top 10 team entries"""
         query = f"""SELECT team_type, team_number, count(*)
                 FROM {cls.__tablename__}

@@ -1,7 +1,8 @@
 """Provides commands for voice, currently only voice and text channel access bindings."""
-from typing import List
+from typing import List, Optional
 
 import discord
+from discord import Embed
 from discord.ext.commands import has_permissions, BadArgument
 from discord.utils import escape_markdown
 
@@ -18,7 +19,7 @@ class Voice(Cog):
     async def auto_ptt_check(voice_channel: discord.VoiceState):
         """Handles voice activity when members join/leave voice channels"""
         total_users = len(voice_channel.channel.members)
-        config = await AutoPTT.get_by(channel_id=voice_channel.channel.id)
+        config: List[AutoPTT] = await AutoPTT.get_by(channel_id=voice_channel.channel.id)
         if config:
             everyone = voice_channel.channel.guild.default_role  # grab the @everyone role
             perms = voice_channel.channel.overwrites_for(everyone)  # grab the @everyone overwrites
@@ -38,12 +39,12 @@ class Voice(Cog):
             # before and after are voice states
             if before.channel is not None:
                 # leave event, take role
-                config = await Voicebinds.get_by(channel_id=before.channel.id)
+                config: List[Voicebinds] = await Voicebinds.get_by(channel_id=before.channel.id)
                 if len(config) != 0:
                     await member.remove_roles(member.guild.get_role(config[0].role_id))
             if after.channel is not None:
                 # join event, give role
-                config = await Voicebinds.get_by(channel_id=after.channel.id)
+                config: List[Voicebinds] = await Voicebinds.get_by(channel_id=after.channel.id)
                 if len(config) != 0:
                     await member.add_roles(member.guild.get_role(config[0].role_id))
 
@@ -68,14 +69,14 @@ class Voice(Cog):
     async def autoptt(self, ctx: DozerContext, voice_channel: discord.VoiceChannel, ptt_threshold: int):
         """Configures AutoPtt limit for when members join/leave voice channels ptt is enabled"""
 
-        e = discord.Embed(color=blurple)
+        e: Embed = Embed(color=blurple)
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
 
         if ptt_threshold < 0:
             raise BadArgument('PTT threshold must be positive integer')
 
         if ptt_threshold == 0:
-            config = await AutoPTT.get_by(channel_id=voice_channel.id)
+            config: List[AutoPTT] = await AutoPTT.get_by(channel_id=voice_channel.id)
             if len(config) != 0:
                 await AutoPTT.delete(channel_id=config[0].channel_id)
                 e.add_field(name='Success!', value='AutoPTT has been disabled for voice channel "**{}**"'
@@ -84,7 +85,7 @@ class Voice(Cog):
                 e.add_field(name='Error', value='AutoPTT has not been configured for voice channel "**{}**"'
                             .format(voice_channel))
         else:
-            ent = AutoPTT(
+            ent: AutoPTT = AutoPTT(
                 channel_id=voice_channel.id,
                 ptt_limit=ptt_threshold
             )
@@ -107,7 +108,7 @@ class Voice(Cog):
     async def voicebind(self, ctx: DozerContext, voice_channel: discord.VoiceChannel, *, role: discord.Role):
         """Binds a voice channel with a role, so users joining voice channels will be given desired role(s)."""
 
-        config = await Voicebinds.get_by(channel_id=voice_channel.id)
+        config: List[Voicebinds] = await Voicebinds.get_by(channel_id=voice_channel.id)
         if len(config) != 0:
             config[0].guild_id = ctx.guild.id
             config[0].channel_id = voice_channel.id
@@ -127,9 +128,9 @@ class Voice(Cog):
     @has_permissions(manage_roles=True)
     async def voiceunbind(self, ctx: DozerContext, voice_channel: discord.VoiceChannel):
         """Dissasociates a voice channel with a role previously binded with the voicebind command."""
-        config = await Voicebinds.get_by(channel_id=voice_channel.id)
+        config: List[Voicebinds] = await Voicebinds.get_by(channel_id=voice_channel.id)
         if len(config) != 0:
-            role = ctx.guild.get_role(config[0].role_id)
+            role: discord.Role = ctx.guild.get_role(config[0].role_id)
             await Voicebinds.delete(id=config[0].id)
             await ctx.send(
                 "Role `{role}` will no longer be given to users in voice channel `{voice_channel}`!".format(
@@ -146,11 +147,11 @@ class Voice(Cog):
     @bot_has_permissions(manage_roles=True)
     async def voicebindlist(self, ctx: DozerContext):
         """Lists all the voice channel to role bindings for the current server"""
-        embed = discord.Embed(title="List of voice bindings for \"{}\"".format(ctx.guild), color=discord.Color.blue())
+        embed: Embed = Embed(title="List of voice bindings for \"{}\"".format(ctx.guild), color=discord.Color.blue())
         for config in await Voicebinds.get_by(guild_id=ctx.guild.id):
-            channel = discord.utils.get(ctx.guild.voice_channels, id=config.channel_id)
-            role = ctx.guild.get_role(config.role_id)
-            embed.add_field(name=channel, value="`{}`".format(role))
+            channel: discord.VoiceChannel = discord.utils.get(ctx.guild.voice_channels, id=config.channel_id)
+            role: discord.Role = ctx.guild.get_role(config.role_id)
+            embed.add_field(name=str(channel), value="`{}`".format(str(role)))
         await ctx.send(embed=embed)
 
     voicebindlist.example_usage = """
@@ -176,13 +177,13 @@ class Voicebinds(db.DatabaseTable):
             role_id bigint null
             )""")
 
-    def __init__(self, guild_id: int, channel_id: int, role_id: int, row_id: int = None):
+    def __init__(self, guild_id: int, channel_id: Optional[int], role_id: Optional[int], row_id: Optional[int] = None):
         super().__init__()
         if row_id is not None:
-            self.id = row_id
-        self.guild_id = guild_id
-        self.channel_id = channel_id
-        self.role_id = role_id
+            self.id: int = row_id
+        self.guild_id: int = guild_id
+        self.channel_id: Optional[int] = channel_id
+        self.role_id: Optional[int] = role_id
 
     @classmethod
     async def get_by(cls, **kwargs) -> List["Voicebinds"]:
@@ -212,10 +213,10 @@ class AutoPTT(db.DatabaseTable):
             ptt_limit bigint null
             )""")
 
-    def __init__(self, channel_id: int, ptt_limit: int):
+    def __init__(self, channel_id: int, ptt_limit: Optional[int]):
         super().__init__()
-        self.channel_id = channel_id
-        self.ptt_limit = ptt_limit
+        self.channel_id: int = channel_id
+        self.ptt_limit: Optional[int] = ptt_limit
 
     @classmethod
     async def get_by(cls, **kwargs) -> List["AutoPTT"]:
