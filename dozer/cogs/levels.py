@@ -481,6 +481,12 @@ class Levels(Cog):
     `{prefix}configureranks delrolelevel role`: Deletes a level role 
     """
 
+    @configureranks.command()
+    @guild_only()
+    async def view_config(self, ctx: DozerContext):
+        """Shows dozer ranks:tm: config."""
+        await self.configureranks(ctx)
+
     @configureranks.command(aliases=["xp"])
     @guild_only()
     @has_permissions(manage_guild=True)

@@ -52,7 +52,7 @@ class Actionlog(Cog):
     @Cog.listener('on_member_join')
     async def on_member_join(self, member):
         """Logs that a member joined, with optional custom message"""
-        nm_config = await GuildNewMember.get_by(guild_id=member.guild.id)
+        nm_config = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
         if len(nm_config) == 0:
             await send_log(member)
         else:
@@ -431,6 +431,12 @@ class Actionlog(Cog):
     `{prefix}memberlogconfig setleavemessage template`: Sets leave template
     `{prefix}memberlogconfig help`: Returns the template formatting key
     """
+
+    @memberlogconfig.command()
+    @has_permissions(administrator=True)
+    async def viewconfig(self, ctx: DozerContext):
+        """Command to view Join/Leave logs configuration."""
+        await self.memberlogconfig(ctx)
 
     @memberlogconfig.command()
     @has_permissions(manage_guild=True)

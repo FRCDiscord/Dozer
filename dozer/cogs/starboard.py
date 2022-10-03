@@ -28,7 +28,7 @@ async def is_cancelled(emoji, message: discord.Message, me, author: discord.Memb
         if str(reaction) != emoji:
             continue
 
-        users = await reaction.users().flatten()
+        users = [user async for user in reaction.users()]
         if author in users or me in users:
             return True
         return False
@@ -238,6 +238,17 @@ class Starboard(Cog):
     starboard.example_usage = """
     `{prefix}starboard` - Get the current starboard settings for this server
     """
+
+    @guild_only()
+    @starboard.command()
+    async def showconfig(self, ctx: DozerContext):
+        """Show the current server's starboard configuration.
+         A starboard (or a hall of fame) is a channel the bot will repost messages in if they receive a certain number\
+         of configured reactions.
+
+         To configure a starboard, use the `starboard config` subcommand.
+         """
+        await self.starboard(ctx)
 
     @guild_only()
     @has_permissions(manage_guild=True, manage_channels=True)

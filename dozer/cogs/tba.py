@@ -79,7 +79,7 @@ class TBA(Cog):
             e.add_field(name='Championship', value=team_data.home_championship[max(team_data.home_championship.keys())])
         except AttributeError:
             e.add_field(name='Championship', value="Unknown")
-        e.set_footer(text='Triggered by {}'.format(escape_markdown(ctx.author.display_name)))
+        e.set_footer(text='Triggered by {}'.format(ctx.author.display_name))
         await ctx.send(embed=e)
 
     team.example_usage = """
