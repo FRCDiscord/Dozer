@@ -3,9 +3,8 @@ from datetime import datetime, timedelta
 import io
 import itertools
 import json
-from plistlib import Dict
 from pprint import pformat
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING, List, Union, Dict
 from urllib.parse import quote as urlquote, urljoin
 
 import aiohttp

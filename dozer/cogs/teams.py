@@ -11,9 +11,9 @@ from discord.utils import escape_markdown
 from tbapi import Team
 
 from dozer.context import DozerContext
-from ._utils import *
-
 from dozer import db
+
+from ._utils import *
 
 blurple: Color = discord.Color.blurple()
 

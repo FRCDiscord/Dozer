@@ -239,8 +239,8 @@ class Paginator(Reactor):
         '\N{BLACK SQUARE FOR STOP}'  # :stop_button:
     )
 
-    def __init__(self, ctx: DozerContext, initial_reactions: Iterable[discord.Reaction], pages: List[Union[Embed, Dict[str, Embed]]], *, start: Union[int, str] = 0, auto_remove: bool = True,
-                 timeout: int = 60):
+    def __init__(self, ctx: DozerContext, initial_reactions: Iterable[discord.Reaction], pages: List[Union[Embed, Dict[str, Embed]]], *,
+                 start: Union[int, str] = 0, auto_remove: bool = True, timeout: int = 60):
         all_reactions = list(initial_reactions)
         ind: int = all_reactions.index(Ellipsis)
         all_reactions[ind:ind + 1] = self.pagination_reactions
