@@ -1,5 +1,6 @@
 """Bot object for Dozer"""
 
+
 import os
 import re
 import sys
@@ -55,7 +56,10 @@ class Dozer(commands.Bot):
 
     async def on_ready(self):
         """Things to run when the bot has initialized and signed in"""
+
         logger.info('Signed in as {}#{} ({})'.format(self.user.name, self.user.discriminator, self.user.id))
+        news_cog = self.get_cog("News")
+        await news_cog.startup()
         await self.dynamic_prefix.refresh()
         perms = 0
         for cmd in self.walk_commands():
