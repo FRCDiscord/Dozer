@@ -275,13 +275,19 @@ class Roles(Cog):
                 await msg.clear_reactions()
             except discord.HTTPException:
                 DOZER_LOGGER.debug(
-                    f"Unable to clear reactions from message to {ctx.author} in guild {ctx.guild} Reason: HTTPException")
+                    f"Unable to clear reactions from message in guild {ctx.guild} Reason: HTTPException")
             return
 
     giveme.example_usage = """
     `{prefix}giveme Java` - gives you the role called Java, if it exists
     `{prefix}giveme Java, Python` - gives you the roles called Java and Python, if they exist
     """
+
+    @giveme.command()
+    @bot_has_permissions(manage_roles=True)
+    async def role(self, ctx: DozerContext, roles):
+        """Give you one or more giveable roles, separated by commas."""
+        await self.giveme(ctx, roles=roles)
 
     @giveme.command()
     @bot_has_permissions(manage_roles=True)

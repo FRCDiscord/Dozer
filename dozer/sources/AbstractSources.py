@@ -19,7 +19,7 @@ class Source:
     disabled: bool = False
 
     def __init__(self, aiohttp_session: aiohttp.ClientSession, bot: "Dozer"):
-        self.aliases += (self.full_name, self.short_name)
+        self.aliases = (self.full_name, self.short_name)
         self.http_session = aiohttp_session
         self.bot = bot
 

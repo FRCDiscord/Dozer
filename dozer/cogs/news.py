@@ -125,7 +125,6 @@ class News(Cog):
         self.get_new_posts.restart()
         DOZER_LOGGER.debug("News fetch successfully restarted")
 
-    @get_new_posts.before_loop
     async def startup(self):
         """Initialize sources and start the loop after initialization"""
         self.sources = {}
@@ -180,6 +179,12 @@ class News(Cog):
         await ctx.send(embed=embed)
 
     news.example_usage = "`{prefix}news` - Get a small guide on using the News system"
+
+    @news.command()
+    @guild_only()
+    async def view_help(self, ctx: DozerContext):
+        """Show help for news subscriptions"""
+        await self.news(ctx)
 
     @news.command()
     @has_permissions(manage_guild=True)

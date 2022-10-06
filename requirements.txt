@@ -10,6 +10,6 @@ python-Levenshtein
 python-dateutil~=2.8.1
 sentry-sdk
 rstcloth~=0.3.1
-aiohttp==3.8.1
 humanize~=3.8.0
+pre-commit~=2.20.0
 lavaplayer

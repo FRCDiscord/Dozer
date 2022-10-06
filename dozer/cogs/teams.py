@@ -131,7 +131,7 @@ class Teams(Cog):
     `{prefix}compcheck ftc 1920-TX-AML2` - Returns all members on teams registered for the 2020 Austin Metro League Championship Dell Division
     """
 
-    @group(invoke_without_command=True)
+    @command()
     @guild_only()
     async def onteam(self, ctx: DozerContext, team_type: str, team_number: int):
         """Allows you to see who has associated themselves with a particular team."""
@@ -160,9 +160,9 @@ class Teams(Cog):
     `{prefix}onteam type team_number` - Returns a list of users associated with a given team type and number
     """
 
-    @onteam.command()
+    @command()
     @guild_only()
-    async def top(self, ctx: DozerContext):
+    async def onteam_top(self, ctx: DozerContext):
         """Show the top 10 teams by number of members in this guild."""
         users: List[int] = [mem.id for mem in ctx.guild.members]
         counts: List[Tuple[str, int, int]] = await TeamNumbers.top10(users)
@@ -171,8 +171,8 @@ class Teams(Cog):
             f'{type_.upper()} team {num} ({count} member{"s" if count > 1 else ""})' for (type_, num, count) in counts)
         await ctx.send(embed=embed)
 
-    top.example_usage = """
-    `{prefix}onteam top` - List the 10 teams with the most members in this guild
+    onteam_top.example_usage = """
+    `{prefix}onteam_top` - List the 10 teams with the most members in this guild
     """
 
     @command()

@@ -53,15 +53,15 @@ class Actionlog(Cog):
     @Cog.listener('on_member_join')
     async def on_member_join(self, member: Member):
         """Logs that a member joined, with optional custom message"""
-        guild_new_member_settings: List[GuildNewMember] = await GuildNewMember.get_by(guild_id=member.guild.id)
-        nm_config: List["CustomJoinLeaveMessages"] = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
-        if len(guild_new_member_settings) == 0:
-            await send_log(member)
-        if len(nm_config) == 0:
+        join_leave_config: List[CustomJoinLeaveMessages] = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
+        new_members_config: List[GuildNewMember] = await GuildNewMember.get_by(guild_id=member.guild.id)
+        if len(new_members_config) == 0 and len(join_leave_config) == 0:
             await send_log(member)
         else:
-            print(guild_new_member_settings[0])
-            if guild_new_member_settings[0].require_team and nm_config[0].send_on_verify is True:
+            print(new_members_config[0])
+            if new_members_config[0].require_team:
+                return
+            elif join_leave_config[0].send_on_verify:
                 return
             else:
                 await send_log(member)
@@ -435,6 +435,12 @@ class Actionlog(Cog):
     `{prefix}memberlogconfig setleavemessage template`: Sets leave template
     `{prefix}memberlogconfig help`: Returns the template formatting key
     """
+
+    @memberlogconfig.command()
+    @has_permissions(administrator=True)
+    async def viewconfig(self, ctx: DozerContext):
+        """Command to view Join/Leave logs configuration."""
+        await self.memberlogconfig(ctx)
 
     @memberlogconfig.command()
     @has_permissions(manage_guild=True)

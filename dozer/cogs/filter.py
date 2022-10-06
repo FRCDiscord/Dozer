@@ -44,7 +44,10 @@ class Filter(Cog):
 
         if result == "1":
             await ctx.author.send(embed=embed)
-            await ctx.message.add_reaction("📬")
+            try:
+                await ctx.message.add_reaction("📬")
+            except discord.errors.NotFound:
+                await ctx.reply("Check your DMs!", ephemeral=True)
         else:
             await ctx.send(embed=embed)
 
@@ -158,6 +161,12 @@ class Filter(Cog):
     `{prefix}filter whitelist` - See all of the whitelisted roles
     `{prefix}filter whitelist add Administrators` - Make the Administrators role whitelisted for the filter.
     `{prefix}filter whitelist remove Moderators` - Make the Moderators role no longer whitelisted."""
+
+    @filter.command()
+    @guild_only()
+    async def list(self, ctx, advanced: bool = False):
+        """Lists word filters."""
+        await self.filter(ctx, advanced)
 
     @guild_only()
     @has_permissions(manage_guild=True)
@@ -282,6 +291,12 @@ class Filter(Cog):
         await ctx.send(embed=embed)
 
     whitelist.example_usage = "`{prefix}filter whitelist` - Lists all the whitelisted roles"
+
+    @guild_only()
+    @whitelist.command()
+    async def viewlist(self, ctx: DozerContext):
+        """List all whitelisted roles for this server"""
+        await self.whitelist(ctx)
 
     @guild_only()
     @has_permissions(manage_roles=True)
