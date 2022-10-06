@@ -13,11 +13,11 @@ if TYPE_CHECKING:
 
 class DozerContext(commands.Context):
     """Cleans all messages before sending"""
-
-    @property
-    def bot(self) -> "Dozer":
-        """Returns the bot, with the correct type. """
-        return super().bot
+    bot: "Dozer"
+    # @property
+    # def bot(self) -> "Dozer":
+    #     """Returns the bot, with the correct type. """
+    #     return super().bot
 
     async def send(self, content: str = None, **kwargs) -> discord.Message:  # pylint: disable=arguments-differ
         """Make it so you cannot ping @.everyone when sending a message"""
