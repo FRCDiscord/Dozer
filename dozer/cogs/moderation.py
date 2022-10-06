@@ -6,8 +6,7 @@ import re
 import time
 import typing
 from logging import getLogger
-from typing import List
-from typing import TYPE_CHECKING, Union, Optional, Type, Set, Tuple
+from typing import TYPE_CHECKING, Union, Optional, Type, Set, Tuple, Dict, List
 
 import discord
 from discord import Guild, Embed, User, Member, Message, Role, PermissionOverwrite, ClientUser
@@ -51,7 +50,7 @@ class Moderation(Cog):
 
     def __init__(self, bot: "Dozer"):
         super().__init__(bot)
-        self.links_config = db.ConfigCache(GuildMessageLinks)
+        self.links_config: db.ConfigCache = db.ConfigCache(GuildMessageLinks)
         self.punishment_timer_tasks: List[asyncio.Task] = []
 
     """=== Helper functions ==="""
@@ -63,14 +62,14 @@ class Moderation(Cog):
             entries = await NewMemPurgeConfig.get_by()
         else:
             entries = await NewMemPurgeConfig.get_by(guild_id=guild.id)
-        count = 0
+        count: int = 0
         for entry in entries:
-            guild = self.bot.get_guild(entry.guild_id)
+            guild: Guild = self.bot.get_guild(entry.guild_id)
             if guild is None:
                 continue
             for mem in guild.members:
                 if guild.get_role(entry.member_role) not in mem.roles:
-                    delta = datetime.datetime.now() - mem.joined_at
+                    delta: datetime.timedelta = datetime.datetime.now() - mem.joined_at
                     if delta.days >= entry.days:
                         await mem.kick(reason="New member purge cycle")
                         count += 1
@@ -83,7 +82,7 @@ class Moderation(Cog):
 
     async def mod_log(self, actor: Member, action: str, target: Union[User, Member, None],
                       reason, orig_channel=None,
-                      embed_color=discord.Color.red(), global_modlog: bool = True, duration: datetime.timedelta = None,
+                      embed_color: discord.Color = discord.Color.red(), global_modlog: bool = True, duration: datetime.timedelta = None,
                       dm: bool = True, guild_override: int = None, extra_fields=None, updated_by: Member = None):
         """Generates a modlog embed"""
 
@@ -92,7 +91,7 @@ class Moderation(Cog):
         else:
             title = f"User {action}!"
 
-        modlog_embed = Embed(
+        modlog_embed: Embed = Embed(
             color=embed_color,
             title=title
         )
@@ -120,7 +119,7 @@ class Moderation(Cog):
                 await orig_channel.send("Failed to DM modlog to user")
             finally:
                 modlog_embed.remove_field(2)
-        modlog_channel = await GuildModLog.get_by(guild_id=actor.guild.id) if guild_override is None else \
+        modlog_channel: List[GuildModLog] = await GuildModLog.get_by(guild_id=actor.guild.id) if guild_override is None else \
             await GuildModLog.get_by(guild_id=guild_override)
         if orig_channel is not None:
             await orig_channel.send(embed=modlog_embed)
@@ -143,7 +142,7 @@ class Moderation(Cog):
         """Applies the given overrides to the given member in their guild."""
         for channel in member.guild.channels:
 
-            overwrite = channel.overwrites_for(member)
+            overwrite: PermissionOverwrite = channel.overwrites_for(member)
             if channel.permissions_for(member.guild.me).manage_roles:
                 overwrite.update(**overwrites)
                 try:
@@ -152,20 +151,21 @@ class Moderation(Cog):
                     DOZER_LOGGER.error(
                         f"Failed to catch missing perms in {channel} ({channel.id}) Guild: {channel.guild.id}; Error: {e}")
 
-    hm_regex = re.compile(r"((?P<years>\d+)y)?((?P<months>\d+)M)?((?P<weeks>\d+)w)?((?P<days>\d+)d)?((?P<hours>\d+)h)?((?P<minutes>\d+)m)?(("
-                          r"?P<seconds>\d+)s)?")
+    hm_regex: re.Pattern = re.compile(
+        r"((?P<years>\d+)y)?((?P<months>\d+)M)?((?P<weeks>\d+)w)?((?P<days>\d+)d)?((?P<hours>\d+)h)?((?P<minutes>\d+)m)?(("
+        r"?P<seconds>\d+)s)?")
 
     def hm_to_seconds(self, hm_str: str) -> int:
         """Converts an hour-minute string to seconds. For example, '1h15m' returns 4500"""
-        matches = re.match(self.hm_regex, hm_str).groupdict()
-        years = int(matches.get('years') or 0)
-        months = int(matches.get('months') or 0)
-        weeks = int(matches.get('weeks') or 0)
-        days = int(matches.get('days') or 0)
-        hours = int(matches.get('hours') or 0)
-        minutes = int(matches.get('minutes') or 0)
-        seconds = int(matches.get('seconds') or 0)
-        val = int((years * 3.154e+7) + (months * 2.628e+6) + (weeks * 604800) + (days * 86400) + (hours * 3600) + (minutes * 60) + seconds)
+        matches: Dict[str, str] = re.match(self.hm_regex, hm_str).groupdict()
+        years: int = int(matches.get('years') or 0)
+        months: int = int(matches.get('months') or 0)
+        weeks: int = int(matches.get('weeks') or 0)
+        days: int = int(matches.get('days') or 0)
+        hours: int = int(matches.get('hours') or 0)
+        minutes: int = int(matches.get('minutes') or 0)
+        seconds: int = int(matches.get('seconds') or 0)
+        val: int = int((years * 3.154e+7) + (months * 2.628e+6) + (weeks * 604800) + (days * 86400) + (hours * 3600) + (minutes * 60) + seconds)
         # Make sure it is a positive number, and it doesn't exceed the max 32-bit int
         # Wait so dozer is going to die at 03:14:07 on Tuesday, 19 January 2038, well I guess that's someone else's problem.
         # (yes right now its probably because of a discord non-compatibility, but once they support it we should probably fix it)
@@ -464,7 +464,7 @@ class Moderation(Cog):
         """Sends a message to the mod log with custom text."""
         orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
         await self.mod_log(actor=ctx.author, action="", target=None, orig_channel=orig_channel, reason=reason,
-                           embed_color=0xFFC400)
+                           embed_color=discord.Color(0xFFC400))
 
     customlog.example_usage = """
     `{prefix}`customlog reason - warns a user for "reason"
