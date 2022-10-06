@@ -24,7 +24,7 @@ class Filter(Cog):
     the compiled object is placed in here. This dict is actually a dict full of dicts, with each parent dict's key
     being the guild ID for easy accessing.
     """
-    filter_dict: Dict[int, Dict[int, Pattern[str]]] = {}
+    filter_dict: Dict[int, Dict[int, Pattern]] = {}
 
     def __init__(self, bot: "Dozer"):
         super().__init__(bot)

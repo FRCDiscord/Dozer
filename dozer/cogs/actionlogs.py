@@ -1,9 +1,9 @@
 """Provides guild logging functions for Dozer."""
 import asyncio
-import datetime
 import logging
 import math
 import time
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Set, Optional
 
 import discord
