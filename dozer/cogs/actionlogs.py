@@ -57,7 +57,6 @@ class Actionlog(Cog):
         if len(new_members_config) == 0 and len(join_leave_config) == 0:
             await send_log(member)
         else:
-            print(new_members_config[0])
             if new_members_config[0].require_team:
                 return
             elif join_leave_config[0].send_on_verify:
