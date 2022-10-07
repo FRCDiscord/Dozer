@@ -307,8 +307,9 @@ class Starboard(Cog):
     @guild_only()
     @has_permissions(manage_messages=True)
     @starboard.command()
-    async def add(self, ctx: DozerContext, message_id: int, channel: discord.TextChannel = None):
+    async def add(self, ctx: DozerContext, message_id, channel: discord.TextChannel = None):
         """Add a message to the starboard manually"""
+        message_id = int(message_id)
         config = await self.config_cache.query_one(guild_id=ctx.guild.id)
         if config is None:
             await ctx.send(f"There is not a Starboard configured for this server. Set one up with "
