@@ -22,6 +22,12 @@ services:
     build: .
     volumes:
       - ".:/app"
+  nginx:
+    image: nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - "./docs/_build/html:/usr/share/nginx/html:ro"
       
 volumes:
   database:

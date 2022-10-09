@@ -650,10 +650,10 @@ class Roles(Cog):
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
     @guild_only()
-    async def addrole(self, ctx: DozerContext, channel: Optional[discord.TextChannel], message_id: int,
-                      role: Role,
-                      emoji: discord.Emoji):
+    async def addrole(self, ctx: DozerContext, channel: Optional[discord.TextChannel], message_id: str,
+                      role: Role, emoji: discord.Emoji):
         """Adds a reaction role to a message or a role menu"""
+        message_id = int(message_id)
         if isinstance(emoji, discord.Emoji) and emoji.guild_id != ctx.guild.id:
             raise BadArgument(f"The emoji {emoji} is a custom emoji not from this server!")
 
@@ -707,10 +707,10 @@ class Roles(Cog):
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
     @guild_only()
-    async def delrole(self, ctx: DozerContext, channel: Optional[discord.TextChannel], message_id: int,
+    async def delrole(self, ctx: DozerContext, channel: Optional[discord.TextChannel], message_id: str,
                       role: Role):
         """Removes a reaction role from a message or a role menu"""
-
+        message_id = int(message_id)
         menu_return = await RoleMenu.get_by(guild_id=ctx.guild.id, message_id=message_id)
         menu = menu_return[0] if len(menu_return) else None
         message = await self.safe_message_fetch(ctx, menu=menu, channel=channel, message_id=message_id)

@@ -3,7 +3,7 @@ import asyncio
 import logging
 import math
 import time
-from datetime import datetime
+import datetime
 from typing import TYPE_CHECKING, List, Set, Optional
 
 import discord
@@ -58,10 +58,9 @@ class Actionlog(Cog):
         if len(new_members_config) == 0 and len(join_leave_config) == 0:
             await send_log(member)
         else:
-            print(new_members_config[0])
-            if new_members_config[0].require_team:
+            if len(new_members_config) > 0 and new_members_config[0].require_team:
                 return
-            elif join_leave_config[0].send_on_verify:
+            elif len(join_leave_config) > 0 and join_leave_config[0].send_on_verify:
                 return
             else:
                 await send_log(member)
