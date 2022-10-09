@@ -28,7 +28,7 @@ async def is_cancelled(emoji, message: discord.Message, me, author: discord.Memb
         if str(reaction) != emoji:
             continue
 
-        users = await reaction.users().flatten()
+        users = [user async for user in reaction.users()]
         if author in users or me in users:
             return True
         return False
@@ -240,6 +240,17 @@ class Starboard(Cog):
     """
 
     @guild_only()
+    @starboard.command()
+    async def showconfig(self, ctx: DozerContext):
+        """Show the current server's starboard configuration.
+         A starboard (or a hall of fame) is a channel the bot will repost messages in if they receive a certain number\
+         of configured reactions.
+
+         To configure a starboard, use the `starboard config` subcommand.
+         """
+        await self.starboard(ctx)
+
+    @guild_only()
     @has_permissions(manage_guild=True, manage_channels=True)
     @bot_has_permissions(add_reactions=True, embed_links=True)
     @starboard.command()
@@ -296,8 +307,9 @@ class Starboard(Cog):
     @guild_only()
     @has_permissions(manage_messages=True)
     @starboard.command()
-    async def add(self, ctx: DozerContext, message_id: int, channel: discord.TextChannel = None):
+    async def add(self, ctx: DozerContext, message_id, channel: discord.TextChannel = None):
         """Add a message to the starboard manually"""
+        message_id = int(message_id)
         config = await self.config_cache.query_one(guild_id=ctx.guild.id)
         if config is None:
             await ctx.send(f"There is not a Starboard configured for this server. Set one up with "

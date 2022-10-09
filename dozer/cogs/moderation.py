@@ -444,7 +444,8 @@ class Moderation(Cog):
     @has_permissions(kick_members=True)
     async def warn(self, ctx: DozerContext, member: discord.Member, *, reason: str):
         """Sends a message to the mod log specifying the member has been warned without punishment."""
-        await self.mod_log(actor=ctx.author, action="warned", target=member, orig_channel=ctx.channel, reason=reason)
+        orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
+        await self.mod_log(actor=ctx.author, action="warned", target=member, orig_channel=orig_channel, reason=reason)
 
     warn.example_usage = """
     `{prefix}`warn @user reason - warns a user for "reason"
@@ -454,7 +455,8 @@ class Moderation(Cog):
     @has_permissions(kick_members=True)
     async def customlog(self, ctx: DozerContext, *, reason: str):
         """Sends a message to the mod log with custom text."""
-        await self.mod_log(actor=ctx.author, action="", target=None, orig_channel=ctx.channel, reason=reason,
+        orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
+        await self.mod_log(actor=ctx.author, action="", target=None, orig_channel=orig_channel, reason=reason,
                            embed_color=0xFFC400)
 
     customlog.example_usage = """
@@ -521,6 +523,7 @@ class Moderation(Cog):
     @bot_has_permissions(manage_messages=True, read_message_history=True)
     async def prune(self, ctx: DozerContext, target: typing.Optional[discord.Member], num: int):
         """Bulk delete a set number of messages from the current channel."""
+        await ctx.defer()
 
         def check_target(message):
             if target is None:
@@ -607,8 +610,9 @@ class Moderation(Cog):
     @bot_has_permissions(ban_members=True)
     async def ban(self, ctx: DozerContext, user_mention: discord.User, *, reason: str = "No reason provided"):
         """Bans the user mentioned."""
+        orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
         await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason,
-                           orig_channel=ctx.channel, dm=False)
+                           orig_channel=orig_channel, dm=False)
         cross_guilds = await self.run_cross_ban(ctx, user_mention, reason)
         extra_fields = [{"name": "Origin Guild", "value": f"**{ctx.guild}** ({ctx.guild.id})", "inline": False}]
         for field_number, guilds in enumerate(chunk(cross_guilds, 10)):
@@ -628,9 +632,10 @@ class Moderation(Cog):
     @bot_has_permissions(ban_members=True)
     async def unban(self, ctx: DozerContext, user_mention: discord.User, *, reason: str = "No reason provided"):
         """Unbans the user mentioned."""
+        orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
         await ctx.guild.unban(user_mention, reason=reason)
         await self.mod_log(actor=ctx.author, action="unbanned", target=user_mention, reason=reason,
-                           orig_channel=ctx.channel, embed_color=discord.Color.green())
+                           orig_channel=orig_channel, embed_color=discord.Color.green())
 
     unban.example_usage = """
     `{prefix}unban user_id reason - unban the user corresponding to the ID for a given (optional) reason
@@ -641,8 +646,9 @@ class Moderation(Cog):
     @bot_has_permissions(kick_members=True)
     async def kick(self, ctx: DozerContext, user_mention: discord.User, *, reason: str = "No reason provided"):
         """Kicks the user mentioned."""
+        orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
         await self.mod_log(actor=ctx.author, action="kicked", target=user_mention, reason=reason,
-                           orig_channel=ctx.channel)
+                           orig_channel=orig_channel)
         await ctx.guild.kick(user_mention, reason=reason)
 
     kick.example_usage = """
@@ -654,16 +660,17 @@ class Moderation(Cog):
     @bot_has_permissions(manage_permissions=True)
     async def mute(self, ctx: DozerContext, member_mentions: discord.Member, *, reason: str = "No reason provided"):
         """Mute a user to prevent them from sending messages"""
+        orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
             reason = self.hm_regex.sub("", reason) or "No reason provided"
             if await self._mute(member_mentions, reason=reason, seconds=seconds, actor=ctx.author,
                                 orig_channel=ctx.channel):
-                await self.mod_log(ctx.author, "muted", member_mentions, reason, ctx.channel, discord.Color.red(),
+                await self.mod_log(ctx.author, "muted", member_mentions, reason, orig_channel, discord.Color.red(),
                                    duration=datetime.timedelta(seconds=seconds))
             else:
                 await ctx.send("Member was already muted! Updating duration and reason.")
-                await self.mod_log(ctx.author, "muted", member_mentions, reason, ctx.channel, discord.Color.red(),
+                await self.mod_log(ctx.author, "muted", member_mentions, reason, orig_channel, discord.Color.red(),
                                    duration=datetime.timedelta(seconds=seconds), global_modlog=False, dm=False)
 
     mute.example_usage = """
@@ -675,10 +682,11 @@ class Moderation(Cog):
     @bot_has_permissions(manage_permissions=True)
     async def unmute(self, ctx: DozerContext, member_mentions: discord.Member, *, reason="No reason provided"):
         """Unmute a user to allow them to send messages again."""
+        orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
         async with ctx.typing():
             if await self._unmute(member_mentions):
                 await self.mod_log(actor=ctx.author, action="unmuted", target=member_mentions, reason=reason,
-                                   orig_channel=ctx.channel, embed_color=discord.Color.green())
+                                   orig_channel=orig_channel, embed_color=discord.Color.green())
             else:
                 await ctx.send("Member is not muted!")
 
@@ -691,17 +699,18 @@ class Moderation(Cog):
     @bot_has_permissions(manage_permissions=True)
     async def deafen(self, ctx: DozerContext, member_mentions: discord.Member, *, reason: str = "No reason provided"):
         """Deafen a user to prevent them from both sending messages but also reading messages."""
+        orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
             reason = self.hm_regex.sub("", reason) or "No reason provided"
             if await self._deafen(member_mentions, reason, seconds=seconds, self_inflicted=False, actor=ctx.author,
-                                  orig_channel=ctx.channel):
+                                  orig_channel=orig_channel):
                 await self.mod_log(actor=ctx.author, action="deafened", target=member_mentions, reason=reason,
-                                   orig_channel=ctx.channel,
+                                   orig_channel=orig_channel,
                                    embed_color=discord.Color.red(), duration=datetime.timedelta(seconds=seconds))
             else:
                 await ctx.send("Member was already deafened! Updating duration and reason.")
-                await self.mod_log(ctx.author, "deafened", member_mentions, reason, ctx.channel, discord.Color.red(),
+                await self.mod_log(ctx.author, "deafened", member_mentions, reason, orig_channel, discord.Color.red(),
                                    duration=datetime.timedelta(seconds=seconds), global_modlog=False, dm=False)
 
     deafen.example_usage = """
@@ -715,14 +724,15 @@ class Moderation(Cog):
                                    type=discord.ext.commands.BucketType.guild)  # 10 seconds per 2 members in the guild
     async def selfdeafen(self, ctx: DozerContext, *, reason: str = "No reason provided"):
         """Deafen yourself for a given time period to prevent you from reading or sending messages."""
+        orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
             reason = self.hm_regex.sub("", reason) or "No reason provided"
             if seconds < 300:
                 raise BadArgument("You must self deafen yourself for at least 5 minutes!")
             if await self._deafen(ctx.author, reason, seconds=seconds, self_inflicted=True, actor=ctx.author,
-                                  orig_channel=ctx.channel):
-                await self.mod_log(ctx.author, "deafened", ctx.author, reason, ctx.channel, discord.Color.red(),
+                                  orig_channel=orig_channel):
+                await self.mod_log(ctx.author, "deafened", ctx.author, reason, orig_channel, discord.Color.red(),
                                    global_modlog=False,
                                    duration=datetime.timedelta(seconds=seconds))
             else:
@@ -737,11 +747,12 @@ class Moderation(Cog):
     @bot_has_permissions(manage_permissions=True)
     async def undeafen(self, ctx: DozerContext, member_mentions: discord.Member, *, reason: str = "No reason provided"):
         """Undeafen a user to allow them to see message and send message again."""
+        orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
         async with ctx.typing():
             result = await self._undeafen(member_mentions)
             if result[0]:
                 await self.mod_log(actor=ctx.author, action="undeafened", target=member_mentions, reason=reason,
-                                   orig_channel=ctx.channel, embed_color=discord.Color.green(),
+                                   orig_channel=orig_channel, embed_color=discord.Color.green(),
                                    global_modlog=not result[1])
             else:
                 await ctx.send("Member is not deafened!")
@@ -938,10 +949,17 @@ class Moderation(Cog):
         await ctx.send(embed=embed)
 
     @crossbans.command()
+    @has_permissions(manage_messages=True)
+    async def view_subs(self, ctx: DozerContext):
+        """View crossban subscriptions for the current server"""
+        await self.crossbans(ctx)
+
+    @crossbans.command()
     @has_permissions(administrator=True)
     @bot_has_permissions(ban_members=True)
-    async def subscribe(self, ctx: DozerContext, guild_id: int):
+    async def subscribe(self, ctx: DozerContext, guild_id):
         """Subscribe to a guild to cross ban from"""
+        guild_id = int(guild_id)
         guild = self.bot.get_guild(guild_id)
         if guild:
             subscription = CrossBanSubscriptions(
@@ -959,8 +977,9 @@ class Moderation(Cog):
 
     @crossbans.command()
     @has_permissions(administrator=True)
-    async def unsubscribe(self, ctx: DozerContext, guild_id: int):
+    async def unsubscribe(self, ctx: DozerContext, guild_id):
         """Remove cross ban subscription"""
+        guild_id = int(guild_id)
         result = await CrossBanSubscriptions.delete(
             subscriber_id=ctx.guild.id,
             subscription_id=guild_id

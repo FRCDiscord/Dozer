@@ -270,13 +270,19 @@ class Roles(Cog):
                 await msg.clear_reactions()
             except discord.HTTPException:
                 DOZER_LOGGER.debug(
-                    f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
+                    f"Unable to clear reactions from message in guild {ctx.guild} Reason: HTTPException")
             return
 
     giveme.example_usage = """
     `{prefix}giveme Java` - gives you the role called Java, if it exists
     `{prefix}giveme Java, Python` - gives you the roles called Java and Python, if they exist
     """
+
+    @giveme.command()
+    @bot_has_permissions(manage_roles=True)
+    async def role(self, ctx: DozerContext, roles):
+        """Give you one or more giveable roles, separated by commas."""
+        await self.giveme(ctx, roles=roles)
 
     @giveme.command()
     @bot_has_permissions(manage_roles=True)
@@ -477,7 +483,7 @@ class Roles(Cog):
     @command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
-    async def tempgive(self, ctx: DozerContext, member: discord.Member, length: int, *, role: discord.Role):
+    async def tempgive(self, ctx: DozerContext, member: discord.Member, length, *, role: discord.Role):
         """Temporarily gives a member a role for a set time. Not restricted to giveable roles."""
         if role > ctx.author.top_role:
             raise BadArgument('Cannot give roles higher than your top role!')
@@ -542,8 +548,9 @@ class Roles(Cog):
     `{prefix}take cooldude#1234 Java` - takes any role named Java, giveable or not, from cooldude
     """
 
-    async def update_role_menu(self, ctx: DozerContext, menu: int):
+    async def update_role_menu(self, ctx: DozerContext, menu):
         """Updates a reaction role menu"""
+        menu = int(menu)
         menu_message = await self.safe_message_fetch(ctx, menu=menu)
 
         menu_embed = discord.Embed(title=f"Role Menu: {menu.name}")
@@ -637,10 +644,11 @@ class Roles(Cog):
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
     @guild_only()
-    async def addrole(self, ctx: DozerContext, channel: typing.Optional[discord.TextChannel], message_id: int,
+    async def addrole(self, ctx: DozerContext, channel: typing.Optional[discord.TextChannel], message_id,
                       role: discord.Role,
                       emoji: discord.Emoji):
         """Adds a reaction role to a message or a role menu"""
+        message_id = int(message_id)
         if isinstance(emoji, discord.Emoji) and emoji.guild_id != ctx.guild.id:
             raise BadArgument(f"The emoji {emoji} is a custom emoji not from this server!")
 
@@ -694,10 +702,10 @@ class Roles(Cog):
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
     @guild_only()
-    async def delrole(self, ctx: DozerContext, channel: typing.Optional[discord.TextChannel], message_id: int,
+    async def delrole(self, ctx: DozerContext, channel: typing.Optional[discord.TextChannel], message_id,
                       role: discord.Role):
         """Removes a reaction role from a message or a role menu"""
-
+        message_id = int(message_id)
         menu_return = await RoleMenu.get_by(guild_id=ctx.guild.id, message_id=message_id)
         menu = menu_return[0] if len(menu_return) else None
         message = await self.safe_message_fetch(ctx, menu=menu, channel=channel, message_id=message_id)
