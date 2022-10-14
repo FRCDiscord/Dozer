@@ -105,11 +105,11 @@ Setup configuration options:
 9. The default command prefix is &. If this is already in use on your server or you would like another prefix, you can change the `prefix` value in `config.json`.
 
 10. To configure lavalink:
-11. **If you are using Docker,** Open up Docker Desktop and find the lavalink container's name. Change the host IP listed in `config.json` to that name. For example, in the following image below, the config.json file should say `"host": "dozerRecent_lavalink_1"`. Set the `port` value to the port that's listed in `docker-compose.yml`.
+* **If you are using Docker,** Open up Docker Desktop and find the lavalink container's name. Change the host IP listed in `config.json` to that name. For example, in the following image below, the config.json file should say `"host": "dozerRecent_lavalink_1"`. Set the `port` value to the port that's listed in `docker-compose.yml`.
    
    ![Finding the lavalink container name](static/containerNames.png)
 
-12. **If you are not using Docker**, set the `host` and `port` values to which values that you have set up.
+* **If you are not using Docker**, set the `host` and `port` values to which values that you have set up.
 
 13. Run the bot again. If you're using Docker, run `docker-compose up` twice in your command line interface. If you are setting it up manually, repeat the command in step 4. You should see `Signed in as username#discrim (id)` after a few seconds.
 14. When using Docker:
