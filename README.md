@@ -111,8 +111,8 @@ Setup configuration options:
 
 * **If you are not using Docker**, set the `host` and `port` values to which values that you have set up.
 
-13. Run the bot again. If you're using Docker, run `docker-compose up` twice in your command line interface. If you are setting it up manually, repeat the command in step 4. You should see `Signed in as username#discrim (id)` after a few seconds.
-14. When using Docker:
+11. Run the bot again. If you're using Docker, run `docker-compose up` twice in your command line interface. If you are setting it up manually, repeat the command in step 4. You should see `Signed in as username#discrim (id)` after a few seconds.
+12. When using Docker:
     1. Make sure the Docker for Desktop client is running. On Windows, you have to open up the app and either skip the tutorial or follow it when running it for the first time, and then you can run the command. (Note: it's not necessary to do the tutorial.) By default, Docker runs in the background after that first startup, so you should be fine.
     2. The first time you run `docker-compose up`, you are building it and the bot won't go online. Once the building process seems to be done, press ctrl+C and run the command again.
     3. As of this writing, `Signed in as` message is pretty far up, as seen highlighted in orange in the image below.
