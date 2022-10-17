@@ -957,8 +957,9 @@ class Moderation(Cog):
     @crossbans.command()
     @has_permissions(administrator=True)
     @bot_has_permissions(ban_members=True)
-    async def subscribe(self, ctx: DozerContext, guild_id: int):
+    async def subscribe(self, ctx: DozerContext, guild_id):
         """Subscribe to a guild to cross ban from"""
+        guild_id = int(guild_id)
         guild = self.bot.get_guild(guild_id)
         if guild:
             subscription = CrossBanSubscriptions(
@@ -976,8 +977,9 @@ class Moderation(Cog):
 
     @crossbans.command()
     @has_permissions(administrator=True)
-    async def unsubscribe(self, ctx: DozerContext, guild_id: int):
+    async def unsubscribe(self, ctx: DozerContext, guild_id):
         """Remove cross ban subscription"""
+        guild_id = int(guild_id)
         result = await CrossBanSubscriptions.delete(
             subscriber_id=ctx.guild.id,
             subscription_id=guild_id
