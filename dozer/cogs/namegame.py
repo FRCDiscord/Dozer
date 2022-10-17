@@ -412,7 +412,7 @@ class NameGame(Cog):
             await ctx.send("A game is currently going on! Wait till the players finish up to start again.")
             return
         game = NameGameSession(mode.lower())
-        game.state_lock = asyncio.Lock(loop=self.bot.loop)
+        game.state_lock = asyncio.Lock()
         game.pings_enabled = pings_enabled
         game.players[ctx.author] = 0
         game.current_player = ctx.author
