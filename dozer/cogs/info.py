@@ -43,7 +43,7 @@ class Info(Cog):
         levels_enabled = levels_settings[0].enabled if len(levels_settings) else False
 
         embed = discord.Embed(title=escape_markdown(member.display_name), description=f'{member!s} ({member.id})', color=member.color)
-        embed.set_thumbnail(url=member.avatar)
+        embed.set_thumbnail(url=member.display_avatar)
         embed.add_field(name='Bot Created' if member.bot else 'Account Created',
                         value=f"<t:{int(member.created_at.timestamp())}:f>", inline=True)
 
