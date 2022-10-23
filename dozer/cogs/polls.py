@@ -1,12 +1,9 @@
 """Very simple polls cog. """
-from logging import getLogger
-
 import discord
 from discord.ext.commands import has_permissions
+from loguru import logger
 
 from ._utils import *
-
-DOZER_LOGGER = getLogger(__name__)
 
 
 class Polls(Cog):
@@ -18,8 +15,8 @@ class Polls(Cog):
         """Command to create a very simple poll."""
         try:
             await ctx.message.delete()
-        except (discord.Forbidden, discord.NotFound):
-            DOZER_LOGGER.debug("Could not delete poll invoke message. ")
+        except discord.Forbidden:
+            logger.debug("Could not delete poll invoke message. ")
         # Separate title and options
         splitted = poll_options.split('" ')
         title = splitted[0].replace('"', '')

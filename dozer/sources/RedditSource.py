@@ -1,13 +1,11 @@
 """Get new posts from any arbitrary subreddit"""
 import datetime
-import logging
 
 import aiohttp
 import discord
+from loguru import logger
 
 from .AbstractSources import DataBasedSource
-
-DOZER_LOGGER = logging.getLogger('dozer')
 
 
 class RedditSource(DataBasedSource):
@@ -53,8 +51,8 @@ class RedditSource(DataBasedSource):
         try:
             self.access_token = response['access_token']
         except KeyError:
-            DOZER_LOGGER.critical(f"Error in {self.full_name} Token Get: {response['message']}. Switching to "
-                                  f"non-OAuth API")
+            logger.critical(f"Error in {self.full_name} Token Get: {response['message']}. Switching to "
+                            f"non-OAuth API")
             self.oauth_disabled = True
             return
 
@@ -65,7 +63,7 @@ class RedditSource(DataBasedSource):
     async def request(self, url, *args, headers=None, **kwargs):
         """Make a request using OAuth2 (or not, if it's been disabled)"""
         if not self.oauth_disabled and datetime.datetime.now() > self.expiry_time:
-            DOZER_LOGGER.info("Refreshing Reddit token due to expiry time")
+            logger.info("Refreshing Reddit token due to expiry time")
             await self.get_token()
 
         if headers is None:
@@ -82,7 +80,7 @@ class RedditSource(DataBasedSource):
 
         if response.status == 401:
             if 'www-authenticate' in response.headers:
-                DOZER_LOGGER.info("Reddit token expired when request made, requesting new token and retrying.")
+                logger.info("Reddit token expired when request made, requesting new token and retrying.")
                 await self.get_token()
                 return await self.request(url, headers=headers, *args, **kwargs)
 
@@ -168,8 +166,8 @@ class RedditSource(DataBasedSource):
             try:
                 subreddit_obj = await self.clean_data(subreddit)
             except DataBasedSource.InvalidDataException:
-                DOZER_LOGGER.error(f"Subreddit {subreddit} failed. Database won't be updated right now but this "
-                                   f"subreddit won't be checked from now on.")
+                logger.error(f"Subreddit {subreddit} failed. Database won't be updated right now but this "
+                             f"subreddit won't be checked from now on.")
                 continue
             self.subreddits[subreddit_obj.name] = subreddit_obj
         await self.get_new_posts(first_time=True)
@@ -181,7 +179,7 @@ class RedditSource(DataBasedSource):
 
         json = await self.request(f"r/{'+'.join(self.subreddits)}/new.json")
         if 'data' not in json:
-            DOZER_LOGGER.error(f"Getting new posts failed. Error: {json}")
+            logger.error(f"Getting new posts failed. Error: {json}")
             return {}
 
         posts = {}

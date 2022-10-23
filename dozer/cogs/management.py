@@ -2,7 +2,6 @@
 
 import asyncio
 import json
-import logging
 import math
 import os
 from datetime import timezone, datetime
@@ -11,14 +10,13 @@ import discord
 from dateutil import parser
 from discord.ext.commands import has_permissions, BadArgument
 from discord.utils import escape_markdown
+from loguru import logger
 
 from dozer.bot import Dozer
 from dozer.context import DozerContext
 from ._utils import *
 from .general import blurple
 from .. import db
-
-DOZER_LOGGER = logging.getLogger(__name__)
 
 TIMEZONE_FILE = "timezones.json"
 
@@ -31,11 +29,11 @@ class Management(Cog):
         self.started_timers = False
         self.timers = {}
         if os.path.isfile(TIMEZONE_FILE):
-            DOZER_LOGGER.info("Loaded timezone configurations")
+            logger.info("Loaded timezone configurations")
             with open(TIMEZONE_FILE) as f:
                 self.timezones = json.load(f)
         else:
-            DOZER_LOGGER.error("Unable to load timezone configurations")
+            logger.error("Unable to load timezone configurations")
             self.timezones = {}
 
     @Cog.listener('on_ready')
@@ -49,9 +47,9 @@ class Management(Cog):
                 self.timers[message.request_id] = task
                 started += 1
             self.started_timers = True
-            DOZER_LOGGER.info(f"Started {started}/{len(messages)} scheduled messages")
+            logger.info(f"Started {started}/{len(messages)} scheduled messages")
         else:
-            DOZER_LOGGER.info("Client Resumed: Timers still running")
+            logger.info("Client Resumed: Timers still running")
 
     async def msg_timer(self, db_entry):
         """Holds the futures for sending a message"""
@@ -67,13 +65,13 @@ class Management(Cog):
                               description=db_entry.content)
         guild = self.bot.get_guild(db_entry.guild_id)
         if not guild:
-            DOZER_LOGGER.warning(
+            logger.warning(
                 f"Attempted to schedulesend message in guild({db_entry.guild_id}); Guild no longer exist")
             return
         channel = guild.get_channel(db_entry.channel_id if not channel_override else channel_override)
         if not channel:
-            DOZER_LOGGER.warning(f"Attempted to schedulesend message in guild({guild}), channel({db_entry.channel_id});"
-                                 f" Channel no longer exist")
+            logger.warning(f"Attempted to schedulesend message in guild({guild}), channel({db_entry.channel_id});"
+                           f" Channel no longer exist")
             return
         embed.colour = blurple
         perms = channel.permissions_for(guild.me)
@@ -83,8 +81,8 @@ class Management(Cog):
         if perms.send_messages:
             await channel.send(embed=embed)
         else:
-            DOZER_LOGGER.warning((f"Attempted to schedulesend message in guild({guild}:{guild.id}), channel({channel});"
-                                  f" Client lacks send permissions"))
+            logger.warning((f"Attempted to schedulesend message in guild({guild}:{guild.id}), channel({channel});"
+                            f" Client lacks send permissions"))
 
     @group(invoke_without_command=True)
     @has_permissions(manage_messages=True)
