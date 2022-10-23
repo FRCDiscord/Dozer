@@ -8,12 +8,12 @@ from functools import wraps
 
 import discord
 import tbapi
-from discord.utils import escape_markdown
 from discord.ext import commands
 from discord.ext.commands import has_permissions
+from discord.utils import escape_markdown
 from fuzzywuzzy import fuzz
+from loguru import logger
 
-from dozer.bot import DOZER_LOGGER
 from dozer.context import DozerContext
 from ._utils import *
 from .. import db
@@ -35,7 +35,7 @@ def keep_alive(func):
                 if isinstance(e, asyncio.CancelledError):
                     return
                 # panic to the console, and to chat
-                DOZER_LOGGER.error(traceback.format_exc())
+                logger.error(traceback.format_exc())
                 await ctx.send(f"```Error in game loop:\n{e.__class__.__name__}: {e}```")
 
     return wrapper
@@ -412,7 +412,7 @@ class NameGame(Cog):
             await ctx.send("A game is currently going on! Wait till the players finish up to start again.")
             return
         game = NameGameSession(mode.lower())
-        game.state_lock = asyncio.Lock(loop=self.bot.loop)
+        game.state_lock = asyncio.Lock()
         game.pings_enabled = pings_enabled
         game.players[ctx.author] = 0
         game.current_player = ctx.author
