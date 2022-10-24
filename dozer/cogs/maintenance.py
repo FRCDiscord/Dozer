@@ -52,7 +52,7 @@ class Maintenance(Cog):
         If there are changes to download, and the download is successful, the bot restarts to apply changes.
         """
         res = os.popen("git pull").read()
-        if res.startswith('Already up to date.'):
+        if res.startswith('Already up to date.') or "CONFLICT (content):" in res:
             await ctx.send('```\n' + res + '```')
         else:
             await ctx.send('```\n' + res + '```')
