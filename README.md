@@ -15,6 +15,7 @@ Table of Contents
          * [Getting Optional API Keys](tokenInstructions.md)
          * [Setting up the bot](#setting-up-the-bot)
          * [Adding the bot to your server](#adding-the-bot-to-your-server)
+      * [Development](#development)
 
 ## Setup
 
@@ -104,18 +105,18 @@ Setup configuration options:
 9. The default command prefix is &. If this is already in use on your server or you would like another prefix, you can change the `prefix` value in `config.json`.
 
 10. To configure lavalink:
-   * **If you are using Docker,** Open up Docker Desktop and find the lavalink container's name. Change the host IP listed in `config.json` to that name. For example, in the following image below, the config.json file should say `"host": "dozerRecent_lavalink_1"`. Set the `port` value to the port that's listed in `docker-compose.yml`.
+* **If you are using Docker,** Open up Docker Desktop and find the lavalink container's name. Change the host IP listed in `config.json` to that name. For example, in the following image below, the config.json file should say `"host": "dozerRecent_lavalink_1"`. Set the `port` value to the port that's listed in `docker-compose.yml`.
    
    ![Finding the lavalink container name](static/containerNames.png)
 
-   * **If you are not using Docker**, set the `host` and `port` values to which values that you have set up.
+* **If you are not using Docker**, set the `host` and `port` values to which values that you have set up.
 
 11. Run the bot again. If you're using Docker, run `docker-compose up` twice in your command line interface. If you are setting it up manually, repeat the command in step 4. You should see `Signed in as username#discrim (id)` after a few seconds.
-   1. When using Docker:
-      1. Make sure the Docker for Desktop client is running. On Windows, you have to open up the app and either skip the tutorial or follow it when running it for the first time, and then you can run the command. (Note: it's not necessary to do the tutorial.) By default, Docker runs in the background after that first startup, so you should be fine.
-      2. The first time you run `docker-compose up`, you are building it and the bot won't go online. Once the building process seems to be done, press ctrl+C and run the command again.
-      3. As of this writing, `Signed in as` message is pretty far up, as seen highlighted in orange in the image below.
-      4. Sometimes, the bot can't connect to the lavalink IP, as circled in blue in the image below. In that case, simply run the bot command `{prefix}restart` and it should work.
+12. When using Docker:
+    1. Make sure the Docker for Desktop client is running. On Windows, you have to open up the app and either skip the tutorial or follow it when running it for the first time, and then you can run the command. (Note: it's not necessary to do the tutorial.) By default, Docker runs in the background after that first startup, so you should be fine.
+    2. The first time you run `docker-compose up`, you are building it and the bot won't go online. Once the building process seems to be done, press ctrl+C and run the command again.
+    3. As of this writing, `Signed in as` message is pretty far up, as seen highlighted in orange in the image below.
+    4. Sometimes, the bot can't connect to the lavalink IP, as circled in blue in the image below. In that case, simply run the bot command `{prefix}restart` and it should work.
 ![dockerstartup](static/dockerstartup.png)
 
 ### Adding the bot to your server
@@ -133,3 +134,14 @@ Setup configuration options:
 Dozer requires Postgres. You can set up Postgres on your own server or use a service such as ElephantSQL. To make it work in Dozer, 
 install the psycopg2 pip package, then change the `db_url` key in `config.json` to a URL that follows this format: 
 `postgresql://username:password@host/db_name_in_postgres` with the correct information filled in.
+
+## Development
+
+1. pylint
+   1. Pylint should be installed with ```pip install pylint```, if it is not already installed. 
+   2. Before code can be merged, it must pass pylint with a score of 100%. 
+   3. You can run a pylint check manually, or it will be run by pre-commit before you commit.
+2. pre-commit
+   1. pre-commit should be installed with ```pip install pre-commit```
+   2. You should then install the pre-commit hooks with ```pre-commit install```
+   3. When you commit this will only check the files you edited this commit, you may still fail a full pylint check. 

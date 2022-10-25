@@ -1,6 +1,5 @@
 """Provides guild logging functions for Dozer."""
 import asyncio
-import logging
 import math
 import time
 import datetime
@@ -10,6 +9,7 @@ import discord
 from discord import Guild, AuditLogAction, Member, Message, Embed, AuditLogEntry
 from discord.ext.commands import has_permissions, BadArgument
 from discord.utils import escape_markdown
+from loguru import logger
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -18,7 +18,6 @@ from .. import db
 
 if TYPE_CHECKING:
     from dozer import Dozer
-DOZER_LOGGER = logging.getLogger(__name__)
 
 
 async def embed_paginatorinator(content_name: str, embed: Embed, text: str):
@@ -72,14 +71,14 @@ class Actionlog(Cog):
         if len(config):
             channel = member.guild.get_channel(config[0].channel_id)
             if channel:
-                embed = Embed(color=0xFF0000)
+                embed: Embed = Embed(color=0xFF0000)
                 embed.set_author(name='Member Left', icon_url=member.avatar.replace(format='png', size=32))
                 embed.description = format_join_leave(config[0].leave_message, member)
                 embed.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
                 try:
                     await channel.send(embed=embed)
                 except discord.Forbidden:
-                    DOZER_LOGGER.warning(
+                    logger.warning(
                         f"Guild {member.guild}({member.guild.id}) has invalid permissions for join/leave logs")
 
     @Cog.listener("on_member_update")
@@ -90,10 +89,10 @@ class Actionlog(Cog):
 
     async def on_nickname_change(self, before: Member, after: Member):
         """The log handler for when a user changes their nicknames"""
-        audit = await self.check_audit(after.guild, discord.AuditLogAction.member_update)
+        audit: Optional[AuditLogEntry] = await self.check_audit(after.guild, discord.AuditLogAction.member_update)
 
-        embed = Embed(title="Nickname Changed",
-                      color=0x00FFFF)
+        embed: Embed = Embed(title="Nickname Changed",
+                             color=0x00FFFF)
         embed.set_author(name=after, icon_url=after.avatar)
         embed.add_field(name="Before", value=before.nick, inline=False)
         embed.add_field(name="After", value=after.nick, inline=False)
@@ -204,9 +203,9 @@ class Actionlog(Cog):
                 try:
                     await channel.send(embed=embed)
                 except discord.HTTPException as e:
-                    DOZER_LOGGER.debug(f"Bulk delete embed failed to send: {e}")
-                embed = Embed(title="Bulk Message Delete", color=0xFF0000,
-                              timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
+                    logger.debug(f"Bulk delete embed failed to send: {e}")
+                embed: Embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000,
+                                             timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
                 page_character_count = len(message.content)
                 message_count += page_message_count
                 page_message_count = 0
@@ -225,7 +224,7 @@ class Actionlog(Cog):
         try:
             await channel.send(embed=embed)
         except discord.HTTPException as e:
-            DOZER_LOGGER.debug(f"Bulk delete embed failed to send: {e}")
+            logger.debug(f"Bulk delete embed failed to send: {e}")
         header_embed.description = f"{len(message_ids)} Messages Deleted In: {message_channel.mention}\n" \
                                    f"Messages cached: {len(cached_messages)}/{len(message_ids)} \n" \
                                    f"Messages logged: {message_count}/{len(message_ids)}"
@@ -333,11 +332,11 @@ class Actionlog(Cog):
             user_id = before.author.id
             message_id = before.id
             link = f"https://discordapp.com/channels/{guild_id}/{channel_id}/{message_id}"
-            embed = Embed(title="Message Edited",
-                          description=f"[MESSAGE]({link}) From {before.author.mention}"
-                                      f"\nEdited In: {before.channel.mention}", color=0xFFC400,
-                          timestamp=after.edited_at)
-            embed.set_author(name=before.author, icon_url=before.author.avatar)
+            embed: Embed = discord.Embed(title="Message Edited",
+                                         description=f"[MESSAGE]({link}) From {before.author.mention}"
+                                                     f"\nEdited In: {before.channel.mention}", color=0xFFC400,
+                                         timestamp=after.edited_at)
+            embed.set_author(name=before.author, icon_url=before.author.display_avatar)
             embed.set_footer(text=f"Message ID: {channel_id} - {message_id}\nUserID: {user_id}")
             if len(before.content) + len(after.content) < 5000:
                 embed = await embed_paginatorinator("Original", embed, before.content)
@@ -687,7 +686,7 @@ async def send_log(member: Member):
             try:
                 await channel.send(content=member.mention if config[0].ping else None, embed=embed)
             except discord.Forbidden:
-                DOZER_LOGGER.warning(
+                logger.warning(
                     f"Guild {member.guild}({member.guild.id}) has invalid permissions for join/leave logs")
 
 

@@ -1,7 +1,6 @@
 """Utilities for Dozer."""
 import asyncio
 import inspect
-import logging
 from collections.abc import Mapping
 from typing import Dict, Union, Optional, Any, Coroutine, List, Generator, Iterable, AsyncGenerator
 from typing import TYPE_CHECKING
@@ -11,6 +10,7 @@ from discord import app_commands, Embed, Permissions
 from discord.ext import commands
 from discord.ext.commands import HybridCommand
 from discord.ext.commands.core import MISSING
+from loguru import logger
 
 from dozer import db
 from dozer.context import DozerContext
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 __all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk', 'dev_check',
            'DynamicPrefixEntry', 'CommandMixin']
 
-DOZER_LOGGER = logging.getLogger("dozer")
+
 
 
 class CommandMixin:
@@ -199,7 +199,7 @@ class Reactor:
             try:
                 await self.message.remove_reaction(emoji, self.me)
             except discord.errors.NotFound:
-                DOZER_LOGGER.debug("Failed to remove reaction from paginator. Does the messages still exist?")
+                logger.debug("Failed to remove reaction from paginator. Does the messages still exist?")
 
     def do(self, action):
         """If there's an action reaction, do the action."""
@@ -369,7 +369,7 @@ class PrefixHandler:
         prefixes = await DynamicPrefixEntry.get_by()  # no filters, get all
         for prefix in prefixes:
             self.prefix_cache[prefix.guild_id] = prefix
-        DOZER_LOGGER.info(f"{len(prefixes)} prefixes loaded from database")
+        logger.info(f"{len(prefixes)} prefixes loaded from database")
 
 
 class DynamicPrefixEntry(db.DatabaseTable):

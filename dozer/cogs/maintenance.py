@@ -3,8 +3,8 @@
 import os
 
 from discord.ext.commands import NotOwner
+from loguru import logger
 
-from dozer.bot import DOZER_LOGGER
 from dozer.context import DozerContext
 from ._utils import *
 
@@ -24,10 +24,10 @@ class Maintenance(Cog):
     async def shutdown(self, ctx: DozerContext):
         """Force-stops the bot."""
         await ctx.send('Shutting down')
-        DOZER_LOGGER.info('Shutting down at request of {}#{} (in {}, #{})'.format(ctx.author.name,
-                                                                                  ctx.author.discriminator,
-                                                                                  ctx.guild.name,
-                                                                                  ctx.channel.name))
+        logger.info('Shutting down at request of {}#{} (in {}, #{})'.format(ctx.author.name,
+                                                                            ctx.author.discriminator,
+                                                                            ctx.guild.name,
+                                                                            ctx.channel.name))
         await self.bot.shutdown()
 
     shutdown.example_usage = """
@@ -52,7 +52,7 @@ class Maintenance(Cog):
         If there are changes to download, and the download is successful, the bot restarts to apply changes.
         """
         res = os.popen("git pull").read()
-        if res.startswith('Already up to date.'):
+        if res.startswith('Already up to date.') or "CONFLICT (content):" in res:
             await ctx.send('```\n' + res + '```')
         else:
             await ctx.send('```\n' + res + '```')

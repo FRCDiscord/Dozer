@@ -1,12 +1,12 @@
 """Cog to post specific 'Hall of Fame' messages in a specific channel"""
 import asyncio
-import logging
 from typing import List, Set, Optional
 from typing import TYPE_CHECKING
 
 import discord
 from discord.ext.commands import guild_only, has_permissions
 from discord.utils import escape_markdown
+from loguru import logger
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -18,7 +18,6 @@ if TYPE_CHECKING:
 MAX_EMBED: int = 1024
 LOCK_TIME: float = .1
 FORCE_TRY_TIME: int = 1
-DOZER_LOGGER = logging.getLogger('dozer')
 VIDEO_FORMATS: List[str] = ['.mp4', '.mov', 'webm']
 
 
@@ -95,7 +94,7 @@ class Starboard(Cog):
         # check if the message we're trying to HoF is a hof message
         starboard_check = await StarboardMessage.get_by(starboard_message_id=message.id)
         if len(starboard_check):
-            DOZER_LOGGER.info("Attempt to star starboard message, skipping")
+            logger.info("Attempt to star starboard message, skipping")
             return
 
         db_msgs = await StarboardMessage.get_by(message_id=message.id)
@@ -110,7 +109,7 @@ class Starboard(Cog):
                 sent_msg: discord.Message = await self.bot.get_channel(config.channel_id).fetch_message(db_msgs[0].starboard_message_id)
             except discord.errors.NotFound:
                 # Uh oh! Starboard message was deleted. Let's try and delete it
-                DOZER_LOGGER.warning(f"Cannot find Starboard Message {db_msgs[0].starboard_message_id} to update")
+                logger.warning(f"Cannot find Starboard Message {db_msgs[0].starboard_message_id} to update")
                 fake_msg = discord.Object(db_msgs[0].starboard_message_id)
                 await self.remove_from_starboard(config, fake_msg, True)
                 return
@@ -153,20 +152,20 @@ class Starboard(Cog):
         # Starboard check
         if str(reaction) == config.star_emoji and (reaction.count - self_react) >= config.threshold and \
                 member != msg.guild.me and not await is_cancelled(config.cancel_emoji, msg, msg.guild.me):
-            DOZER_LOGGER.debug(f"Starboard threshold reached on message {reaction.message.id} in "
-                               f"{reaction.message.guild.name} from user {member.id}, sending to starboard")
+            logger.debug(f"Starboard threshold reached on message {reaction.message.id} in "
+                         f"{reaction.message.guild.name} from user {member.id}, sending to starboard")
             await self.send_to_starboard(config, msg, reaction.count)
 
         # check if it's gone under the limit
         elif str(reaction) == config.star_emoji and (reaction.count - self_react) < config.threshold:
             db_msgs = await StarboardMessage.get_by(message_id=msg.id)
             if len(db_msgs):
-                DOZER_LOGGER.debug("Under starboard threshold, removing starboard")
+                logger.debug("Under starboard threshold, removing starboard")
                 try:
                     starboard_msg = await self.bot.get_channel(config.channel_id). \
                         fetch_message(db_msgs[0].starboard_message_id)
                 except discord.NotFound:
-                    DOZER_LOGGER.warning(f"Cannot find Starboard Message {db_msgs[0].starboard_message_id} to remove")
+                    logger.warning(f"Cannot find Starboard Message {db_msgs[0].starboard_message_id} to remove")
                     starboard_msg = discord.Object(db_msgs[0].starboard_message_id)
                 await self.remove_from_starboard(config, starboard_msg)
 
@@ -174,19 +173,19 @@ class Starboard(Cog):
         elif str(reaction) == config.cancel_emoji and msg.channel.id == config.channel_id:
             db_msgs = await StarboardMessage.get_by(starboard_message_id=msg.id)
             if len(db_msgs) and member.id == db_msgs[0].author_id:
-                DOZER_LOGGER.debug("Message cancelled in starboard channel, cancelling")
+                logger.debug("Message cancelled in starboard channel, cancelling")
                 await self.remove_from_starboard(config, msg, True)
 
         # check if it's been cancelled on the original message
         elif str(reaction) == config.cancel_emoji:
             db_msgs = await StarboardMessage.get_by(message_id=msg.id)
             if len(db_msgs) and member.id == db_msgs[0].author_id:
-                DOZER_LOGGER.debug("Message cancelled in original channel, cancelling")
+                logger.debug("Message cancelled in original channel, cancelling")
                 try:
                     starboard_msg = await self.bot.get_channel(config.channel_id). \
                         fetch_message(db_msgs[0].starboard_message_id)
                 except discord.NotFound:
-                    DOZER_LOGGER.warning(f"Cannot find Starboard Message {db_msgs[0].starboard_message_id} to remove")
+                    logger.warning(f"Cannot find Starboard Message {db_msgs[0].starboard_message_id} to remove")
                     starboard_msg = discord.Object(db_msgs[0].starboard_message_id)
                 await self.remove_from_starboard(config, starboard_msg, True)
 
@@ -219,7 +218,7 @@ class Starboard(Cog):
         if len(matching_reaction):
             await self.starboard_check(matching_reaction[0], member)
         else:
-            DOZER_LOGGER.debug(f"Unable to find reaction for message({message.id})")
+            logger.debug(f"Unable to find reaction for message({message.id})")
 
     @guild_only()
     @group(invoke_without_command=True, aliases=['hof'])
@@ -278,7 +277,7 @@ class Starboard(Cog):
                 return
 
         config: StarboardConfig = StarboardConfig(guild_id=ctx.guild.id, channel_id=channel.id, star_emoji=str(star_emoji),
-                                 threshold=threshold, cancel_emoji=str(cancel_emoji))
+                                                  threshold=threshold, cancel_emoji=str(cancel_emoji))
         await config.update_or_add()
         self.config_cache.invalidate_entry(guild_id=ctx.guild.id)
 
