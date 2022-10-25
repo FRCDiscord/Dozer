@@ -1,29 +1,17 @@
 """Get new posts from any arbitrary subreddit"""
-<<<<<<< HEAD
-import logging
+import datetime
 from datetime import datetime, timedelta
 from typing import Dict, Optional, TYPE_CHECKING
 
 import aiohttp
 from discord import Embed, Colour
+from loguru import logger
 
 from .AbstractSources import DataBasedSource
 
 if TYPE_CHECKING:
     from dozer import Dozer
 
-DOZER_LOGGER = logging.getLogger('dozer')
-
-=======
-import datetime
-
-import aiohttp
-import discord
-from loguru import logger
-
-from .AbstractSources import DataBasedSource
-
->>>>>>> main
 
 class SubReddit(DataBasedSource.DataPoint):
     """Represents a single subreddit with associated detail"""
@@ -80,13 +68,8 @@ class RedditSource(DataBasedSource):
 
     async def request(self, url, *args, headers=None, **kwargs):
         """Make a request using OAuth2 (or not, if it's been disabled)"""
-<<<<<<< HEAD
-        if not self.oauth_disabled and datetime.now() > self.expiry_time:
-            DOZER_LOGGER.info("Refreshing Reddit token due to expiry time")
-=======
         if not self.oauth_disabled and datetime.datetime.now() > self.expiry_time:
             logger.info("Refreshing Reddit token due to expiry time")
->>>>>>> main
             await self.get_token()
 
         if headers is None:

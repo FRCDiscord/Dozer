@@ -1,11 +1,7 @@
 """News source to send a notification whenever a twitch streamer goes live."""
 
 import datetime
-<<<<<<< HEAD
-import logging
 from typing import TYPE_CHECKING
-=======
->>>>>>> main
 
 import discord
 from dateutil import parser
@@ -13,13 +9,9 @@ from loguru import logger
 
 from .AbstractSources import DataBasedSource
 
-<<<<<<< HEAD
 if TYPE_CHECKING:
     from dozer import Dozer
-DOZER_LOGGER = logging.getLogger('dozer')
 
-=======
->>>>>>> main
 
 class TwitchSource(DataBasedSource):
     """News source to send a notification whenever a twitch streamer goes live."""
