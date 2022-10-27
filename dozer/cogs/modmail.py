@@ -18,7 +18,7 @@ class StartModmailModal(ui.Modal):
 
     async def on_submit(self, interaction: discord.Interaction):
         """Handles when a modal is submitted"""
-        target_record = await ModmailConfig.get_by(source_channel=interaction.channel_id)
+        target_record = await ModmailConfig.get_by(guild_id=interaction.guild_id)
         if len(target_record) == 0:
             print("No modmail config found!")
         elif len(target_record) == 1:
@@ -34,18 +34,26 @@ class Modmail(Cog):
 
     @command()
     @has_permissions(administrator=True)
-    async def configure_modmail(self, ctx: DozerContext, source_channel: discord.TextChannel, target_channel):
+    async def configure_modmail(self, ctx: DozerContext, target_channel):
         """Modmail configuration command. target_channel may be in another guild."""
-        ui.Modal()
-        config = ModmailConfig(source_channel.id, int(target_channel))
+        config = ModmailConfig(ctx.guild.id, int(target_channel))
         await config.update_or_add()
         await ctx.reply("Configuration saved!")
+
+    @command()
+    async def start_modmail(self, ctx: DozerContext):
+        """Starts a modmail interaction"""
+        target_record = await ModmailConfig.get_by(guild_id=ctx.guild.id)
+        if len(target_record) == 0:
+            await ctx.reply("Modmail is not configured for this server!")
+            return
+        await ctx.interaction.response.send_modal(StartModmailModal(title="New Modmail"))
 
 
 class ModmailConfig(db.DatabaseTable):
     """Holds configurations for modmail"""
     __tablename__ = "modmail_config"
-    __uniques__ = "source_channel"
+    __uniques__ = "guild_id"
 
     @classmethod
     async def initial_create(cls):
@@ -53,13 +61,13 @@ class ModmailConfig(db.DatabaseTable):
         async with db.Pool.acquire() as conn:
             await conn.execute(f"""
             CREATE TABLE {cls.__tablename__} (
-            source_channel bigint NOT NULL UNIQUE,
+            guild_id bigint NOT NULL UNIQUE,
             target_channel bigint NOT NULL
             )""")
 
-    def __init__(self, source_channel: int, target_channel: int):
+    def __init__(self, guild_id: int, target_channel: int):
         super().__init__()
-        self.source_channel = source_channel
+        self.guild_id = guild_id
         self.target_channel = target_channel
 
     @classmethod
@@ -67,7 +75,7 @@ class ModmailConfig(db.DatabaseTable):
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
-            obj = ModmailConfig(source_channel=result.get("source_channel"), target_channel=result.get("target_channel"))
+            obj = ModmailConfig(guild_id=result.get("guild_id"), target_channel=result.get("target_channel"))
             result_list.append(obj)
         return result_list
 
