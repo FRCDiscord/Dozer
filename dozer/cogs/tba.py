@@ -72,7 +72,8 @@ class TBA(Cog):
         e.add_field(name='Rookie Year', value=team_data.rookie_year)
         e.add_field(name='Location',
                     value='{0.city}, {0.state_prov} {0.postal_code}, {0.country}'.format(team_data))
-        e.add_field(name='Website', value=team_data.website)
+        if team_data.website:
+            e.add_field(name='Website', value=team_data.website)
         if team_district_data:
             e.add_field(name='District', value=f"{escape_markdown(team_district.display_name)} [{team_district.abbreviation.upper()}]")
         try:
