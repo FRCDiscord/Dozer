@@ -1,5 +1,5 @@
 asyncpg==0.26.0
-discord.py[speed,voice]==2.0.1
+discord.py[speed,voice]==2.1.0
 aiotba~=0.0.3.post1
 tbapi~=1.3.1b5
 googlemaps~=4.4.2

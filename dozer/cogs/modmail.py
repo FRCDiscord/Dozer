@@ -11,12 +11,12 @@ from .. import db
 
 
 class Buttons(discord.ui.View):
-    def __init__(self, *, timeout=180):  # timeout should be None for persistence
+    def __init__(self, *, timeout=None):  # timeout should be None for persistence
         super().__init__(timeout=timeout)
 
-    @discord.ui.button(label="Start Modmail", style=discord.ButtonStyle.blurple)  # , custom_id="modmail_button"
+    @discord.ui.button(label="Start Modmail", style=discord.ButtonStyle.blurple, custom_id="modmail_button")
     async def start_modmail_button(self, button: discord.ui.Button, interaction: discord.Interaction):
-
+        """Callback for button to show modal"""
         await interaction.response.send_modal(StartModmailModal(title="New Modmail"))
 
 
