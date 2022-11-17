@@ -11,10 +11,10 @@ from .. import db
 
 
 class Buttons(discord.ui.View):
-    def __init__(self, *, timeout=180):
+    def __init__(self, *, timeout=180):  # timeout should be None for persistence
         super().__init__(timeout=timeout)
 
-    @discord.ui.button(label="Start Modmail", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="Start Modmail", style=discord.ButtonStyle.blurple)  # , custom_id="modmail_button"
     async def start_modmail_button(self, button: discord.ui.Button, interaction: discord.Interaction):
 
         await interaction.response.send_modal(StartModmailModal(title="New Modmail"))
@@ -52,10 +52,11 @@ class Modmail(Cog):
         await ctx.reply("Configuration saved!")
 
     @command()
-    async def button(self, ctx):
+    @has_permissions(administrator=True)
+    async def create_modmail_button(self, ctx):
+        """Creates modmail button"""
         view = Buttons()
-        # view.add_item(discord.ui.Button(label="URL Button", style=discord.ButtonStyle.link, url="https://github.com/lykn"))
-        await ctx.send("This message has buttons!", view=view)
+        await ctx.send("Click the button to start a new modmail thread!", view=view)
 
     @command()
     async def start_modmail(self, ctx: DozerContext):
