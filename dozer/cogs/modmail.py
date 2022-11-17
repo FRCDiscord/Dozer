@@ -2,15 +2,16 @@
 
 import discord
 from discord import ui
+from discord.ext import commands
 from discord.ext.commands import has_permissions
 
 from dozer.context import DozerContext
-from discord.ext import commands
 from ._utils import *
 from .. import db
 
 
 class Buttons(discord.ui.View):
+    """Buttons? Buttons."""
     def __init__(self, *, timeout=None):  # timeout should be None for persistence
         super().__init__(timeout=timeout)
 
