@@ -10,6 +10,16 @@ from ._utils import *
 from .. import db
 
 
+class Buttons(discord.ui.View):
+    def __init__(self, *, timeout=180):
+        super().__init__(timeout=timeout)
+
+    @discord.ui.button(label="Start Modmail", style=discord.ButtonStyle.blurple)
+    async def start_modmail_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+
+        await interaction.response.send_modal(StartModmailModal(title="New Modmail"))
+
+
 class StartModmailModal(ui.Modal):
     """Modal for opening a modmail ticket"""
 
@@ -29,6 +39,7 @@ class StartModmailModal(ui.Modal):
 
 class Modmail(Cog):
     """A cog for Dozer's modmail functions"""
+
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
 
@@ -39,6 +50,12 @@ class Modmail(Cog):
         config = ModmailConfig(ctx.guild.id, int(target_channel))
         await config.update_or_add()
         await ctx.reply("Configuration saved!")
+
+    @command()
+    async def button(self, ctx):
+        view = Buttons()
+        # view.add_item(discord.ui.Button(label="URL Button", style=discord.ButtonStyle.link, url="https://github.com/lykn"))
+        await ctx.send("This message has buttons!", view=view)
 
     @command()
     async def start_modmail(self, ctx: DozerContext):
