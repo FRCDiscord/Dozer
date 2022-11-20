@@ -5,6 +5,7 @@ import json
 import math
 import os
 from datetime import timezone, datetime
+from typing import List
 
 import discord
 from dateutil import parser
@@ -209,7 +210,7 @@ class ScheduledMessages(db.DatabaseTable):
             PRIMARY KEY (entry_id, request_id)
             )""")
 
-    def __init__(self, guild_id: int, channel_id: int, time: datetime.time, content: str, request_id: str,
+    def __init__(self, guild_id: int, channel_id: int, time: datetime.time, content: str, request_id: int,
                  header: str = None, requester_id: int = None, entry_id: int = None):
         super().__init__()
         self.guild_id = guild_id
@@ -222,7 +223,7 @@ class ScheduledMessages(db.DatabaseTable):
         self.entry_id = entry_id
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["ScheduledMessages"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:

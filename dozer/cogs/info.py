@@ -1,7 +1,7 @@
 """Provides commands for pulling certain information."""
 import math
 import typing
-from datetime import timezone, datetime, date
+from datetime import timezone, datetime
 from difflib import SequenceMatcher
 
 import discord

@@ -2,6 +2,7 @@
 import asyncio
 import random
 from asyncio import sleep
+from typing import List, TYPE_CHECKING
 
 import discord
 from discord.ext.commands import cooldown, BucketType, guild_only, BadArgument, MissingPermissions
@@ -11,11 +12,15 @@ from dozer.context import DozerContext
 from ._utils import *
 from .general import blurple
 
+if TYPE_CHECKING:
+    from dozer.cogs.levels import Levels
+
 
 class Fun(Cog):
     """Fun commands"""
 
-    async def battle(self, ctx: DozerContext, opponent: discord.Member, delete_result: bool = True):
+    @staticmethod
+    async def battle(ctx: DozerContext, opponent: discord.Member, delete_result: bool = True):
         """Start a fight with another user."""
         attacks = [
             "**{opponent}** was hit on the head by **{attacker}** ",
@@ -76,7 +81,7 @@ class Fun(Cog):
 
         damages = [100, 150, 200, 300, 50, 250, 420]
         players = [ctx.author, opponent]
-        hps = [1400, 1400]
+        hps: List[int] = [1400, 1400]
         turn = random.randint(0, 1)
 
         messages = []
@@ -115,7 +120,7 @@ class Fun(Cog):
     async def fight(self, ctx: DozerContext, opponent: discord.Member, wager: int = 0):
         """Start a fight with another user."""
 
-        levels = self.bot.get_cog("Levels")
+        levels: "Levels" = self.bot.get_cog("Levels")
 
         if wager == 0:
             await self.battle(ctx, opponent, delete_result=False)
@@ -153,7 +158,7 @@ class Fun(Cog):
             await msg.add_reaction("✅")
             await msg.add_reaction("❌")
         except discord.Forbidden:
-            raise MissingPermissions(f"**{ctx.bot.user}** does not have the permission to add reacts")
+            raise MissingPermissions(['ADD_REACTIONS'])
         try:
             emoji = None
 
@@ -188,8 +193,8 @@ class Fun(Cog):
                                                       f"\n{opponent.mention} now is at "
                                                       f"level {levels.level_for_total_xp(opponent_levels.total_xp)} ({opponent_levels.total_xp} XP)")
 
-                levels.sync_member(ctx.guild.id, ctx.author.id)
-                levels.sync_member(ctx.guild.id, opponent.id)
+                await levels.sync_member(ctx.guild.id, ctx.author.id)
+                await levels.sync_member(ctx.guild.id, opponent.id)
 
             elif emoji == "❌":
                 try:

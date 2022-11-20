@@ -1,12 +1,12 @@
 """Utilities for Dozer."""
 import asyncio
 import inspect
-import typing
 from collections.abc import Mapping
-from typing import Dict, Union
+from typing import Dict, Union, Optional, Any, Coroutine, List, Generator, Iterable, AsyncGenerator
+from typing import TYPE_CHECKING
 
 import discord
-from discord import app_commands
+from discord import app_commands, Embed, Permissions
 from discord.ext import commands
 from discord.ext.commands import HybridCommand
 from discord.ext.commands.core import MISSING
@@ -15,8 +15,11 @@ from loguru import logger
 from dozer import db
 from dozer.context import DozerContext
 
+if TYPE_CHECKING:
+    from dozer import Dozer
+
 __all__ = ['bot_has_permissions', 'command', 'group', 'Cog', 'Reactor', 'Paginator', 'paginate', 'chunk', 'dev_check',
-           'DynamicPrefixEntry']
+           'DynamicPrefixEntry', 'CommandMixin']
 
 
 
@@ -26,12 +29,12 @@ class CommandMixin:
 
     # Keyword-arg dictionary passed to __init__ when copying/updating commands when Cog instances are created
     # inherited from discord.ext.command.Command
-    __original_kwargs__: typing.Dict[str, typing.Any]
+    __original_kwargs__: Dict[str, Any]
     _required_permissions = None
 
-    def __init__(self, func, **kwargs):
+    def __init__(self, func: Union["Command", "Group"], **kwargs):
         super().__init__(func, **kwargs)
-        self.example_usage = kwargs.pop('example_usage', '')
+        self.example_usage: Optional[str] = kwargs.pop('example_usage', '')
         if hasattr(func, '__required_permissions__'):
             # This doesn't need to go into __original_kwargs__ because it'll be read from func each time
             self._required_permissions = func.__required_permissions__
@@ -40,7 +43,7 @@ class CommandMixin:
     def required_permissions(self):
         """Required permissions handler"""
         if self._required_permissions is None:
-            self._required_permissions = discord.Permissions()
+            self._required_permissions = Permissions()
         return self._required_permissions
 
     @property
@@ -76,15 +79,15 @@ class Group(CommandMixin, commands.HybridGroup):
     def command(
         self,
         name: Union[str, app_commands.locale_str] = MISSING,
-        *args: typing.Any,
+        *args: Any,
         with_app_command: bool = True,
-        **kwargs: typing.Any,
+        **kwargs: Any,
     ):
         """Initiates a command"""
 
         def decorator(func):
             kwargs.setdefault('parent', self)
-            result = command(name=name, *args, with_app_command=with_app_command, **kwargs)(func)
+            result = command(name=name, with_app_command=with_app_command, **kwargs)(func)
             self.add_command(result)
             return result
 
@@ -93,15 +96,15 @@ class Group(CommandMixin, commands.HybridGroup):
     def group(
         self,
         name: Union[str, app_commands.locale_str] = MISSING,
-        *args: typing.Any,
+        *args: Any,
         with_app_command: bool = True,
-        **kwargs: typing.Any,
+        **kwargs: Any,
     ):
         """Initiates a command group"""
 
         def decorator(func):
             kwargs.setdefault('parent', self)
-            result = group(name=name, *args, with_app_command=with_app_command, **kwargs)(func)
+            result = group(name=name, with_app_command=with_app_command, **kwargs)(func)
             self.add_command(result)
             return result
 
@@ -111,15 +114,18 @@ class Group(CommandMixin, commands.HybridGroup):
 class Cog(commands.Cog):
     """Initiates cogs."""
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: "Dozer"):
         super().__init__()
-        self.bot = bot
+        self.bot: "Dozer" = bot
+
+    def walk_commands(self) -> Generator[Union[Group, Command], None, None]:
+        return super().walk_commands()
 
 
 def dev_check():
     """Function decorator to check that the calling user is a developer"""
 
-    async def predicate(ctx: DozerContext):
+    async def predicate(ctx: DozerContext) -> bool:
         if ctx.author.id not in ctx.bot.config['developers']:
             raise commands.NotOwner('you are not a developer!')
         return True
@@ -163,8 +169,10 @@ class Reactor:
         self._remove_reactions = auto_remove and ctx.channel.permissions_for(
             self.me).manage_messages  # Check for required permissions
         self.timeout = timeout
-        self._action = None
+        self._action: Optional[Coroutine] = None
         self.message = None
+        self.pages: Dict[Union[int, str], Embed]
+        self.page: Embed
 
     async def __aiter__(self):
         self.message = await self.dest.send(embed=self.pages[self.page])
@@ -231,21 +239,22 @@ class Paginator(Reactor):
         '\N{BLACK SQUARE FOR STOP}'  # :stop_button:
     )
 
-    def __init__(self, ctx: DozerContext, initial_reactions, pages, *, start: int = 0, auto_remove: bool = True,
-                 timeout: int = 60):
+    def __init__(self, ctx: DozerContext, initial_reactions: Iterable[discord.Reaction], pages: List[Union[Embed, Dict[str, Embed]]], *,
+                 start: Union[int, str] = 0, auto_remove: bool = True, timeout: int = 60):
         all_reactions = list(initial_reactions)
-        ind = all_reactions.index(Ellipsis)
+        ind: int = all_reactions.index(Ellipsis)
         all_reactions[ind:ind + 1] = self.pagination_reactions
         super().__init__(ctx, all_reactions, auto_remove=auto_remove, timeout=timeout)
         if pages and isinstance(pages[-1], Mapping):
-            named_pages = pages.pop()
-            self.pages = dict(enumerate(pages), **named_pages)
+            named_pages: Dict[str, Embed] = pages.pop()
+            # The following code assembles the list of Embeds into a dict with the indexes as keys, and with the named pages.
+            self.pages = {**{k: v for v, k in enumerate(pages)}, **named_pages}
         else:
             self.pages = pages
-        self.len_pages = len(pages)
-        self.page = start
-        self.message = None
-        self.reactor = None
+        self.len_pages: int = len(pages)
+        self.page: Union[int, str] = start
+        self.message: Optional[discord.Message] = None
+        self.reactor: Optional[AsyncGenerator] = None
 
     async def __aiter__(self):
         self.reactor = super().__aiter__()
@@ -300,13 +309,13 @@ async def paginate(ctx: DozerContext, pages, *, start: int = 0, auto_remove: boo
         pass  # The normal pagination reactions are handled - just drop anything else
 
 
-def chunk(iterable, size: int):
+def chunk(iterable, size: int) -> Iterable[Iterable]:
     """
     Break an iterable into chunks of a fixed size. Returns an iterable of iterables.
     Almost-inverse of itertools.chain.from_iterable - passing the output of this into that function will reconstruct the original iterable.
     If the last chunk is not the full length, it will be returned but not padded.
     """
-    contents = list(iterable)
+    contents: List = list(iterable)
     for i in range(0, len(contents), size):
         yield contents[i:i + size]
 
@@ -316,8 +325,8 @@ def bot_has_permissions(**required):
 
     def predicate(ctx: DozerContext):
         """Function to tell the bot if it has the right permissions"""
-        given = ctx.channel.permissions_for((ctx.guild or ctx.channel).me)
-        missing = [name for name, value in required.items() if getattr(given, name) != value]
+        given: Permissions = ctx.channel.permissions_for((ctx.guild or ctx.channel).me)
+        missing: List[str] = [name for name, value in required.items() if getattr(given, name) != value]
 
         if missing:
             raise commands.BotMissingPermissions(missing)
@@ -334,7 +343,7 @@ def bot_has_permissions(**required):
                 func.__commands_checks__.append(predicate)
             else:
                 func.__commands_checks__ = [predicate]
-            func.__required_permissions__ = discord.Permissions()
+            func.__required_permissions__ = Permissions()
             func.__required_permissions__.update(**required)
         return func
 
@@ -350,15 +359,16 @@ class PrefixHandler:
 
     def handler(self, bot, message: discord.Message):
         """Process the dynamic prefix for each message"""
-        dynamic = self.prefix_cache.get(message.guild.id) if message.guild else self.default_prefix
+        dynamic = self.prefix_cache.get(message.guild.id) if message.guild else None
         # <@!> is a nickname mention which discord.py doesn't make by default
-        return [f"<@!{bot.user.id}> ", bot.user.mention, dynamic if dynamic else self.default_prefix]
+        return [f"<@!{bot.user.id}> ", f"<@!{bot.user.id}>", bot.user.mention, bot.user.mention + " ",
+                dynamic.prefix if dynamic else self.default_prefix]
 
     async def refresh(self):
         """Refreshes the prefix cache"""
         prefixes = await DynamicPrefixEntry.get_by()  # no filters, get all
         for prefix in prefixes:
-            self.prefix_cache[prefix.guild_id] = prefix.prefix
+            self.prefix_cache[prefix.guild_id] = prefix
         logger.info(f"{len(prefixes)} prefixes loaded from database")
 
 
@@ -384,7 +394,7 @@ class DynamicPrefixEntry(db.DatabaseTable):
         self.prefix = prefix
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["DynamicPrefixEntry"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:

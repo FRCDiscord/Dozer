@@ -5,10 +5,10 @@ import pickle
 import traceback
 from collections import OrderedDict
 from functools import wraps
+from typing import TYPE_CHECKING, List
 
 import discord
 import tbapi
-from discord.ext import commands
 from discord.ext.commands import has_permissions
 from discord.utils import escape_markdown
 from fuzzywuzzy import fuzz
@@ -17,6 +17,9 @@ from loguru import logger
 from dozer.context import DozerContext
 from ._utils import *
 from .. import db
+
+if TYPE_CHECKING:
+    from dozer import Dozer
 
 SUPPORTED_MODES = ["frc", "ftc"]
 
@@ -56,7 +59,7 @@ def game_is_running(func):
     return wrapper
 
 
-class NameGameSession():
+class NameGameSession:
     """NameGame session object"""
 
     def __init__(self, mode: str):
@@ -87,14 +90,14 @@ class NameGameSession():
         self.vote_embed = None
         self.vote_task = None
 
-    def create_embed(self, title: str = "", description: str = "", color=discord.Color.blurple(), extra_fields=[],
+    def create_embed(self, title: str = "", description: str = "", color: discord.Colour = discord.Color.blurple(), extra_fields=[],
                      start: bool = False):
         """Creates an embed."""
         v = "Starting " if start else "Current "
         embed = discord.Embed()
         embed.title = title
         embed.description = description
-        embed.color = color
+        embed.colour = color
         embed.add_field(name="Players", value=", ".join([escape_markdown(p.display_name) for p in self.players.keys()]) or "n/a")
         embed.add_field(name=v + "Player", value=self.current_player)
         embed.add_field(name=v + "Number", value=self.number or "Wildcard")
@@ -165,7 +168,7 @@ class NameGameSession():
 class NameGame(Cog):
     """Namegame commands"""
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: "Dozer"):
         super().__init__(bot)
         with gzip.open("ftc_teams.pickle.gz") as f:
             raw_teams = pickle.load(f)
@@ -199,7 +202,7 @@ class NameGame(Cog):
     async def info(self, ctx: DozerContext):
         """Show a description of the robotics team name game and how to play."""
         game_embed = discord.Embed()
-        game_embed.color = discord.Color.magenta()
+        game_embed.colour = discord.Color.magenta()
         game_embed.title = "How to play"
         game_embed.description = "This is a very simple little game where players will name a team number and name that " \
                                  "starts with the last digit of the last named team. Some more specific rules are below:"
@@ -537,7 +540,7 @@ class NameGame(Cog):
                 game.vote_player = ctx.author
                 game.vote_correct = False
                 vote_embed = discord.Embed()
-                vote_embed.color = discord.Color.gold()
+                vote_embed.colour = discord.Color.gold()
                 vote_embed.title = "A vote is needed!"
                 vote_embed.description = "A player has made a choice with less than 50% similarity. The details of the " \
                                          "pick are below. Click on the two emoji to vote if this is correct or not. A" \
@@ -646,7 +649,7 @@ class NameGame(Cog):
                 record = NameGameLeaderboard(user_id=winner.id, wins=1, game_mode=game.mode)
             await record.update_or_add()
             win_embed = discord.Embed()
-            win_embed.color = discord.Color.gold()
+            win_embed.colour = discord.Color.gold()
             win_embed.title = "We have a winner!"
             win_embed.add_field(name="Winning Player", value=winner)
             win_embed.add_field(name="Wins Total", value=record.wins)
@@ -658,7 +661,8 @@ class NameGame(Cog):
         if not game.running:
             self.games.pop(ctx.channel.id)
 
-    async def display_info(self, ctx: DozerContext, game: NameGameSession):
+    @staticmethod
+    async def display_info(ctx: DozerContext, game: NameGameSession):
         """Displays info about the current game"""
         info_embed = discord.Embed(title="Current Game Info", color=discord.Color.blue())
         info_embed.add_field(name="Game Type", value=game.mode.upper())
@@ -686,12 +690,14 @@ class NameGame(Cog):
         await self.strike(ctx, game, player)
 
     # send an embed that starts a new turn
-    async def send_turn_embed(self, ctx: DozerContext, game: NameGameSession, **kwargs):
+    @staticmethod
+    async def send_turn_embed(ctx: DozerContext, game: NameGameSession, **kwargs):
         """Sends an embed that starts a new turn"""
         game.turn_embed = game.create_embed(**kwargs)
         game.turn_msg = await ctx.send(embed=game.turn_embed)
 
-    async def notify(self, ctx: DozerContext, game: NameGameSession, msg: str):
+    @staticmethod
+    async def notify(ctx: DozerContext, game: NameGameSession, msg: str):
         """Notifies people in the channel when it's their turn."""
         if game.pings_enabled:
             await ctx.send(msg)
@@ -708,7 +714,7 @@ class NameGame(Cog):
             await self._on_reaction(game, reaction, user, 1)
 
             # also handle voting logic
-            ctx = await self.bot.get_context(reaction.message)
+            ctx: DozerContext = await self.bot.get_context(reaction.message)
             if game.vote_correct:
                 if game.fail_tally > .5 * len(game.players):
                     await ctx.send(f"The decision was overruled! Player {game.vote_player.mention} is given a strike!")
@@ -745,7 +751,8 @@ class NameGame(Cog):
                 return
             await self._on_reaction(game, reaction, user, -1)
 
-    async def _on_reaction(self, game: NameGameSession, reaction: discord.Reaction, user: discord.Member, inc: int):
+    @staticmethod
+    async def _on_reaction(game: NameGameSession, reaction: discord.Reaction, user: discord.Member, inc: int):
         """Handles pass/fail reactions"""
         if reaction.message.id == game.vote_msg.id and user in game.players:
             if reaction.emoji == '❌':
@@ -756,7 +763,7 @@ class NameGame(Cog):
         return game
 
     @keep_alive
-    async def game_turn_countdown(self, ctx: DozerContext, game):
+    async def game_turn_countdown(self, ctx: DozerContext, game: NameGameSession):
         """Counts down the time remaining left in the turn"""
         await asyncio.sleep(1)
         async with game.state_lock:
@@ -821,7 +828,7 @@ class NameGameConfig(db.DatabaseTable):
         self.pings_enabled = pings_enabled
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["NameGameConfig"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -855,7 +862,7 @@ class NameGameLeaderboard(db.DatabaseTable):
         self.wins = wins
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["NameGameLeaderboard"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:

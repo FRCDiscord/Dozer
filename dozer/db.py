@@ -1,10 +1,11 @@
 """Provides database storage for the Dozer Discord bot"""
-from typing import List, Dict
+from typing import List, Dict, Callable, Type, Tuple, Any
 
 import asyncpg
+from asyncpg import Record
 from loguru import logger
 
-Pool = None
+Pool: asyncpg.Pool
 
 
 async def db_init(db_url):
@@ -52,8 +53,8 @@ async def db_migrate():
 class DatabaseTable:
     """Defines a database table"""
     __tablename__: str = ''
-    __versions__: List[int] = []
-    __uniques__: List[str] = []
+    __versions__: List[Callable] = []
+    __uniques__: str = ""
 
     # Declare the migrate/create functions
     @classmethod
@@ -88,7 +89,6 @@ class DatabaseTable:
         updates = ""
         for key in keys:
             if key in self.__uniques__:
-                # Skip updating anything that has a unique constraint on it
                 continue
             updates += f"{key} = EXCLUDED.{key}"
             if keys.index(key) == len(keys) - 1:
@@ -111,7 +111,7 @@ class DatabaseTable:
                 """
             await conn.execute(statement, *values)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         values = ""
         first = True
         for key, value in self.__dict__.items():
@@ -124,15 +124,15 @@ class DatabaseTable:
     # Class Methods
 
     @classmethod
-    async def get_by(cls, **filters):
+    async def get_by(cls, **filters) -> List[Record]:
         """Get a list of all records matching the given column=value criteria. This will grab all attributes, it's more
-        efficent to write your own SQL queries than use this one, but for a simple query this is fine."""
+        efficient to write your own SQL queries than use this one, but for a simple query this is fine."""
         async with Pool.acquire() as conn:
-            statement = f"SELECT * FROM {cls.__tablename__}"
+            statement: str = f"SELECT * FROM {cls.__tablename__}"
             if filters:
                 # note: this code relies on subsequent iterations of the same dict having the same iteration order.
                 # This is an implementation detail of CPython 3.6 and a language guarantee in Python 3.7+.
-                conditions = " AND ".join(f"{column_name} = ${i + 1}" for (i, column_name) in enumerate(filters))
+                conditions: str = " AND ".join(f"{column_name} = ${i + 1}" for (i, column_name) in enumerate(filters))
                 statement = f"{statement} WHERE {conditions};"
             else:
                 statement += ";"
@@ -160,12 +160,12 @@ class DatabaseTable:
 class ConfigCache:
     """Class that will reduce calls to sqlalchemy as much as possible. Has no growth limit (yet)"""
 
-    def __init__(self, table):
-        self.cache = {}
-        self.table = table
+    def __init__(self, table: Type[DatabaseTable]):
+        self.cache: Dict = {}
+        self.table: Type[DatabaseTable] = table
 
     @staticmethod
-    def _hash_dict(dic):
+    def _hash_dict(dic) -> Tuple[Tuple[Any, Any], ...]:
         """Makes a dict hashable by turning it into a tuple of tuples"""
         # sort the keys to make this repeatable; this allows consistency even when insertion order is different
         return tuple((k, dic[k]) for k in sorted(dic))
@@ -194,6 +194,6 @@ class ConfigCache:
         if query_hash in self.cache:
             del self.cache[query_hash]
 
-    __versions__: Dict[str, int] = {}
+    __versions__: Dict[str, Callable] = {}
 
-    __uniques__: List[str] = []
+    __uniques__: str = ""

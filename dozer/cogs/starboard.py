@@ -1,8 +1,9 @@
 """Cog to post specific 'Hall of Fame' messages in a specific channel"""
 import asyncio
+from typing import List, Set, Optional
+from typing import TYPE_CHECKING
 
 import discord
-from discord.ext import commands
 from discord.ext.commands import guild_only, has_permissions
 from discord.utils import escape_markdown
 from loguru import logger
@@ -11,14 +12,16 @@ from dozer.context import DozerContext
 from ._utils import *
 from .. import db
 
-MAX_EMBED = 1024
-LOCK_TIME = .1
-FORCE_TRY_TIME = 1
+if TYPE_CHECKING:
+    from dozer import Dozer
 
-VIDEO_FORMATS = ['.mp4', '.mov', 'webm']
+MAX_EMBED: int = 1024
+LOCK_TIME: float = .1
+FORCE_TRY_TIME: int = 1
+VIDEO_FORMATS: List[str] = ['.mp4', '.mov', 'webm']
 
 
-async def is_cancelled(emoji, message: discord.Message, me, author: discord.Member = None):
+async def is_cancelled(emoji: str, message: discord.Message, me: discord.Member, author: discord.Member = None) -> bool:
     """Determine if the message has cancellation reacts"""
     if author is None:
         author = message.author
@@ -35,13 +38,13 @@ async def is_cancelled(emoji, message: discord.Message, me, author: discord.Memb
     return False
 
 
-def make_starboard_embed(msg: discord.Message, reaction_count: int):
+def make_starboard_embed(msg: discord.Message, reaction_count: int) -> discord.Embed:
     """Makes a starboard embed."""
-    e = discord.Embed(color=msg.author.color, title=f"New Starred Message in #{msg.channel.name}",
-                      description=msg.content, url=msg.jump_url)
-    e.set_author(name=escape_markdown(msg.author.display_name), icon_url=msg.author.display_avatar)
+    e: discord.Embed = discord.Embed(color=msg.author.color, title=f"New Starred Message in #{msg.channel.name}",
+                                     description=msg.content, url=msg.jump_url)
+    e.set_author(name=escape_markdown(msg.author.display_name), icon_url=msg.author.avatar)
 
-    view_link = f" [[view]]({msg.jump_url})"
+    view_link: str = f" [[view]]({msg.jump_url})"
     e.add_field(name="Link:", value=view_link)
 
     if len(msg.attachments) > 1:
@@ -61,20 +64,20 @@ def make_starboard_embed(msg: discord.Message, reaction_count: int):
 class Starboard(Cog):
     """Cog to post specific 'Hall of Fame' messages in a specific channel"""
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: "Dozer"):
         super().__init__(bot)
-        self.config_cache = db.ConfigCache(StarboardConfig)
-        self.locked_messages = set()
+        self.config_cache: db.ConfigCache = db.ConfigCache(StarboardConfig)
+        self.locked_messages: Set = set()
 
-    def make_config_embed(self, ctx: DozerContext, title, config):
+    def make_config_embed(self, ctx: DozerContext, title, config) -> discord.Embed:
         """Makes a config embed."""
-        channel = self.bot.get_channel(config.channel_id)
+        channel: discord.TextChannel = self.bot.get_channel(config.channel_id)
         if channel is None:
             return discord.Embed(title="Starboard channel no longer exists!",
                                  description="Please reconfigure the starboard to fix this.",
                                  color=discord.colour.Color.red())
 
-        e = discord.Embed(title=title, color=discord.Color.gold())
+        e: discord.Embed = discord.Embed(title=title, color=discord.Color.gold())
         e.add_field(name="Starboard Channel", value=channel.mention)
         e.add_field(name="Starboard Emoji", value=config.star_emoji)
         e.add_field(name="Cancel Emoji", value=config.cancel_emoji)
@@ -82,7 +85,7 @@ class Starboard(Cog):
         e.set_footer(text=f"For more information, try {ctx.prefix}help starboard")
         return e
 
-    async def send_to_starboard(self, config, message: discord.Message, reaction_count: int, add_react: bool = True):
+    async def send_to_starboard(self, config: "StarboardConfig", message: discord.Message, reaction_count: int, add_react: bool = True):
         """Given a message which may or may not exist, send it to the starboard"""
         starboard_channel = message.guild.get_channel(config.channel_id)
         if starboard_channel is None:
@@ -103,7 +106,7 @@ class Starboard(Cog):
                 await message.add_reaction(config.star_emoji)
         else:
             try:
-                sent_msg = await self.bot.get_channel(config.channel_id).fetch_message(db_msgs[0].starboard_message_id)
+                sent_msg: discord.Message = await self.bot.get_channel(config.channel_id).fetch_message(db_msgs[0].starboard_message_id)
             except discord.errors.NotFound:
                 # Uh oh! Starboard message was deleted. Let's try and delete it
                 logger.warning(f"Cannot find Starboard Message {db_msgs[0].starboard_message_id} to update")
@@ -114,13 +117,13 @@ class Starboard(Cog):
 
     async def remove_from_starboard(self, config, starboard_message: discord.Message, cancel: bool = False):
         """Given a starboard message or snowflake, remove that message and remove it from the DB"""
-        db_msgs = await StarboardMessage.get_by(starboard_message_id=starboard_message.id)
+        db_msgs: List[StarboardMessage] = await StarboardMessage.get_by(starboard_message_id=starboard_message.id)
         if len(db_msgs):
             if hasattr(starboard_message, 'delete'):
                 await starboard_message.delete()
             if cancel:
                 try:
-                    orig_msg = await self.bot.get_channel(db_msgs[0].channel_id).fetch_message(db_msgs[0].message_id)
+                    orig_msg: discord.Message = await self.bot.get_channel(db_msgs[0].channel_id).fetch_message(db_msgs[0].message_id)
                     await orig_msg.add_reaction(config.cancel_emoji)
                 except discord.NotFound:
                     pass
@@ -128,11 +131,11 @@ class Starboard(Cog):
 
     async def starboard_check(self, reaction: discord.Reaction, member: discord.Member):
         """Provides all logic for checking and updating the Starboard"""
-        msg = reaction.message
+        msg: discord.Message = reaction.message
         if not msg.guild:
             return
 
-        config = await self.config_cache.query_one(guild_id=msg.guild.id)
+        config: StarboardConfig = await self.config_cache.query_one(guild_id=msg.guild.id)
         if config is None:
             return
 
@@ -273,8 +276,8 @@ class Starboard(Cog):
                                f"{ctx.me.name} is in.")
                 return
 
-        config = StarboardConfig(guild_id=ctx.guild.id, channel_id=channel.id, star_emoji=str(star_emoji),
-                                 threshold=threshold, cancel_emoji=str(cancel_emoji))
+        config: StarboardConfig = StarboardConfig(guild_id=ctx.guild.id, channel_id=channel.id, star_emoji=str(star_emoji),
+                                                  threshold=threshold, cancel_emoji=str(cancel_emoji))
         await config.update_or_add()
         self.config_cache.invalidate_entry(guild_id=ctx.guild.id)
 
@@ -290,7 +293,7 @@ class Starboard(Cog):
     @starboard.command()
     async def disable(self, ctx: DozerContext):
         """Turn off the starboard if it is enabled"""
-        config = await StarboardConfig.get_by(guild_id=ctx.guild.id)
+        config: List[StarboardConfig] = await StarboardConfig.get_by(guild_id=ctx.guild.id)
         if not config:
             await ctx.send("There is not a Starboard set up for this server.")
             return
@@ -306,10 +309,11 @@ class Starboard(Cog):
     @guild_only()
     @has_permissions(manage_messages=True)
     @starboard.command()
-    async def add(self, ctx: DozerContext, message_id, channel: discord.TextChannel = None):
+    async def add(self, ctx: DozerContext, message_id: str, channel: discord.TextChannel = None):
         """Add a message to the starboard manually"""
-        message_id = int(message_id)
-        config = await self.config_cache.query_one(guild_id=ctx.guild.id)
+        message_id: int = int(message_id)
+        config: StarboardConfig = await self.config_cache.query_one(guild_id=ctx.guild.id)
+
         if config is None:
             await ctx.send(f"There is not a Starboard configured for this server. Set one up with "
                            f"`{ctx.prefix}starboard config`")
@@ -318,7 +322,7 @@ class Starboard(Cog):
             channel = ctx.channel
 
         try:
-            msg = await channel.fetch_message(message_id)
+            msg: discord.Message = await channel.fetch_message(message_id)
             for reaction in msg.reactions:
                 if str(reaction) != config.star_emoji:
                     await self.send_to_starboard(config, msg, reaction.count, False)
@@ -360,16 +364,16 @@ class StarboardConfig(db.DatabaseTable):
             threshold bigint NOT NULL
             )""")
 
-    def __init__(self, guild_id: int, channel_id: int, star_emoji: str, threshold: int, cancel_emoji: str = None):
+    def __init__(self, guild_id: int, channel_id: int, star_emoji: str, threshold: int, cancel_emoji: Optional[str] = None):
         super().__init__()
-        self.guild_id = guild_id
-        self.channel_id = channel_id
-        self.star_emoji = star_emoji
-        self.cancel_emoji = cancel_emoji
-        self.threshold = threshold
+        self.guild_id: int = guild_id
+        self.channel_id: int = channel_id
+        self.star_emoji: str = star_emoji
+        self.cancel_emoji: Optional[str] = cancel_emoji
+        self.threshold: int = threshold
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["StarboardConfig"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -399,13 +403,13 @@ class StarboardMessage(db.DatabaseTable):
 
     def __init__(self, message_id: int, channel_id: int, starboard_message_id: int, author_id: int):
         super().__init__()
-        self.message_id = message_id
-        self.channel_id = channel_id
-        self.starboard_message_id = starboard_message_id
-        self.author_id = author_id
+        self.message_id: int = message_id
+        self.channel_id: int = channel_id
+        self.starboard_message_id: int = starboard_message_id
+        self.author_id: int = author_id
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["StarboardMessage"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:

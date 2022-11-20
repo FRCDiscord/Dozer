@@ -1,11 +1,12 @@
 """Provides guild logging functions for Dozer."""
 import asyncio
-import datetime
 import math
 import time
+import datetime
+from typing import TYPE_CHECKING, List, Set, Optional
 
 import discord
-from discord.ext import commands
+from discord import Guild, AuditLogAction, Member, Message, Embed, AuditLogEntry
 from discord.ext.commands import has_permissions, BadArgument
 from discord.utils import escape_markdown
 from loguru import logger
@@ -13,12 +14,13 @@ from loguru import logger
 from dozer.context import DozerContext
 from ._utils import *
 from .general import blurple
-from .moderation import GuildNewMember
 from .. import db
-from ..Components.CustomJoinLeaveMessages import CustomJoinLeaveMessages, format_join_leave, send_log
+
+if TYPE_CHECKING:
+    from dozer import Dozer
 
 
-async def embed_paginatorinator(content_name, embed, text):
+async def embed_paginatorinator(content_name: str, embed: Embed, text: str):
     """Chunks up embed sections to fit within 1024 characters"""
     required_chunks = math.ceil(len(text) / 1024)
     c_embed = embed.copy()
@@ -32,13 +34,13 @@ async def embed_paginatorinator(content_name, embed, text):
 class Actionlog(Cog):
     """A cog to handle guild events tasks"""
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: "Dozer"):
         super().__init__(bot)
-        self.edit_delete_config = db.ConfigCache(GuildMessageLog)
+        self.edit_delete_config: db.ConfigCache = db.ConfigCache(GuildMessageLog)
         self.bulk_delete_buffer = {}
 
     @staticmethod
-    async def check_audit(guild, event_type, event_time=None):
+    async def check_audit(guild: Guild, event_type: AuditLogAction, event_time: Optional[datetime] = None):
         """Method for checking the audit log for events"""
         try:
             async for entry in guild.audit_logs(limit=1, after=event_time,
@@ -48,10 +50,10 @@ class Actionlog(Cog):
             return None
 
     @Cog.listener('on_member_join')
-    async def on_member_join(self, member):
+    async def on_member_join(self, member: Member):
         """Logs that a member joined, with optional custom message"""
-        join_leave_config = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
-        new_members_config = await GuildNewMember.get_by(guild_id=member.guild.id)
+        join_leave_config: List[CustomJoinLeaveMessages] = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
+        new_members_config: List[GuildNewMember] = await GuildNewMember.get_by(guild_id=member.guild.id)
         if len(new_members_config) == 0 and len(join_leave_config) == 0:
             await send_log(member)
         else:
@@ -63,14 +65,14 @@ class Actionlog(Cog):
                 await send_log(member)
 
     @Cog.listener('on_member_remove')
-    async def on_member_remove(self, member):
+    async def on_member_remove(self, member: Member):
         """Logs that a member left."""
         config = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
         if len(config):
             channel = member.guild.get_channel(config[0].channel_id)
             if channel:
-                embed = discord.Embed(color=0xFF0000)
-                embed.set_author(name='Member Left', icon_url=member.display_avatar.replace(format='png', size=32))
+                embed: Embed = Embed(color=0xFF0000)
+                embed.set_author(name='Member Left', icon_url=member.avatar.replace(format='png', size=32))
                 embed.description = format_join_leave(config[0].leave_message, member)
                 embed.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
                 try:
@@ -80,18 +82,18 @@ class Actionlog(Cog):
                         f"Guild {member.guild}({member.guild.id}) has invalid permissions for join/leave logs")
 
     @Cog.listener("on_member_update")
-    async def on_member_update(self, before, after):
+    async def on_member_update(self, before: Member, after: Member):
         """Called whenever a member gets updated"""
         if before.nick != after.nick:
             await self.on_nickname_change(before, after)
 
-    async def on_nickname_change(self, before, after):
+    async def on_nickname_change(self, before: Member, after: Member):
         """The log handler for when a user changes their nicknames"""
-        audit = await self.check_audit(after.guild, discord.AuditLogAction.member_update)
+        audit: Optional[AuditLogEntry] = await self.check_audit(after.guild, discord.AuditLogAction.member_update)
 
-        embed = discord.Embed(title="Nickname Changed",
-                              color=0x00FFFF)
-        embed.set_author(name=after, icon_url=after.display_avatar)
+        embed: Embed = Embed(title="Nickname Changed",
+                             color=0x00FFFF)
+        embed.set_author(name=after, icon_url=after.avatar)
         embed.add_field(name="Before", value=before.nick, inline=False)
         embed.add_field(name="After", value=after.nick, inline=False)
 
@@ -108,9 +110,10 @@ class Actionlog(Cog):
                 await channel.send(embed=embed)
         await self.check_nickname_lock(before, after)
 
-    async def check_nickname_lock(self, before, after):
+    @staticmethod
+    async def check_nickname_lock(before: Member, after: Member):
         """The handler for checking if a member is allowed to change their nickname"""
-        results = await NicknameLock.get_by(guild_id=after.guild.id, member_id=after.id)
+        results: List[NicknameLock] = await NicknameLock.get_by(guild_id=after.guild.id, member_id=after.id)
         if results:
             while time.time() <= results[0].timeout:
                 await asyncio.sleep(10)  # prevents nickname update spam
@@ -126,12 +129,12 @@ class Actionlog(Cog):
                                  f"your nickname has been reverted to **{results[0].locked_name}**")
 
     @Cog.listener()
-    async def on_raw_bulk_message_delete(self, payload):
+    async def on_raw_bulk_message_delete(self, payload: discord.RawBulkMessageDeleteEvent):
         """Log bulk message deletes"""
-        guild = self.bot.get_guild(int(payload.guild_id))
-        message_channel = self.bot.get_channel(int(payload.channel_id))
-        message_ids = payload.message_ids
-        cached_messages = payload.cached_messages
+        guild: Guild = self.bot.get_guild(int(payload.guild_id))
+        message_channel: discord.TextChannel = self.bot.get_channel(int(payload.channel_id))
+        message_ids: Set[int] = payload.message_ids
+        cached_messages: List[Message] = payload.cached_messages
 
         message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
         if message_log_channel is not None:
@@ -146,7 +149,7 @@ class Actionlog(Cog):
             self.bulk_delete_buffer[message_channel.id]["msg_ids"] += message_ids
             self.bulk_delete_buffer[message_channel.id]["msgs"] += cached_messages
             header_message = self.bulk_delete_buffer[message_channel.id]["header_message"]
-            header_embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000)
+            header_embed = Embed(title="Bulk Message Delete", color=0xFF0000)
             deleted = self.bulk_delete_buffer[message_channel.id]["msg_ids"]
             cached = self.bulk_delete_buffer[message_channel.id]["msgs"]
             header_embed.description = f"{len(deleted)} Messages Deleted In: {message_channel.mention}\n" \
@@ -154,7 +157,7 @@ class Actionlog(Cog):
                                        f"Messages logged: *Currently Purging*"
             await header_message.edit(embed=header_embed)
         else:
-            header_embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000)
+            header_embed = Embed(title="Bulk Message Delete", color=0xFF0000)
             header_embed.description = f"{len(message_ids)} Messages Deleted In: {message_channel.mention}\n" \
                                        f"Messages cached: {len(cached_messages)}/{len(message_ids)} \n" \
                                        f"Messages logged: *Currently Purging*"
@@ -179,7 +182,7 @@ class Actionlog(Cog):
         header_message = buffer_entry["header_message"]
 
         message_count = 0
-        header_embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000)
+        header_embed = Embed(title="Bulk Message Delete", color=0xFF0000)
         header_embed.description = f"{len(message_ids)} Messages Deleted In: {message_channel.mention}\n" \
                                    f"Messages cached: {len(cached_messages)}/{len(message_ids)} \n" \
                                    f"Messages logged: *Currently Logging*"
@@ -188,8 +191,8 @@ class Actionlog(Cog):
         current_page = 1
         page_character_count = 0
         page_message_count = 0
-        embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000,
-                              timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
+        embed = Embed(title="Bulk Message Delete", color=0xFF0000,
+                      timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
         for message in sorted(cached_messages, key=lambda msg: msg.created_at):
             page_character_count += len(message.content[0:512]) + 3
 
@@ -201,8 +204,8 @@ class Actionlog(Cog):
                     await channel.send(embed=embed)
                 except discord.HTTPException as e:
                     logger.debug(f"Bulk delete embed failed to send: {e}")
-                embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000,
-                                      timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
+                embed: Embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000,
+                                             timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
                 page_character_count = len(message.content)
                 message_count += page_message_count
                 page_message_count = 0
@@ -236,9 +239,9 @@ class Actionlog(Cog):
         message_channel = self.bot.get_channel(int(payload.channel_id))
         message_id = int(payload.message_id)
         message_created = discord.Object(message_id).created_at
-        embed = discord.Embed(title="Message Deleted",
-                              description=f"Message Deleted In: {message_channel.mention}",
-                              color=0xFF00F0, timestamp=message_created)
+        embed = Embed(title="Message Deleted",
+                      description=f"Message Deleted In: {message_channel.mention}",
+                      color=0xFF00F0, timestamp=message_created)
         embed.add_field(name="Message", value="N/A", inline=False)
         embed.set_footer(text=f"Message ID: {message_channel.id} - {message_id}\nSent at ")
         message_log_channel = await self.edit_delete_config.query_one(guild_id=guild.id)
@@ -248,15 +251,15 @@ class Actionlog(Cog):
                 await channel.send(embed=embed)
 
     @Cog.listener('on_message_delete')
-    async def on_message_delete(self, message: discord.Message):
+    async def on_message_delete(self, message: Message):
         """When a message is deleted, log it."""
         if message.author == self.bot.user:
             return
-        audit = await self.check_audit(message.guild, discord.AuditLogAction.message_delete, message.created_at)
-        embed = discord.Embed(title="Message Deleted",
-                              description=f"Message Deleted In: {message.channel.mention}\nSent by: {message.author.mention}",
-                              color=0xFF0000, timestamp=message.created_at)
-        embed.set_author(name=message.author, icon_url=message.author.display_avatar)
+        audit: Optional[AuditLogEntry] = await self.check_audit(message.guild, discord.AuditLogAction.message_delete, message.created_at)
+        embed: Embed = Embed(title="Message Deleted",
+                             description=f"Message Deleted In: {message.channel.mention}\nSent by: {message.author.mention}",
+                             color=0xFF0000, timestamp=message.created_at)
+        embed.set_author(name=message.author, icon_url=message.author.avatar)
         if audit:
             if audit.target == message.author:
                 audit_member = await message.guild.fetch_member(audit.user.id)
@@ -280,26 +283,26 @@ class Actionlog(Cog):
         if payload.cached_message:
             return
         mchannel = self.bot.get_channel(int(payload.channel_id))
-        guild = mchannel.guild
+        guild: Guild = mchannel.guild
         try:
-            content = payload.data['content']
+            content: Optional[str] = payload.data['content']
         except KeyError:
             content = None
         author = payload.data.get("author")
         if not author:
             return
-        guild_id = guild.id
-        channel_id = payload.channel_id
-        user_id = author['id']
-        if (self.bot.get_user(int(user_id))).bot:
+        guild_id: int = guild.id
+        channel_id: int = payload.channel_id
+        user_id: int = int(author['id'])
+        if (self.bot.get_user(user_id)).bot:
             return  # Breakout if the user is a bot
-        message_id = payload.message_id
-        link = f"https://discordapp.com/channels/{guild_id}/{channel_id}/{message_id}"
-        mention = f"<@!{user_id}>"
-        avatar_link = f"https://cdn.discordapp.com/avatars/{user_id}/{author['avatar']}.webp?size=1024"
-        embed = discord.Embed(title="Message Edited",
-                              description=f"[MESSAGE]({link}) From {mention}\nEdited In: {mchannel.mention}",
-                              color=0xFFC400)
+        message_id: int = payload.message_id
+        link: str = f"https://discordapp.com/channels/{guild_id}/{channel_id}/{message_id}"
+        mention: str = f"<@!{user_id}>"
+        avatar_link: str = f"https://cdn.discordapp.com/avatars/{user_id}/{author['avatar']}.webp?size=1024"
+        embed: Embed = Embed(title="Message Edited",
+                             description=f"[MESSAGE]({link}) From {mention}\nEdited In: {mchannel.mention}",
+                             color=0xFFC400)
         embed.set_author(name=f"{author['username']}#{author['discriminator']}", icon_url=avatar_link)
         embed.add_field(name="Original", value="N/A", inline=False)
         if content:
@@ -316,7 +319,7 @@ class Actionlog(Cog):
                 await channel.send(embed=embed)
 
     @Cog.listener('on_message_edit')
-    async def on_message_edit(self, before: discord.Message, after: discord.Message):
+    async def on_message_edit(self, before: Message, after: Message):
         """Logs message edits."""
         if before.author.bot:
             return
@@ -329,10 +332,10 @@ class Actionlog(Cog):
             user_id = before.author.id
             message_id = before.id
             link = f"https://discordapp.com/channels/{guild_id}/{channel_id}/{message_id}"
-            embed = discord.Embed(title="Message Edited",
-                                  description=f"[MESSAGE]({link}) From {before.author.mention}"
-                                              f"\nEdited In: {before.channel.mention}", color=0xFFC400,
-                                  timestamp=after.edited_at)
+            embed: Embed = discord.Embed(title="Message Edited",
+                                         description=f"[MESSAGE]({link}) From {before.author.mention}"
+                                                     f"\nEdited In: {before.channel.mention}", color=0xFFC400,
+                                         timestamp=after.edited_at)
             embed.set_author(name=before.author, icon_url=before.author.display_avatar)
             embed.set_footer(text=f"Message ID: {channel_id} - {message_id}\nUserID: {user_id}")
             if len(before.content) + len(after.content) < 5000:
@@ -365,12 +368,12 @@ class Actionlog(Cog):
     @Cog.listener('on_member_ban')
     async def on_member_ban(self, guild: discord.Guild, user: discord.User):
         """Logs raw member ban events, even if not banned via &ban"""
-        audit = await self.check_audit(guild, discord.AuditLogAction.ban)
-        embed = discord.Embed(title="User Banned", color=0xff6700)
-        embed.set_thumbnail(url=user.display_avatar)
+        audit: Optional[AuditLogEntry] = await self.check_audit(guild, discord.AuditLogAction.ban)
+        embed: Embed = Embed(title="User Banned", color=0xff6700)
+        embed.set_thumbnail(url=user.avatar)
         embed.add_field(name="Banned user", value=f"{user}|({user.id})")
         if audit and audit.target == user:
-            acton_member = await guild.fetch_member(audit.user.id)
+            acton_member: Member = await guild.fetch_member(audit.user.id)
             embed.description = f"User banned by: {acton_member.mention}\n{acton_member}|({acton_member.id})"
             embed.add_field(name="Reason", value=audit.reason, inline=False)
             embed.set_footer(text=f"Actor ID: {acton_member.id}\nTarget ID: {user.id}")
@@ -388,9 +391,10 @@ class Actionlog(Cog):
     @has_permissions(administrator=True)
     async def messagelogconfig(self, ctx: DozerContext, channel_mentions: discord.TextChannel):
         """Set the modlog channel for a server by passing the channel id"""
-        config = await GuildMessageLog.get_by(guild_id=ctx.guild.id)
-        if len(config) != 0:
-            config = config[0]
+        results: List[GuildMessageLog] = await GuildMessageLog.get_by(guild_id=ctx.guild.id)
+        config: GuildMessageLog
+        if len(results) != 0:
+            config = results[0]
             config.name = ctx.guild.name
             config.messagelog_channel = channel_mentions.id
         else:
@@ -407,9 +411,9 @@ class Actionlog(Cog):
     @has_permissions(administrator=True)
     async def memberlogconfig(self, ctx: DozerContext):
         """Command group to configure Join/Leave logs"""
-        config = await CustomJoinLeaveMessages.get_by(guild_id=ctx.guild.id)
-        embed = discord.Embed(title=f"Join/Leave configuration for {ctx.guild}", color=blurple)
+        config: List[CustomJoinLeaveMessages] = await CustomJoinLeaveMessages.get_by(guild_id=ctx.guild.id)
         if len(config):
+            embed: Embed = Embed(title=f"Join/Leave configuration for {ctx.guild}", color=blurple)
             channel = ctx.guild.get_channel(config[0].channel_id)
             embed.add_field(name="Message Channel", value=channel.mention if channel else "None")
             embed.add_field(name="Ping on join", value=config[0].ping)
@@ -440,12 +444,12 @@ class Actionlog(Cog):
     @has_permissions(manage_guild=True)
     async def setchannel(self, ctx: DozerContext, channel: discord.TextChannel):
         """Configure join/leave channel"""
-        config = CustomJoinLeaveMessages(
+        config: CustomJoinLeaveMessages = CustomJoinLeaveMessages(
             guild_id=ctx.guild.id,
             channel_id=channel.id
         )
         await config.update_or_add()
-        e = discord.Embed(color=blurple)
+        e: Embed = Embed(color=blurple)
         e.add_field(name='Success!', value=f"Join/Leave log channel has been set to {channel.mention}")
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
@@ -454,40 +458,41 @@ class Actionlog(Cog):
     @has_permissions(manage_guild=True)
     async def toggleping(self, ctx: DozerContext):
         """Toggles whenever a new member gets pinged on join"""
-        config = await CustomJoinLeaveMessages.get_by(guild_id=ctx.guild.id)
+        config: List[CustomJoinLeaveMessages] = await CustomJoinLeaveMessages.get_by(guild_id=ctx.guild.id)
         if len(config):
             config[0].ping = not config[0].ping
         else:
             config = [CustomJoinLeaveMessages(guild_id=ctx.guild.id, ping=True)]
         await config[0].update_or_add()
 
-        e = discord.Embed(color=blurple)
+        e: Embed = Embed(color=blurple)
         e.add_field(name='Success!', value=f"Ping on join is set to: {config[0].ping}")
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
     @memberlogconfig.command()
     @has_permissions(manage_guild=True)
-    async def togglesendonverify(self, ctx):
+    async def togglesendonverify(self, ctx: DozerContext):
         """Toggles if a join log is sent on user joining or on completing verification"""
-        config = await CustomJoinLeaveMessages.get_by(guild_id=ctx.guild.id)
+        config: List[CustomJoinLeaveMessages] = await CustomJoinLeaveMessages.get_by(guild_id=ctx.guild.id)
         if len(config):
             config[0].send_on_verify = not config[0].send_on_verify
         else:
             config = [CustomJoinLeaveMessages(guild_id=ctx.guild.id, send_on_verify=True)]
         await config[0].update_or_add()
 
-        e = discord.Embed(color=blurple)
+        e: Embed = Embed(color=blurple)
         e.add_field(name='Success!', value=f"Send on verify is set to: {config[0].send_on_verify}")
         e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
     @memberlogconfig.command()
     @has_permissions(manage_guild=True)
-    async def setjoinmessage(self, ctx: DozerContext, *, template: str = None):
+    async def setjoinmessage(self, ctx: DozerContext, *, template: Optional[str] = None):
         """Configure custom join message template"""
-        e = discord.Embed(color=blurple)
+        e: Embed = Embed(color=blurple)
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
+        config: CustomJoinLeaveMessages
         if template:
             config = CustomJoinLeaveMessages(
                 guild_id=ctx.guild.id,
@@ -505,10 +510,11 @@ class Actionlog(Cog):
 
     @memberlogconfig.command()
     @has_permissions(manage_guild=True)
-    async def setleavemessage(self, ctx: DozerContext, *, template=None):
+    async def setleavemessage(self, ctx: DozerContext, *, template: Optional[str] = None):
         """Configure custom leave message template"""
-        e = discord.Embed(color=blurple)
+        e: Embed = Embed(color=blurple)
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
+        config: CustomJoinLeaveMessages
         if template:
             config = CustomJoinLeaveMessages(
                 guild_id=ctx.guild.id,
@@ -528,9 +534,9 @@ class Actionlog(Cog):
     @has_permissions(manage_guild=True)
     async def disable(self, ctx: DozerContext):
         """Disables Join/Leave logging"""
-        e = discord.Embed(color=blurple)
+        e: Embed = Embed(color=blurple)
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
-        config = CustomJoinLeaveMessages(
+        config: CustomJoinLeaveMessages = CustomJoinLeaveMessages(
             guild_id=ctx.guild.id,
             channel_id=CustomJoinLeaveMessages.nullify
         )
@@ -540,10 +546,10 @@ class Actionlog(Cog):
 
     @memberlogconfig.command()
     @has_permissions(manage_guild=True)
-    async def help(self,
-                   ctx: DozerContext):  # I cannot put formatting example in example_usage because then it trys to format the example
+    async def help(self, ctx: DozerContext):
+        # I cannot put formatting example in example_usage because then it tries to format the example
         """Displays message formatting key"""
-        e = discord.Embed(color=blurple)
+        e: Embed = Embed(color=blurple)
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         e.description = """
         `{guild}` = guild name
@@ -557,20 +563,20 @@ class Actionlog(Cog):
     @command()
     @has_permissions(manage_nicknames=True)
     @bot_has_permissions(manage_nicknames=True)
-    async def locknickname(self, ctx: DozerContext, member: discord.Member, *, name: str):
+    async def locknickname(self, ctx: DozerContext, member: Member, *, name: str):
         """Locks a members nickname to a particular string, in essence revoking nickname change perms"""
         try:
             await member.edit(nick=name)
         except discord.Forbidden:
             raise BadArgument(f"Dozer is not elevated high enough to change {member}'s nickname")
-        lock = NicknameLock(
+        lock: NicknameLock = NicknameLock(
             guild_id=ctx.guild.id,
             member_id=member.id,
             locked_name=name,
             timeout=time.time()
         )
         await lock.update_or_add()
-        e = discord.Embed(color=blurple)
+        e: Embed = Embed(color=blurple)
         e.add_field(name='Success!', value=f"**{member}**'s nickname has been locked to **{name}**")
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
@@ -582,11 +588,11 @@ class Actionlog(Cog):
     @command()
     @has_permissions(manage_nicknames=True)
     @bot_has_permissions(manage_nicknames=True)
-    async def unlocknickname(self, ctx: DozerContext, member: discord.Member):
+    async def unlocknickname(self, ctx: DozerContext, member: Member):
         """Removes nickname lock from member"""
         deleted = await NicknameLock.delete(guild_id=ctx.guild.id, member_id=member.id)
         if int(deleted.split(" ", 1)[1]):
-            e = discord.Embed(color=blurple)
+            e: Embed = Embed(color=blurple)
             e.add_field(name='Success!', value=f"Nickname lock for {member} has been removed")
             e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
             await ctx.send(embed=e)
@@ -616,15 +622,15 @@ class NicknameLock(db.DatabaseTable):
             UNIQUE (guild_id, member_id)
             )""")
 
-    def __init__(self, guild_id: int, member_id: int, locked_name: str, timeout: float = None):
+    def __init__(self, guild_id: int, member_id: int, locked_name: Optional[str], timeout: Optional[float] = None):
         super().__init__()
-        self.guild_id = guild_id
-        self.member_id = member_id
-        self.locked_name = locked_name
-        self.timeout = timeout
+        self.guild_id: int = guild_id
+        self.member_id: int = member_id
+        self.locked_name: Optional[str] = locked_name
+        self.timeout: Optional[float] = timeout
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["NicknameLock"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -652,12 +658,12 @@ class GuildMessageLog(db.DatabaseTable):
 
     def __init__(self, guild_id: int, name: str, messagelog_channel: int):
         super().__init__()
-        self.guild_id = guild_id
-        self.name = name
-        self.messagelog_channel = messagelog_channel
+        self.guild_id: int = guild_id
+        self.name: str = name
+        self.messagelog_channel: int = messagelog_channel
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["GuildMessageLog"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -667,6 +673,149 @@ class GuildMessageLog(db.DatabaseTable):
         return result_list
 
 
-async def setup(bot):
+async def send_log(member: Member):
+    """Sends the message for when a user joins or leave a guild"""
+    config = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
+    if len(config):
+        channel = member.guild.get_channel(config[0].channel_id)
+        if channel:
+            embed: Embed = Embed(color=0x00FF00)
+            embed.set_author(name='Member Joined', icon_url=member.avatar.replace(format='png', size=32))
+            embed.description = format_join_leave(config[0].join_message, member)
+            embed.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
+            try:
+                await channel.send(content=member.mention if config[0].ping else None, embed=embed)
+            except discord.Forbidden:
+                logger.warning(
+                    f"Guild {member.guild}({member.guild.id}) has invalid permissions for join/leave logs")
+
+
+def format_join_leave(template: str, member: Member):
+    """Formats join leave message templates
+    {guild} = guild name
+    {user} = user's name plus discriminator ex. SnowPlow#5196
+    {user_name} = user's name without discriminator
+    {user_mention} = user's mention
+    {user_id} = user's ID
+    """
+    if template:
+        return template.format(guild=member.guild, user=str(member), user_name=member.name,
+                               user_mention=member.mention, user_id=member.id)
+    else:
+        return "{user_mention}\n{user} ({user_id})".format(user=str(member), user_mention=member.mention,
+                                                           user_id=member.id)
+
+
+class CustomJoinLeaveMessages(db.DatabaseTable):
+    """Holds custom join leave messages"""
+    __tablename__ = 'memberlogconfig'
+    __uniques__ = 'guild_id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            guild_id bigint PRIMARY KEY NOT NULL,	            
+            memberlog_channel bigint NOT NULL,	   
+            name varchar NOT NULL,
+            send_on_verify boolean
+            )""")
+
+    def __init__(self, guild_id: int, channel_id: int = None, ping: Optional[bool] = None, join_message: Optional[str] = None,
+                 leave_message: Optional[str] = None, send_on_verify: Optional[bool] = False):
+        super().__init__()
+        self.guild_id: int = guild_id
+        self.channel_id: Optional[int] = channel_id
+        self.ping: Optional[bool] = ping
+        self.join_message: Optional[str] = join_message
+        self.leave_message: Optional[str] = leave_message
+        self.send_on_verify: Optional[bool] = send_on_verify
+
+    @classmethod
+    async def get_by(cls, **kwargs) -> List["CustomJoinLeaveMessages"]:
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = CustomJoinLeaveMessages(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
+                                          ping=result.get("ping"),
+                                          join_message=result.get("join_message"),
+                                          leave_message=result.get("leave_message"),
+                                          send_on_verify=result.get("send_on_verify"))
+            result_list.append(obj)
+        return result_list
+
+    async def version_1(self):
+        """DB migration v1"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            alter table memberlogconfig rename column memberlog_channel to channel_id;
+            alter table memberlogconfig alter column channel_id drop not null;
+            alter table {self.__tablename__} drop column IF EXISTS name;
+            alter table {self.__tablename__}
+                add IF NOT EXISTS ping boolean default False;
+            alter table {self.__tablename__}
+                add IF NOT EXISTS join_message text default null;
+            alter table {self.__tablename__}
+                add IF NOT EXISTS leave_message text default null;
+            """)
+
+    async def version_2(self):
+        """Updates database stuff to version 2"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"alter table {self.__tablename__} "
+                               f"add if not exists send_on_verify boolean default null;")
+
+    __versions__ = [version_1, version_2]
+
+
+class GuildNewMember(db.DatabaseTable):
+    """Holds new member info"""
+    __tablename__ = 'new_members'
+    __uniques__ = 'guild_id'
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            guild_id bigint PRIMARY KEY,
+            channel_id bigint NOT NULL,
+            role_id bigint NOT NULL,
+            message varchar NOT NULL
+            )""")
+
+    def __init__(self, guild_id: int, channel_id: int, role_id: int, message: str, require_team: bool):
+        super().__init__()
+        self.guild_id: int = guild_id
+        self.channel_id: int = channel_id
+        self.role_id: int = role_id
+        self.message: str = message
+        self.require_team: bool = require_team
+
+    @classmethod
+    async def get_by(cls, **kwargs) -> List["GuildNewMember"]:
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = GuildNewMember(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
+                                 role_id=result.get("role_id"), message=result.get("message"),
+                                 require_team=result.get("require_team"))
+            result_list.append(obj)
+        return result_list
+
+    async def version_1(self):
+        """DB migration v1"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            ALTER TABLE {self.__tablename__} ADD require_team bool NOT NULL DEFAULT false;
+            """)
+
+    __versions__ = [version_1]
+
+
+async def setup(bot: "Dozer"):
     """Adds the actionlog cog to the bot."""
     await bot.add_cog(Actionlog(bot))

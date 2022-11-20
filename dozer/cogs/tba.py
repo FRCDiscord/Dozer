@@ -1,38 +1,44 @@
 """A series of commands that talk to The Blue Alliance."""
-import datetime
+from datetime import datetime, timedelta
 import io
 import itertools
 import json
 from pprint import pformat
+from typing import TYPE_CHECKING, List, Union, Dict
 from urllib.parse import quote as urlquote, urljoin
 
 import aiohttp
 import aiotba
 import async_timeout
-import googlemaps
 import discord
-from discord.ext import commands
+import googlemaps
+from aiotba.models import Media
+from discord import Embed
 from discord.ext.commands import BadArgument
 from discord.utils import escape_markdown
 from geopy.geocoders import Nominatim
+from tbapi import Event, Team
 
 from dozer.context import DozerContext
 from ._utils import *
+
+if TYPE_CHECKING:
+    from dozer import Dozer
 
 
 class TBA(Cog):
     """Commands that talk to The Blue Alliance"""
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: "Dozer"):
 
         super().__init__(bot)
-        tba_config = bot.config['tba']
-        self.gmaps_key = bot.config['gmaps_key']
-        self.http_session = aiohttp.ClientSession()
-        self.session = aiotba.TBASession(tba_config['key'], self.http_session)
+        tba_config: Dict[str, str] = bot.config['tba']
+        self.gmaps_key: str = bot.config['gmaps_key']
+        self.http_session: aiohttp.ClientSession = aiohttp.ClientSession()
+        self.session: aiotba.TBASession = aiotba.TBASession(tba_config['key'], self.http_session)
         # self.parser = tbapi.TBAParser(tba_config['key'], cache=False)
 
-    col = discord.Color.from_rgb(63, 81, 181)
+    col: discord.Colour = discord.Color.from_rgb(63, 81, 181)
 
     @group(invoke_without_command=True)
     async def tba(self, ctx: DozerContext, team_num: int):
@@ -64,9 +70,9 @@ class TBA(Cog):
                 team_district = max(team_district_data, key=lambda d: d.year)
         except aiotba.http.AioTBAError:
             team_district_data = None
-        e = discord.Embed(color=self.col,
-                          title='FIRST® Robotics Competition Team {}'.format(team_num),
-                          url='https://www.thebluealliance.com/team/{}'.format(team_num))
+        e: Embed = Embed(color=self.col,
+                                         title='FIRST® Robotics Competition Team {}'.format(team_num),
+                                         url='https://www.thebluealliance.com/team/{}'.format(team_num))
         e.set_thumbnail(url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
         e.add_field(name='Name', value=team_data.nickname)
         e.add_field(name='Rookie Year', value=team_data.rookie_year)
@@ -94,15 +100,15 @@ class TBA(Cog):
         if year is None:
             year = (await self.session.status()).current_season
         try:
-            events = await self.session.team_events(team_num, year=year)
+            events: List[Event] = await self.session.team_events(team_num, year=year)
         except aiotba.http.AioTBAError:
             raise BadArgument("Couldn't find matching data!")
 
         if not events:
             raise BadArgument("Couldn't find matching data!")
 
-        e = discord.Embed(color=self.col)
-        events = "\n".join(i.name for i in events)
+        e: Embed = Embed(color=self.col)
+        events: str = "\n".join(i.name for i in events)
         e.title = f"Registered events for FRC Team {team_num} in {year}:"
         e.description = events
         await ctx.send(embed=e)
@@ -116,11 +122,11 @@ class TBA(Cog):
     async def media(self, ctx: DozerContext, team_num: int, year: int = None):
         """Get media of a team for a given year. Defaults to current year."""
         if year is None:
-            year = datetime.datetime.today().year
+            year = datetime.today().year
         try:
-            team_media = await self.session.team_media(team_num, year)
+            team_media: List[Media] = await self.session.team_media(team_num, year)
 
-            pages = []
+            pages: List[Embed] = []
             base = f"FRC Team {team_num} {year} Media: "
             for media in team_media:
                 name, url, img_url = {
@@ -152,7 +158,7 @@ class TBA(Cog):
                 }.get(media.type, (None, None, None))
                 media.details['foreign_key'] = media.foreign_key
                 if name is not None:
-                    page = discord.Embed(title="{}{}".format(base, name), url=url.format(**media.details))
+                    page: Embed = Embed(title="{}{}".format(base, name), url=url.format(**media.details))
                     page.set_image(url=img_url.format(**media.details))
                     pages.append(page)
 
@@ -180,9 +186,9 @@ class TBA(Cog):
             except aiotba.http.AioTBAError:
                 raise BadArgument("Couldn't find data for team {}".format(team_num))
 
-            pages = []
+            pages: List[Embed] = []
         for award_year, awards in itertools.groupby(awards_data, lambda a: a.year):
-            e = discord.Embed(title=f"Awards for FRC Team {team_num} in {award_year}:", color=self.col)
+            e: Embed = Embed(title=f"Awards for FRC Team {team_num} in {award_year}:", color=self.col)
             for event_key, event_awards in itertools.groupby(list(awards), lambda a: a.event_key):
                 event = event_key_map[event_key]
                 e.add_field(name=f"{event.name} [{event_key}]",
@@ -208,8 +214,8 @@ class TBA(Cog):
         This command is really only useful for development.
         """
         try:
-            team_data = await self.session.team(team_num)
-            e = discord.Embed(color=self.col)
+            team_data: Team = await self.session.team(team_num)
+            e: Embed = Embed(color=self.col)
             e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num),
                          url='https://www.thebluealliance.com/team/{}'.format(team_num),
                          icon_url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
@@ -236,7 +242,7 @@ class TBA(Cog):
 
         if team_program.lower() == "frc":
             try:
-                td = await self.session.team(team_num)
+                td: Union["TBA.TeamData", Team] = await self.session.team(team_num)
             except aiotba.http.AioTBAError:
                 raise BadArgument('Team {} does not exist.'.format(team_num))
         elif team_program.lower() == "ftc":
@@ -249,18 +255,18 @@ class TBA(Cog):
         else:
             raise BadArgument('`team_program` should be one of [`frc`, `ftc`]')
 
-        units = 'm'
+        units: str = 'm'
         if td.country == "USA":
             td.country = "United States of America"
             units = 'u'
-        url = "https://wttr.in/{}".format(
+        url: str = "https://wttr.in/{}".format(
             urlquote("{}+{}+{}_0_{}.png".format(td.city, td.state_prov, td.country, units)))
 
         async with ctx.typing(), self.http_session.get(url) as resp:
             image_data = io.BytesIO(await resp.read())
 
-        file_name = f"weather_{team_program.lower()}{team_num}.png"
-        e = discord.Embed(title=f"Current weather for {team_program.upper()} Team {team_num}:", url=url)
+        file_name: str = f"weather_{team_program.lower()}{team_num}.png"
+        e: Embed = Embed(title=f"Current weather for {team_program.upper()} Team {team_num}:", url=url)
         e.set_image(url=f"attachment://{file_name}")
         e.set_footer(text="Powered by wttr.in and sometimes TBA")
         await ctx.send(embed=e, file=discord.File(image_data, file_name))
@@ -278,7 +284,7 @@ class TBA(Cog):
 
         if team_program.lower() == "frc":
             try:
-                team_data = await self.session.team(team_num)
+                team_data: Union["TBA.TeamData", Team] = await self.session.team(team_num)
             except aiotba.http.AioTBAError:
                 raise BadArgument('Team {} does not exist.'.format(team_num))
             if team_data.city is None:
@@ -294,18 +300,18 @@ class TBA(Cog):
         else:
             raise BadArgument('`team_program` should be one of [`frc`, `ftc`]')
 
-        location = '{0.city}, {0.state_prov} {0.country}'.format(team_data)
-        gmaps = googlemaps.Client(key=self.gmaps_key)
-        geolocator = Nominatim(user_agent="Dozer Discord Bot")
+        location: str = '{0.city}, {0.state_prov} {0.country}'.format(team_data)
+        gmaps: googlemaps.Client  = googlemaps.Client(key=self.gmaps_key)
+        geolocator: Nominatim = Nominatim(user_agent="Dozer Discord Bot")
         geolocation = geolocator.geocode(location)
 
         if self.gmaps_key and not self.bot.config['tz_url']:
             timezone = gmaps.timezone(location="{}, {}".format(geolocation.latitude, geolocation.longitude),
                                       language="json")
-            utc_offset = float(timezone["rawOffset"]) / 3600
+            utc_offset: float = float(timezone["rawOffset"]) / 3600
             if timezone["dstOffset"] == 3600:
                 utc_offset += 1
-            tzname = timezone["timeZoneName"]
+            tzname: str = timezone["timeZoneName"]
         else:
             async with async_timeout.timeout(5), self.bot.http_session.get(urljoin(base=self.bot.config['tz_url'],
                                                                                    url="{}/{}".format(
@@ -314,9 +320,9 @@ class TBA(Cog):
                 r.raise_for_status()
                 data = await r.json()
                 utc_offset = data["utc_offset"]
-                tzname = '`{}`'.format(data["tz"])
+                tzname: str = '`{}`'.format(data["tz"])
 
-        current_time = datetime.datetime.utcnow() + datetime.timedelta(hours=utc_offset)
+        current_time: datetime = datetime.utcnow() + timedelta(hours=utc_offset)
 
         await ctx.send("Timezone: {} UTC{}\n{}".format(tzname, utc_offset,
                                                        current_time.strftime("Current Time: %I:%M:%S %p (%H:%M:%S)")))

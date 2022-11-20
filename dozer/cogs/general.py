@@ -1,15 +1,19 @@
 """General, basic commands that are common for Discord bots"""
+import datetime
 import inspect
+from typing import Optional, Union, List, Dict
 
 import discord
+from discord import AppInfo, Embed
 from discord.ext.commands import BadArgument, cooldown, BucketType, Group, has_permissions, NotOwner, guild_only
 from discord.utils import escape_markdown
 
 from dozer.context import DozerContext
+from . import _utils
 from ._utils import *
 from ..utils import oauth_url
 
-blurple = discord.Color.blurple()
+blurple: discord.Colour = discord.Color.blurple()
 
 
 class General(Cog):
@@ -22,8 +26,8 @@ class General(Cog):
             location = 'DMs'
         else:
             location = 'the **%s** server' % ctx.guild.name
-        response = await ctx.send('Pong! We\'re in %s.' % location)
-        delay = response.created_at - ctx.message.created_at
+        response: discord.Message = await ctx.send('Pong! We\'re in %s.' % location)
+        delay: datetime.timedelta = response.created_at - ctx.message.created_at
         await response.edit(
             content=response.content + '\nTook %d ms to respond.' % (delay.seconds * 1000 + delay.microseconds // 1000))
 
@@ -35,7 +39,7 @@ class General(Cog):
     @command(name='help', aliases=['about'])
     @bot_has_permissions(add_reactions=True, embed_links=True,
                          read_message_history=True)  # Message history is for internals of paginate()
-    async def base_help(self, ctx: DozerContext, *, target=None):
+    async def base_help(self, ctx: DozerContext, *, target: str = None):
         """Show this message."""
         await ctx.defer()
         try:
@@ -49,17 +53,17 @@ class General(Cog):
             if target_name in ctx.bot.cogs:
                 await self._help_cog(ctx, ctx.bot.cogs[target_name])
             else:
-                command = ctx.bot.get_command(target_name)
-                if command is None:
+                target_command = ctx.bot.get_command(target_name)
+                if target_command is None:
                     raise BadArgument('that command/cog does not exist!')
                 else:
-                    await self._help_command(ctx, command)
+                    await self._help_command(ctx, target_command)
         else:  # Command with subcommand
-            command = ctx.bot.get_command(' '.join(target))
-            if command is None:
+            target_command = ctx.bot.get_command(' '.join(target))
+            if target_command is None:
                 raise BadArgument('that command does not exist!')
             else:
-                await self._help_command(ctx, command)
+                await self._help_command(ctx, target_command)
 
     base_help.example_usage = """
     `{prefix}help` - General help message
@@ -69,8 +73,8 @@ class General(Cog):
 
     async def _help_all(self, ctx: DozerContext):
         """Gets the help message for all commands."""
-        info = discord.Embed(title='Dozer: Info', description='A guild management bot for FIRST Discord servers',
-                             color=discord.Color.blue())
+        info: Embed = Embed(title='Dozer: Info', description='A guild management bot for FIRST Discord servers',
+                            color=discord.Color.blue())
         info.set_thumbnail(url=self.bot.user.avatar)
         info.add_field(name='About',
                        value="Dozer: A collaborative bot for FIRST Discord servers, developed by the FRC Discord Server Development Team")
@@ -90,28 +94,29 @@ class General(Cog):
         info.set_footer(text='Dozer Help | all commands | Info page')
         await self._show_help(ctx, info, 'Dozer: Commands', '', 'all commands', ctx.bot.commands)
 
-    async def _help_command(self, ctx: DozerContext, command):
+    async def _help_command(self, ctx: DozerContext, target_command: _utils.Command):
         """Gets the help message for one command."""
-        info = discord.Embed(title='Command: {}{} {}'.format(ctx.prefix, command.qualified_name, command.signature),
-                             description=command.help or (
-                                 None if command.example_usage else 'No information provided.'),
-                             color=discord.Color.blue())
-        usage = command.example_usage
+        info: Embed = Embed(title='Command: {}{} {}'.format(ctx.prefix, target_command.qualified_name, target_command.signature),
+                            description=target_command.help or (
+                                None if target_command.example_usage else 'No information provided.'),
+                            color=discord.Color.blue())
+        usage: Union[str, None] = target_command.example_usage
         if usage:
             info.add_field(name='Usage', value=usage.format(prefix=ctx.prefix, name=ctx.invoked_with), inline=False)
-        info.set_footer(text='Dozer Help | {!r} command | Info'.format(command.qualified_name))
+        info.set_footer(text='Dozer Help | {!r} command | Info'.format(target_command.qualified_name))
         await self._show_help(ctx, info, 'Subcommands: {prefix}{name} {signature}', '', '{name!r} command',
-                              command.commands if isinstance(command, Group) else set(),
-                              name=command.qualified_name, signature=command.signature)
+                              target_command.commands if isinstance(target_command, Group) else set(),
+                              name=target_command.qualified_name, signature=target_command.signature)
 
-    async def _help_cog(self, ctx: DozerContext, cog):
+    async def _help_cog(self, ctx: DozerContext, cog: Cog):
         """Gets the help message for one cog."""
         await self._show_help(ctx, None, 'Category: {cog_name}', inspect.cleandoc(cog.__doc__ or ''),
                               '{cog_name!r} category',
-                              (command for command in ctx.bot.commands if command.cog is cog),
+                              (target_command for target_command in ctx.bot.commands if target_command.cog is cog),
                               cog_name=type(cog).__name__)
 
-    async def _show_help(self, ctx: DozerContext, start_page: discord.Embed, title: str, description: str,
+    @staticmethod
+    async def _show_help(ctx: DozerContext, start_page: Optional[Embed], title: str, description: str,
                          footer: str, commands, **format_args):
         """Creates and sends a template help message, with arguments filled in."""
         format_args['prefix'] = ctx.prefix
@@ -128,20 +133,20 @@ class General(Cog):
                     continue
             command_chunks = list(chunk(sorted(filtered_commands, key=lambda cmd: cmd.name), 4))
             format_args['len_pages'] = len(command_chunks)
-            pages = []
+            pages: List[Union[Embed, Dict[str, Embed]]] = []
             for page_num, page_commands in enumerate(command_chunks):
                 format_args['page_num'] = page_num + 1
-                page = discord.Embed(title=title.format(**format_args), description=description.format(**format_args),
-                                     color=discord.Color.blue())
-                for command in page_commands:
-                    if command.short_doc:
-                        embed_value = command.short_doc
-                    elif command.example_usage:  # Usage provided - show the user the command to see it
+                page: Embed = Embed(title=title.format(**format_args), description=description.format(**format_args),
+                                    color=discord.Color.blue())
+                for target_command in page_commands:
+                    if target_command.short_doc:
+                        embed_value = target_command.short_doc
+                    elif target_command.example_usage:  # Usage provided - show the user the command to see it
                         embed_value = 'Use `{0.prefix}{0.invoked_with} {1.qualified_name}` for more information.'.format(
-                            ctx, command)
+                            ctx, target_command)
                     else:
                         embed_value = 'No information provided.'
-                    page.add_field(name='{}{} {}'.format(ctx.prefix, command.qualified_name, command.signature),
+                    page.add_field(name='{}{} {}'.format(ctx.prefix, target_command.qualified_name, target_command.signature),
                                    value=embed_value, inline=False)
                 page.set_footer(text=footer.format(**format_args))
                 pages.append(page)
@@ -154,19 +159,21 @@ class General(Cog):
             elif start_page is not None:
                 info_emoji = '\N{INFORMATION SOURCE}'
                 p = Paginator(ctx, (info_emoji, ...), pages, start='info',
-                              auto_remove=ctx.channel.permissions_for(ctx.me))
+                              auto_remove=ctx.channel.permissions_for(ctx.me).manage_messages)
                 async for reaction in p:
                     if reaction == info_emoji:
                         p.go_to_page('info')
             else:
-                await paginate(ctx, pages, auto_remove=ctx.channel.permissions_for(ctx.me))
+                await paginate(ctx, pages, auto_remove=ctx.channel.permissions_for(ctx.me).manage_messages)
         elif start_page:  # No commands - command without subcommands or empty cog - but a usable info page
             await ctx.send(embed=start_page)
-        else:  # No commands, and no info page
+        else:  # No commands and no info page
             format_args['len_pages'] = 1
             format_args['page_num'] = 1
-            embed = discord.Embed(title=title.format(**format_args), description=description.format(**format_args),
-                                  color=discord.Color.blue())
+            embed: Embed = Embed(
+                title=title.format(**format_args),
+                description=description.format(**format_args),
+                color=discord.Color.blue())
             embed.set_footer(text=footer.format(**format_args))
             await ctx.send(embed=embed)
 
@@ -185,7 +192,7 @@ class General(Cog):
         Display the bot's invite link.
         The generated link gives all permissions the bot requires. If permissions are removed, some commands will be unusable.
         """
-        bot_info = await self.bot.application_info()
+        bot_info: AppInfo = await self.bot.application_info()
         if not bot_info.bot_public or self.bot.config['invite_override'] != "":
             await ctx.send(self.bot.config['invite_override'] or "The bot is not able to be publicly invited. Please "
                                                                  "contact the bot developer. If you are the bot "
@@ -194,20 +201,20 @@ class General(Cog):
         perms = 0
         for cmd in ctx.bot.walk_commands():
             perms |= cmd.required_permissions.value
-        await ctx.send('<{}>'.format(oauth_url(ctx.me.id, discord.Permissions(perms))))
+        await ctx.send('<{}>'.format(oauth_url(str(ctx.me.id), discord.Permissions(perms))))
 
     @command(aliases=["setprefix"])
     @guild_only()
     @has_permissions(manage_guild=True)
     async def configprefix(self, ctx: DozerContext, prefix: str):
         """Update a servers dynamic prefix"""
-        new_prefix = DynamicPrefixEntry(
+        new_prefix: DynamicPrefixEntry = DynamicPrefixEntry(
             guild_id=int(ctx.guild.id),
             prefix=prefix
         )
         await new_prefix.update_or_add()
         await self.bot.dynamic_prefix.refresh()
-        e = discord.Embed(color=blurple)
+        e: Embed = Embed(color=blurple)
         e.add_field(name='Success!', value=f"`{ctx.guild}`'s prefix has set to `{prefix}`!")
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)

@@ -5,8 +5,8 @@ import functools
 import itertools
 import math
 import random
-import typing
 from datetime import timedelta, timezone, datetime
+from typing import List, Optional
 
 import aiohttp
 import discord
@@ -18,9 +18,10 @@ from loguru import logger
 from dozer.bot import Dozer
 from dozer.context import DozerContext
 from ._utils import *
+from .. import db
 
 blurple = discord.Color.blurple()
-from .. import db
+
 
 ADD_LIMIT = 2147483647
 LEVEL_SET_LIMIT = 100000
@@ -455,7 +456,7 @@ class Levels(Cog):
             notify_channel = ctx.guild.get_channel(settings.lvl_up_msgs)
 
             enabled = "Enabled" if settings.enabled else "Disabled"
-            embed.set_author(name=ctx.guild, icon_url=ctx.guild.icon.url if ctx.guild.icon else None)
+            embed.set_author(name=ctx.guild, icon_url=ctx.guild.icon.url)
             embed.add_field(name=f"Levels are {enabled} for {ctx.guild}", value=f"XP min: {settings.xp_min}\n"
                                                                                 f"XP max: {settings.xp_max}\n"
                                                                                 f"Cooldown: {settings.xp_cooldown} Seconds\n"
@@ -691,7 +692,7 @@ class Levels(Cog):
 
     @command(aliases=["ranks", "leaderboard"])
     @guild_only()
-    async def levels(self, ctx: DozerContext, start: typing.Optional[discord.Member]):
+    async def levels(self, ctx: DozerContext, start: Optional[discord.Member]):
         """Show the XP leaderboard for this server. Leaderboard refreshes every 5 minutes or so"""
 
         # Order by total_xp needs a tiebreaker, otherwise all records with equal XP will have the same rank
@@ -759,7 +760,7 @@ class XPRole(db.DatabaseTable):
         self.level = level
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["XPRole"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -797,7 +798,7 @@ class MemberXP(db.DatabaseTable):
         self.last_given_at = last_given_at
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["MemberXP"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:
@@ -863,7 +864,7 @@ class GuildXPSettings(db.DatabaseTable):
         self.keep_old_roles = keep_old_roles
 
     @classmethod
-    async def get_by(cls, **kwargs):
+    async def get_by(cls, **kwargs) -> List["GuildXPSettings"]:
         results = await super().get_by(**kwargs)
         result_list = []
         for result in results:

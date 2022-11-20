@@ -2,14 +2,18 @@
 import datetime
 import re
 import xml.etree.ElementTree
+from typing import List, TYPE_CHECKING
 
 import aiohttp
 import discord
 
 from .AbstractSources import Source
 
+if TYPE_CHECKING:
+    from dozer import Dozer
 
-def clean_html(raw_html):
+
+def clean_html(raw_html: str) -> str:
     """Clean all HTML tags.
     From https://stackoverflow.com/questions/9662346/python-code-to-remove-html-tags-from-a-string"""
     cleanr = re.compile('<.*?>')
@@ -20,13 +24,13 @@ def clean_html(raw_html):
 class RSSSource(Source):
     """Given an arbitrary RSS feed, get new posts from it"""
     url: str = ""
-    color = discord.colour.Color.blurple()
-    date_formats = ["%a, %d %b %Y %H:%M:%S %z",
-                    "%a, %d %b %Y %H:%M:%S %Z"]  # format for datetime.strptime()
+    color: discord.Colour = discord.colour.Color.blurple()
+    date_formats: List[str] = ["%a, %d %b %Y %H:%M:%S %z",
+                               "%a, %d %b %Y %H:%M:%S %Z"]  # format for datetime.strptime()
     base_url: str = ""
     read_more_str: str = "...\n Read More"
 
-    def __init__(self, aiohttp_session: aiohttp.ClientSession, bot):
+    def __init__(self, aiohttp_session: aiohttp.ClientSession, bot: "Dozer"):
         super().__init__(aiohttp_session, bot)
         self.guids_seen: set = set()
 
