@@ -231,6 +231,7 @@ class JVNBlog(RSSSource):
     aliases = '148', 'robowranglers'
     description = "Blog posts by John V Neun, 148 Head Engineer"
     color = discord.colour.Color(value=000000)
+    disabled = True # He locked his blog
 
 
 class SpectrumBlog(RSSSource):
