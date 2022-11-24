@@ -16,8 +16,9 @@ class Buttons(discord.ui.View):
         super().__init__(timeout=timeout)
 
     @discord.ui.button(label="Start Modmail", style=discord.ButtonStyle.blurple, custom_id="modmail_button")
-    async def start_modmail_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+    async def start_modmail_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Callback for button to show modal"""
+        # print("Button pressed") # When button is pressed just output that it was pressed
         await interaction.response.send_modal(StartModmailModal(title="New Modmail"))
 
 
