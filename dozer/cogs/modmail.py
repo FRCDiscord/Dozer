@@ -28,7 +28,7 @@ class StartModmailModal(ui.Modal):
     subject = ui.TextInput(label='Subject')
     message = ui.TextInput(label='Message', style=discord.TextStyle.paragraph)
 
-    async def on_submit(self, interaction: discord.Interaction):
+    async def on_submit(self, interaction: discord.Interaction):  # pylint: disable=arguments-differ
         """Handles when a modal is submitted"""
         target_record = await ModmailConfig.get_by(guild_id=interaction.guild_id)
         if len(target_record) == 0:
@@ -41,9 +41,6 @@ class StartModmailModal(ui.Modal):
 
 class Modmail(Cog):
     """A cog for Dozer's modmail functions"""
-
-    def __init__(self, bot: commands.Bot):
-        super().__init__(bot)
 
     @command()
     @has_permissions(administrator=True)
