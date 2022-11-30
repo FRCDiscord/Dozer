@@ -102,4 +102,5 @@ class ModmailConfig(db.DatabaseTable):
 
 async def setup(bot):
     """Adds the actionlog cog to the bot."""
+    bot.add_view(Buttons())
     await bot.add_cog(Modmail(bot))
