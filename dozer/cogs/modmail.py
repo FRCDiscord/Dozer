@@ -18,7 +18,6 @@ class Buttons(discord.ui.View):
     @discord.ui.button(label="Start Modmail", style=discord.ButtonStyle.blurple, custom_id="modmail_button")
     async def start_modmail_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Callback for button to show modal"""
-        # print("Button pressed") # When button is pressed just output that it was pressed
         await interaction.response.send_modal(StartModmailModal(title="New Modmail"))
 
 
@@ -54,17 +53,12 @@ class Modmail(Cog):
     @has_permissions(administrator=True)
     async def create_modmail_button(self, ctx):
         """Creates modmail button"""
-        view = Buttons()
-        await ctx.send("Click the button to start a new modmail thread!", view=view)
-
-    @command()
-    async def start_modmail(self, ctx: DozerContext):
-        """Starts a modmail interaction"""
         target_record = await ModmailConfig.get_by(guild_id=ctx.guild.id)
         if len(target_record) == 0:
             await ctx.reply("Modmail is not configured for this server!")
             return
-        await ctx.interaction.response.send_modal(StartModmailModal(title="New Modmail"))
+        view = Buttons()
+        await ctx.send("Click the button to start a new modmail thread!", view=view)
 
 
 class ModmailConfig(db.DatabaseTable):
