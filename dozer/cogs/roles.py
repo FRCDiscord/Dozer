@@ -549,7 +549,6 @@ class Roles(Cog):
 
     async def update_role_menu(self, ctx: DozerContext, menu):
         """Updates a reaction role menu"""
-        menu = int(menu)
         menu_message = await self.safe_message_fetch(ctx, menu=menu)
 
         menu_embed = discord.Embed(title=f"Role Menu: {menu.name}")
@@ -632,7 +631,7 @@ class Roles(Cog):
         link = f"https://discordapp.com/channels/{ctx.guild.id}/{message.channel.id}/{message.id}"
         e.add_field(name='Success!',
                     value=f"I added created role menu [\"{name}\"]({link}) in channel {channel.mention}")
-        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
     createmenu.example_usage = """
@@ -687,7 +686,7 @@ class Roles(Cog):
         link = f"https://discordapp.com/channels/{ctx.guild.id}/{message.channel.id}/{message_id}"
         shortcut = f"[{menu.name}]({link})" if menu else f"[{message_id}]({link})"
         e.add_field(name='Success!', value=f"I added {role.mention} to message \"{shortcut}\" with reaction {emoji}")
-        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
     addrole.example_usage = """
@@ -720,7 +719,7 @@ class Roles(Cog):
         link = f"https://discordapp.com/channels/{ctx.guild.id}/{message.channel.id}/{message_id}"
         shortcut = f"[{menu.name}]({link})" if menu else f"[{message_id}]({link})"
         e.add_field(name='Success!', value=f"I removed {role.mention} from message {shortcut}")
-        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
     delrole.example_usage = """
