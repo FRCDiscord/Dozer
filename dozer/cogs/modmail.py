@@ -205,7 +205,7 @@ modmail_cog = None
 
 
 async def setup(bot):
-    """Adds the actionlog cog to the bot."""
+    """Adds the modmail cog to the bot."""
     bot.add_view(Buttons())
     global modmail_cog
     modmail_cog = Modmail(bot)
