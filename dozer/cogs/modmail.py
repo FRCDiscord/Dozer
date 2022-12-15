@@ -1,13 +1,17 @@
 """Provides modmail functions for Dozer."""
+import datetime
+import io
 
 import discord
 from discord import ui
-from discord.ext import commands
 from discord.ext.commands import has_permissions
 
 from dozer.context import DozerContext
 from ._utils import *
 from .. import db
+
+
+global modmail_cog
 
 
 class Buttons(discord.ui.View):
@@ -28,19 +32,77 @@ class Buttons(discord.ui.View):
 class StartModmailModal(ui.Modal):
     """Modal for opening a modmail ticket"""
 
-    subject = ui.TextInput(label='Subject')
-    message = ui.TextInput(label='Message', style=discord.TextStyle.paragraph)
+    subject = ui.TextInput(label='Subject', custom_id="subject")
+    message = ui.TextInput(label='Message', style=discord.TextStyle.paragraph, custom_id="message")
 
     async def on_submit(self, interaction: discord.Interaction):  # pylint: disable=arguments-differ
         """Handles when a modal is submitted"""
+        subject = interaction.data['components'][0]['components'][0]['value']
+        message = interaction.data['components'][1]['components'][0]['value']
+
+        new_ticket_embed = discord.Embed(
+            title="New Ticket",
+            description="Send a message with /reply to reply. Messages are ignored, and can be used "
+                        "for staff discussion.",
+            timestamp=datetime.datetime.utcnow(),
+        )
+        new_ticket_embed.set_footer(
+            text=f"{interaction.user.name}#{interaction.user.discriminator} | {interaction.user.id}",
+            icon_url=interaction.user.avatar.url if interaction.user.avatar is not None else None,
+        )
         target_record = await ModmailConfig.get_by(guild_id=interaction.guild_id)
-        await interaction.client.get_channel(target_record[0].target_channel).send("AAA")
-        await interaction.user.send("AAAA")
-        await interaction.response.send_message("Check your DMs!", ephemeral=True)
+        mod_channel = interaction.client.get_channel(target_record[0].target_channel)
+        mod_message = await mod_channel.send(interaction.user.name)
+        mod_thread = await mod_channel.create_thread(name=subject, message=mod_message)
+        await mod_thread.send(embed=new_ticket_embed)
+
+        await interaction.response.send_message("Creating private modmail thread!", ephemeral=True)
+        user_thread = await interaction.channel.create_thread(name=subject)
+        await user_thread.add_user(interaction.user)
+        await user_thread.join()
+        thread_record = ModmailThreads(user_thread=user_thread.id, mod_thread=mod_thread.id)
+        await thread_record.update_or_add()
+
+        await Modmail.send_modmail_embeds(modmail_cog, source_channel=user_thread.id, message_content=message)
 
 
 class Modmail(Cog):
     """A cog for Dozer's modmail functions"""
+    async def send_modmail_embeds(self, source_channel, message_content, received_files=[]):
+        lookup = await ModmailThreads.get_by(user_thread=source_channel)
+        if len(lookup) == 0:
+            lookup = await ModmailThreads.get_by(mod_thread=source_channel)
+        mod_thread = self.bot.get_channel(lookup[0].mod_thread)
+        user_thread = self.bot.get_channel(lookup[0].user_thread)
+        guild = user_thread.guild
+
+        to_send = message_content
+        embed = discord.Embed(
+            title="New Message",
+            description=to_send[:2047],
+            timestamp=datetime.datetime.utcnow(),
+        )
+        if len(to_send) > 2047:
+            embed.add_field(name="Message (continued)", value=to_send[2048:3071])
+        if len(to_send) > 3071:
+            embed.add_field(name="Message (continued)", value=to_send[3072:4000])
+        embed.set_footer(text=f"{guild.name} | {guild.id}", icon_url=guild.icon.url if guild.icon is not None else None)
+        files = []
+        files2 = []
+        for file in received_files:
+            saved_file = io.BytesIO()
+            await file.save(saved_file)
+            files.append(discord.File(saved_file, file.filename))
+
+            saved_file2 = io.BytesIO()
+            await file.save(saved_file2)
+            files2.append(discord.File(saved_file2, file.filename))
+        await mod_thread.send(files=files, embed=embed)
+        await user_thread.send(files=files2, embed=embed)
+
+    @command()
+    async def reply(self, ctx: DozerContext, *, message):
+        await self.send_modmail_embeds(ctx.channel.id, message, ctx.message.attachments)
 
     @command()
     @has_permissions(administrator=True)
@@ -92,7 +154,40 @@ class ModmailConfig(db.DatabaseTable):
         return result_list
 
 
+class ModmailThreads(db.DatabaseTable):
+    """Holds threads for modmail"""
+    __tablename__ = "modmail_threads"
+    __uniques__ = "user_thread, mod_thread"
+
+    @classmethod
+    async def initial_create(cls):
+        """Create the table in the database"""
+        async with db.Pool.acquire() as conn:
+            await conn.execute(f"""
+            CREATE TABLE {cls.__tablename__} (
+            user_thread bigint NOT NULL,
+            mod_thread bigint NOT NULL,
+            PRIMARY KEY (user_thread, mod_thread)
+            )""")
+
+    def __init__(self, user_thread: int, mod_thread: int):
+        super().__init__()
+        self.user_thread = user_thread
+        self.mod_thread = mod_thread
+
+    @classmethod
+    async def get_by(cls, **kwargs):
+        results = await super().get_by(**kwargs)
+        result_list = []
+        for result in results:
+            obj = ModmailThreads(user_thread=result.get("user_thread"), mod_thread=result.get("mod_thread"))
+            result_list.append(obj)
+        return result_list
+
+
 async def setup(bot):
     """Adds the actionlog cog to the bot."""
     bot.add_view(Buttons())
-    await bot.add_cog(Modmail(bot))
+    global modmail_cog
+    modmail_cog = Modmail(bot)
+    await bot.add_cog(modmail_cog)
