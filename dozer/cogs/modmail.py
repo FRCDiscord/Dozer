@@ -11,11 +11,9 @@ from ._utils import *
 from .. import db
 
 
-global modmail_cog
-
-
 class Buttons(discord.ui.View):
     """Buttons? Buttons."""
+
     def __init__(self, *, timeout=None):  # timeout should be None for persistence
         super().__init__(timeout=timeout)
 
@@ -63,12 +61,18 @@ class StartModmailModal(ui.Modal):
         thread_record = ModmailThreads(user_thread=user_thread.id, mod_thread=mod_thread.id)
         await thread_record.update_or_add()
 
+        # PyCharm gets mad because modmail_cog is not initialized as the correct type globally, but is initialized
+        # during setup. This warning can safely be ignored.
         await Modmail.send_modmail_embeds(modmail_cog, source_channel=user_thread.id, message_content=message)
 
 
 class Modmail(Cog):
     """A cog for Dozer's modmail functions"""
-    async def send_modmail_embeds(self, source_channel, message_content, received_files=[]):
+
+    async def send_modmail_embeds(self, source_channel, message_content, received_files=None):
+        """Helper function to send modmail message embeds."""
+        if received_files is None:
+            received_files = []
         lookup = await ModmailThreads.get_by(user_thread=source_channel)
         if len(lookup) == 0:
             lookup = await ModmailThreads.get_by(mod_thread=source_channel)
@@ -102,7 +106,19 @@ class Modmail(Cog):
 
     @command()
     async def reply(self, ctx: DozerContext, *, message):
+        """Command to reply to a modmail thread."""
+        # ensure this is a modmail thread
+        lookup = await ModmailThreads.get_by(user_thread=ctx.channel.id)
+        if len(lookup) == 0:
+            lookup = await ModmailThreads.get_by(mod_thread=ctx.channel.id)
+        if len(lookup) == 0:
+            await ctx.reply("This command can only be used inside a modmail thread!")
+            return
+
         await self.send_modmail_embeds(ctx.channel.id, message, ctx.message.attachments)
+        if ctx.interaction:
+            await ctx.defer(ephemeral=True)
+            await ctx.interaction.delete_original_response()
 
     @command()
     @has_permissions(administrator=True)
@@ -183,6 +199,9 @@ class ModmailThreads(db.DatabaseTable):
             obj = ModmailThreads(user_thread=result.get("user_thread"), mod_thread=result.get("mod_thread"))
             result_list.append(obj)
         return result_list
+
+
+modmail_cog = None
 
 
 async def setup(bot):
