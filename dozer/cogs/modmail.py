@@ -18,7 +18,11 @@ class Buttons(discord.ui.View):
     @discord.ui.button(label="Start Modmail", style=discord.ButtonStyle.blurple, custom_id="modmail_button")
     async def start_modmail_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         """Callback for button to show modal"""
-        await interaction.response.send_modal(StartModmailModal(title="New Modmail"))
+        target_record = await ModmailConfig.get_by(guild_id=interaction.guild_id)
+        if len(target_record) == 0:
+            await interaction.response.send_message("Sorry, this server has not configured modmail correctly yet!")
+        else:
+            await interaction.response.send_modal(StartModmailModal(title="New Modmail"))
 
 
 class StartModmailModal(ui.Modal):
@@ -30,12 +34,9 @@ class StartModmailModal(ui.Modal):
     async def on_submit(self, interaction: discord.Interaction):  # pylint: disable=arguments-differ
         """Handles when a modal is submitted"""
         target_record = await ModmailConfig.get_by(guild_id=interaction.guild_id)
-        if len(target_record) == 0:
-            print("No modmail config found!")
-        elif len(target_record) == 1:
-            print("do the thing")
-        else:
-            print("There has been a critical error. Please contact the Dozer devs.")
+        await interaction.client.get_channel(target_record[0].target_channel).send("AAA")
+        await interaction.user.send("AAAA")
+        await interaction.response.send_message("Check your DMs!", ephemeral=True)
 
 
 class Modmail(Cog):
