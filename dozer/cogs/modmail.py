@@ -84,11 +84,11 @@ class Modmail(Cog):
         guild = user_thread.guild
 
         to_send = message_content
-        red_or_green = discord.Color.green() if is_user_thread else discord.Color.red()
+        color = discord.Color.green() if is_user_thread else discord.Color.red()
         embed = discord.Embed(
             title="New Message",
             description=to_send[:2047],
-            color=red_or_green,
+            color=color,
             timestamp=datetime.datetime.utcnow(),
         )
         if len(to_send) > 2047:
