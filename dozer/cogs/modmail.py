@@ -50,7 +50,8 @@ class StartModmailModal(ui.Modal):
         )
         target_record = await ModmailConfig.get_by(guild_id=interaction.guild_id)
         mod_channel = interaction.client.get_channel(target_record[0].target_channel)
-        mod_message = await mod_channel.send(interaction.user.name)
+        user_string = f"{interaction.user.name}#{interaction.user.discriminator} ({interaction.user.id})"
+        mod_message = await mod_channel.send(user_string)
         mod_thread = await mod_channel.create_thread(name=subject, message=mod_message)
         await mod_thread.send(embed=new_ticket_embed)
 
