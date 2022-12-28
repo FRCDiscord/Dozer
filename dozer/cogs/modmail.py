@@ -75,16 +75,20 @@ class Modmail(Cog):
         if received_files is None:
             received_files = []
         lookup = await ModmailThreads.get_by(user_thread=source_channel)
+        is_user_thread = True
         if len(lookup) == 0:
             lookup = await ModmailThreads.get_by(mod_thread=source_channel)
+            is_user_thread = False
         mod_thread = self.bot.get_channel(lookup[0].mod_thread)
         user_thread = self.bot.get_channel(lookup[0].user_thread)
         guild = user_thread.guild
 
         to_send = message_content
+        red_or_green = discord.Color.green() if is_user_thread else discord.Color.red()
         embed = discord.Embed(
             title="New Message",
             description=to_send[:2047],
+            color=red_or_green,
             timestamp=datetime.datetime.utcnow(),
         )
         if len(to_send) > 2047:
