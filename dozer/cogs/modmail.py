@@ -50,7 +50,8 @@ class StartModmailModal(ui.Modal):
         )
         target_record = await ModmailConfig.get_by(guild_id=interaction.guild_id)
         mod_channel = interaction.client.get_channel(target_record[0].target_channel)
-        mod_message = await mod_channel.send(interaction.user.name)
+        user_string = f"{interaction.user.name}#{interaction.user.discriminator} ({interaction.user.id})"
+        mod_message = await mod_channel.send(user_string)
         mod_thread = await mod_channel.create_thread(name=subject, message=mod_message)
         await mod_thread.send(embed=new_ticket_embed)
 
@@ -74,16 +75,20 @@ class Modmail(Cog):
         if received_files is None:
             received_files = []
         lookup = await ModmailThreads.get_by(user_thread=source_channel)
+        is_user_thread = True
         if len(lookup) == 0:
             lookup = await ModmailThreads.get_by(mod_thread=source_channel)
+            is_user_thread = False
         mod_thread = self.bot.get_channel(lookup[0].mod_thread)
         user_thread = self.bot.get_channel(lookup[0].user_thread)
         guild = user_thread.guild
 
         to_send = message_content
+        color = discord.Color.green() if is_user_thread else discord.Color.red()
         embed = discord.Embed(
             title="New Message",
             description=to_send[:2047],
+            color=color,
             timestamp=datetime.datetime.utcnow(),
         )
         if len(to_send) > 2047:
