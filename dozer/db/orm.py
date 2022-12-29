@@ -154,7 +154,7 @@ class ORMTable(DatabaseTable):
     @classmethod
     async def get_one(cls, **filters):
         """It's like get_by except it returns exactly one record or None."""
-        return (cls.get_by(**filters) or [None])[0]
+        return ((await cls.get_by(**filters)) or [None])[0]
 
     @classmethod
     async def delete(cls, **filters):
