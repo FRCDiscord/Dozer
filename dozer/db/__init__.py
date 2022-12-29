@@ -4,7 +4,7 @@ from typing import List, Dict
 import asyncpg
 from loguru import logger
 
-Pool = None
+Pool: asyncpg.Pool = None
 
 
 async def db_init(db_url):
