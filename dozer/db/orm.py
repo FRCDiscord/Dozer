@@ -16,6 +16,23 @@ class ORMTable(DatabaseTable):
 
     notes: 
      * __uniques__ MUST be a tuple! Do not set it to a string! Runtime will check for this and yell at you!
+
+
+    For example:
+
+    ```python
+    class StarboardConfig(db.orm.ORMTable):
+        __tablename__ = 'starboard_settings'
+        __uniques__ = ('guild_id',)
+        guild_id: int     = Column("bigint NOT NULL")
+        channel_id: int   = Column("bigint NOT NULL")
+        star_emoji: str   = Column("varchar NOT NULL")
+        cancel_emoji: str = Column("varchar")
+        threshold: int    = Column("bigint NOT NULL")
+    ```
+    
+    will produce a functionally equivalent class without overriding initial_create or get_by.
+
     """
     __tablename__: str = ''
     __versions__: Tuple[int] = tuple()
