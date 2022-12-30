@@ -52,7 +52,7 @@ class StartModmailModal(ui.Modal):
         mod_channel = interaction.client.get_channel(target_record[0].target_channel)
         user_string = f"{interaction.user.name}#{interaction.user.discriminator} ({interaction.user.id})"
         mod_message = await mod_channel.send(user_string)
-        mod_thread = await mod_channel.create_thread(name=subject, message=mod_message)
+        mod_thread = await mod_channel.create_thread(name=f"{user_string}: {subject}", message=mod_message)
         await mod_thread.send(embed=new_ticket_embed)
 
         await interaction.response.send_message("Creating private modmail thread!", ephemeral=True)
@@ -64,6 +64,7 @@ class StartModmailModal(ui.Modal):
 
         # PyCharm gets mad because modmail_cog is not initialized as the correct type globally, but is initialized
         # during setup. This warning can safely be ignored.
+        # noinspection PyTypeChecker
         await Modmail.send_modmail_embeds(modmail_cog, source_channel=user_thread.id, message_content=message)
 
 
