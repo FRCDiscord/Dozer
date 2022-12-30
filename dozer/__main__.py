@@ -45,7 +45,8 @@ config = {
     'presences_intents': False,
     'is_backup': False,
     'invite_override': "",
-    "sentry_url": ""
+    "sentry_url": "",
+    "disabled_cogs": []
 }
 config_file = 'config.json'
 
@@ -81,13 +82,6 @@ intents.presences = bool(config['presences_intents'])
 intents.message_content = True
 
 bot = Dozer(config, intents=intents, max_messages=config['cache_size'])
-
-
-async def load_cogs():
-    """Loads cogs for startup"""
-    for ext in os.listdir('dozer/cogs'):
-        if not ext.startswith(('_', '.')):
-            await bot.load_extension('dozer.cogs.' + ext[:-3])  # Remove '.py'
 
 
 bot.run()
