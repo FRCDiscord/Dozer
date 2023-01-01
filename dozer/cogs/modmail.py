@@ -1,6 +1,7 @@
 """Provides modmail functions for Dozer."""
 import datetime
 import io
+from asyncio import sleep
 
 import discord
 from discord import ui
@@ -40,8 +41,10 @@ class StartModmailModal(ui.Modal):
 
         new_ticket_embed = discord.Embed(
             title="New Ticket",
-            description="Send a message with /reply to reply. Messages are ignored, and can be used "
-                        "for staff discussion.",
+            description="Send a message with the reply command to reply. Messages not starting with the reply command "
+                        "are ignored. Messages sent with attachments will forward those files and can be used for "
+                        "screenshots if necessary. Use the modmail_close command when you are done, and the thread "
+                        "will be closed.",
             timestamp=datetime.datetime.utcnow(),
         )
         new_ticket_embed.set_footer(
@@ -59,19 +62,21 @@ class StartModmailModal(ui.Modal):
         user_thread = await interaction.channel.create_thread(name=subject)
         await user_thread.add_user(interaction.user)
         await user_thread.join()
+        await user_thread.send(embed=new_ticket_embed)
         thread_record = ModmailThreads(user_thread=user_thread.id, mod_thread=mod_thread.id)
         await thread_record.update_or_add()
 
         # PyCharm gets mad because modmail_cog is not initialized as the correct type globally, but is initialized
         # during setup. This warning can safely be ignored.
         # noinspection PyTypeChecker
-        await Modmail.send_modmail_embeds(modmail_cog, source_channel=user_thread.id, message_content=message)
+        await Modmail.send_modmail_embeds(modmail_cog, source_channel=user_thread.id, author=interaction.user,
+                                          message_content=message)
 
 
 class Modmail(Cog):
     """A cog for Dozer's modmail functions"""
 
-    async def send_modmail_embeds(self, source_channel, message_content, received_files=None):
+    async def send_modmail_embeds(self, source_channel, message_content, author, received_files=None):
         """Helper function to send modmail message embeds."""
         if received_files is None:
             received_files = []
@@ -96,7 +101,10 @@ class Modmail(Cog):
             embed.add_field(name="Message (continued)", value=to_send[2048:3071])
         if len(to_send) > 3071:
             embed.add_field(name="Message (continued)", value=to_send[3072:4000])
-        embed.set_footer(text=f"{guild.name} | {guild.id}", icon_url=guild.icon.url if guild.icon is not None else None)
+        embed.set_footer(
+            text=f"{author.name}#{author.discriminator} | {author.id} | {guild.name}",
+            icon_url=author.avatar.url if author.avatar is not None else None,
+        )
         files = []
         files2 = []
         for file in received_files:
@@ -121,7 +129,7 @@ class Modmail(Cog):
             await ctx.reply("This command can only be used inside a modmail thread!")
             return
 
-        await self.send_modmail_embeds(ctx.channel.id, message, ctx.message.attachments)
+        await self.send_modmail_embeds(ctx.channel.id, message, ctx.author, ctx.message.attachments)
         if ctx.interaction:
             await ctx.defer(ephemeral=True)
             await ctx.interaction.delete_original_response()
@@ -144,6 +152,26 @@ class Modmail(Cog):
             return
         view = Buttons()
         await ctx.send("Click the button to start a new modmail thread!", view=view)
+
+    @command()
+    async def modmail_close(self, ctx: DozerContext):
+        """Closes modmail threads"""
+        if ctx.interaction:
+            await ctx.reply("Closing modmail thread!")
+            await ctx.interaction.delete_original_response()
+        thread = await ModmailThreads.get_by(user_thread=ctx.channel.id)
+        if len(thread) == 0:
+            thread = await ModmailThreads.get_by(mod_thread=ctx.channel.id)
+        if len(thread) == 0:
+            await ctx.reply("This is not a modmail thread!")
+        else:
+            await self.send_modmail_embeds(ctx.channel.id, "The thread has been closed. Please do not send any more "
+                                                           "messages in here.", ctx.author)
+            await sleep(10)
+            user_thread = ctx.bot.get_channel(thread[0].user_thread)
+            await user_thread.edit(archived=True, locked=True)
+            mod_thread = ctx.bot.get_channel(thread[0].mod_thread)
+            await mod_thread.edit(archived=True, locked=True)
 
 
 class ModmailConfig(db.DatabaseTable):
