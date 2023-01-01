@@ -1,9 +1,11 @@
 """Provides database storage for the Dozer Discord bot"""
-from typing import List, Dict, Tuple
-from .pqt import Column, Col
 
+# pylint generates false positives on this warning
+# pylint: disable=unsupported-membership-test
+from typing import List, Dict, Tuple
 import asyncpg
 from loguru import logger
+from .pqt import Column, Col
 
 __all__ = ["Pool", "Column", "Col", "db_init", "db_migrate", "DatabaseTable", "ORMTable", "ConfigCache"]
 
@@ -25,6 +27,9 @@ async def db_migrate():
         )""")
     logger.info("Checking for db migrations")
     for cls in DatabaseTable.__subclasses__() + ORMTable.__subclasses__():
+
+        if cls is ORMTable:  # abstract class, do not check
+            continue
         
         if not cls.__tablename__:
             raise ValueError(f"{cls.__name__}.__tablename__ cannot be blank!")
@@ -44,7 +49,12 @@ async def db_migrate():
                 # Migration/creation required, go to the function in the subclass for it
                 await cls.initial_migrate()
                 version = {"version_num": 0}
-            if int(version["version_num"]) < len(cls.__versions__):
+
+            if cls.__versions__ is None:
+                # this uses the ORMTable autoversioner
+                await cls.migrate_to_version(int(version["version_num"]))
+
+            elif int(version["version_num"]) < len(cls.__versions__):
                 # the version in the DB is less than the version in the bot, run all the migrate scripts necessary
                 logger.info(f"Table {cls.__tablename__} is out of date attempting to migrate")
                 for i in range(int(version["version_num"]), len(cls.__versions__)):
@@ -173,12 +183,16 @@ class ORMTable(DatabaseTable):
     * they are defined from class attributes
     * initial_create, initial_migrate, get_by, delete, and update_or_add (upsert) are handled for you
     * ability to instantiate objects directly from the results of SQL queries using from_record
+    * inferred versioning from column parameters
 
     This class can vastly reduce the amount of boilerplate in a codebase.
 
     notes: 
      * __uniques__ MUST be a tuple of primary key column names! 
        Do not set it to a string! Runtime will check for this and yell at you!
+     * By default, __version__ is None. This means that versions/migrations will be computed from arguments given to Column.
+       You can set __version__ to a List for the default functionality of calling migration functions if desired.
+
 
     For example:
 
@@ -186,18 +200,23 @@ class ORMTable(DatabaseTable):
     class StarboardConfig(db.orm.ORMTable):
         __tablename__ = 'starboard_settings'
         __uniques__ = ('guild_id',) 
-        guild_id: int     = Column("bigint NOT NULL")
-        channel_id: int   = Column("bigint NOT NULL")
-        star_emoji: str   = Column("varchar NOT NULL")
-        cancel_emoji: str = Column("varchar")
-        threshold: int    = Column("bigint NOT NULL")
+        
+        # the column definitions
+        guild_id: int     = db.Column("bigint NOT NULL")
+        channel_id: int   = db.Column("bigint NOT NULL")
+        star_emoji: str   = db.Column("varchar NOT NULL")
+        cancel_emoji: str = db.Column("varchar")
+        threshold: int    = db.Column("bigint NOT NULL")
+
+        # this parameter could be added later down the line, and it will be added using ALTER TABLE.
+        some_new_col: int = db.Column("bigint NOT NULL DEFAULT 10", version=1)
     ```
     
     will produce a functionally equivalent class without overriding initial_create or get_by.
 
     """
     __tablename__: str = ''
-    __versions__: Tuple[int] = tuple()
+    __versions__: Tuple[int] | None = None
     __uniques__: Tuple[str] = tuple()
 
     _columns: Dict[str, Column] = None
@@ -209,10 +228,6 @@ class ORMTable(DatabaseTable):
         """Create the table in the database. Already implemented for you. Can still override if desired."""
 
         logger.debug(cls.__name__ + " process")
-        if cls is ORMTable:
-            # abstract class need not apply
-            logger.debug(cls.__name__ + " skipped")
-            return
 
         columns = cls.get_columns()
         # assemble "column = Column('integer not null') into column integer not null, "
@@ -228,16 +243,6 @@ class ORMTable(DatabaseTable):
         async with Pool.acquire() as conn:
             await conn.execute(query_str)
 
-
-    @classmethod
-    async def initial_migrate(cls):
-        """Create a version entry in the versions table"""
-        if cls is ORMTable:
-            # abstract class need not apply
-            return
-
-        async with Pool.acquire() as conn:
-            await conn.execute("""INSERT INTO versions VALUES ($1, 0)""", cls.__tablename__)
 
     @staticmethod
     def nullify():
@@ -352,7 +357,32 @@ class ORMTable(DatabaseTable):
     async def get_one(cls, **filters):
         """It's like get_by except it returns exactly one record or None."""
         return ((await cls.get_by(**filters)) or [None])[0]
+    
 
+    @classmethod
+    async def migrate_to_version(cls, prev_version:int, next_version:int=None):
+        """Migrates current table from prev_version up to next_version (setting next_version=None assumes latest)
+        This only supports ALTER TABLE ADD COLUMN type edits at the moment, but if you
+        really need more complex functionality, feel free to override this function.
+
+        If __versions__ is set to None, this will get called in db_migrate.
+        """
+        versions = {}
+        for col_name, col in cls.get_columns().items():
+            v = col.version
+            if v <= prev_version or (next_version is not None and v > next_version):
+                continue 
+            if v not in versions:
+                versions[v] = [(col_name, col)]
+            else:
+                versions[v].append((col_name, col))
+        
+        async with Pool.acquire() as conn:
+            for vnum in sorted(versions.keys()):
+                for col_name, col in versions[vnum]:
+                    await conn.execute(f"ALTER TABLE {cls.__tablename__} ADD COLUMN {col_name} {col.sql};")
+                logger.info(f"updated {cls.__tablename__} from version {prev_version} to {vnum}")
+                prev_version = vnum
 
 
 
