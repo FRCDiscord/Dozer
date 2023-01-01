@@ -61,7 +61,7 @@ class TOA(Cog):
 
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
-        self.http_session = aiohttp.ClientSession()
+        self.http_session = bot.add_aiohttp_ses(aiohttp.ClientSession())
         self.parser = TOAParser(bot.config['toa']['key'], self.http_session, app_name=bot.config['toa']['app_name'])
 
     @group(invoke_without_command=True)

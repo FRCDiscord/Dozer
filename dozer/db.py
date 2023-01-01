@@ -47,6 +47,7 @@ async def db_migrate():
         else:
             await cls.initial_create()
             await cls.initial_migrate()
+    logger.info("All db migrations complete.")
 
 
 class DatabaseTable:

@@ -28,7 +28,7 @@ class TBA(Cog):
         super().__init__(bot)
         tba_config = bot.config['tba']
         self.gmaps_key = bot.config['gmaps_key']
-        self.http_session = aiohttp.ClientSession()
+        self.http_session = bot.add_aiohttp_ses(aiohttp.ClientSession())
         self.session = aiotba.TBASession(tba_config['key'], self.http_session)
         # self.parser = tbapi.TBAParser(tba_config['key'], cache=False)
 
