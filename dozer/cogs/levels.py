@@ -36,7 +36,7 @@ class Levels(Cog):
         super().__init__(bot)
         self._loop = asyncio.get_running_loop()
         self._loop.create_task(self.preload_cache())
-        self.session = aiohttp.ClientSession(loop=self._loop)
+        self.session = bot.add_aiohttp_ses(aiohttp.ClientSession(loop=self._loop))
         self.guild_settings = {}
         self._level_roles = {}
         self._xp_cache = {}  # dct[(guild_id, user_id)] = MemberXPCache(...)

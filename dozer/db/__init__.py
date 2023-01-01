@@ -67,6 +67,7 @@ async def db_migrate():
             async with Pool.acquire() as conn:
                 await conn.execute("""UPDATE versions SET version_num = $1 WHERE table_name = $2""",
                                     len(cls.__versions__), cls.__tablename__)
+    logger.info("All db migrations complete.")
 
 
 class DatabaseTable:
