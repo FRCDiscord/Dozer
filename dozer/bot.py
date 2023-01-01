@@ -48,8 +48,9 @@ class Dozer(commands.Bot):
 
     async def setup_hook(self) -> None:
         for ext in os.listdir('dozer/cogs'):
-            if not ext.startswith(('_', '.')):
-                await self.load_extension('dozer.cogs.' + ext[:-3])  # Remove '.py'
+            cog_name = ext[:-3]
+            if not ext.startswith(('_', '.')) and ext.endswith(".py") and not cog_name in self.config.get("disabled_cogs", []):
+                await self.load_extension('dozer.cogs.' + cog_name)  # Remove '.py'
         await db_init(self.config['db_url'])
         await db_migrate()
         await self.tree.sync()
