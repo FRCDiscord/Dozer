@@ -2,7 +2,7 @@
 
 # pylint generates false positives on this warning
 # pylint: disable=unsupported-membership-test
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Callable
 import asyncpg
 from loguru import logger
 from .pqt import Column, Col
@@ -44,23 +44,28 @@ async def db_migrate():
         table_name = $1)""", cls.__tablename__)
         if not exists['exists']:
             await cls.initial_create()
-            version = None
-        else:
-            version = await Pool.fetchrow("""SELECT version_num FROM versions WHERE table_name = $1""",
-                                            cls.__tablename__)
+            await cls.initial_migrate()
+        version = await Pool.fetchrow("""SELECT version_num FROM versions WHERE table_name = $1""",
+                                        cls.__tablename__)
         if version is None:
             # Migration/creation required, go to the function in the subclass for it
             await cls.initial_migrate()
             version = {"version_num": 0}
 
+        current_version = int(version['version_num'])
         if cls.__versions__ is None:
             # this uses the ORMTable autoversioner
-            await cls.migrate_to_version(int(version["version_num"]))
+            max_cls_version = max(cls.get_columns().values(), key=lambda c: c.version)
+            if current_version > max_cls_version:
+                raise RuntimeError(f"database version for {cls.__name__} ({cls.__tablename__}) is higher than in code "
+                                   f"({current_version} > {max_cls_version})")
 
-        elif int(version["version_num"]) < len(cls.__versions__):
+            await cls.migrate_to_version(current_version, None)
+
+        elif current_version < len(cls.__versions__):
             # the version in the DB is less than the version in the bot, run all the migrate scripts necessary
             logger.info(f"Table {cls.__tablename__} is out of date attempting to migrate")
-            for i in range(int(version["version_num"]), len(cls.__versions__)):
+            for i in range(current_version, len(cls.__versions__)):
                 # Run the update script for this version!
                 await cls.__versions__[i](cls)
                 logger.info(f"Successfully updated table {cls.__tablename__} from version {i} to {i + 1}")
@@ -73,8 +78,8 @@ async def db_migrate():
 class DatabaseTable:
     """Defines a database table"""
     __tablename__: str = ''
-    __versions__: List[int] = []
-    __uniques__: List[str] = []
+    __versions__: List[Callable] = []
+    __uniques__: str = ''
 
     # Declare the migrate/create functions
     @classmethod
@@ -184,18 +189,33 @@ class ORMTable(DatabaseTable):
     * they are defined from class attributes
     * initial_create, initial_migrate, get_by, delete, and update_or_add (upsert) are handled for you
     * ability to instantiate objects directly from the results of SQL queries using from_record
-    * inferred versioning from column parameters
+    * inferred versioning from column parameters (mostly adds columns)
 
     This class can vastly reduce the amount of boilerplate in a codebase.
 
-    notes: 
+    Differences from DatabaseTable:
      * __uniques__ MUST be a tuple of primary key column names! 
        Do not set it to a string! Runtime will check for this and yell at you!
      * By default, __version__ is None. This means that versions/migrations will be computed from arguments given to Column.
-       You can set __version__ to a List for the default functionality of calling migration functions if desired.
+     * initial_create/initial_migrate will create the latest version of the table, rather than version 0.
+    
+
+    Versioning:
+     * In general, columns should be defined using the latest version of the schema.
+      * If your table previously had an id field that's now channel_id, name the thing
+
+        channel_id: int = db.Column("bigint NOT NULL")
+
+      * The default versioning scheme looks at db.Column.version to see when the first version a column is introduced.
+        It will then either just add the column using ALTER TABLE ADD COLUMN or run a custom script via whatever script is in Column.alter_tbl.
+        
+      * You can set __version__ to a List for the default functionality of calling migration functions in order.
+
+        You can also override cls.initial_create and cls.initial_migrate to have tables created at version 0 and upgraded all the way up, 
+        like DatabaseTable.
 
 
-    For example:
+    Worked example:
 
     ```python
     class StarboardConfig(db.orm.ORMTable):
@@ -217,7 +237,7 @@ class ORMTable(DatabaseTable):
 
     """
     __tablename__: str = ''
-    __versions__: Tuple[int] | None = None
+    __versions__: List[Callable] | None = None
     __uniques__: Tuple[str] = tuple()
 
     _columns: Dict[str, Column] = None
@@ -226,7 +246,10 @@ class ORMTable(DatabaseTable):
     # Declare the migrate/create functions
     @classmethod
     async def initial_create(cls):
-        """Create the table in the database. Already implemented for you. Can still override if desired."""
+        """Create the table in the database. Already implemented for you. Can still override if desired.
+        Note that unlike DatabaseTable this will create a table directly from the latest version of the class,
+        rather than always version 0.
+        """
 
         logger.debug(cls.__name__ + " process")
 
@@ -358,15 +381,33 @@ class ORMTable(DatabaseTable):
     async def get_one(cls, **filters):
         """It's like get_by except it returns exactly one record or None."""
         return ((await cls.get_by(**filters)) or [None])[0]
+
+
+    @classmethod
+    async def set_initial_version(cls):
+        """Sets initial version. 
+
+        Note that unlike DatabaseTable, it will pick the max version available, as the table on creation
+        will directly use the latest schema.
+        
+        """
+
+        if cls.__versions__ is not None:
+            max_version = len(cls.__versions__)
+        else:
+            max_version = max(cls.get_columns().values(), key=lambda c: c.version)
+        await Pool.execute("""INSERT INTO versions (table_name, version_num) VALUES ($1,$2)""", cls.__tablename__, max_version)
     
 
     @classmethod
     async def migrate_to_version(cls, prev_version:int, next_version:int=None):
-        """Migrates current table from prev_version up to next_version (setting next_version=None assumes latest)
-        This only supports ALTER TABLE ADD COLUMN type edits at the moment, but if you
-        really need more complex functionality, feel free to override this function.
+        """Migrates current table from prev_version up to next_version. (setting next_version=None assumes latest)
+        For each Column object, it checks if the version attr is > prev_version, and calls the corresponding alter table
+        action to update it.
 
-        If __versions__ is set to None, this will get called in db_migrate.
+        If you really need more complex functionality, feel free to override this function, or not use it.
+
+        If __versions__ is set to None, this will get called in db_migrate. Otherwise, this function will not be used.
         """
         versions = {}
         for col_name, col in cls.get_columns().items():
@@ -381,7 +422,11 @@ class ORMTable(DatabaseTable):
         async with Pool.acquire() as conn:
             for vnum in sorted(versions.keys()):
                 for col_name, col in versions[vnum]:
-                    await conn.execute(f"ALTER TABLE {cls.__tablename__} ADD COLUMN {col_name} {col.sql};")
+
+                    if col.alter_tbl is None:
+                        await conn.execute(f"ALTER TABLE {cls.__tablename__} ADD COLUMN {col_name} {col.sql};")
+                    else:
+                        await conn.execute(f"ALTER TABLE {cls.__tablename__} {col.alter_tbl};")
                 logger.info(f"updated {cls.__tablename__} from version {prev_version} to {vnum}")
                 prev_version = vnum
 
