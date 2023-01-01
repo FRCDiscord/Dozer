@@ -362,32 +362,15 @@ class PrefixHandler:
         logger.info(f"{len(prefixes)} prefixes loaded from database")
 
 
-class DynamicPrefixEntry(db.DatabaseTable):
+class DynamicPrefixEntry(db.ORMTable):
     """Holds the custom prefixes for guilds"""
     __tablename__ = 'dynamic_prefixes'
-    __uniques__ = 'guild_id'
+    __uniques__ = ('guild_id',)
 
-    @classmethod
-    async def initial_create(cls):
-        """Create the table in the database"""
-        async with db.Pool.acquire() as conn:
-            await conn.execute(f"""
-                CREATE TABLE {cls.__tablename__} (
-                guild_id bigint NOT NULL,
-                prefix text NOT NULL,
-                PRIMARY KEY (guild_id)
-                )""")
+    guild_id = db.Column("bigint not null")
+    prefix: str = db.Column("text not null")
 
     def __init__(self, guild_id: int, prefix: str):
         super().__init__()
         self.guild_id = guild_id
         self.prefix = prefix
-
-    @classmethod
-    async def get_by(cls, **kwargs):
-        results = await super().get_by(**kwargs)
-        result_list = []
-        for result in results:
-            obj = DynamicPrefixEntry(guild_id=result.get("guild_id"), prefix=result.get("prefix"))
-            result_list.append(obj)
-        return result_list
