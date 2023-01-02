@@ -166,7 +166,7 @@ class Info(Cog):
 
         embed.add_field(name='Created on', value=f"<t:{int(guild.created_at.timestamp())}:f>")
         embed.add_field(name='Owner', value=guild.owner)
-        embed.add_field(name='Emoji', value="{} static, {} animated".format(static_emoji, animated_emoji))
+        embed.add_field(name='Emoji', value=f"{static_emoji} static, {animated_emoji} animated")
         embed.add_field(name='Roles', value=str(len(guild.roles) - 1))  # Remove @everyone
         embed.add_field(name='Channels', value=str(len(guild.channels)))
         embed.add_field(name='Nitro Boost Info', value=f'Level {ctx.guild.premium_tier}, '

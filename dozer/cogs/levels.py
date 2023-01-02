@@ -158,7 +158,7 @@ class Levels(Cog):
         """Check to see if a member is in the level cache and if not load from the database"""
         cached_member = self._xp_cache.get((guild_id, member_id))
         if cached_member is None:
-            logger.debug("Cache miss: guild_id=%d, user_id=%d", guild_id, member_id)
+            logger.debug(f"Cache miss: guild_id={guild_id}, user_id={member_id}")
             records = await MemberXP.get_by(guild_id=guild_id, user_id=member_id)
             if records:
                 logger.debug("Loading from database")
@@ -244,7 +244,7 @@ class Levels(Cog):
             logger.warning("Task syncing records was cancelled prematurely, restarting")
         else:
             # exc could be None if the task returns normally, but that would also be an error
-            logger.error("Task syncing records failed: %r", exc)
+            logger.error(f"Task syncing records failed: {exc!r}")
         finally:
             self.sync_task.start()
 
