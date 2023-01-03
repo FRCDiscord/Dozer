@@ -120,13 +120,11 @@ class Dozer(commands.Bot):
             await context.send(
                 '```\n%s\n```' % ''.join(traceback.format_exception_only(type(exception), exception)).strip())
             if isinstance(context.channel, discord.TextChannel):
-                logger.error('Error in command <%d> (%d.name!r(%d.id) %d(%d.id) %d(%d.id) %d)',
-                             context.command, context.guild, context.guild, context.channel, context.channel,
-                             context.author, context.author, context.message.content)
+                logger.error('Error in command <{c.command}> ({g.name!r}({g.id}) {chn}({chn.id}) {a}({a.id}) {c.message.content})'.format(
+                             c=context, g=context.guild, a=context.author, chn=context.channel))
             else:
-                logger.error('Error in command <%d> (DM %d(%d.id) %d)', context.command,
-                             context.channel.recipient,
-                             context.channel.recipient, context.message.content)
+                logger.error('Error in command <{c.command}> (DM {recipient}({recipient.id}) {content})'.format( 
+                              c=context, recipient=context.channel.recipient, content=context.message.content))
             logger.error(''.join(traceback.format_exception(type(exception), exception, exception.__traceback__)))
 
     async def on_error(self, event_method, *args, **kwargs):
