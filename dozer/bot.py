@@ -45,6 +45,7 @@ class Dozer(commands.Bot):
         self.config = config
         self._restarting = False
         self.check(self.global_checks)
+        self.aiohttp_sessions = []
 
     async def setup_hook(self) -> None:
         for ext in os.listdir('dozer/cogs'):
@@ -163,3 +164,15 @@ class Dozer(commands.Bot):
         self._restarting = restart
         await self.close()
         self.loop.stop()
+
+    async def close(self):
+        """performs cleanup and actually shuts down the bot"""
+        logger.info("Bot is shutting down...")
+        await super().close()
+        for ses in self.aiohttp_sessions:
+            await ses.close()
+    
+    def add_aiohttp_ses(self, ses):
+        """add an aiohttp session to the session registry"""
+        self.aiohttp_sessions.append(ses)
+        return ses
