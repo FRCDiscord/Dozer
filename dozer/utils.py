@@ -40,35 +40,35 @@ def clean_member_name(ctx, member_id):
     """Cleans a member's name from the message."""
     member = ctx.guild.get_member(member_id)
     if member is None:
-        return '<@\N{ZERO WIDTH SPACE}%d>' % member_id
+        return f'<@\N{ZERO WIDTH SPACE}{member_id:d}>'
     elif is_clean(ctx, member.display_name):
         return member.display_name
     elif is_clean(ctx, str(member)):
         return str(member)
     else:
-        return '<@\N{ZERO WIDTH SPACE}%d>' % member.id
+        return f'<@\N{ZERO WIDTH SPACE}{member.id:d}>'
 
 
 def clean_role_name(ctx, role_id):
     """Cleans role pings from messages."""
     role = discord.utils.get(ctx.guild.roles, id=role_id)  # Guild.get_role doesn't exist
     if role is None:
-        return '<@&\N{ZERO WIDTH SPACE}%d>' % role_id
+        return f'<@&\N{ZERO WIDTH SPACE}{role_id:d}>'
     elif is_clean(ctx, role.name):
         return '@' + role.name
     else:
-        return '<@&\N{ZERO WIDTH SPACE}%d>' % role.id
+        return f'<@&\N{ZERO WIDTH SPACE}{role.id:d}>'
 
 
 def clean_channel_name(ctx, channel_id):
     """Cleans channel mentions from messages."""
     channel = ctx.guild.get_channel(channel_id)
     if channel is None:
-        return '<#\N{ZERO WIDTH SPACE}%d>' % channel_id
+        return f'<#\N{ZERO WIDTH SPACE}{channel_id:d}>'
     elif is_clean(ctx, channel.name):
         return '#' + channel.name
     else:
-        return '<#\N{ZERO WIDTH SPACE}%d>' % channel.id
+        return f'<#\N{ZERO WIDTH SPACE}{channel.id:d}>'
 
 
 def pretty_concat(strings, single_suffix='', multi_suffix=''):
@@ -76,9 +76,9 @@ def pretty_concat(strings, single_suffix='', multi_suffix=''):
     if len(strings) == 1:
         return strings[0] + single_suffix
     elif len(strings) == 2:
-        return '{} and {}{}'.format(*strings, multi_suffix)
+        return f'{strings[0]} and {strings[1]}{multi_suffix}'
     else:
-        return '{}, and {}{}'.format(', '.join(strings[:-1]), strings[-1], multi_suffix)
+        return f'{", ".join(strings[:-1])}, and {strings[-1]}{multi_suffix}'
 
 
 def oauth_url(client_id, permissions=None, guild=None, redirect_uri=None):
@@ -102,7 +102,7 @@ def oauth_url(client_id, permissions=None, guild=None, redirect_uri=None):
     :class:`str`
         The OAuth2 URL for inviting the bot into guilds.
     """
-    url = 'https://discord.com/oauth2/authorize?client_id={}&scope=bot%20applications.commands'.format(client_id)
+    url = f'https://discord.com/oauth2/authorize?client_id={client_id}&scope=bot%20applications.commands'
     if permissions is not None:
         url = url + '&permissions=' + str(permissions.value)
     if guild is not None:

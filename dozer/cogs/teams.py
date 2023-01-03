@@ -39,7 +39,7 @@ class Teams(Cog):
         results = await TeamNumbers.get_by(user_id=ctx.author.id, team_type=team_type, team_number=team_number)
         if len(results) != 0:
             await TeamNumbers.delete(user_id=ctx.author.id, team_number=team_number, team_type=team_type)
-            await ctx.send("Removed association with {} team {}".format(team_type, team_number))
+            await ctx.send(f"Removed association with {team_type} team {team_number}")
         else:
             await ctx.send("Couldn't find any associations with that team!")
 
@@ -58,10 +58,10 @@ class Teams(Cog):
             raise BadArgument("Couldn't find any team associations for that user!")
         else:
             e = discord.Embed(type='rich')
-            e.title = 'Teams for {}'.format(escape_markdown(user.display_name))
+            e.title = f'Teams for {escape_markdown(user.display_name)}'
             e.description = "Teams: \n"
             for i in teams:
-                e.description = "{} {} Team {} \n".format(e.description, i.team_type.upper(), i.team_number)
+                e.description = f"{e.description} {i.team_type.upper()} Team {i.team_number} \n"
             await ctx.send(embed=e)
 
     teamsfor.example_usage = """
@@ -92,13 +92,13 @@ class Teams(Cog):
         embeds = []
         for team in teams:
             e = discord.Embed(type='rich')
-            e.title = 'Members going to {}'.format(event_key)
+            e.title = f'Members going to {event_key}'
             members = await TeamNumbers.get_by(team_type=event_type.lower(), team_number=team)
             memstr = ""
             for member in members:
                 mem = ctx.guild.get_member(member.user_id)
                 if mem is not None:
-                    newmemstr = "{} {} \n".format(escape_markdown(mem.display_name), mem.mention)
+                    newmemstr = f"{escape_markdown(mem.display_name)} {mem.mention} \n"
                     if len(newmemstr + memstr) > 1023:
                         e.add_field(name=f"Team {team}", value=memstr)
                         memstr = ""
@@ -108,7 +108,7 @@ class Teams(Cog):
                 if len(e.fields) == 25:
                     embeds.append(e)
                     e = discord.Embed(type='rich')
-                    e.title = 'Members going to {}'.format(event_key)
+                    e.title = f'Members going to {event_key}'
                 e.add_field(name=f"Team {team}", value=memstr)
                 embeds.append(e)
         if not found_mems:
@@ -136,19 +136,19 @@ class Teams(Cog):
             await ctx.send("Nobody on that team found!")
         else:
             e = discord.Embed(type='rich')
-            e.title = 'Users on team {}'.format(team_number)
+            e.title = f'Users on team {team_number}'
             e.description = "Users: \n"
             extra_mems = ""
             for i in users:
                 user = ctx.guild.get_member(i.user_id)
                 if user is not None:
-                    memstr = "{} {} \n".format(escape_markdown(user.display_name), user.mention)
+                    memstr = f"{escape_markdown(user.display_name)} {user.mention} \n"
                     if len(e.description + memstr) > 2047:
                         extra_mems += memstr
                     else:
                         e.description = e.description + memstr
             if len(extra_mems) != 0:
-                e.add_field(name="Users on team {}".format(team_number), value=extra_mems)
+                e.add_field(name=f"Users on team {team_number}", value=extra_mems)
             await ctx.send(embed=e)
 
     onteam.example_usage = """
@@ -196,7 +196,7 @@ class Teams(Cog):
         if member.guild.me.guild_permissions.manage_nicknames and enabled:
             query = await TeamNumbers.get_by(user_id=member.id)
             if len(query) == 1:
-                nick = "{} {}{}".format(member.display_name, query[0].team_type, query[0].team_number)
+                nick = f"{member.display_name} {query[0].team_type}{query[0].team_number}"
                 if len(nick) <= 32:
                     await member.edit(nick=nick)
 

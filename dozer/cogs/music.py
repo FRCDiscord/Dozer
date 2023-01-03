@@ -52,7 +52,7 @@ class Music(commands.Cog):
         elif isinstance(tracks, lavaplayer.PlayList):
             msg = await ctx.send("Playlist found, Adding to queue, Please wait...")
             await self.lavalink.add_to_queue(ctx.guild.id, tracks.tracks, ctx.author.id)
-            await msg.edit(content="Added to queue, tracks: {}, name: {}".format(len(tracks.tracks), tracks.name))
+            await msg.edit(content=f"Added to queue, tracks: {len(tracks.tracks)}, name: {tracks.name}")
             return
         await self.lavalink.wait_for_connection(ctx.guild.id)
         await self.lavalink.play(ctx.guild.id, tracks[0], ctx.author.id)

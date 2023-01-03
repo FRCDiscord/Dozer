@@ -72,7 +72,7 @@ class Actionlog(Cog):
                 embed = discord.Embed(color=0xFF0000)
                 embed.set_author(name='Member Left', icon_url=member.display_avatar.replace(format='png', size=32))
                 embed.description = format_join_leave(config[0].leave_message, member)
-                embed.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
+                embed.set_footer(text=f"{member.guild.name} | {member.guild.member_count} members")
                 try:
                     await channel.send(embed=embed)
                 except discord.Forbidden:

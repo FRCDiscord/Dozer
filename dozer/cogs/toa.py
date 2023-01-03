@@ -87,15 +87,15 @@ class TOA(Cog):
         team_data = res[0]
 
         e = discord.Embed(color=embed_color)
-        e.set_author(name='FIRST® Tech Challenge Team {}'.format(team_num),
-                     url='https://theorangealliance.org/teams/{}'.format(team_num),
+        e.set_author(name=f'FIRST® Tech Challenge Team {team_num}',
+                     url=f'https://theorangealliance.org/teams/{team_num}',
                      icon_url='https://theorangealliance.org/assets/imgs/favicon.png?v=1')
         e.add_field(name='Name', value=team_data['team_name_short'])
         e.add_field(name='Rookie Year', value=team_data['rookie_year'])
         e.add_field(name='Location',
                     value=', '.join((team_data['city'], team_data['state_prov'], team_data['country'])))
         e.add_field(name='Website', value=team_data['website'] or 'n/a')
-        e.add_field(name='Team Info Page', value='https://theorangealliance.org/teams/{}'.format(team_data['team_key']))
+        e.add_field(name='Team Info Page', value=f'https://theorangealliance.org/teams/{team_data["team_key"]}')
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send('', embed=e)
 
