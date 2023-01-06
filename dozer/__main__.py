@@ -8,6 +8,9 @@ import discord
 import sentry_sdk
 from loguru import logger
 
+if sys.version_info < (3, 8):
+    sys.exit('Dozer requires Python 3.8 or higher to run. This is version ' + '.'.join(sys.version_info[:3]) + '.')
+
 config = {
     'prefix': '&', 'developers': [],
     'cache_size': 20000,
@@ -70,9 +73,6 @@ logger.add(sys.stdout, format=logger_format, level="DEBUG" if config['debug'] el
 
 if 'discord_token' not in config:
     sys.exit('Discord token must be supplied in configuration')
-
-if sys.version_info < (3, 8):
-    sys.exit('Dozer requires Python 3.8 or higher to run. This is version %s.' % '.'.join(sys.version_info[:3]))
 
 from . import Dozer  # After version check
 

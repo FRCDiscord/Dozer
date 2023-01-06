@@ -24,10 +24,8 @@ class Maintenance(Cog):
     async def shutdown(self, ctx: DozerContext):
         """Force-stops the bot."""
         await ctx.send('Shutting down')
-        logger.info('Shutting down at request of {}#{} (in {}, #{})'.format(ctx.author.name,
-                                                                            ctx.author.discriminator,
-                                                                            ctx.guild.name,
-                                                                            ctx.channel.name))
+        logger.info(f'Shutting down at request of {ctx.author.name}#{ctx.author.discriminator} '
+                    f'(in {ctx.guild.name}, #{ctx.channel.name})')
         await self.bot.shutdown()
 
     shutdown.example_usage = """

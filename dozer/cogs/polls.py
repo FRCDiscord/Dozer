@@ -53,7 +53,7 @@ class Polls(Cog):
         # Create embed response
         description = []
         for x, option in enumerate(options):
-            description += '{}  {}\n\n'.format(reactions[x], option)
+            description += f'{reactions[x]}  {option}\n\n'
         embed = discord.Embed(
             title=title,
             description=''.join(description),
