@@ -2,7 +2,7 @@
 
 # pylint generates false positives on this warning
 # pylint: disable=unsupported-membership-test
-from typing import List, Dict, Tuple, Callable
+from typing import List, Dict, Tuple, Callable, TypeVar
 import asyncpg
 from loguru import logger
 from .pqt import Column, Col
@@ -182,6 +182,8 @@ class DatabaseTable:
         """Sets initial version"""
         await Pool.execute("""INSERT INTO versions (table_name, version_num) VALUES ($1,$2)""", cls.__tablename__, 0)
 
+# typing.Self is in 3.11 which is a shade too new for us
+TORMTable = TypeVar("TORMTable", bound="ORMTable")
 
 class ORMTable(DatabaseTable):
     """ORM tables are a new variant on DatabaseTables:
@@ -351,7 +353,7 @@ class ORMTable(DatabaseTable):
 
 
     @classmethod
-    def from_record(cls, record: asyncpg.Record):
+    def from_record(cls, record: asyncpg.Record) -> TORMTable:
         """Converts an asyncpg query record into an instance of the class. Nonexistent entries will get filled with None."""
         if record is None:
             return None
@@ -359,7 +361,7 @@ class ORMTable(DatabaseTable):
         return cls(**{k: record.get(k) for k in cls.get_columns().keys()})
 
     @classmethod
-    async def get_by(cls, **filters) -> list:
+    async def get_by(cls, **filters) -> List[TORMTable]:
         """Selects a list of all records matching the given column=value criteria. 
         Since pretty much every subclass overrides this to return lists of instantiated objects rather than queries,
         we simply automate this.
@@ -378,7 +380,7 @@ class ORMTable(DatabaseTable):
         return [*map(cls.from_record, records)]
     
     @classmethod
-    async def get_one(cls, **filters):
+    async def get_one(cls, **filters) -> TORMTable:
         """It's like get_by except it returns exactly one record or None."""
         return ((await cls.get_by(**filters)) or [None])[0]
 
