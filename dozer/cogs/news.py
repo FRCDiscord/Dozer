@@ -125,6 +125,7 @@ class News(Cog):
             await self.http_source.close()
         self.http_source = aiohttp.ClientSession(
             headers={'Connection': 'keep-alive', 'User-Agent': 'Dozer RSS Feed Reader'})
+        self.bot.add_aiohttp_ses(self.http_source)
         # JVN's blog will 403 you if you use the default user agent, so replacing it with this will yield a parsable result.
         for source in self.enabled_sources:
             try:
@@ -352,7 +353,7 @@ class News(Cog):
             results = await NewsSubscription.get_by(guild_id=ctx.guild.id)
 
         if not results:
-            embed = discord.Embed(title="News Subscriptions for {}".format(ctx.guild.name))
+            embed = discord.Embed(title=f"News Subscriptions for {ctx.guild.name}")
             embed.description = f"No news subscriptions found for this guild! Add one using `{self.bot.command_prefix}" \
                                 f"news add <channel> <source>`"
             embed.colour = discord.Color.red()
@@ -372,7 +373,7 @@ class News(Cog):
                 channels[channel] = [result]
 
         embed = discord.Embed()
-        embed.title = "News Subscriptions for {}".format(ctx.guild.name)
+        embed.title = f"News Subscriptions for {ctx.guild.name}"
         embed.colour = discord.Color.dark_orange()
         for found_channel, lst in channels.items():
             subs = ""

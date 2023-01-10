@@ -27,26 +27,26 @@ async def db_migrate():
         FROM information_schema.tables
         WHERE
         table_name = $1)""", cls.__tablename__)
-        if exists['exists']:
-            version = await Pool.fetchrow("""SELECT version_num FROM versions WHERE table_name = $1""",
-                                          cls.__tablename__)
-            if version is None:
-                # Migration/creation required, go to the function in the subclass for it
-                await cls.initial_migrate()
-                version = {"version_num": 0}
-            if int(version["version_num"]) < len(cls.__versions__):
-                # the version in the DB is less than the version in the bot, run all the migrate scripts necessary
-                logger.info(f"Table {cls.__tablename__} is out of date attempting to migrate")
-                for i in range(int(version["version_num"]), len(cls.__versions__)):
-                    # Run the update script for this version!
-                    await cls.__versions__[i](cls)
-                    logger.info(f"Successfully updated table {cls.__tablename__} from version {i} to {i + 1}")
-                async with Pool.acquire() as conn:
-                    await conn.execute("""UPDATE versions SET version_num = $1 WHERE table_name = $2""",
-                                       len(cls.__versions__), cls.__tablename__)
-        else:
+        if not exists['exists']:
             await cls.initial_create()
+
+        version = await Pool.fetchrow("""SELECT version_num FROM versions WHERE table_name = $1""",
+                                        cls.__tablename__)
+        if version is None:
+            # Migration/creation required, go to the function in the subclass for it
             await cls.initial_migrate()
+            version = {"version_num": 0}
+        if int(version["version_num"]) < len(cls.__versions__):
+            # the version in the DB is less than the version in the bot, run all the migrate scripts necessary
+            logger.info(f"Table {cls.__tablename__} is out of date attempting to migrate")
+            for i in range(int(version["version_num"]), len(cls.__versions__)):
+                # Run the update script for this version!
+                await cls.__versions__[i](cls)
+                logger.info(f"Successfully updated table {cls.__tablename__} from version {i} to {i + 1}")
+            async with Pool.acquire() as conn:
+                await conn.execute("""UPDATE versions SET version_num = $1 WHERE table_name = $2""",
+                                    len(cls.__versions__), cls.__tablename__)
+    logger.info("All db migrations complete.")
 
 
 class DatabaseTable:

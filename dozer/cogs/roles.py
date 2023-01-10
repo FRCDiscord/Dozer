@@ -169,7 +169,7 @@ class Roles(Cog):
         if not missing and not cant_give:
             return
 
-        e = discord.Embed(title='Welcome back to the {} server, {}!'.format(member.guild.name, member),
+        e = discord.Embed(title=f'Welcome back to the {member.guild.name} server, {member}!',
                           color=discord.Color.blue())
         if missing:
             e.add_field(name='I couldn\'t restore these roles, as they don\'t exist.', value='\n'.join(sorted(missing)))
@@ -237,15 +237,15 @@ class Roles(Cog):
         e = discord.Embed(color=discord.Color.blue())
         if given:
             given_names = sorted((role.name for role in given), key=str.casefold)
-            e.add_field(name='Gave you {} role(s)!'.format(len(given)), value='\n'.join(given_names), inline=False)
+            e.add_field(name=f'Gave you {len(given)} role(s)!', value='\n'.join(given_names), inline=False)
         if already_have:
             already_have_names = sorted((role.name for role in already_have), key=str.casefold)
-            e.add_field(name='You already have {} role(s)!'.format(len(already_have)),
+            e.add_field(name=f'You already have {len(already_have)} role(s)!',
                         value='\n'.join(already_have_names), inline=False)
         extra = len(norm_names) - len(valid)
         if extra > 0:
-            e.add_field(name='{} role(s) could not be found!'.format(extra),
-                        value='Use `{0.prefix}{0.invoked_with} list` to find valid giveable roles!'.format(ctx),
+            e.add_field(name=f'{extra} role(s) could not be found!',
+                        value=f'Use `{ctx.prefix}{ctx.invoked_with} list` to find valid giveable roles!',
                         inline=False)
         msg = await ctx.send(embed=e)
         try:
@@ -289,7 +289,7 @@ class Roles(Cog):
     async def purge(self, ctx: DozerContext):
         """Force a purge of giveme roles that no longer exist in the guild"""
         counter = await self.ctx_purge(ctx)
-        await ctx.send("Purged {} role(s)".format(counter))
+        await ctx.send(f"Purged {counter} role(s)")
 
     @giveme.command()
     @bot_has_permissions(manage_roles=True)
@@ -306,14 +306,13 @@ class Roles(Cog):
         candidates = [role for role in ctx.guild.roles if self.normalize(role.name) == norm_name]
 
         if not candidates:
-            role = await ctx.guild.create_role(name=name, reason='Giveable role created by {}'.format(ctx.author))
+            role = await ctx.guild.create_role(name=name, reason=f'Giveable role created by {ctx.author}')
         elif len(candidates) == 1:
             role = candidates[0]
         else:
-            raise BadArgument('{} roles with that name exist!'.format(len(candidates)))
+            raise BadArgument(f'{len(candidates)} roles with that name exist!')
         await GiveableRole.from_role(role).update_or_add()
-        await ctx.send(
-            'Role "{0}" added! Use `{1}{2} {0}` to get it!'.format(role.name, ctx.prefix, ctx.command.parent))
+        await ctx.send(f'Role "{role.name}" added! Use `{ctx.prefix}{ctx.command.parent} {role.name}` to get it!')
 
     add.example_usage = """
     `{prefix}giveme add Java` - creates or finds a role named "Java" and makes it giveable
@@ -331,11 +330,10 @@ class Roles(Cog):
         norm_name = self.normalize(name)
         settings = await GiveableRole.get_by(guild_id=ctx.guild.id, norm_name=norm_name)
         if not settings:
-            role = await ctx.guild.create_role(name=name, reason='Giveable role created by {}'.format(ctx.author))
+            role = await ctx.guild.create_role(name=name, reason=f'Giveable role created by {ctx.author}')
             settings = GiveableRole.from_role(role)
             await settings.update_or_add()
-            await ctx.send(
-                'Role "{0}" created! Use `{1}{2} {0}` to get it!'.format(role.name, ctx.prefix, ctx.command.parent))
+            await ctx.send(f'Role "{role.name}" created! Use `{ctx.prefix}{ctx.command.parent} {role.name}` to get it!')
 
         else:
             raise BadArgument('that role already exists and is giveable!')
@@ -365,15 +363,15 @@ class Roles(Cog):
         e = discord.Embed(color=discord.Color.blue())
         if removed:
             removed_names = sorted((role.name for role in removed), key=str.casefold)
-            e.add_field(name='Removed {} role(s)!'.format(len(removed)), value='\n'.join(removed_names), inline=False)
+            e.add_field(name=f'Removed {len(removed)} role(s)!', value='\n'.join(removed_names), inline=False)
         if dont_have:
             dont_have_names = sorted((role.name for role in dont_have), key=str.casefold)
-            e.add_field(name='You didn\'t have {} role(s)!'.format(len(dont_have)), value='\n'.join(dont_have_names),
+            e.add_field(name=f'You didn\'t have {len(dont_have)} role(s)!', value='\n'.join(dont_have_names),
                         inline=False)
         extra = len(norm_names) - len(valid)
         if extra > 0:
-            e.add_field(name='{} role(s) could not be found!'.format(extra),
-                        value='Use `{0.prefix}{0.invoked_with} list` to find valid giveable roles!'.format(ctx),
+            e.add_field(name=f'{extra} role(s) could not be found!',
+                        value=f'Use `{ctx.prefix}{ctx.invoked_with} list` to find valid giveable roles!',
                         inline=False)
         msg = await ctx.send(embed=e)
         try:
@@ -426,8 +424,8 @@ class Roles(Cog):
         else:
             role = ctx.guild.get_role(valid_roles[0].role_id)
             await GiveableRole.delete(guild_id=ctx.guild.id, norm_name=valid_roles[0].norm_name)
-            await role.delete(reason='Giveable role deleted by {}'.format(ctx.author))
-            await ctx.send('Role "{0}" deleted!'.format(role))
+            await role.delete(reason=f'Giveable role deleted by {ctx.author}')
+            await ctx.send(f'Role "{role}" deleted!')
 
     delete.example_usage = """
     `{prefix}giveme delete Java` - deletes the role called "Java" if it's giveable (automatically removes it from all members)
@@ -473,7 +471,7 @@ class Roles(Cog):
             raise BadArgument('multiple giveable roles with that name exist!')
         else:
             await GiveableRole.delete(guild_id=ctx.guild.id, norm_name=valid_roles[0].norm_name)
-            await ctx.send('Role "{0}" deleted from list!'.format(name))
+            await ctx.send(f'Role "{name}" deleted from list!')
 
     delete.example_usage = """
     `{prefix}giveme removefromlist Java` - removes the role "Java" from the list of giveable roles but does not remove it from the server or members who have it 
@@ -505,7 +503,7 @@ class Roles(Cog):
         await ent.update_or_add()
         self.bot.loop.create_task(self.removal_timer(ent))
         e = discord.Embed(color=blurple)
-        e.add_field(name='Success!', value='I gave {} to {}, for {}!'.format(role.mention, member.mention, length))
+        e.add_field(name='Success!', value=f'Gave {role.mention} to {member.mention} for {length}!')
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
@@ -522,7 +520,7 @@ class Roles(Cog):
             raise BadArgument('Cannot give roles higher than your top role!')
         await member.add_roles(role)
         e = discord.Embed(color=blurple)
-        e.add_field(name='Success!', value='I gave {} to {}!'.format(role, member))
+        e.add_field(name='Success!', value=f'Gave {role} to {member}!')
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
@@ -539,7 +537,7 @@ class Roles(Cog):
             raise BadArgument('Cannot take roles higher than your top role!')
         await member.remove_roles(role)
         e = discord.Embed(color=blurple)
-        e.add_field(name='Success!', value='I took {} from {}!'.format(role, member))
+        e.add_field(name='Success!', value=f'Took {role} from {member}!')
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 

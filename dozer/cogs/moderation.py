@@ -481,9 +481,8 @@ class Moderation(Cog):
             targets = {member_role}
         else:
             await ctx.send(
-                '{0.author.mention}, the members role has not been configured. This may not work as expected. Use '
-                '`{0.prefix}help memberconfig` to see how to set this up.'.format(
-                    ctx))
+                f'{ctx.author.mention}, the members role has not been configured. This may not work as expected. Use '
+                f'`{ctx.prefix}help memberconfig` to see how to set this up.')
             targets = set(sorted(ctx.guild.roles)[:ctx.author.top_role.position])
 
         to_restore = [(target, ctx.channel.overwrites_for(target)) for target in targets]
@@ -499,7 +498,7 @@ class Moderation(Cog):
             await ctx.channel.set_permissions(allow_target, overwrite=new_overwrite)
             to_restore.append((allow_target, overwrite))
 
-        e = discord.Embed(title='Timeout - {}s'.format(duration), description='This channel has been timed out.',
+        e = discord.Embed(title=f'Timeout - {duration}s', description='This channel has been timed out.',
                           color=discord.Color.blue())
         e.set_author(name=escape_markdown(ctx.author.display_name), icon_url=ctx.author.display_avatar.replace(format='png', size=32))
         msg = await ctx.send(embed=e)
@@ -849,10 +848,10 @@ class Moderation(Cog):
         await config.update_or_add()
 
         role_name = role.name
+        # this should be an embed or something else entirely
         await ctx.send(
-            "New Member Channel configured as: {channel}. Role configured as: {role}. Team numbers required: {"
-            "required}. Message: {message}".format(
-                channel=channel_mention.name, role=role_name, required=requireteam, message=message))
+            f"New Member Channel configured as: {channel_mention.name}. Role configured as: {role_name}. "
+            f"Team numbers required: {requireteam}. Message: {message}")
 
     nmconfig.example_usage = """
     `{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel 
@@ -889,7 +888,7 @@ class Moderation(Cog):
             settings = settings[0]
             settings.member_role = member_role.id
         await settings.update_or_add()
-        await ctx.send('Member role set as `{}`.'.format(member_role.name))
+        await ctx.send(f'Member role set as `{member_role.name}`.')
 
     memberconfig.example_usage = """
     `{prefix}memberconfig Members` - set a role called "Members" as the member role

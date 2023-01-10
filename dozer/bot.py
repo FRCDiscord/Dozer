@@ -20,10 +20,8 @@ from .db import db_init, db_migrate
 
 if discord.version_info.major < 2:
     logger.error("Your installed discord.py version is too low "
-                 "%d.%d.%d, please upgrade to at least 2.0.0",
-                 discord.version_info.major,
-                 discord.version_info.minor,
-                 discord.version_info.micro)
+                 "{vi.major}.{vi.minor}.{vi.micro}, please upgrade to at least 2.0.0".format(
+                   vi=discord.version_info))
     sys.exit(1)
 
 
@@ -45,11 +43,13 @@ class Dozer(commands.Bot):
         self.config = config
         self._restarting = False
         self.check(self.global_checks)
+        self.aiohttp_sessions = []
 
     async def setup_hook(self) -> None:
         for ext in os.listdir('dozer/cogs'):
-            if not ext.startswith(('_', '.')):
-                await self.load_extension('dozer.cogs.' + ext[:-3])  # Remove '.py'
+            cog_name = ext[:-3]
+            if not ext.startswith(('_', '.')) and ext.endswith(".py") and not cog_name in self.config.get("disabled_cogs", []):
+                await self.load_extension('dozer.cogs.' + cog_name)  # Remove '.py'
         await db_init(self.config['db_url'])
         await db_migrate()
         await self.tree.sync()
@@ -57,7 +57,7 @@ class Dozer(commands.Bot):
     async def on_ready(self):
         """Things to run when the bot has initialized and signed in"""
 
-        logger.info('Signed in as {}#{} ({})'.format(self.user.name, self.user.discriminator, self.user.id))
+        logger.info(f'Signed in as {self.user.name}#{self.user.discriminator} ({self.user.id})')
         news_cog = self.get_cog("News")
         await news_cog.startup()
         await self.dynamic_prefix.refresh()
@@ -67,7 +67,7 @@ class Dozer(commands.Bot):
                 perms |= cmd.required_permissions.value
             else:
                 logger.warning(f"Command {cmd} not subclass of Dozer type.")
-        logger.debug('Bot Invite: {}'.format(utils.oauth_url(self.user.id, discord.Permissions(perms))))
+        logger.debug(f'Bot Invite: {utils.oauth_url(self.user.id, discord.Permissions(perms))}')
         if self.config['is_backup']:
             status = discord.Status.dnd
         else:
@@ -85,25 +85,21 @@ class Dozer(commands.Bot):
 
     async def on_command_error(self, context: DozerContext, exception):  # pylint: disable=arguments-differ
         if isinstance(exception, commands.NoPrivateMessage):
-            await context.send('{}, This command cannot be used in DMs.'.format(context.author.mention))
+            await context.send(f'{context.author.mention}, This command cannot be used in DMs.')
         elif isinstance(exception, commands.UserInputError):
-            await context.send('{}, {}'.format(context.author.mention, self.format_error(context, exception)))
+            await context.send(f'{context.author.mention}, {self.format_error(context, exception)}')
         elif isinstance(exception, commands.NotOwner):
-            await context.send('{}, {}'.format(context.author.mention, exception.args[0]))
+            await context.send(f'{context.author.mention}, {exception.args[0]}')
         elif isinstance(exception, commands.MissingPermissions):
             permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in
                                 exception.missing_permissions]
-            await context.send('{}, you need {} permissions to run this command!'.format(
-                context.author.mention, utils.pretty_concat(permission_names)))
+            await context.send(f'{context.author.mention}, you need {utils.pretty_concat(permission_names)} permissions to run this command!')
         elif isinstance(exception, commands.BotMissingPermissions):
             permission_names = [name.replace('guild', 'server').replace('_', ' ').title() for name in
                                 exception.missing_permissions]
-            await context.send('{}, I need {} permissions to run this command!'.format(
-                context.author.mention, utils.pretty_concat(permission_names)))
+            await context.send(f'{context.author.mention}, I need {utils.pretty_concat(permission_names)} permissions to run this command!')
         elif isinstance(exception, commands.CommandOnCooldown):
-            await context.send(
-                '{}, That command is on cooldown! Try again in {:.2f}s!'.format(context.author.mention,
-                                                                                exception.retry_after))
+            await context.send(f'{context.author.mention}, That command is on cooldown! Try again in {exception.retry_after:.2f}s!')
         elif isinstance(exception, commands.MaxConcurrencyReached):
             types = {discord.ext.commands.BucketType.default: "`Global`",
                      discord.ext.commands.BucketType.guild: "`Guild`",
@@ -111,26 +107,23 @@ class Dozer(commands.Bot):
                      discord.ext.commands.BucketType.category: "`Category`",
                      discord.ext.commands.BucketType.member: "`Member`", discord.ext.commands.BucketType.user: "`User`"}
             await context.send(
-                '{}, That command has exceeded the max {} concurrency limit of `{}` instance! Please try again later.'.format(
-                    context.author.mention, types[exception.per], exception.number))
+                f'{context.author.mention}, That command has exceeded the max {types[exception.per]} concurrency limit of '
+                f'`{exception.number}` instance! Please try again later.')
         elif isinstance(exception, (commands.CommandNotFound, InvalidContext)):
             pass  # Silent ignore
         else:
-            await context.send(
-                '```\n%s\n```' % ''.join(traceback.format_exception_only(type(exception), exception)).strip())
+            await context.send('```\n' + ''.join(traceback.format_exception_only(type(exception), exception)).strip() + '\n```')
             if isinstance(context.channel, discord.TextChannel):
-                logger.error('Error in command <%d> (%d.name!r(%d.id) %d(%d.id) %d(%d.id) %d)',
-                             context.command, context.guild, context.guild, context.channel, context.channel,
-                             context.author, context.author, context.message.content)
+                logger.error('Error in command <{c.command}> ({g.name!r}({g.id}) {chn}({chn.id}) {a}({a.id}) {c.message.content})'.format(
+                             c=context, g=context.guild, a=context.author, chn=context.channel))
             else:
-                logger.error('Error in command <%d> (DM %d(%d.id) %d)', context.command,
-                             context.channel.recipient,
-                             context.channel.recipient, context.message.content)
+                logger.error('Error in command <{c.command}> (DM {recipient}({recipient.id}) {content})'.format( 
+                              c=context, recipient=context.channel.recipient, content=context.message.content))
             logger.error(''.join(traceback.format_exception(type(exception), exception, exception.__traceback__)))
 
     async def on_error(self, event_method, *args, **kwargs):
         """Don't ignore the error, causing Sentry to capture it."""
-        print('Ignoring exception in {}'.format(event_method), file=sys.stderr)
+        print(f'Ignoring exception in {event_method}', file=sys.stderr)
         traceback.print_exc()
         capture_exception()
 
@@ -141,7 +134,7 @@ class Dozer(commands.Bot):
         type_msg = ' '.join(map(str.lower, type_words))
 
         if err.args:
-            return '%s: %s' % (type_msg, utils.clean(ctx, err.args[0]))
+            return f'{type_msg}: {utils.clean(ctx, err.args[0])}'
         else:
             return type_msg
 
@@ -164,3 +157,15 @@ class Dozer(commands.Bot):
         self._restarting = restart
         await self.close()
         self.loop.stop()
+
+    async def close(self):
+        """performs cleanup and actually shuts down the bot"""
+        logger.info("Bot is shutting down...")
+        await super().close()
+        for ses in self.aiohttp_sessions:
+            await ses.close()
+    
+    def add_aiohttp_ses(self, ses):
+        """add an aiohttp session to the session registry"""
+        self.aiohttp_sessions.append(ses)
+        return ses
