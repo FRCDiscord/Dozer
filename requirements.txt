@@ -14,3 +14,4 @@ humanize~=3.8.0
 pre-commit~=2.20.0
 lavaplayer
 loguru~=0.6.0
+pillow~=9.4.0

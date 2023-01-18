@@ -7,9 +7,11 @@ import math
 import random
 import typing
 from datetime import timedelta, timezone, datetime
+from io import BytesIO
 
 import aiohttp
 import discord
+from PIL import Image
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
 from discord.utils import escape_markdown
@@ -648,6 +650,8 @@ class Levels(Cog):
         """
         member = member or ctx.author
         embed = discord.Embed(color=member.color)
+        img = Image.new('RGB', (350, 100), (44, 47, 51))
+        img.paste(Image.open(BytesIO(await member.display_avatar.with_size(50).read())), (25, 25))
 
         guild_settings = self.guild_settings.get(ctx.guild.id)
 
@@ -681,6 +685,7 @@ class Levels(Cog):
 
             embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
                                  f"#{rank} of {count} in this server")
+        await ctx.send(file=discord.File(img.tobytes()))
         embed.set_author(name=member.display_name, icon_url=member.display_avatar.replace(format='png', size=64))
         await ctx.send(embed=embed)
 
