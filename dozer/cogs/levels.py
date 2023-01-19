@@ -649,22 +649,19 @@ class Levels(Cog):
         """Get a user's ranking on the XP leaderboard.
         If no member is passed, the caller's ranking is shown.
         """
-        await ctx.send('reached point 1')
         member = member or ctx.author
         embed = discord.Embed(color=member.color)
         img = Image.new('RGB', (350, 100), (44, 47, 51))
         img.paste(Image.open(BytesIO(await member.display_avatar.with_size(64).read())), (18, 18))
         draw = ImageDraw.Draw(img)
         draw.text((100, 20), member.display_name)
-        await ctx.send('reached point 2')
         guild_settings = self.guild_settings.get(ctx.guild.id)
-        await ctx.send('reached point 3')
         if guild_settings is None or not guild_settings.enabled:
             embed.description = "Levels are not enabled in this server"
         else:
             cache_record = await self.load_member(ctx.guild.id,
                                                   member.id)  # Grab member from cache to make sure we have the most up to date values
-            await ctx.send('reached point 4')
+
             # Make Postgres compute the rank for us (need WITH-query so rank() sees records for every user)
             db_record = await db.Pool.fetchrow(f"""
                 WITH ranked_xp AS (
@@ -692,9 +689,8 @@ class Levels(Cog):
                 draw.rectangle((x + (height / 2), y, x + width + (height / 2), y + height), fill=fg, width=10)
                 draw.ellipse((x + width, y, x + height + width, y + height), fill=fg)
                 draw.ellipse((x, y, x + height, y + height), fill=fg)
-
-            new_bar(100, 50, 200, 20, (total_xp - level_floor) / (level_xp - level_floor))
-            await ctx.send('reached point 6')
+            draw.text((100, 50), f'Level {level}, {total_xp - level_floor}/{level_xp} XP to level up')
+            new_bar(100, 70, 200, 20, (total_xp - level_floor) / (level_xp - level_floor))
             if db_record:  # If member does not exist in the db, then return rank as the lowest rank
                 rank = db_record.get("rank")
             else:
@@ -702,22 +698,14 @@ class Levels(Cog):
 
             embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
                                  f"#{rank} of {count} in this server")
-        await ctx.send('reached point 7')
-        try:
-            await ctx.send('reached point 8')
-            arr = BytesIO()
-            img.save(arr, format='PNG')
-            arr.seek(0)
-            file = discord.File(fp=arr, filename=f'{member}.png')
-            await ctx.send(file=file)
-            await ctx.send('reached point 9')
-            embed.set_author(name=member.display_name, icon_url=member.display_avatar.replace(format='png', size=64))
-            await ctx.send('reached point 10')
-            await ctx.send(embed=embed)
-            await ctx.send('reached point 11')
-        except Exception as e:
-            await ctx.send('error')
-            await ctx.send(str(e)[0:1999])
+
+        arr = BytesIO()
+        img.save(arr, format='PNG')
+        arr.seek(0)
+        file = discord.File(fp=arr, filename=f'{member}.png')
+        await ctx.send(file=file)
+        embed.set_author(name=member.display_name, icon_url=member.display_avatar.replace(format='png', size=64))
+        await ctx.send(embed=embed)
 
     rank.example_usage = """
     `{prefix}rank`: show your ranking
