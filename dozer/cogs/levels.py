@@ -687,9 +687,14 @@ class Levels(Cog):
             embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
                                  f"#{rank} of {count} in this server")
         await ctx.send('reached point 7')
-        await ctx.send(file=discord.File(img.tobytes()))
-        embed.set_author(name=member.display_name, icon_url=member.display_avatar.replace(format='png', size=64))
-        await ctx.send(embed=embed)
+        try:
+            await ctx.send(file=discord.File(img.tobytes()))
+            await ctx.send('reached point 8')
+            embed.set_author(name=member.display_name, icon_url=member.display_avatar.replace(format='png', size=64))
+            await ctx.send(embed=embed)
+        except Exception as e:
+            await ctx.send(str(e))
+
 
     rank.example_usage = """
     `{prefix}rank`: show your ranking
