@@ -651,10 +651,10 @@ class Levels(Cog):
         """
         member = member or ctx.author
         embed = discord.Embed(color=member.color)
-        img = Image.new('RGB', (350, 100), (44, 47, 51))
+        img = Image.new('RGB', (400, 100), (44, 47, 51))
         img.paste(Image.open(BytesIO(await member.display_avatar.with_size(64).read())), (18, 18))
         draw = ImageDraw.Draw(img)
-        draw.text((100, 20), member.display_name, font=ImageFont.truetype('DejaVuSans.ttf', 18))
+        draw.text((100, 20), member.display_name, font=ImageFont.truetype('DejaVuSans.ttf', 20))
         guild_settings = self.guild_settings.get(ctx.guild.id)
         if guild_settings is None or not guild_settings.enabled:
             embed.description = "Levels are not enabled in this server"
@@ -689,8 +689,8 @@ class Levels(Cog):
                 draw.rectangle((x + (height / 2), y, x + width + (height / 2), y + height), fill=fg, width=10)
                 draw.ellipse((x + width, y, x + height + width, y + height), fill=fg)
                 draw.ellipse((x, y, x + height, y + height), fill=fg)
-            draw.text((100, 50), f'Level {level}, {total_xp - level_floor}/{level_xp} XP to level up')
-            new_bar(100, 70, 200, 20, (total_xp - level_floor) / (level_xp - level_floor))
+            draw.text((100, 50), f'Level {level}, {total_xp - level_floor}/{level_xp} XP to level up. Level {level}')
+            new_bar(100, 70, 250, 20, (total_xp - level_floor) / (level_xp - level_floor))
             if db_record:  # If member does not exist in the db, then return rank as the lowest rank
                 rank = db_record.get("rank")
             else:
