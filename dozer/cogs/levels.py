@@ -11,7 +11,7 @@ from io import BytesIO
 
 import aiohttp
 import discord
-from PIL import Image
+from PIL import Image, ImageFont
 from PIL import ImageDraw
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
@@ -654,7 +654,7 @@ class Levels(Cog):
         img = Image.new('RGB', (350, 100), (44, 47, 51))
         img.paste(Image.open(BytesIO(await member.display_avatar.with_size(64).read())), (18, 18))
         draw = ImageDraw.Draw(img)
-        draw.text((100, 20), member.display_name)
+        draw.text((100, 20), member.display_name, font=ImageFont.truetype('DejaVuSans.ttf', 18))
         guild_settings = self.guild_settings.get(ctx.guild.id)
         if guild_settings is None or not guild_settings.enabled:
             embed.description = "Levels are not enabled in this server"
