@@ -12,6 +12,7 @@ from io import BytesIO
 import aiohttp
 import discord
 from PIL import Image
+from PIL import ImageDraw
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
 from discord.utils import escape_markdown
@@ -653,6 +654,8 @@ class Levels(Cog):
         embed = discord.Embed(color=member.color)
         img = Image.new('RGB', (350, 100), (44, 47, 51))
         img.paste(Image.open(BytesIO(await member.display_avatar.with_size(64).read())), (18, 18))
+        draw = ImageDraw.Draw(img)
+        draw.text((100, 20), member.display_name)
         await ctx.send('reached point 2')
         guild_settings = self.guild_settings.get(ctx.guild.id)
         await ctx.send('reached point 3')
