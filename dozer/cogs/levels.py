@@ -688,11 +688,15 @@ class Levels(Cog):
                                  f"#{rank} of {count} in this server")
         await ctx.send('reached point 7')
         try:
-            await ctx.send(file=discord.File(img.tobytes()))
             await ctx.send('reached point 8')
+            await ctx.send(file=discord.File(img.tobytes()))
+            await ctx.send('reached point 9')
             embed.set_author(name=member.display_name, icon_url=member.display_avatar.replace(format='png', size=64))
+            await ctx.send('reached point 10')
             await ctx.send(embed=embed)
+            await ctx.send('reached point 11')
         except Exception as e:
+            await ctx.send('error')
             await ctx.send(str(e))
 
 
