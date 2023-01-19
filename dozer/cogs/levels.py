@@ -689,12 +689,14 @@ class Levels(Cog):
                 draw.rectangle((x + (height / 2), y, x + width + (height / 2), y + height), fill=fg, width=10)
                 draw.ellipse((x + width, y, x + height + width, y + height), fill=fg)
                 draw.ellipse((x, y, x + height, y + height), fill=fg)
-            draw.text((100, 45), f'Level {level}, {total_xp - level_floor}/{level_xp} XP to level up. Level {level}')
-            new_bar(100, 65, 250, 20, (total_xp - level_floor) / (level_xp - level_floor))
+
             if db_record:  # If member does not exist in the db, then return rank as the lowest rank
                 rank = db_record.get("rank")
             else:
                 rank = count
+
+            draw.text((100, 45), f'Level {level}, {total_xp - level_floor}/{level_xp} XP to level up. Level {level}. #{rank} of {count} in server. ')
+            new_bar(100, 65, 250, 20, (total_xp - level_floor) / (level_xp - level_floor))
 
             embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
                                  f"#{rank} of {count} in this server")
