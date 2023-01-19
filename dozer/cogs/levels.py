@@ -681,6 +681,19 @@ class Levels(Cog):
             level = self.level_for_total_xp(total_xp)
             level_floor = self.total_xp_for_level(level)
             level_xp = self.total_xp_for_level(level + 1) - level_floor
+
+            def new_bar(x, y, width, height, progress, bg=(129, 66, 97), fg=(211, 211, 211), fg2=(15, 15, 15)):
+                # Draw the background
+                draw.rectangle((x + (height / 2), y, x + width + (height / 2), y + height), fill=fg2, width=10)
+                draw.ellipse((x + width, y, x + height + width, y + height), fill=fg2)
+                draw.ellipse((x, y, x + height, y + height), fill=fg2)
+                width = int(width * progress)
+                # Draw the part of the progress bar that is actually filled
+                draw.rectangle((x + (height / 2), y, x + width + (height / 2), y + height), fill=fg, width=10)
+                draw.ellipse((x + width, y, x + height + width, y + height), fill=fg)
+                draw.ellipse((x, y, x + height, y + height), fill=fg)
+
+            new_bar(100, 50, 200, 20, (total_xp - level_floor) / (level_xp - level_floor))
             await ctx.send('reached point 6')
             if db_record:  # If member does not exist in the db, then return rank as the lowest rank
                 rank = db_record.get("rank")
@@ -705,7 +718,6 @@ class Levels(Cog):
         except Exception as e:
             await ctx.send('error')
             await ctx.send(str(e)[0:1999])
-
 
     rank.example_usage = """
     `{prefix}rank`: show your ranking
