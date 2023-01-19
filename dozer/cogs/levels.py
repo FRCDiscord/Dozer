@@ -695,8 +695,9 @@ class Levels(Cog):
             else:
                 rank = count
 
-            draw.text((100, 45), f'Level {level}, {total_xp - level_floor}/{level_xp} XP to level up. Level {level}. #{rank} of {count} in server. ')
-            new_bar(100, 65, 250, 20, (total_xp - level_floor) / (level_xp - level_floor))
+            draw.text((100, 45), f'Level {level}, {total_xp - level_floor}/{level_xp} XP to level up. Level {level}.  ')
+            draw.text((100, 47), f'#{rank} of {count} in server.')
+            new_bar(100, 73, 250, 12, (total_xp - level_floor) / (level_xp - level_floor))
 
             embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
                                  f"#{rank} of {count} in this server")
