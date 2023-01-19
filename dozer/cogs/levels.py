@@ -689,7 +689,11 @@ class Levels(Cog):
         await ctx.send('reached point 7')
         try:
             await ctx.send('reached point 8')
-            await ctx.send(file=discord.File(img.tobytes()))
+            arr = BytesIO()
+            img.save(arr, format='PNG')
+            arr.seek(0)
+            file = discord.File(arr)
+            await ctx.send(file=file)
             await ctx.send('reached point 9')
             embed.set_author(name=member.display_name, icon_url=member.display_avatar.replace(format='png', size=64))
             await ctx.send('reached point 10')
