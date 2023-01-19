@@ -692,7 +692,7 @@ class Levels(Cog):
             arr = BytesIO()
             img.save(arr, format='PNG')
             arr.seek(0)
-            file = discord.File(arr)
+            file = discord.File(fp=arr, filename=f'{member}.png')
             await ctx.send(file=file)
             await ctx.send('reached point 9')
             embed.set_author(name=member.display_name, icon_url=member.display_avatar.replace(format='png', size=64))
