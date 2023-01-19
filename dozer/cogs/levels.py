@@ -695,7 +695,7 @@ class Levels(Cog):
             else:
                 rank = count
 
-            draw.text((100, 45), f'Level {level}, {total_xp - level_floor}/{level_xp} XP to level up. Level {level}.  ')
+            draw.text((100, 42), f'Level {level}, {total_xp - level_floor}/{level_xp} XP to level up. Level {level}.  ')
             draw.text((100, 52), f'#{rank} of {count} in server.')
             new_bar(100, 73, 250, 12, (total_xp - level_floor) / (level_xp - level_floor))
 
