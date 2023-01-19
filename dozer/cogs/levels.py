@@ -652,7 +652,7 @@ class Levels(Cog):
         member = member or ctx.author
         embed = discord.Embed(color=member.color)
         img = Image.new('RGB', (350, 100), (44, 47, 51))
-        img.paste(Image.open(BytesIO(await member.display_avatar.with_size(50).read())), (25, 25))
+        img.paste(Image.open(BytesIO(await member.display_avatar.with_size(64).read())), (18, 18))
         await ctx.send('reached point 2')
         guild_settings = self.guild_settings.get(ctx.guild.id)
         await ctx.send('reached point 3')
