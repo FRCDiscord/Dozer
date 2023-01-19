@@ -648,19 +648,20 @@ class Levels(Cog):
         """Get a user's ranking on the XP leaderboard.
         If no member is passed, the caller's ranking is shown.
         """
+        await ctx.send('reached point 1')
         member = member or ctx.author
         embed = discord.Embed(color=member.color)
         img = Image.new('RGB', (350, 100), (44, 47, 51))
         img.paste(Image.open(BytesIO(await member.display_avatar.with_size(50).read())), (25, 25))
-
+        await ctx.send('reached point 2')
         guild_settings = self.guild_settings.get(ctx.guild.id)
-
+        await ctx.send('reached point 3')
         if guild_settings is None or not guild_settings.enabled:
             embed.description = "Levels are not enabled in this server"
         else:
             cache_record = await self.load_member(ctx.guild.id,
                                                   member.id)  # Grab member from cache to make sure we have the most up to date values
-
+            await ctx.send('reached point 4')
             # Make Postgres compute the rank for us (need WITH-query so rank() sees records for every user)
             db_record = await db.Pool.fetchrow(f"""
                 WITH ranked_xp AS (
@@ -677,7 +678,7 @@ class Levels(Cog):
             level = self.level_for_total_xp(total_xp)
             level_floor = self.total_xp_for_level(level)
             level_xp = self.total_xp_for_level(level + 1) - level_floor
-
+            await ctx.send('reached point 6')
             if db_record:  # If member does not exist in the db, then return rank as the lowest rank
                 rank = db_record.get("rank")
             else:
@@ -685,6 +686,7 @@ class Levels(Cog):
 
             embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
                                  f"#{rank} of {count} in this server")
+        await ctx.send('reached point 7')
         await ctx.send(file=discord.File(img.tobytes()))
         embed.set_author(name=member.display_name, icon_url=member.display_avatar.replace(format='png', size=64))
         await ctx.send(embed=embed)
