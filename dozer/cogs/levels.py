@@ -697,7 +697,7 @@ class Levels(Cog):
             await ctx.send('reached point 11')
         except Exception as e:
             await ctx.send('error')
-            await ctx.send(str(e))
+            await ctx.send(str(e)[0:3999])
 
 
     rank.example_usage = """
