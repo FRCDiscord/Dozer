@@ -666,7 +666,8 @@ class Levels(Cog):
         draw.text((100, 18), member.display_name, font=ImageFont.truetype('DejaVuSans.ttf', 20))
         guild_settings = self.guild_settings.get(ctx.guild.id)
         if guild_settings is None or not guild_settings.enabled:
-            embed.description = "Levels are not enabled in this server"
+            draw.text((100, 42), "Levels are not enabled in this server")
+            # embed.description = "Levels are not enabled in this server"
         else:
             cache_record = await self.load_member(ctx.guild.id,
                                                   member.id)  # Grab member from cache to make sure we have the most up to date values
