@@ -652,7 +652,16 @@ class Levels(Cog):
         member = member or ctx.author
         embed = discord.Embed(color=member.color)
         img = Image.new('RGB', (400, 100), (44, 47, 51))
-        img.paste(Image.open(BytesIO(await member.display_avatar.with_size(64).read())), (18, 18))
+
+        avatar = Image.open(BytesIO(await member.display_avatar.with_size(64).read()))
+        bigsize = (avatar.size[0] * 3, avatar.size[1] * 3)
+        mask = Image.new('L', bigsize, 0)
+        draw = ImageDraw.Draw(mask)
+        draw.ellipse((0, 0) + bigsize, fill=255)
+        mask = mask.resize(avatar.size, Image.ANTIALIAS)
+        avatar.putalpha(mask)
+
+        img.paste(avatar, (18, 18))
         draw = ImageDraw.Draw(img)
         draw.text((100, 18), member.display_name, font=ImageFont.truetype('DejaVuSans.ttf', 20))
         guild_settings = self.guild_settings.get(ctx.guild.id)
