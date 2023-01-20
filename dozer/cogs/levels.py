@@ -694,8 +694,7 @@ class Levels(Cog):
                 draw.ellipse((x + width, y, x + height + width, y + height), fill=fg2)
                 draw.ellipse((x, y, x + height, y + height), fill=fg2)
                 width = int(width * progress)
-                await ctx.send(f"Progress: {str((total_xp - level_floor) / (level_xp - level_floor))}")
-                await ctx.send(str(width))
+
                 # Draw the part of the progress bar that is actually filled
                 draw.rectangle((x + (height / 2), y, x + width + (height / 2), y + height), fill=fg, width=10)
                 draw.ellipse((x + width, y, x + height + width, y + height), fill=fg)
@@ -705,7 +704,8 @@ class Levels(Cog):
                 rank = db_record.get("rank")
             else:
                 rank = count
-
+            await ctx.send(f"Progress: {str((total_xp - level_floor) / (level_xp - level_floor))}")
+            await ctx.send(str(((total_xp - level_floor) / (level_xp - level_floor))*200))
             draw.text((100, 42), f'Level {level}, {total_xp - level_floor}/{level_xp} XP to level up. Level {level}.  ')
             draw.text((100, 55), f'#{rank} of {count} in this server')
 
