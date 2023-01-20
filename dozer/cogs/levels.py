@@ -706,7 +706,7 @@ class Levels(Cog):
 
             draw.text((100, 42), f'Level {level}, {total_xp - level_floor}/{level_xp} XP to level up. Level {level}.  ')
             draw.text((100, 55), f'#{rank} of {count} in this server')
-            new_bar(100, 73, 250, 12, (total_xp - level_floor) / (level_xp - level_floor))
+            new_bar(100, 73, 200, 12, (total_xp - level_floor) / (level_xp - level_floor))
 
             embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
                                  f"#{rank} of {count} in this server")
