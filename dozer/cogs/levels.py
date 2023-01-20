@@ -650,7 +650,7 @@ class Levels(Cog):
         If no member is passed, the caller's ranking is shown.
         """
         member = member or ctx.author
-        embed = discord.Embed(color=member.color)
+        # embed = discord.Embed(color=member.color)
         img = Image.new('RGB', (400, 100), (44, 47, 51))
 
         avatar = Image.open(BytesIO(await member.display_avatar.with_size(64).read()))
@@ -709,16 +709,16 @@ class Levels(Cog):
 
             new_bar(100, 73, 250, 12, (total_xp - level_floor) / level_xp)
 
-            embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
-                                 f"#{rank} of {count} in this server")
+            # embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
+            #                      f"#{rank} of {count} in this server")
 
         arr = BytesIO()
         img.save(arr, format='PNG')
         arr.seek(0)
         file = discord.File(fp=arr, filename=f'{member}.png')
         await ctx.send(file=file)
-        embed.set_author(name=member.display_name, icon_url=member.display_avatar.replace(format='png', size=64))
-        await ctx.send(embed=embed)
+        # embed.set_author(name=member.display_name, icon_url=member.display_avatar.replace(format='png', size=64))
+        # await ctx.send(embed=embed)
 
     rank.example_usage = """
     `{prefix}rank`: show your ranking
