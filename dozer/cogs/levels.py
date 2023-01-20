@@ -706,6 +706,7 @@ class Levels(Cog):
                 rank = count
             await ctx.send(f"Progress: {str((total_xp - level_floor) / (level_xp - level_floor))}")
             await ctx.send(str(((total_xp - level_floor) / (level_xp - level_floor))*200))
+            await ctx.send(f"{total_xp}, {level_xp}")
             draw.text((100, 42), f'Level {level}, {total_xp - level_floor}/{level_xp} XP to level up. Level {level}.  ')
             draw.text((100, 55), f'#{rank} of {count} in this server')
 
