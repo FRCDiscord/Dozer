@@ -642,15 +642,8 @@ class Levels(Cog):
                                                                                 f"Notification channel: {lvl_up_msgs}")
             await ctx.send(embed=embed)
 
-    @command(aliases=["rnak", "level"])
-    @guild_only()
-    @discord.ext.commands.cooldown(rate=1, per=5, type=discord.ext.commands.BucketType.user)
-    async def rank(self, ctx: DozerContext, *, member: discord.Member = None):
-        """Get a user's ranking on the XP leaderboard.
-        If no member is passed, the caller's ranking is shown.
-        """
-        member = member or ctx.author
-        # embed = discord.Embed(color=member.color)
+    def make_new_rank_card(self, member: discord.Member, levels_enabled: bool, level: int = 0, total_xp: int = 0, level_floor: int = 0, rank: int = 0,
+                           count: int = 0, level_xp: int = 0):
         img = Image.new('RGB', (400, 100), (44, 47, 51))
 
         avatar = Image.open(BytesIO(await member.display_avatar.with_size(64).read()))
@@ -664,10 +657,42 @@ class Levels(Cog):
         img.paste(avatar, (18, 18))
         draw = ImageDraw.Draw(img)
         draw.text((100, 18), member.display_name, font=ImageFont.truetype('DejaVuSans.ttf', 20))
+
+        def new_bar(x, y, width, height, progress, bg=(129, 66, 97), fg=(211, 211, 211), fg2=(15, 15, 15)):
+            # Draw the background
+            draw.rectangle((x + (height / 2), y, x + width + (height / 2), y + height), fill=fg2, width=10)
+            draw.ellipse((x + width, y, x + height + width, y + height), fill=fg2)
+            draw.ellipse((x, y, x + height, y + height), fill=fg2)
+            width = int(width * progress)
+
+            # Draw the part of the progress bar that is actually filled
+            draw.rectangle((x + (height / 2), y, x + width + (height / 2), y + height), fill=fg, width=10)
+            draw.ellipse((x + width, y, x + height + width, y + height), fill=fg)
+            draw.ellipse((x, y, x + height, y + height), fill=fg)
+
+        if levels_enabled:
+            draw.text((100, 42), f'Level {level}, {total_xp - level_floor}/{level_xp} XP to level up. Level {level}.  ')
+            draw.text((100, 55), f'#{rank} of {count} in this server')
+
+            new_bar(100, 73, 250, 12, (total_xp - level_floor) / level_xp)
+        else:
+            draw.text((100, 42), "Levels are not enabled in this server")
+        return img
+
+    @command(aliases=["rnak", "level"])
+    @guild_only()
+    @discord.ext.commands.cooldown(rate=1, per=5, type=discord.ext.commands.BucketType.user)
+    async def rank(self, ctx: DozerContext, *, member: discord.Member = None):
+        """Get a user's ranking on the XP leaderboard.
+        If no member is passed, the caller's ranking is shown.
+        """
+        member = member or ctx.author
+        # embed = discord.Embed(color=member.color)
+
         guild_settings = self.guild_settings.get(ctx.guild.id)
         if guild_settings is None or not guild_settings.enabled:
-            draw.text((100, 42), "Levels are not enabled in this server")
-            # embed.description = "Levels are not enabled in this server"
+            img = self.make_new_rank_card(member, levels_enabled=False)
+
         else:
             cache_record = await self.load_member(ctx.guild.id,
                                                   member.id)  # Grab member from cache to make sure we have the most up to date values
@@ -689,27 +714,11 @@ class Levels(Cog):
             level_floor = self.total_xp_for_level(level)
             level_xp = self.total_xp_for_level(level + 1) - level_floor
 
-            def new_bar(x, y, width, height, progress, bg=(129, 66, 97), fg=(211, 211, 211), fg2=(15, 15, 15)):
-                # Draw the background
-                draw.rectangle((x + (height / 2), y, x + width + (height / 2), y + height), fill=fg2, width=10)
-                draw.ellipse((x + width, y, x + height + width, y + height), fill=fg2)
-                draw.ellipse((x, y, x + height, y + height), fill=fg2)
-                width = int(width * progress)
-
-                # Draw the part of the progress bar that is actually filled
-                draw.rectangle((x + (height / 2), y, x + width + (height / 2), y + height), fill=fg, width=10)
-                draw.ellipse((x + width, y, x + height + width, y + height), fill=fg)
-                draw.ellipse((x, y, x + height, y + height), fill=fg)
-
             if db_record:  # If member does not exist in the db, then return rank as the lowest rank
                 rank = db_record.get("rank")
             else:
                 rank = count
-            draw.text((100, 42), f'Level {level}, {total_xp - level_floor}/{level_xp} XP to level up. Level {level}.  ')
-            draw.text((100, 55), f'#{rank} of {count} in this server')
-
-            new_bar(100, 73, 250, 12, (total_xp - level_floor) / level_xp)
-
+            img = self.make_new_rank_card(member, True, level, total_xp, level_floor, rank, count, level_xp)
             # embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
             #                      f"#{rank} of {count} in this server")
 
