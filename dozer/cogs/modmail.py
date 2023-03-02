@@ -6,11 +6,11 @@ from asyncio import sleep
 import discord
 from discord import ui
 from discord.ext.commands import has_permissions
+from loguru import logger
 
 from dozer.context import DozerContext
 from ._utils import *
 from .. import db
-from loguru import logger
 
 
 class Buttons(discord.ui.View):

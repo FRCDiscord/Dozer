@@ -144,6 +144,7 @@ def load_function(code: str, globals_, locals_):
         try:
             exec(function_header + '\n\treturn ' + lines[0], globals_, locals_)
         except SyntaxError as err:  # Either adding the 'return' caused an error, or it's user error
+            err.offset = int(err.offset)
             if err.text[err.offset - 1] == '=' or err.text[err.offset - 3:err.offset] == 'del' \
                     or err.text[err.offset - 6:err.offset] == 'return':  # return-caused error
                 exec(function_header + '\n\t' + lines[0], globals_, locals_)
