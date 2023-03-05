@@ -76,11 +76,9 @@ class Voice(Cog):
             config = await AutoPTT.get_by(channel_id=voice_channel.id)
             if len(config) != 0:
                 await AutoPTT.delete(channel_id=config[0].channel_id)
-                e.add_field(name='Success!', value='AutoPTT has been disabled for voice channel "**{}**"'
-                            .format(voice_channel))
+                e.add_field(name='Success!', value=f'AutoPTT has been disabled for voice channel "**{voice_channel}**"')
             else:
-                e.add_field(name='Error', value='AutoPTT has not been configured for voice channel "**{}**"'
-                            .format(voice_channel))
+                e.add_field(name='Error', value=f'AutoPTT has not been configured for voice channel "**{voice_channel}**"')
         else:
             ent = AutoPTT(
                 channel_id=voice_channel.id,
@@ -89,8 +87,7 @@ class Voice(Cog):
 
             await ent.update_or_add()
 
-            e.add_field(name='Success!', value='Voice Channel **{}**\'s PTT threshold set to {} members'
-                        .format(voice_channel, ptt_threshold))
+            e.add_field(name='Success!', value=f'Voice Channel **{voice_channel}**\'s PTT threshold set to {ptt_threshold} members')
 
         await ctx.send(embed=e)
 
@@ -103,7 +100,7 @@ class Voice(Cog):
     @bot_has_permissions(manage_roles=True)
     @has_permissions(manage_roles=True)
     async def voicebind(self, ctx: DozerContext, voice_channel: discord.VoiceChannel, *, role: discord.Role):
-        """Associates a voice channel with a role, so users joining a voice channel will automatically be given a specified role or roles."""
+        """Binds a voice channel with a role, so users joining voice channels will be given desired role(s)."""
 
         config = await Voicebinds.get_by(channel_id=voice_channel.id)
         if len(config) != 0:
@@ -114,8 +111,7 @@ class Voice(Cog):
         else:
             await Voicebinds(channel_id=voice_channel.id, role_id=role.id, guild_id=ctx.guild.id).update_or_add()
 
-        await ctx.send("Role `{role}` will now be given to users in voice channel `{voice_channel}`!".format(role=role,
-                                                                                                             voice_channel=voice_channel))
+        await ctx.send(f"Role `{role}` will now be given to users in voice channel `{voice_channel}`!")
 
     voicebind.example_usage = """
     `{prefix}voicebind "General #1" voice-general-1` - sets up Dozer to give users  `voice-general-1` when they join voice channel "General #1", which will be removed when they leave.
@@ -130,12 +126,9 @@ class Voice(Cog):
         if len(config) != 0:
             role = ctx.guild.get_role(config[0].role_id)
             await Voicebinds.delete(id=config[0].id)
-            await ctx.send(
-                "Role `{role}` will no longer be given to users in voice channel `{voice_channel}`!".format(
-                    role=role, voice_channel=voice_channel))
+            await ctx.send(f"Role `{role}` will no longer be given to users in voice channel `{voice_channel}`!")
         else:
-            await ctx.send("It appears that `{voice_channel}` is not associated with a role!".format(
-                voice_channel=voice_channel))
+            await ctx.send(f"It appears that `{voice_channel}` is not associated with a role!")
 
     voiceunbind.example_usage = """
     `{prefix}voiceunbind "General #1"` - Removes automatic role-giving for users in "General #1".
@@ -145,11 +138,11 @@ class Voice(Cog):
     @bot_has_permissions(manage_roles=True)
     async def voicebindlist(self, ctx: DozerContext):
         """Lists all the voice channel to role bindings for the current server"""
-        embed = discord.Embed(title="List of voice bindings for \"{}\"".format(ctx.guild), color=discord.Color.blue())
+        embed = discord.Embed(title=f"List of voice bindings for \"{ctx.guild}\"", color=discord.Color.blue())
         for config in await Voicebinds.get_by(guild_id=ctx.guild.id):
             channel = discord.utils.get(ctx.guild.voice_channels, id=config.channel_id)
             role = ctx.guild.get_role(config.role_id)
-            embed.add_field(name=channel, value="`{}`".format(role))
+            embed.add_field(name=channel, value=f"`{role}`")
         await ctx.send(embed=embed)
 
     voicebindlist.example_usage = """
@@ -228,6 +221,6 @@ class AutoPTT(db.DatabaseTable):
         return result_list
 
 
-def setup(bot):
+async def setup(bot):
     """Add this cog to the main bot."""
-    bot.add_cog(Voice(bot))
+    await bot.add_cog(Voice(bot))

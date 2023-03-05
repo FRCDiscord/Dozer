@@ -1,11 +1,8 @@
 """Holder for the custom join/leave messages database class and the associated methods"""
-from logging import getLogger
-
 import discord
+from loguru import logger
 
 from dozer import db
-
-DOZER_LOGGER = getLogger(__name__)
 
 
 async def send_log(member):
@@ -15,13 +12,13 @@ async def send_log(member):
         channel = member.guild.get_channel(config[0].channel_id)
         if channel:
             embed = discord.Embed(color=0x00FF00)
-            embed.set_author(name='Member Joined', icon_url=member.avatar_url_as(format='png', size=32))
+            embed.set_author(name='Member Joined', icon_url=member.display_avatar.replace(format='png', size=32))
             embed.description = format_join_leave(config[0].join_message, member)
-            embed.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
+            embed.set_footer(text=f"{member.guild.name} | {member.guild.member_count} members")
             try:
                 await channel.send(content=member.mention if config[0].ping else None, embed=embed)
             except discord.Forbidden:
-                DOZER_LOGGER.warning(
+                logger.warning(
                     f"Guild {member.guild}({member.guild.id}) has invalid permissions for join/leave logs")
 
 
@@ -33,12 +30,9 @@ def format_join_leave(template: str, member: discord.Member):
     {user_mention} = user's mention
     {user_id} = user's ID
     """
-    if template:
-        return template.format(guild=member.guild, user=str(member), user_name=member.name,
-                               user_mention=member.mention, user_id=member.id)
-    else:
-        return "{user_mention}\n{user} ({user_id})".format(user=str(member), user_mention=member.mention,
-                                                           user_id=member.id)
+    template = template or "{user_mention}\n{user} ({user_id})"
+    return template.format(guild=member.guild, user=str(member), user_name=member.name,
+                            user_mention=member.mention, user_id=member.id)
 
 
 class CustomJoinLeaveMessages(db.DatabaseTable):

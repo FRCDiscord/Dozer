@@ -8,7 +8,6 @@ import discord
 import humanize
 from discord.ext.commands import cooldown, BucketType, guild_only
 from discord.utils import escape_markdown
-from discord_slash import cog_ext, SlashContext
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -20,13 +19,6 @@ datetime_format = '%Y-%m-%d %H:%M:%S\nUTC'
 
 class Info(Cog):
     """Commands for getting information about people and things on Discord."""
-
-    @cog_ext.cog_slash(name="user", description="Returns user information")
-    async def slash_member(self, ctx: SlashContext, member: discord.Member = None):
-        """Users slash handler"""
-        if member is None:
-            member = ctx.guild.get_member(ctx.author.id)
-        await self.member(ctx, member=member)
 
     @command(aliases=['user', 'memberinfo', 'userinfo'])
     @guild_only()
@@ -51,7 +43,7 @@ class Info(Cog):
         levels_enabled = levels_settings[0].enabled if len(levels_settings) else False
 
         embed = discord.Embed(title=escape_markdown(member.display_name), description=f'{member!s} ({member.id})', color=member.color)
-        embed.set_thumbnail(url=member.avatar_url)
+        embed.set_thumbnail(url=member.display_avatar)
         embed.add_field(name='Bot Created' if member.bot else 'Account Created',
                         value=f"<t:{int(member.created_at.timestamp())}:f>", inline=True)
 
@@ -117,7 +109,7 @@ class Info(Cog):
             for filtered_activity in filtered:
                 matcher.set_seq1(str(filtered_activity.name))
                 if matcher.quick_ratio() < 0.6 and matcher.ratio() < 0.6:  # Use quick_ratio if we can as ratio is slow
-                    filtered.append(activity)
+                    filtered.append(activity)  # pylint: disable=modified-iterating-list
                     break
 
         return [format_activity(activity) for activity in filtered]
@@ -134,11 +126,6 @@ class Info(Cog):
         else:
             return f'{", ".join(values[:-1])}, and {values[-1]}'
 
-    @cog_ext.cog_subcommand(base="role", name="roleinfo", description="Returns role information")
-    async def slash_role(self, ctx: SlashContext, role: discord.Role):
-        """Role slash handler"""
-        await self.role(ctx, role=role)
-
     @command()
     @guild_only()
     @cooldown(1, 10, BucketType.channel)
@@ -151,15 +138,11 @@ class Info(Cog):
         embed.add_field(name="Assigned members", value=f"{len(role.members)}", inline=False)
         await ctx.send(embed=embed)
 
-    @cog_ext.cog_subcommand(base="role", name="rolemembers", description="Returns all member who have a role")
-    async def slash_rolemember(self, ctx: SlashContext, role: discord.Role):
-        """rolemembers slash handler"""
-        await self.rolemembers(ctx, role=role)
-
     @command()
     @guild_only()
     async def rolemembers(self, ctx: DozerContext, role: discord.Role):
         """Retrieve members who have this role"""
+        await ctx.defer()
         embeds = []
         for page_num, page in enumerate(chunk(role.members, 10)):
             embed = discord.Embed(title=f"Members for role: {role.name}", color=role.color)
@@ -167,11 +150,6 @@ class Info(Cog):
             embed.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(role.members) / 10)}")
             embeds.append(embed)
         await paginate(ctx, embeds)
-
-    @cog_ext.cog_slash(name="guild", description="Returns guild information")
-    async def slash_guild(self, ctx: SlashContext):
-        """Guild slash handler"""
-        await self.guild(ctx)
 
     @guild_only()
     @cooldown(1, 10, BucketType.channel)
@@ -184,11 +162,11 @@ class Info(Cog):
         embed = discord.Embed(title=f"Info for guild: {guild.name}", description=f"Members: {guild.member_count}",
                               color=blurple)
 
-        embed.set_thumbnail(url=guild.icon_url)
+        embed.set_thumbnail(url=guild.icon.url if guild.icon is not None else None)
 
         embed.add_field(name='Created on', value=f"<t:{int(guild.created_at.timestamp())}:f>")
         embed.add_field(name='Owner', value=guild.owner)
-        embed.add_field(name='Emoji', value="{} static, {} animated".format(static_emoji, animated_emoji))
+        embed.add_field(name='Emoji', value=f"{static_emoji} static, {animated_emoji} animated")
         embed.add_field(name='Roles', value=str(len(guild.roles) - 1))  # Remove @everyone
         embed.add_field(name='Channels', value=str(len(guild.channels)))
         embed.add_field(name='Nitro Boost Info', value=f'Level {ctx.guild.premium_tier}, '
@@ -203,6 +181,6 @@ class Info(Cog):
     """
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the info cog to the bot"""
-    bot.add_cog(Info(bot))
+    await bot.add_cog(Info(bot))

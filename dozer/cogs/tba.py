@@ -14,7 +14,6 @@ import discord
 from discord.ext import commands
 from discord.ext.commands import BadArgument
 from discord.utils import escape_markdown
-from discord_slash import cog_ext, SlashContext
 from geopy.geocoders import Nominatim
 
 from dozer.context import DozerContext
@@ -29,16 +28,11 @@ class TBA(Cog):
         super().__init__(bot)
         tba_config = bot.config['tba']
         self.gmaps_key = bot.config['gmaps_key']
-        self.http_session = aiohttp.ClientSession()
+        self.http_session = bot.add_aiohttp_ses(aiohttp.ClientSession())
         self.session = aiotba.TBASession(tba_config['key'], self.http_session)
         # self.parser = tbapi.TBAParser(tba_config['key'], cache=False)
 
     col = discord.Color.from_rgb(63, 81, 181)
-
-    @cog_ext.cog_slash(name="tba", description="Get information on an FRC team by number.")
-    async def slash_tba(self, ctx: SlashContext, team_number: int):
-        """tba slash handler"""
-        await self.team(ctx, team_num=team_number)
 
     @group(invoke_without_command=True)
     async def tba(self, ctx: DozerContext, team_num: int):
@@ -62,7 +56,7 @@ class TBA(Cog):
         except aiotba.http.AioTBAError:
             raise BadArgument(f"Couldn't find data for team {team_num}.")
         if team_data.city is None:
-            raise BadArgument("team {} exists, but has no information!".format(team_num))
+            raise BadArgument(f"team {team_num} exists, but has no information!")
 
         try:
             team_district_data = await self.session.team_districts(team_num)
@@ -71,21 +65,22 @@ class TBA(Cog):
         except aiotba.http.AioTBAError:
             team_district_data = None
         e = discord.Embed(color=self.col,
-                          title='FIRST® Robotics Competition Team {}'.format(team_num),
-                          url='https://www.thebluealliance.com/team/{}'.format(team_num))
-        e.set_thumbnail(url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
+                          title=f'FIRST® Robotics Competition Team {team_num}',
+                          url=f'https://www.thebluealliance.com/team/{team_num}')
+        e.set_thumbnail(url=f'https://frcavatars.herokuapp.com/get_image?team={team_num}')
         e.add_field(name='Name', value=team_data.nickname)
         e.add_field(name='Rookie Year', value=team_data.rookie_year)
         e.add_field(name='Location',
                     value='{0.city}, {0.state_prov} {0.postal_code}, {0.country}'.format(team_data))
-        e.add_field(name='Website', value=team_data.website)
+        if team_data.website and not team_data.website == "":
+            e.add_field(name='Website', value=team_data.website)
         if team_district_data:
             e.add_field(name='District', value=f"{escape_markdown(team_district.display_name)} [{team_district.abbreviation.upper()}]")
         try:
             e.add_field(name='Championship', value=team_data.home_championship[max(team_data.home_championship.keys())])
         except AttributeError:
             e.add_field(name='Championship', value="Unknown")
-        e.set_footer(text='Triggered by {}'.format(escape_markdown(ctx.author.display_name)))
+        e.set_footer(text=f'Triggered by {ctx.author.display_name}')
         await ctx.send(embed=e)
 
     team.example_usage = """
@@ -157,7 +152,7 @@ class TBA(Cog):
                 }.get(media.type, (None, None, None))
                 media.details['foreign_key'] = media.foreign_key
                 if name is not None:
-                    page = discord.Embed(title="{}{}".format(base, name), url=url.format(**media.details))
+                    page = discord.Embed(title=f"{base}{name}", url=url.format(**media.details))
                     page.set_image(url=img_url.format(**media.details))
                     pages.append(page)
 
@@ -167,7 +162,7 @@ class TBA(Cog):
                 await ctx.send(f"No media for team {team_num} found in {year}!")
 
         except aiotba.http.AioTBAError:
-            raise BadArgument("Couldn't find data for team {}".format(team_num))
+            raise BadArgument(f"Couldn't find data for team {team_num}")
 
     media.example_usage = """
     `{prefix}tba media 971 2016` - show available media from team 971 Spartan Robotics in 2016
@@ -183,7 +178,7 @@ class TBA(Cog):
                 events_data = await self.session.team_events(team_num, year=year)
                 event_key_map = {event.key: event for event in events_data}
             except aiotba.http.AioTBAError:
-                raise BadArgument("Couldn't find data for team {}".format(team_num))
+                raise BadArgument(f"Couldn't find data for team {team_num}")
 
             pages = []
         for award_year, awards in itertools.groupby(awards_data, lambda a: a.year):
@@ -215,17 +210,17 @@ class TBA(Cog):
         try:
             team_data = await self.session.team(team_num)
             e = discord.Embed(color=self.col)
-            e.set_author(name='FIRST® Robotics Competition Team {}'.format(team_num),
-                         url='https://www.thebluealliance.com/team/{}'.format(team_num),
-                         icon_url='https://frcavatars.herokuapp.com/get_image?team={}'.format(team_num))
-            e.add_field(name='Raw Data', value="```py\n {}```".format(pformat(team_data.__dict__)))
-            e.set_footer(text='Triggered by {}'.format(escape_markdown(ctx.author.display_name)))
+            e.set_author(name=f'FIRST® Robotics Competition Team {team_num}',
+                         url=f'https://www.thebluealliance.com/team/{team_num}',
+                         icon_url=f'https://frcavatars.herokuapp.com/get_image?team={team_num}')
+            e.add_field(name='Raw Data', value=f"```py\n {pformat(team_data.__dict__)}```")
+            e.set_footer(text=f'Triggered by {ctx.author.display_name}')
             await ctx.send(embed=e)
         except aiotba.http.AioTBAError:
-            raise BadArgument('Team {} does not exist.'.format(team_num))
+            raise BadArgument(f'Team {team_num} does not exist.')
 
     raw.example_usage = """
-    `{prefix}tba raw 4150` - show raw information on team 4150, FRobotics
+    `{prefix}tba raw 1339` - show raw information on team 1339, AngelBotics
     """
 
     class TeamData:
@@ -233,11 +228,6 @@ class TBA(Cog):
         country: str
         state_prov: str
         city: str
-
-    @cog_ext.cog_slash(name="weather", description="Get the weather for a given team.")
-    async def slash_weather(self, ctx: SlashContext, team_program, team_number: int):
-        """weather slash handler"""
-        await self.weather(ctx, team_program=team_program, team_num=team_number)
 
     @command()
     @bot_has_permissions(embed_links=True)
@@ -248,11 +238,11 @@ class TBA(Cog):
             try:
                 td = await self.session.team(team_num)
             except aiotba.http.AioTBAError:
-                raise BadArgument('Team {} does not exist.'.format(team_num))
+                raise BadArgument(f'Team {team_num} does not exist.')
         elif team_program.lower() == "ftc":
-            res = json.loads(await self.bot.cogs['TOA'].parser.req("team/{}".format(team_num)))
+            res = json.loads(await self.bot.cogs['TOA'].parser.req(f"team/{team_num}"))
             if not res:
-                raise BadArgument('Team {} does not exist.'.format(team_num))
+                raise BadArgument(f'Team {team_num} does not exist.')
             td_dict = res[0]
             td = self.TeamData()
             td.__dict__.update(td_dict)
@@ -263,15 +253,10 @@ class TBA(Cog):
         if td.country == "USA":
             td.country = "United States of America"
             units = 'u'
-        url = "https://wttr.in/{}".format(
-            urlquote("{}+{}+{}_0_{}.png".format(td.city, td.state_prov, td.country, units)))
+        url = "https://wttr.in/" + urlquote(f"{td.city}+{td.state_prov}+{td.country}_0_{units}.png")
 
-        if isinstance(ctx, SlashContext):
-            async with self.http_session.get(url) as resp:
-                image_data = io.BytesIO(await resp.read())
-        else:
-            async with ctx.typing(), self.http_session.get(url) as resp:
-                image_data = io.BytesIO(await resp.read())
+        async with ctx.typing(), self.http_session.get(url) as resp:
+            image_data = io.BytesIO(await resp.read())
 
         file_name = f"weather_{team_program.lower()}{team_num}.png"
         e = discord.Embed(title=f"Current weather for {team_program.upper()} Team {team_num}:", url=url)
@@ -284,11 +269,6 @@ class TBA(Cog):
     `{prefix}weather ftc 15470` - show the current weather for FTC team 15470 
     """
 
-    @cog_ext.cog_slash(name="timezone", description="Get the local time of a team")
-    async def slash_timezone(self, ctx: SlashContext, team_program, team_number: int):
-        """timezone slash handler"""
-        await self.timezone(ctx, team_program=team_program, team_num=team_number)
-
     @command()
     async def timezone(self, ctx: DozerContext, team_program: str, team_num: int):
         """
@@ -299,46 +279,42 @@ class TBA(Cog):
             try:
                 team_data = await self.session.team(team_num)
             except aiotba.http.AioTBAError:
-                raise BadArgument('Team {} does not exist.'.format(team_num))
+                raise BadArgument(f'Team {team_num} does not exist.')
             if team_data.city is None:
-                raise BadArgument("team {} exists, but does not have sufficient information!".format(team_num))
+                raise BadArgument(f"team {team_num} exists, but does not have sufficient information!")
 
         elif team_program.lower() == "ftc":
-            res = json.loads(await self.bot.cogs['TOA'].parser.req("team/{}".format(str(team_num))))
+            res = json.loads(await self.bot.cogs['TOA'].parser.req(f"team/{team_num}"))
             if not res:
-                raise BadArgument('Team {} does not exist.'.format(team_num))
+                raise BadArgument(f'Team {team_num} does not exist.')
             team_data_dict = res[0]
             team_data = self.TeamData()
             team_data.__dict__.update(team_data_dict)
         else:
             raise BadArgument('`team_program` should be one of [`frc`, `ftc`]')
 
-        location = '{0.city}, {0.state_prov} {0.country}'.format(team_data)
+        location = f'{team_data.city}, {team_data.state_prov} {team_data.country}'
         gmaps = googlemaps.Client(key=self.gmaps_key)
         geolocator = Nominatim(user_agent="Dozer Discord Bot")
         geolocation = geolocator.geocode(location)
 
         if self.gmaps_key and not self.bot.config['tz_url']:
-            timezone = gmaps.timezone(location="{}, {}".format(geolocation.latitude, geolocation.longitude),
-                                      language="json")
+            timezone = gmaps.timezone(location=f"{geolocation.latitude}, {geolocation.longitude}", language="json")
             utc_offset = float(timezone["rawOffset"]) / 3600
             if timezone["dstOffset"] == 3600:
                 utc_offset += 1
             tzname = timezone["timeZoneName"]
         else:
             async with async_timeout.timeout(5), self.bot.http_session.get(urljoin(base=self.bot.config['tz_url'],
-                                                                                   url="{}/{}".format(
-                                                                                       geolocation.latitude,
-                                                                                       geolocation.longitude))) as r:
+                                                                                   url=f"{geolocation.latitude}/{geolocation.longitude}")) as r:
                 r.raise_for_status()
                 data = await r.json()
                 utc_offset = data["utc_offset"]
-                tzname = '`{}`'.format(data["tz"])
+                tzname = f'`{data["tz"]}`'
 
         current_time = datetime.datetime.utcnow() + datetime.timedelta(hours=utc_offset)
 
-        await ctx.send("Timezone: {} UTC{}\n{}".format(tzname, utc_offset,
-                                                       current_time.strftime("Current Time: %I:%M:%S %p (%H:%M:%S)")))
+        await ctx.send(f'Timezone: {tzname} UTC{utc_offset}\n{current_time.strftime("Current Time: %I:%M:%S %p (%H:%M:%S)")}')
 
     timezone.example_usage = """
     `{prefix}timezone frc 5052` - show the local time of FRC team 5052, The RoboLobos
@@ -346,6 +322,6 @@ class TBA(Cog):
     """
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the TBA cog to the bot"""
-    bot.add_cog(TBA(bot))
+    await bot.add_cog(TBA(bot))

@@ -6,7 +6,6 @@ from asyncio import sleep
 import discord
 from discord.ext.commands import cooldown, BucketType, guild_only, BadArgument, MissingPermissions
 from discord.utils import escape_markdown
-from discord_slash import cog_ext, SlashContext
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -40,6 +39,39 @@ class Fun(Cog):
             "**{opponent}** was knocked off the hab by **{attacker}**",
             "**{opponent}** had the scale dropped on them by **{attacker}**",
             "**{opponent}** had `git rm --force` executed on them by **{attacker}**",
+            # this and the following messages up to the next comment are custom by @transorsmth#7483
+            "**{opponent}** had their autonomous broken by **{attacker}**",
+            "**{opponent}** was voted out by **{attacker}**",
+            "**{opponent}** was called sus by **{attacker}**",
+            "**{opponent}** was hit with a power cell by **{attacker}**",
+            "**{opponent}** had their main breaker pressed by **{attacker}**",
+            "**{opponent}** had a conflicting autonomous with **{attacker}**",
+            "**{opponent}** was hit with a stapler by **{attacker}**",
+            "**{opponent}** was knocked off the traversal bar by **{attacker}**",
+            "**{opponent}** had their battery fall out out thanks to **{attacker}**",
+            "**{opponent}** had their season ended by **{attacker}**",
+            "**{opponent}** had their roborio bricked by **{attacker}**",
+            # this and the following messages are thanks to J-Man from the CHS discord server, who expended their
+            # creative powers on these statements.
+            "**{opponent}** extended too far outside their frame perimeter in front of **{attacker}**",
+            "**{opponent}** lost a coffee-drinking competition against **{attacker}**",
+            "**{opponent}** was a no-show against **{attacker}**",
+            "**{opponent}** fell asleep before a match against **{attacker}**",
+            "**{opponent}** yelled ROBOT! too loudly at **{attacker}**",
+            "**{opponent}** got caught running in the pits by **{attacker}**",
+            "**{opponent}** had their robot disabled by **{attacker}**",
+            "**{opponent}** got a red card from **{attacker}**",
+            "**{opponent}** got a yellow card from **{attacker}**",
+            "**{opponent}** failed their robot's inspection by **{attacker}**",
+            "**{opponent}** had their firewall re-enabled by **{attacker}**",
+            "**{opponent}** had their drill battery stolen by **{attacker}**",
+            "**{opponent}** had their website hacked by **{attacker}**",
+            "**{opponent}** got their head zipped in a power cube by **{attacker}**",
+            "**{opponent}** lost their sponsorship to **{attacker}**",
+            "**{opponent}** took an arrow in the knee from **{attacker}**",
+            "**{opponent}** was given a tech foul by **{attacker}**",
+            "**{opponent}** had their code corrupted by **{attacker}**",
+            "**{opponent}** was found without adequate eye protection by **{attacker}**",
         ]
 
         damages = [100, 150, 200, 300, 50, 250, 420]
@@ -75,12 +107,6 @@ class Fun(Cog):
                 await msg.delete()
 
         return players[turn], players[(turn + 1) % 2]
-
-    # Removed until discord fixes the slash command bugs
-    # @cog_ext.cog_slash(name="fight", description="Fight another member, with an optional wager")
-    # async def slash_fight(self, ctx: SlashContext, opponent: discord.Member, wager: int = 0):
-    #     """Fight slash handler"""
-    #     await self.fight(ctx, opponent, wager)
 
     @guild_only()
     @discord.ext.commands.cooldown(1, 5, BucketType.channel)
@@ -191,6 +217,6 @@ class Fun(Cog):
         """
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the fun cog to Dozer"""
-    bot.add_cog(Fun(bot))
+    await bot.add_cog(Fun(bot))

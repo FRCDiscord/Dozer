@@ -1,26 +1,21 @@
 """Provides guild logging functions for Dozer."""
 import asyncio
 import datetime
-import logging
 import math
 import time
 
 import discord
 from discord.ext import commands
 from discord.ext.commands import has_permissions, BadArgument
-
 from discord.utils import escape_markdown
-from ..Components.CustomJoinLeaveMessages import CustomJoinLeaveMessages, format_join_leave, send_log
-from .moderation import GuildNewMember
-from dozer.context import DozerContext
+from loguru import logger
 
+from dozer.context import DozerContext
 from ._utils import *
 from .general import blurple
 from .moderation import GuildNewMember
 from .. import db
 from ..Components.CustomJoinLeaveMessages import CustomJoinLeaveMessages, format_join_leave, send_log
-
-DOZER_LOGGER = logging.getLogger(__name__)
 
 
 async def embed_paginatorinator(content_name, embed, text):
@@ -55,14 +50,14 @@ class Actionlog(Cog):
     @Cog.listener('on_member_join')
     async def on_member_join(self, member):
         """Logs that a member joined, with optional custom message"""
-        nm_config = await GuildNewMember.get_by(guild_id=member.guild.id)
-        if len(nm_config) == 0:
+        join_leave_config = await CustomJoinLeaveMessages.get_by(guild_id=member.guild.id)
+        new_members_config = await GuildNewMember.get_by(guild_id=member.guild.id)
+        if len(new_members_config) == 0 and len(join_leave_config) == 0:
             await send_log(member)
         else:
-            print(nm_config[0])
-            if nm_config[0].require_team:
+            if len(new_members_config) > 0 and new_members_config[0].require_team:
                 return
-            elif nm_config[0].send_on_verify:
+            elif len(join_leave_config) > 0 and join_leave_config[0].send_on_verify:
                 return
             else:
                 await send_log(member)
@@ -75,13 +70,13 @@ class Actionlog(Cog):
             channel = member.guild.get_channel(config[0].channel_id)
             if channel:
                 embed = discord.Embed(color=0xFF0000)
-                embed.set_author(name='Member Left', icon_url=member.avatar_url_as(format='png', size=32))
+                embed.set_author(name='Member Left', icon_url=member.display_avatar.replace(format='png', size=32))
                 embed.description = format_join_leave(config[0].leave_message, member)
-                embed.set_footer(text="{} | {} members".format(member.guild.name, member.guild.member_count))
+                embed.set_footer(text=f"{member.guild.name} | {member.guild.member_count} members")
                 try:
                     await channel.send(embed=embed)
                 except discord.Forbidden:
-                    DOZER_LOGGER.warning(
+                    logger.warning(
                         f"Guild {member.guild}({member.guild.id}) has invalid permissions for join/leave logs")
 
     @Cog.listener("on_member_update")
@@ -96,7 +91,7 @@ class Actionlog(Cog):
 
         embed = discord.Embed(title="Nickname Changed",
                               color=0x00FFFF)
-        embed.set_author(name=after, icon_url=after.avatar_url)
+        embed.set_author(name=after, icon_url=after.display_avatar)
         embed.add_field(name="Before", value=before.nick, inline=False)
         embed.add_field(name="After", value=after.nick, inline=False)
 
@@ -205,7 +200,7 @@ class Actionlog(Cog):
                 try:
                     await channel.send(embed=embed)
                 except discord.HTTPException as e:
-                    DOZER_LOGGER.debug(f"Bulk delete embed failed to send: {e}")
+                    logger.debug(f"Bulk delete embed failed to send: {e}")
                 embed = discord.Embed(title="Bulk Message Delete", color=0xFF0000,
                                       timestamp=datetime.datetime.now(tz=datetime.timezone.utc))
                 page_character_count = len(message.content)
@@ -226,7 +221,7 @@ class Actionlog(Cog):
         try:
             await channel.send(embed=embed)
         except discord.HTTPException as e:
-            DOZER_LOGGER.debug(f"Bulk delete embed failed to send: {e}")
+            logger.debug(f"Bulk delete embed failed to send: {e}")
         header_embed.description = f"{len(message_ids)} Messages Deleted In: {message_channel.mention}\n" \
                                    f"Messages cached: {len(cached_messages)}/{len(message_ids)} \n" \
                                    f"Messages logged: {message_count}/{len(message_ids)}"
@@ -261,7 +256,7 @@ class Actionlog(Cog):
         embed = discord.Embed(title="Message Deleted",
                               description=f"Message Deleted In: {message.channel.mention}\nSent by: {message.author.mention}",
                               color=0xFF0000, timestamp=message.created_at)
-        embed.set_author(name=message.author, icon_url=message.author.avatar_url)
+        embed.set_author(name=message.author, icon_url=message.author.display_avatar)
         if audit:
             if audit.target == message.author:
                 audit_member = await message.guild.fetch_member(audit.user.id)
@@ -338,7 +333,7 @@ class Actionlog(Cog):
                                   description=f"[MESSAGE]({link}) From {before.author.mention}"
                                               f"\nEdited In: {before.channel.mention}", color=0xFFC400,
                                   timestamp=after.edited_at)
-            embed.set_author(name=before.author, icon_url=before.author.avatar_url)
+            embed.set_author(name=before.author, icon_url=before.author.display_avatar)
             embed.set_footer(text=f"Message ID: {channel_id} - {message_id}\nUserID: {user_id}")
             if len(before.content) + len(after.content) < 5000:
                 embed = await embed_paginatorinator("Original", embed, before.content)
@@ -372,7 +367,7 @@ class Actionlog(Cog):
         """Logs raw member ban events, even if not banned via &ban"""
         audit = await self.check_audit(guild, discord.AuditLogAction.ban)
         embed = discord.Embed(title="User Banned", color=0xff6700)
-        embed.set_thumbnail(url=user.avatar_url)
+        embed.set_thumbnail(url=user.display_avatar)
         embed.add_field(name="Banned user", value=f"{user}|({user.id})")
         if audit and audit.target == user:
             acton_member = await guild.fetch_member(audit.user.id)
@@ -434,6 +429,12 @@ class Actionlog(Cog):
     `{prefix}memberlogconfig setleavemessage template`: Sets leave template
     `{prefix}memberlogconfig help`: Returns the template formatting key
     """
+
+    @memberlogconfig.command()
+    @has_permissions(administrator=True)
+    async def viewconfig(self, ctx: DozerContext):
+        """Command to view Join/Leave logs configuration."""
+        await self.memberlogconfig(ctx)
 
     @memberlogconfig.command()
     @has_permissions(manage_guild=True)
@@ -632,59 +633,6 @@ class NicknameLock(db.DatabaseTable):
             result_list.append(obj)
         return result_list
 
-class CustomJoinLeaveMessages(db.DatabaseTable):
-    """Holds custom join leave messages"""
-    __tablename__ = 'memberlogconfig'
-    __uniques__ = 'guild_id'
-
-    @classmethod
-    async def initial_create(cls):
-        """Create the table in the database"""
-        async with db.Pool.acquire() as conn:
-            await conn.execute(f"""
-            CREATE TABLE {cls.__tablename__} (
-            guild_id bigint PRIMARY KEY NOT NULL,	            
-            memberlog_channel bigint NOT NULL,	   
-            name varchar NOT NULL
-            )""")
-
-    def __init__(self, guild_id: int, channel_id: int = None, ping=None, join_message: str = None,
-                 leave_message: str = None):
-        super().__init__()
-        self.guild_id = guild_id
-        self.channel_id = channel_id
-        self.ping = ping
-        self.join_message = join_message
-        self.leave_message = leave_message
-
-    @classmethod
-    async def get_by(cls, **kwargs):
-        results = await super().get_by(**kwargs)
-        result_list = []
-        for result in results:
-            obj = CustomJoinLeaveMessages(guild_id=result.get("guild_id"), channel_id=result.get("channel_id"),
-                                          ping=result.get("ping"),
-                                          join_message=result.get("join_message"),
-                                          leave_message=result.get("leave_message"))
-            result_list.append(obj)
-        return result_list
-
-    async def version_1(self):
-        """DB migration v1"""
-        async with db.Pool.acquire() as conn:
-            await conn.execute(f"""
-            alter table memberlogconfig rename column memberlog_channel to channel_id;
-            alter table memberlogconfig alter column channel_id drop not null;
-            alter table {self.__tablename__} drop column IF EXISTS name;
-            alter table {self.__tablename__}
-                add IF NOT EXISTS ping boolean default False;
-            alter table {self.__tablename__}
-                add IF NOT EXISTS join_message text default null;
-            alter table {self.__tablename__}
-                add IF NOT EXISTS leave_message text default null;
-            """)
-
-    __versions__ = [version_1]
 
 class GuildMessageLog(db.DatabaseTable):
     """Holds config info for message logs"""
@@ -719,6 +667,6 @@ class GuildMessageLog(db.DatabaseTable):
         return result_list
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the actionlog cog to the bot."""
-    bot.add_cog(Actionlog(bot))
+    await bot.add_cog(Actionlog(bot))

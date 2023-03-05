@@ -37,7 +37,10 @@ class Filter(Cog):
 
         if result == "1":
             await ctx.author.send(embed=embed)
-            await ctx.message.add_reaction("📬")
+            try:
+                await ctx.message.add_reaction("📬")
+            except discord.errors.NotFound:
+                await ctx.reply("Check your DMs!", ephemeral=True)
         else:
             await ctx.send(embed=embed)
 
@@ -126,9 +129,8 @@ class Filter(Cog):
         results = await WordFilter.get_by(guild_id=ctx.guild.id, enabled=True)
 
         if not results:
-            embed = discord.Embed(title="Filters for {}".format(ctx.guild.name))
-            embed.description = "No filters found for this guild! Add one using `{}filter add <regex> [name]`".format(
-                ctx.prefix)
+            embed = discord.Embed(title=f"Filters for {ctx.guild.name}")
+            embed.description = f"No filters found for this guild! Add one using `{ctx.prefix}filter add <regex> [name]`"
             embed.color = discord.Color.red()
             await ctx.send(embed=embed)
             return
@@ -140,7 +142,7 @@ class Filter(Cog):
         filter_text = '\n'.join(map(fmt.format, results))
 
         embed = discord.Embed()
-        embed.title = "Filters for {}".format(ctx.guild.name)
+        embed.title = f"Filters for {ctx.guild.name}"
         embed.add_field(name="Filters", value=filter_text)
         embed.color = discord.Color.dark_orange()
         await self.check_dm_filter(ctx, embed)
@@ -152,6 +154,12 @@ class Filter(Cog):
     `{prefix}filter whitelist add Administrators` - Make the Administrators role whitelisted for the filter.
     `{prefix}filter whitelist remove Moderators` - Make the Moderators role no longer whitelisted."""
 
+    @filter.command()
+    @guild_only()
+    async def list(self, ctx, advanced: bool = False):
+        """Lists word filters."""
+        await self.filter(ctx, advanced)
+
     @guild_only()
     @has_permissions(manage_guild=True)
     @filter.command()
@@ -160,14 +168,14 @@ class Filter(Cog):
         try:
             re.compile(pattern)
         except re.error as err:
-            await ctx.send("Invalid RegEx! ```{}```".format(err.msg))
+            await ctx.send(f"Invalid RegEx! ```{err.msg}```")
             return
         new_filter = WordFilter(guild_id=ctx.guild.id, pattern=pattern, friendly_name=friendly_name or pattern)
         await new_filter.update_or_add()
         embed = discord.Embed()
         embed.title = "Filter added!"
-        embed.description = "A new filter with the name `{}` was added.".format(friendly_name or pattern)
-        embed.add_field(name="Pattern", value="`{}`".format(pattern))
+        embed.description = f"A new filter with the name `{friendly_name or pattern}` was added."
+        embed.add_field(name="Pattern", value=f"`{pattern}`")
         await ctx.send(embed=embed)
         await self.load_filters(ctx.guild.id)
 
@@ -181,7 +189,7 @@ class Filter(Cog):
         try:
             re.compile(pattern)
         except re.error as err:
-            await ctx.send("Invalid RegEx! ```{}```".format(err.msg))
+            await ctx.send(f"Invalid RegEx! ```{err.msg}```")
             return
         results = await WordFilter.get_by(guild_id=ctx.guild.id)
         found = False
@@ -201,8 +209,8 @@ class Filter(Cog):
         result.pattern = pattern
         await result.update_or_add()
         await self.load_filters(ctx.guild.id)
-        embed = discord.Embed(title="Updated filter {}".format(result.friendly_name or result.pattern))
-        embed.description = "Filter ID {} has been updated.".format(result.filter_id)
+        embed = discord.Embed(title=f"Updated filter {result.friendly_name or result.pattern}")
+        embed.description = f"Filter ID {result.filter_id} has been updated."
         embed.add_field(name="Old Pattern", value=old_pattern)
         embed.add_field(name="New Pattern", value=pattern)
         if enabled_change:
@@ -220,7 +228,7 @@ class Filter(Cog):
         """Remove a pattern from the filter list."""
         result = await WordFilter.get_by(filter_id=filter_id)
         if len(result) == 0:
-            await ctx.send("Filter ID {} not found!".format(filter_id))
+            await ctx.send(f"Filter ID {filter_id} not found!")
             return
         else:
             result = result[0]
@@ -229,7 +237,7 @@ class Filter(Cog):
             return
         result.enabled = False
         await result.update_or_add()
-        await ctx.send("Filter with name `{}` deleted.".format(result.friendly_name))
+        await ctx.send(f"Filter with name `{result.friendly_name}` deleted.")
         await self.load_filters(ctx.guild.id)
 
     remove.example_usage = "`{prefix}filter remove 7` - Disables filter with ID 7"
@@ -252,14 +260,13 @@ class Filter(Cog):
         await result.update_or_add()
         self.word_filter_setting.invalidate_entry(guild_id=ctx.guild.id, setting_type="dm")
         await ctx.send(
-            "The DM setting for this guild has been changed from {} to {}.".format(before_setting == "1",
-                                                                                   result.value == "1"))
+            f"The DM setting for this guild has been changed from {before_setting == '1'} to {result.value == '1'}.")
 
     dm_config.example_usage = "`{prefix}filter dm_config True` - Makes all messages containining filter lists to be " \
                               "sent through DMs "
 
     @guild_only()
-    @filter.group(invoke_without_command=True)
+    @group(invoke_without_command=True, parent=filter)
     async def whitelist(self, ctx: DozerContext):
         """List all whitelisted roles for this server"""
         results = await WordFilterRoleWhitelist.get_by(guild_id=ctx.guild.id)
@@ -267,12 +274,18 @@ class Filter(Cog):
         role_names = (role.name for role in role_objects if role is not None)
         roles_text = "\n".join(role_names)
         embed = discord.Embed()
-        embed.title = "Whitelisted roles for {}".format(ctx.guild.name)
+        embed.title = f"Whitelisted roles for {ctx.guild.name}"
         embed.description = "Anybody with any of the roles below will not have their messages filtered."
         embed.add_field(name="Roles", value=roles_text or "No roles")
         await ctx.send(embed=embed)
 
     whitelist.example_usage = "`{prefix}filter whitelist` - Lists all the whitelisted roles"
+
+    @guild_only()
+    @whitelist.command()
+    async def viewlist(self, ctx: DozerContext):
+        """List all whitelisted roles for this server"""
+        await self.whitelist(ctx)
 
     @guild_only()
     @has_permissions(manage_roles=True)
@@ -286,7 +299,7 @@ class Filter(Cog):
         whitelist_entry = WordFilterRoleWhitelist(role_id=role.id, guild_id=ctx.guild.id)
         await whitelist_entry.update_or_add()
         self.word_filter_role_whitelist.invalidate_entry(guild_id=ctx.guild.id)
-        await ctx.send("Whitelisted `{}` for this guild.".format(role.name))
+        await ctx.send(f"Whitelisted `{role.name}` for this guild.")
 
     whitelist_add.example_usage = "`{prefix}filter whitelist add Moderators` - Makes it so that Moderators will not be caught by the filter."
 
@@ -301,15 +314,14 @@ class Filter(Cog):
             return
         await WordFilterRoleWhitelist.delete(role_id=role.id)
         self.word_filter_role_whitelist.invalidate_entry(guild_id=ctx.guild.id)
-        await ctx.send("The role `{}` is no longer whitelisted.".format(role.name))
+        await ctx.send(f"The role `{role.name}` is no longer whitelisted.")
 
     whitelist_remove.example_usage = "`{prefix}filter whitelist remove Admins` - Makes it so that Admins are caught by the filter again."
 
 
-def setup(bot):
+async def setup(bot):
     """Setup cog"""
-
-    bot.add_cog(Filter(bot))
+    await bot.add_cog(Filter(bot))
 
 
 """Database Tables"""
@@ -318,7 +330,7 @@ def setup(bot):
 class WordFilter(db.DatabaseTable):
     """Object for each filter"""
     __tablename__ = 'word_filters'
-    __uniques__ = ['filter_id']
+    __uniques__ = 'filter_id'
 
     @classmethod
     async def initial_create(cls):
@@ -356,7 +368,7 @@ class WordFilter(db.DatabaseTable):
 class WordFilterSetting(db.DatabaseTable):
     """Each filter-related setting"""
     __tablename__ = 'word_filter_settings'
-    __uniques__ = ['id']
+    __uniques__ = 'id'
 
     @classmethod
     async def initial_create(cls):
@@ -390,7 +402,7 @@ class WordFilterSetting(db.DatabaseTable):
 class WordFilterRoleWhitelist(db.DatabaseTable):
     """Object for each whitelisted role"""
     __tablename__ = 'word_filter_role_whitelist'
-    __uniques__ = ['role_id']
+    __uniques__ = 'role_id'
 
     @classmethod
     async def initial_create(cls):

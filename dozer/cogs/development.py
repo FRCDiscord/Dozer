@@ -1,17 +1,15 @@
 """Commands specific to development. Only approved developers can use these commands."""
 import copy
-import logging
 import re
 import subprocess
 
 import discord
 import rstcloth
 from discord.ext.commands import NotOwner
+from loguru import logger
 
 from dozer.context import DozerContext
 from ._utils import *
-
-DOZER_LOGGER = logging.getLogger("dozer")
 
 
 class Development(Cog):
@@ -33,9 +31,9 @@ class Development(Cog):
     async def reload(self, ctx: DozerContext, cog: str):
         """Reloads a cog."""
         extension = 'dozer.cogs.' + cog
-        msg = await ctx.send('Reloading extension %s' % extension)
-        self.bot.reload_extension(extension)
-        await msg.edit(content='Reloaded extension %s' % extension)
+        msg = await ctx.send(f'Reloading extension {extension}')
+        await self.bot.reload_extension(extension)
+        await msg.edit(content=f'Reloaded extension {extension}')
 
     reload.example_usage = """
     `{prefix}reload development` - reloads the development cog
@@ -72,15 +70,15 @@ class Development(Cog):
         else:
             code = code.strip('`').strip()  # Remove single-line code blocks, if necessary
 
-        DOZER_LOGGER.info(
+        logger.info(
             f"Evaluating code at request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
-        DOZER_LOGGER.info("-" * 32)
+        logger.info("-" * 32)
         for line in code.splitlines():
-            DOZER_LOGGER.info(line)
-        DOZER_LOGGER.info("-" * 32)
+            logger.info(line)
+        logger.info("-" * 32)
 
         e = discord.Embed(type='rich')
-        e.add_field(name='Code', value='```py\n%s\n```' % code, inline=False)
+        e.add_field(name='Code', value=f'```py\n{code}\n```', inline=False)
         try:
             locals_ = locals()
             load_function(code, self.eval_globals, locals_)
@@ -88,11 +86,18 @@ class Development(Cog):
 
             e.title = 'Python Evaluation - Success'
             e.color = 0x00FF00
-            e.add_field(name='Output', value='```\n%s (%s)\n```' % (repr(ret), type(ret).__name__), inline=False)
+            retr_str = f'{ret!r} ({type(ret).__name__})'
+            e.add_field(name='Output', value=f'```\n{retr_str if len(retr_str) < 1010 else retr_str[:1010] + "..."}\n```', inline=False)
         except Exception as err:
             e.title = 'Python Evaluation - Error'
             e.color = 0xFF0000
-            e.add_field(name='Error', value='```\n%s\n```' % repr(err))
+            retr_str = repr(err)
+            e.add_field(name='Error', value=f'```\n{retr_str if len(retr_str) < 1010 else retr_str[:1010] + "..."}\n```')
+        logger.info("Evaluation output:")
+        logger.info("-" * 32)
+        for line in retr_str.splitlines():
+            logger.info(line)
+        logger.info("-" * 32)
         await ctx.send('', embed=e)
 
     evaluate.example_usage = """
@@ -109,11 +114,11 @@ class Development(Cog):
         context = await self.bot.get_context(msg)
         context.is_pseudo = True  # adds new flag to bypass ratelimit
         # let's also add a log of who ran pseudo
-        DOZER_LOGGER.info(
+        logger.info(
             f"Running pseudo on request of {ctx.author} ({ctx.author.id}) in '{ctx.guild}' #{ctx.channel}:")
-        DOZER_LOGGER.info("-" * 32)
-        DOZER_LOGGER.info(ctx.message.content)
-        DOZER_LOGGER.info("-" * 32)
+        logger.info("-" * 32)
+        logger.info(ctx.message.content)
+        logger.info("-" * 32)
         await self.bot.invoke(context)
 
     pseudo.example_usage = """
@@ -146,6 +151,6 @@ def load_function(code: str, globals_, locals_):
                 raise err
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the development cog to the bot."""
-    bot.add_cog(Development(bot))
+    await bot.add_cog(Development(bot))

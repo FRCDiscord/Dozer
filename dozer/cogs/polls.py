@@ -1,12 +1,9 @@
 """Very simple polls cog. """
-from logging import getLogger
-
 import discord
 from discord.ext.commands import has_permissions
+from loguru import logger
 
 from ._utils import *
-
-DOZER_LOGGER = getLogger(__name__)
 
 
 class Polls(Cog):
@@ -19,7 +16,7 @@ class Polls(Cog):
         try:
             await ctx.message.delete()
         except discord.Forbidden:
-            DOZER_LOGGER.debug("Could not delete poll invoke message. ")
+            logger.debug("Could not delete poll invoke message. ")
         # Separate title and options
         splitted = poll_options.split('" ')
         title = splitted[0].replace('"', '')
@@ -56,7 +53,7 @@ class Polls(Cog):
         # Create embed response
         description = []
         for x, option in enumerate(options):
-            description += '{}  {}\n\n'.format(reactions[x], option)
+            description += f'{reactions[x]}  {option}\n\n'
         embed = discord.Embed(
             title=title,
             description=''.join(description),
@@ -74,6 +71,6 @@ class Polls(Cog):
         "the 3 listed options. ")
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the Polls cog to the bot."""
-    bot.add_cog(Polls(bot))
+    await bot.add_cog(Polls(bot))

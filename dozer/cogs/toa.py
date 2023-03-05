@@ -9,7 +9,6 @@ import aiohttp
 import async_timeout
 import discord
 from discord.ext import commands
-from discord_slash import cog_ext, SlashContext
 from discord.utils import escape_markdown
 
 from dozer.context import DozerContext
@@ -62,13 +61,8 @@ class TOA(Cog):
 
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
-        self.http_session = aiohttp.ClientSession()
+        self.http_session = bot.add_aiohttp_ses(aiohttp.ClientSession())
         self.parser = TOAParser(bot.config['toa']['key'], self.http_session, app_name=bot.config['toa']['app_name'])
-
-    @cog_ext.cog_slash(name="toa", description="Get information on an FTC team by number.")
-    async def slash_toa(self, ctx: SlashContext, team_number: int):
-        """toa slash handler"""
-        await self.team(ctx, team_num=team_number)
 
     @group(invoke_without_command=True)
     async def toa(self, ctx: DozerContext, team_num: int):
@@ -93,15 +87,15 @@ class TOA(Cog):
         team_data = res[0]
 
         e = discord.Embed(color=embed_color)
-        e.set_author(name='FIRST® Tech Challenge Team {}'.format(team_num),
-                     url='https://theorangealliance.org/teams/{}'.format(team_num),
+        e.set_author(name=f'FIRST® Tech Challenge Team {team_num}',
+                     url=f'https://theorangealliance.org/teams/{team_num}',
                      icon_url='https://theorangealliance.org/assets/imgs/favicon.png?v=1')
         e.add_field(name='Name', value=team_data['team_name_short'])
         e.add_field(name='Rookie Year', value=team_data['rookie_year'])
         e.add_field(name='Location',
                     value=', '.join((team_data['city'], team_data['state_prov'], team_data['country'])))
         e.add_field(name='Website', value=team_data['website'] or 'n/a')
-        e.add_field(name='Team Info Page', value='https://theorangealliance.org/teams/{}'.format(team_data['team_key']))
+        e.add_field(name='Team Info Page', value=f'https://theorangealliance.org/teams/{team_data["team_key"]}')
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send('', embed=e)
 
@@ -110,6 +104,6 @@ class TOA(Cog):
     """
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the TOA cog to the bot."""
-    bot.add_cog(TOA(bot))
+    await bot.add_cog(TOA(bot))

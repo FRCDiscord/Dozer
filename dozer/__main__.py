@@ -1,14 +1,15 @@
 """Initializes the bot and deals with the configuration file"""
 
-import asyncio
 import json
 import os
 import sys
 
 import discord
 import sentry_sdk
+from loguru import logger
 
-from .db import db_init, db_migrate
+if sys.version_info < (3, 8):
+    sys.exit('Dozer requires Python 3.8 or higher to run. This is version ' + '.'.join(sys.version_info[:3]) + '.')
 
 config = {
     'prefix': '&', 'developers': [],
@@ -20,7 +21,7 @@ config = {
         'key': 'Put TOA API key here',
         'app_name': 'Dozer',
     },
-    'db_url': 'postgres://dozer_user:simplepass@postgres_ip',
+    'db_url': 'postgres://dozer_user:simplepass@postgres',
     'gmaps_key': "PUT GOOGLE MAPS API KEY HERE",
     'discord_token': "Put Discord API Token here.",
     'news': {
@@ -37,7 +38,7 @@ config = {
     },
     'lavalink': {
         'enabled': False,
-        'host': '127.0.0.1',
+        'host': 'lavalink',
         'port': 2333,
         'password': 'youshallnotpass',
         'identifier': 'MAIN',
@@ -47,7 +48,8 @@ config = {
     'presences_intents': False,
     'is_backup': False,
     'invite_override': "",
-    "sentry_url": ""
+    "sentry_url": "",
+    "disabled_cogs": []
 }
 config_file = 'config.json'
 
@@ -63,28 +65,24 @@ if config['sentry_url'] != "":
         str(config['sentry_url']),
         traces_sample_rate=1.0,
     )
-
-asyncio.get_event_loop().run_until_complete(db_init(config['db_url']))
+logger_format = "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | <level>{level: <8}</level> | <cyan>{" \
+                "name}</cyan>:<cyan>{function}</cyan>:<cyan>{line}</cyan> - <level>{" \
+                "message}</level> "
+logger.remove()
+logger.add(sys.stdout, format=logger_format, level="DEBUG" if config['debug'] else "INFO", enqueue=True, colorize=True)
 
 if 'discord_token' not in config:
     sys.exit('Discord token must be supplied in configuration')
-
-if sys.version_info < (3, 6):
-    sys.exit('Dozer requires Python 3.6 or higher to run. This is version %s.' % '.'.join(sys.version_info[:3]))
 
 from . import Dozer  # After version check
 
 intents = discord.Intents.default()
 intents.members = True
 intents.presences = bool(config['presences_intents'])
+intents.message_content = True
 
 bot = Dozer(config, intents=intents, max_messages=config['cache_size'])
 
-for ext in os.listdir('dozer/cogs'):
-    if not ext.startswith(('_', '.')):
-        bot.load_extension('dozer.cogs.' + ext[:-3])  # Remove '.py'
-
-asyncio.get_event_loop().run_until_complete(db_migrate())
 
 bot.run()
 

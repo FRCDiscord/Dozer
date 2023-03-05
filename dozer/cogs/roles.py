@@ -8,13 +8,11 @@ import discord.utils
 from discord.ext import commands
 from discord.ext.commands import cooldown, BucketType, has_permissions, BadArgument, guild_only
 from discord.utils import escape_markdown
-from discord_slash import cog_ext, SlashContext
 
 from dozer.context import DozerContext
 from ._utils import *
 from .actionlogs import CustomJoinLeaveMessages
 from .. import db
-from ..bot import DOZER_LOGGER
 from ..db import *
 
 blurple = discord.Color.blurple()
@@ -25,8 +23,8 @@ class Roles(Cog):
 
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
-        for command in self.giveme.walk_commands():
-            @command.before_invoke
+        for loop_command in self.giveme.walk_commands():
+            @loop_command.before_invoke  # pylint: disable=cell-var-from-loop
             async def givemeautopurge(self, ctx: DozerContext):
                 """Before invoking a giveme command, run a purge"""
                 if await self.ctx_purge(ctx):
@@ -109,7 +107,7 @@ class Roles(Cog):
                     elif payload.event_type == "REACTION_REMOVE":
                         await member.remove_roles(role, reason="Automatic Reaction Role")
                 except discord.Forbidden:
-                    DOZER_LOGGER.debug(f"Unable to add reaction role in guild {guild} due to missing permissions")
+                    logger.debug(f"Unable to add reaction role in guild {guild} due to missing permissions")
 
     async def removal_timer(self, record):
         """Asynchronous task that sleeps for a set time to remove a role from a member after a set period of time."""
@@ -134,7 +132,7 @@ class Roles(Cog):
         if self.normalize(old.name) != self.normalize(new.name):
             results = await GiveableRole.get_by(norm_name=self.normalize(old.name), guild_id=old.guild.id)
             if results:
-                DOZER_LOGGER.debug(f"Role {new.id} name updated. updating name")
+                logger.debug(f"Role {new.id} name updated. updating name")
                 await GiveableRole.from_role(new).update_or_add()
 
     @Cog.listener('on_guild_role_delete')
@@ -142,7 +140,7 @@ class Roles(Cog):
         """Deletes roles from database when the roles are deleted from the guild. """
         results = await GiveableRole.get_by(norm_name=self.normalize(old.name), guild_id=old.guild.id)
         if results:
-            DOZER_LOGGER.debug(f"Role {old.id} deleted. Deleting from database.")
+            logger.debug(f"Role {old.id} deleted. Deleting from database.")
             await GiveableRole.delete(role_id=old.id)
 
     @Cog.listener('on_member_join')
@@ -171,7 +169,7 @@ class Roles(Cog):
         if not missing and not cant_give:
             return
 
-        e = discord.Embed(title='Welcome back to the {} server, {}!'.format(member.guild.name, member),
+        e = discord.Embed(title=f'Welcome back to the {member.guild.name} server, {member}!',
                           color=discord.Color.blue())
         if missing:
             e.add_field(name='I couldn\'t restore these roles, as they don\'t exist.', value='\n'.join(sorted(missing)))
@@ -239,15 +237,15 @@ class Roles(Cog):
         e = discord.Embed(color=discord.Color.blue())
         if given:
             given_names = sorted((role.name for role in given), key=str.casefold)
-            e.add_field(name='Gave you {} role(s)!'.format(len(given)), value='\n'.join(given_names), inline=False)
+            e.add_field(name=f'Gave you {len(given)} role(s)!', value='\n'.join(given_names), inline=False)
         if already_have:
             already_have_names = sorted((role.name for role in already_have), key=str.casefold)
-            e.add_field(name='You already have {} role(s)!'.format(len(already_have)),
+            e.add_field(name=f'You already have {len(already_have)} role(s)!',
                         value='\n'.join(already_have_names), inline=False)
         extra = len(norm_names) - len(valid)
         if extra > 0:
-            e.add_field(name='{} role(s) could not be found!'.format(extra),
-                        value='Use `{0.prefix}{0.invoked_with} list` to find valid giveable roles!'.format(ctx),
+            e.add_field(name=f'{extra} role(s) could not be found!',
+                        value=f'Use `{ctx.prefix}{ctx.invoked_with} list` to find valid giveable roles!',
                         inline=False)
         msg = await ctx.send(embed=e)
         try:
@@ -260,7 +258,7 @@ class Roles(Cog):
             try:
                 await msg.delete()
             except discord.HTTPException:
-                DOZER_LOGGER.debug(
+                logger.debug(
                     f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             try:
                 await ctx.message.delete()
@@ -270,8 +268,8 @@ class Roles(Cog):
             try:
                 await msg.clear_reactions()
             except discord.HTTPException:
-                DOZER_LOGGER.debug(
-                    f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
+                logger.debug(
+                    f"Unable to clear reactions from message in guild {ctx.guild} Reason: HTTPException")
             return
 
     giveme.example_usage = """
@@ -279,10 +277,10 @@ class Roles(Cog):
     `{prefix}giveme Java, Python` - gives you the roles called Java and Python, if they exist
     """
 
-    @cog_ext.cog_subcommand(base="giveme", name="role", description="Give yourself roles from the list.")
-    async def slash_giveme(self, ctx: SlashContext, *, roles):
-        """giveme slash handler"""
-        ctx.prefix = "/"
+    @giveme.command()
+    @bot_has_permissions(manage_roles=True)
+    async def role(self, ctx: DozerContext, roles):
+        """Give you one or more giveable roles, separated by commas."""
         await self.giveme(ctx, roles=roles)
 
     @giveme.command()
@@ -291,7 +289,7 @@ class Roles(Cog):
     async def purge(self, ctx: DozerContext):
         """Force a purge of giveme roles that no longer exist in the guild"""
         counter = await self.ctx_purge(ctx)
-        await ctx.send("Purged {} role(s)".format(counter))
+        await ctx.send(f"Purged {counter} role(s)")
 
     @giveme.command()
     @bot_has_permissions(manage_roles=True)
@@ -308,14 +306,13 @@ class Roles(Cog):
         candidates = [role for role in ctx.guild.roles if self.normalize(role.name) == norm_name]
 
         if not candidates:
-            role = await ctx.guild.create_role(name=name, reason='Giveable role created by {}'.format(ctx.author))
+            role = await ctx.guild.create_role(name=name, reason=f'Giveable role created by {ctx.author}')
         elif len(candidates) == 1:
             role = candidates[0]
         else:
-            raise BadArgument('{} roles with that name exist!'.format(len(candidates)))
+            raise BadArgument(f'{len(candidates)} roles with that name exist!')
         await GiveableRole.from_role(role).update_or_add()
-        await ctx.send(
-            'Role "{0}" added! Use `{1}{2} {0}` to get it!'.format(role.name, ctx.prefix, ctx.command.parent))
+        await ctx.send(f'Role "{role.name}" added! Use `{ctx.prefix}{ctx.command.parent} {role.name}` to get it!')
 
     add.example_usage = """
     `{prefix}giveme add Java` - creates or finds a role named "Java" and makes it giveable
@@ -333,11 +330,10 @@ class Roles(Cog):
         norm_name = self.normalize(name)
         settings = await GiveableRole.get_by(guild_id=ctx.guild.id, norm_name=norm_name)
         if not settings:
-            role = await ctx.guild.create_role(name=name, reason='Giveable role created by {}'.format(ctx.author))
+            role = await ctx.guild.create_role(name=name, reason=f'Giveable role created by {ctx.author}')
             settings = GiveableRole.from_role(role)
             await settings.update_or_add()
-            await ctx.send(
-                'Role "{0}" created! Use `{1}{2} {0}` to get it!'.format(role.name, ctx.prefix, ctx.command.parent))
+            await ctx.send(f'Role "{role.name}" created! Use `{ctx.prefix}{ctx.command.parent} {role.name}` to get it!')
 
         else:
             raise BadArgument('that role already exists and is giveable!')
@@ -367,15 +363,15 @@ class Roles(Cog):
         e = discord.Embed(color=discord.Color.blue())
         if removed:
             removed_names = sorted((role.name for role in removed), key=str.casefold)
-            e.add_field(name='Removed {} role(s)!'.format(len(removed)), value='\n'.join(removed_names), inline=False)
+            e.add_field(name=f'Removed {len(removed)} role(s)!', value='\n'.join(removed_names), inline=False)
         if dont_have:
             dont_have_names = sorted((role.name for role in dont_have), key=str.casefold)
-            e.add_field(name='You didn\'t have {} role(s)!'.format(len(dont_have)), value='\n'.join(dont_have_names),
+            e.add_field(name=f'You didn\'t have {len(dont_have)} role(s)!', value='\n'.join(dont_have_names),
                         inline=False)
         extra = len(norm_names) - len(valid)
         if extra > 0:
-            e.add_field(name='{} role(s) could not be found!'.format(extra),
-                        value='Use `{0.prefix}{0.invoked_with} list` to find valid giveable roles!'.format(ctx),
+            e.add_field(name=f'{extra} role(s) could not be found!',
+                        value=f'Use `{ctx.prefix}{ctx.invoked_with} list` to find valid giveable roles!',
                         inline=False)
         msg = await ctx.send(embed=e)
         try:
@@ -388,7 +384,7 @@ class Roles(Cog):
             try:
                 await msg.delete()
             except discord.HTTPException:
-                DOZER_LOGGER.debug(
+                logger.debug(
                     f"Unable to delete message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             try:
                 await ctx.message.delete()
@@ -398,7 +394,7 @@ class Roles(Cog):
             try:
                 await msg.clear_reactions()
             except discord.HTTPException:
-                DOZER_LOGGER.debug(
+                logger.debug(
                     f"Unable to clear reactions from message to {ctx.member} in guild {ctx.guild} Reason: HTTPException")
             return
 
@@ -406,12 +402,6 @@ class Roles(Cog):
     `{prefix}giveme remove Java` - removes the role called "Java" from you (if it can be given with `{prefix}giveme`)
     `{prefix}giveme remove Java, Python` - removes the roles called "Java" and "Python" from you
     """
-
-    @cog_ext.cog_subcommand(base="giveme", name="remove", description="Take a giveable role from yourself.")
-    async def slash_givemeremove(self, ctx: SlashContext, roles):
-        """giveme remove slash handler"""
-        ctx.prefix = "/"
-        await self.remove(ctx, roles=roles)
 
     @giveme.command()
     @bot_has_permissions(manage_roles=True)
@@ -434,8 +424,8 @@ class Roles(Cog):
         else:
             role = ctx.guild.get_role(valid_roles[0].role_id)
             await GiveableRole.delete(guild_id=ctx.guild.id, norm_name=valid_roles[0].norm_name)
-            await role.delete(reason='Giveable role deleted by {}'.format(ctx.author))
-            await ctx.send('Role "{0}" deleted!'.format(role))
+            await role.delete(reason=f'Giveable role deleted by {ctx.author}')
+            await ctx.send(f'Role "{role}" deleted!')
 
     delete.example_usage = """
     `{prefix}giveme delete Java` - deletes the role called "Java" if it's giveable (automatically removes it from all members)
@@ -454,11 +444,6 @@ class Roles(Cog):
     list_roles.example_usage = """
     `{prefix}giveme list` - lists all giveable roles
     """
-
-    @cog_ext.cog_subcommand(base="giveme", name="list", description="Get a list of roles you can give yourself.")
-    async def slash_givemelist(self, ctx: SlashContext):
-        """giveme list slash handler"""
-        await self.list_roles(ctx)
 
     @staticmethod
     def normalize(name):
@@ -486,7 +471,7 @@ class Roles(Cog):
             raise BadArgument('multiple giveable roles with that name exist!')
         else:
             await GiveableRole.delete(guild_id=ctx.guild.id, norm_name=valid_roles[0].norm_name)
-            await ctx.send('Role "{0}" deleted from list!'.format(name))
+            await ctx.send(f'Role "{name}" deleted from list!')
 
     delete.example_usage = """
     `{prefix}giveme removefromlist Java` - removes the role "Java" from the list of giveable roles but does not remove it from the server or members who have it 
@@ -495,7 +480,7 @@ class Roles(Cog):
     @command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
-    async def tempgive(self, ctx: DozerContext, member: discord.Member, length: int, *, role: discord.Role):
+    async def tempgive(self, ctx: DozerContext, member: discord.Member, length, *, role: discord.Role):
         """Temporarily gives a member a role for a set time. Not restricted to giveable roles."""
         if role > ctx.author.top_role:
             raise BadArgument('Cannot give roles higher than your top role!')
@@ -518,7 +503,7 @@ class Roles(Cog):
         await ent.update_or_add()
         self.bot.loop.create_task(self.removal_timer(ent))
         e = discord.Embed(color=blurple)
-        e.add_field(name='Success!', value='I gave {} to {}, for {}!'.format(role.mention, member.mention, length))
+        e.add_field(name='Success!', value=f'Gave {role.mention} to {member.mention} for {length}!')
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
@@ -535,22 +520,13 @@ class Roles(Cog):
             raise BadArgument('Cannot give roles higher than your top role!')
         await member.add_roles(role)
         e = discord.Embed(color=blurple)
-        e.add_field(name='Success!', value='I gave {} to {}!'.format(role, member))
+        e.add_field(name='Success!', value=f'Gave {role} to {member}!')
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
     give.example_usage = """
     `{prefix}give cooldude#1234 Java` - gives cooldude any role, giveable or not, named Java
     """
-
-    @cog_ext.cog_slash(name="give", description="Gives role(s) to given members.")
-    async def slash_give(self, ctx: SlashContext, member: discord.Member, role: discord.Role):
-        """give slash handler"""
-        ctx.prefix = "/"
-        if ctx.author.permissions_in(ctx.channel).manage_roles:
-            await self.give(ctx, member, role=role)
-        else:
-            raise PermissionError("You do not have manage roles!")
 
     @command()
     @bot_has_permissions(manage_roles=True, embed_links=True)
@@ -561,7 +537,7 @@ class Roles(Cog):
             raise BadArgument('Cannot take roles higher than your top role!')
         await member.remove_roles(role)
         e = discord.Embed(color=blurple)
-        e.add_field(name='Success!', value='I took {} from {}!'.format(role, member))
+        e.add_field(name='Success!', value=f'Took {role} from {member}!')
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send(embed=e)
 
@@ -569,16 +545,7 @@ class Roles(Cog):
     `{prefix}take cooldude#1234 Java` - takes any role named Java, giveable or not, from cooldude
     """
 
-    @cog_ext.cog_slash(name="take", description="Takes role(s) from given members.")
-    async def slash_take(self, ctx: SlashContext, member: discord.Member, role: discord.Role):
-        """take slash handler"""
-        ctx.prefix = "/"
-        if ctx.author.permissions_in(ctx.channel).manage_roles:
-            await self.take(ctx, member, role=role)
-        else:
-            raise PermissionError("You do not have manage roles!")
-
-    async def update_role_menu(self, ctx: DozerContext, menu: int):
+    async def update_role_menu(self, ctx: DozerContext, menu):
         """Updates a reaction role menu"""
         menu_message = await self.safe_message_fetch(ctx, menu=menu)
 
@@ -662,7 +629,7 @@ class Roles(Cog):
         link = f"https://discordapp.com/channels/{ctx.guild.id}/{message.channel.id}/{message.id}"
         e.add_field(name='Success!',
                     value=f"I added created role menu [\"{name}\"]({link}) in channel {channel.mention}")
-        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
     createmenu.example_usage = """
@@ -673,10 +640,11 @@ class Roles(Cog):
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
     @guild_only()
-    async def addrole(self, ctx: DozerContext, channel: typing.Optional[discord.TextChannel], message_id: int,
+    async def addrole(self, ctx: DozerContext, channel: typing.Optional[discord.TextChannel], message_id,
                       role: discord.Role,
-                      emoji: typing.Union[discord.Emoji, str]):
+                      emoji: discord.Emoji):
         """Adds a reaction role to a message or a role menu"""
+        message_id = int(message_id)
         if isinstance(emoji, discord.Emoji) and emoji.guild_id != ctx.guild.id:
             raise BadArgument(f"The emoji {emoji} is a custom emoji not from this server!")
 
@@ -716,7 +684,7 @@ class Roles(Cog):
         link = f"https://discordapp.com/channels/{ctx.guild.id}/{message.channel.id}/{message_id}"
         shortcut = f"[{menu.name}]({link})" if menu else f"[{message_id}]({link})"
         e.add_field(name='Success!', value=f"I added {role.mention} to message \"{shortcut}\" with reaction {emoji}")
-        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
     addrole.example_usage = """
@@ -730,10 +698,10 @@ class Roles(Cog):
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
     @guild_only()
-    async def delrole(self, ctx: DozerContext, channel: typing.Optional[discord.TextChannel], message_id: int,
+    async def delrole(self, ctx: DozerContext, channel: typing.Optional[discord.TextChannel], message_id,
                       role: discord.Role):
         """Removes a reaction role from a message or a role menu"""
-
+        message_id = int(message_id)
         menu_return = await RoleMenu.get_by(guild_id=ctx.guild.id, message_id=message_id)
         menu = menu_return[0] if len(menu_return) else None
         message = await self.safe_message_fetch(ctx, menu=menu, channel=channel, message_id=message_id)
@@ -749,7 +717,7 @@ class Roles(Cog):
         link = f"https://discordapp.com/channels/{ctx.guild.id}/{message.channel.id}/{message_id}"
         shortcut = f"[{menu.name}]({link})" if menu else f"[{message_id}]({link})"
         e.add_field(name='Success!', value=f"I removed {role.mention} from message {shortcut}")
-        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
+        e.set_footer(text='Triggered by ' + ctx.author.display_name)
         await ctx.send(embed=e)
 
     delrole.example_usage = """
@@ -952,6 +920,6 @@ class TempRoleTimerRecords(db.DatabaseTable):
         return result_list
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the roles cog to the main bot project."""
-    bot.add_cog(Roles(bot))
+    await bot.add_cog(Roles(bot))

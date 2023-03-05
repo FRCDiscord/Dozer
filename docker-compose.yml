@@ -1,7 +1,7 @@
 version: '3'
 services:
-  postgres_ip:
-    image: postgres:alpine
+  postgres:
+    image: postgres:14-alpine
     environment:
       POSTGRES_PASSWORD: simplepass
       POSTGRES_USER: dozer
@@ -10,18 +10,24 @@ services:
     volumes:
       - database:/var/lib/postgresql/data
   lavalink:
-    image: fredboat/lavalink:master-v3
+    image: fredboat/lavalink:latest
     environment:
       LAVALINK_SERVER_PASSWORD: youshallnotpass
       SERVER_PORT: 2333
       SERVER_HOST: 0.0.0.0
   dozer:
     depends_on: 
-      - postgres_ip
+      - postgres
       - lavalink
     build: .
     volumes:
       - ".:/app"
+  nginx:
+    image: nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - "./docs/_build/html:/usr/share/nginx/html:ro"
       
 volumes:
   database:

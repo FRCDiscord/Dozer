@@ -7,7 +7,7 @@ from discord.utils import escape_markdown
 
 from dozer.context import DozerContext
 from ._utils import *
-from ..utils import oauth_url
+from ..utils import oauth_url, clean
 
 blurple = discord.Color.blurple()
 
@@ -21,11 +21,11 @@ class General(Cog):
         if ctx.guild is None:
             location = 'DMs'
         else:
-            location = 'the **%s** server' % ctx.guild.name
-        response = await ctx.send('Pong! We\'re in %s.' % location)
+            location = f'the **{clean(ctx.guild.name)}** server'
+        response = await ctx.send(f'Pong! We\'re in {location}.')
         delay = response.created_at - ctx.message.created_at
         await response.edit(
-            content=response.content + '\nTook %d ms to respond.' % (delay.seconds * 1000 + delay.microseconds // 1000))
+            content=response.content + f'\nTook {(delay.seconds * 1000 + delay.microseconds // 1000)} ms to respond.')
 
     ping.example_usage = """
     `{prefix}ping` - Calculate and display the bot's response time
@@ -35,10 +35,15 @@ class General(Cog):
     @command(name='help', aliases=['about'])
     @bot_has_permissions(add_reactions=True, embed_links=True,
                          read_message_history=True)  # Message history is for internals of paginate()
-    async def base_help(self, ctx: DozerContext, *target):
+    async def base_help(self, ctx: DozerContext, *, target=None):
         """Show this message."""
-        if not target:  # No commands - general help
+        await ctx.defer()
+        try:
+            target = target.split(" ")
+        except AttributeError:  # No commands - general help
             await self._help_all(ctx)
+        if target is None:
+            pass
         elif len(target) == 1:  # Cog or command
             target_name = target[0]
             if target_name in ctx.bot.cogs:
@@ -66,10 +71,10 @@ class General(Cog):
         """Gets the help message for all commands."""
         info = discord.Embed(title='Dozer: Info', description='A guild management bot for FIRST Discord servers',
                              color=discord.Color.blue())
-        info.set_thumbnail(url=self.bot.user.avatar_url)
+        info.set_thumbnail(url=self.bot.user.avatar)
         info.add_field(name='About',
                        value="Dozer: A collaborative bot for FIRST Discord servers, developed by the FRC Discord Server Development Team")
-        info.add_field(name='About `{}{}`'.format(ctx.prefix, ctx.invoked_with), value=inspect.cleandoc("""
+        info.add_field(name=f'About `{ctx.prefix}{ctx.invoked_with}`', value=inspect.cleandoc("""
         This command can show info for all commands, a specific command, or a category of commands.
         Use `{0}{1} {1}` for more information.
         """.format(ctx.prefix, ctx.invoked_with)), inline=False)
@@ -87,14 +92,14 @@ class General(Cog):
 
     async def _help_command(self, ctx: DozerContext, command):
         """Gets the help message for one command."""
-        info = discord.Embed(title='Command: {}{} {}'.format(ctx.prefix, command.qualified_name, command.signature),
+        info = discord.Embed(title=f'Command: {ctx.prefix}{command.qualified_name} {command.signature}',
                              description=command.help or (
                                  None if command.example_usage else 'No information provided.'),
                              color=discord.Color.blue())
         usage = command.example_usage
         if usage:
             info.add_field(name='Usage', value=usage.format(prefix=ctx.prefix, name=ctx.invoked_with), inline=False)
-        info.set_footer(text='Dozer Help | {!r} command | Info'.format(command.qualified_name))
+        info.set_footer(text=f'Dozer Help | {command.qualified_name!r} command | Info')
         await self._show_help(ctx, info, 'Subcommands: {prefix}{name} {signature}', '', '{name!r} command',
                               command.commands if isinstance(command, Group) else set(),
                               name=command.qualified_name, signature=command.signature)
@@ -110,7 +115,7 @@ class General(Cog):
                          footer: str, commands, **format_args):
         """Creates and sends a template help message, with arguments filled in."""
         format_args['prefix'] = ctx.prefix
-        footer = 'Dozer Help | {} | Page {}'.format(footer, '{page_num} of {len_pages}')
+        footer = 'Dozer Help | {footer} | Page {page_cnt}'.format(footer=footer, page_cnt='{page_num} of {len_pages}')
         # Page info is inserted as a parameter so page_num and len_pages aren't evaluated now
 
         if commands:
@@ -136,7 +141,7 @@ class General(Cog):
                             ctx, command)
                     else:
                         embed_value = 'No information provided.'
-                    page.add_field(name='{}{} {}'.format(ctx.prefix, command.qualified_name, command.signature),
+                    page.add_field(name=f'{ctx.prefix}{command.qualified_name} {command.signature}',
                                    value=embed_value, inline=False)
                 page.set_footer(text=footer.format(**format_args))
                 pages.append(page)
@@ -189,7 +194,7 @@ class General(Cog):
         perms = 0
         for cmd in ctx.bot.walk_commands():
             perms |= cmd.required_permissions.value
-        await ctx.send('<{}>'.format(oauth_url(ctx.me.id, discord.Permissions(perms))))
+        await ctx.send(f'<{oauth_url(ctx.me.id, discord.Permissions(perms))}>')
 
     @command(aliases=["setprefix"])
     @guild_only()
@@ -208,7 +213,7 @@ class General(Cog):
         await ctx.send(embed=e)
 
 
-def setup(bot):
+async def setup(bot):
     """Adds the general cog to the bot"""
     bot.remove_command('help')
-    bot.add_cog(General(bot))
+    await bot.add_cog(General(bot))
