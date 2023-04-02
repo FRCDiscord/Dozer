@@ -15,6 +15,7 @@ Welcome to Dozer's documentation!
     NameGame <NameGame.rst>
     News <News.rst>
     Roles <Roles.rst>
+    Shortcuts <Shortcuts.rst>
     Starboard <Starboard.rst>
     TBA <TBA.rst>
     Teams <Teams.rst>
