@@ -3,6 +3,7 @@ import asyncio
 import datetime
 import re
 import time
+import traceback
 import typing
 from typing import Union
 
@@ -168,7 +169,9 @@ class Moderation(Cog):
         """Starts all punishment timers"""
         q = await PunishmentTimerRecords.get_by()  # no filters: all
         for r in q:
-            guild = self.bot.get_guild(r.guild_id)
+            guild = await self.bot.fetch_guild(r.guild_id)
+            if guild is None:
+                raise RuntimeError(f"Guild {r.guild_id} not found")
             actor = guild.get_member(r.actor_id)
             target = guild.get_member(r.target_id)
             orig_channel = self.bot.get_channel(r.orig_channel_id)
@@ -737,6 +740,7 @@ class Moderation(Cog):
                                    duration=datetime.timedelta(seconds=seconds))
             else:
                 await ctx.send("You are already deafened!")
+                traceback.format_exc()
 
     selfdeafen.example_usage = """
     `{prefix}selfdeafen time (1h5m, both optional) reason`: deafens you if you need to get work done
