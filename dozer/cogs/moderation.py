@@ -169,9 +169,11 @@ class Moderation(Cog):
         """Starts all punishment timers"""
         q = await PunishmentTimerRecords.get_by()  # no filters: all
         for r in q:
-            guild = await self.bot.fetch_guild(r.guild_id)
-            if guild is None:
-                raise RuntimeError(f"Guild {r.guild_id} not found")
+            try:
+                guild = await self.bot.fetch_guild(r.guild_id)
+            except discord.NotFound:
+                logger.warning(f"Guild {r.guild_id} not found, skipping punishment timer")
+                continue
             actor = guild.get_member(r.actor_id)
             target = guild.get_member(r.target_id)
             orig_channel = self.bot.get_channel(r.orig_channel_id)
