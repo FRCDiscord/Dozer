@@ -114,7 +114,10 @@ class Moderation(Cog):
                 await target.send(embed=modlog_embed)
                 # Remove the source guild line from the embed
             except discord.Forbidden:
-                await orig_channel.send("Failed to DM modlog to user")
+                if orig_channel is not None:
+                    await orig_channel.send("Failed to DM modlog to user")
+                else:
+                    logger.warning(f"Failed to DM modlog to user {target} ({target.id})")
             finally:
                 modlog_embed.remove_field(2)
         modlog_channel = await GuildModLog.get_by(guild_id=actor.guild.id) if guild_override is None else \
@@ -615,17 +618,20 @@ class Moderation(Cog):
     @bot_has_permissions(ban_members=True)
     async def ban(self, ctx: DozerContext, user_mention: discord.User, *, reason: str = "No reason provided"):
         """Bans the user mentioned."""
-        orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
-        await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason,
-                           orig_channel=orig_channel, dm=False)
-        cross_guilds = await self.run_cross_ban(ctx, user_mention, reason)
-        extra_fields = [{"name": "Origin Guild", "value": f"**{ctx.guild}** ({ctx.guild.id})", "inline": False}]
-        for field_number, guilds in enumerate(chunk(cross_guilds, 10)):
-            extra_fields.append(
-                {"name": "Cross Banned From", "value": '\n'.join(f"**{guild}** ({guild.id})" for guild in guilds),
-                 "inline": False})
-        await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason, global_modlog=False,
-                           extra_fields=extra_fields)
+        try:
+            orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
+            await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason,
+                               orig_channel=orig_channel, dm=False)
+            cross_guilds = await self.run_cross_ban(ctx, user_mention, reason)
+            extra_fields = [{"name": "Origin Guild", "value": f"**{ctx.guild}** ({ctx.guild.id})", "inline": False}]
+            for field_number, guilds in enumerate(chunk(cross_guilds, 10)):
+                extra_fields.append(
+                    {"name": "Cross Banned From", "value": '\n'.join(f"**{guild}** ({guild.id})" for guild in guilds),
+                     "inline": False})
+            await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason, global_modlog=False,
+                               extra_fields=extra_fields, orig_channel=ctx.channel)
+        except Exception as e:
+            await ctx.send(f"A modlog exception occurred: {e}, user was still banned.")
         await ctx.guild.ban(user_mention, reason=reason)
 
     ban.example_usage = """
@@ -651,9 +657,12 @@ class Moderation(Cog):
     @bot_has_permissions(kick_members=True)
     async def kick(self, ctx: DozerContext, user_mention: discord.User, *, reason: str = "No reason provided"):
         """Kicks the user mentioned."""
-        orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
-        await self.mod_log(actor=ctx.author, action="kicked", target=user_mention, reason=reason,
-                           orig_channel=orig_channel)
+        try:
+            orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
+            await self.mod_log(actor=ctx.author, action="kicked", target=user_mention, reason=reason,
+                               orig_channel=orig_channel)
+        except Exception as e:
+            await ctx.send(f"A modlog exception occurred: {e}, user was still kicked.")
         await ctx.guild.kick(user_mention, reason=reason)
 
     kick.example_usage = """
