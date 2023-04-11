@@ -657,9 +657,12 @@ class Moderation(Cog):
     @bot_has_permissions(kick_members=True)
     async def kick(self, ctx: DozerContext, user_mention: discord.User, *, reason: str = "No reason provided"):
         """Kicks the user mentioned."""
-        orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
-        await self.mod_log(actor=ctx.author, action="kicked", target=user_mention, reason=reason,
-                           orig_channel=orig_channel)
+        try:
+            orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
+            await self.mod_log(actor=ctx.author, action="kicked", target=user_mention, reason=reason,
+                               orig_channel=orig_channel)
+        except Exception as e:
+            await ctx.send(f"A modlog exception occurred: {e}, user was still kicked.")
         await ctx.guild.kick(user_mention, reason=reason)
 
     kick.example_usage = """
