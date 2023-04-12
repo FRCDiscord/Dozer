@@ -56,9 +56,7 @@ class StartModmailModal(ui.Modal):
         mod_channel = interaction.client.get_channel(target_record[0].target_channel)
         user_string = f"{interaction.user.name}#{interaction.user.discriminator} ({interaction.user.id})"
         if len(user_string) > 100:
-            logger.debug("user_string is too long")  # Unfortunately due to Discord Interaction API limits
-            # I can't reply with a custom error message
-            return
+            user_string = user_string[:96] + "..."
         mod_message = await mod_channel.send(user_string)
         mod_thread = await mod_channel.create_thread(name=f"{user_string}: {subject}", message=mod_message)
         await mod_thread.send(embed=new_ticket_embed)
