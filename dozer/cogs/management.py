@@ -153,7 +153,7 @@ class Management(Cog):
                 e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
                 await ctx.send(embed=e)
             elif response.split(" ", 1)[1] == "0":
-                raise Exception("Requested row not deleted")
+                raise InterruptedError("Requested row not deleted")
 
         else:
             e.add_field(name='Error', value=f"No entry with ID: {entry_id} found")

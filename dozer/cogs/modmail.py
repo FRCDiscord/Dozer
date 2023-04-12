@@ -6,6 +6,7 @@ from asyncio import sleep
 import discord
 from discord import ui
 from discord.ext.commands import has_permissions
+from loguru import logger
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -54,6 +55,10 @@ class StartModmailModal(ui.Modal):
         target_record = await ModmailConfig.get_by(guild_id=interaction.guild_id)
         mod_channel = interaction.client.get_channel(target_record[0].target_channel)
         user_string = f"{interaction.user.name}#{interaction.user.discriminator} ({interaction.user.id})"
+        if len(user_string) > 100:
+            logger.debug("user_string is too long")  # Unfortunately due to Discord Interaction API limits
+            # I can't reply with a custom error message
+            return
         mod_message = await mod_channel.send(user_string)
         mod_thread = await mod_channel.create_thread(name=f"{user_string}: {subject}", message=mod_message)
         await mod_thread.send(embed=new_ticket_embed)
