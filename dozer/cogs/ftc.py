@@ -76,7 +76,7 @@ class FTCInfo(Cog):
     @group(invoke_without_command=True)
     async def ftc(self, ctx: DozerContext, team_num: int):
         """
-        Get FTC-related information from FTC-Events.
+        Get information on an FTC team from FTC-Events.
         If no subcommand is specified, the `team` subcommand is inferred, and the argument is taken as a team number.
         """
         await self.team.callback(self, ctx, team_num)  # This works but Pylint throws an error
@@ -118,7 +118,7 @@ class FTCInfo(Cog):
             await ctx.send(embed=e)
 
     team.example_usage = """
-    `{prefix}toa team 7244` - show information on team 7244, Out of the Box Robotics
+    `{prefix}ftc team 7244` - show information on team 7244, Out of the Box Robotics
     """
 
 
