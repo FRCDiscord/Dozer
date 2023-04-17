@@ -21,7 +21,7 @@ class General(Cog):
         if ctx.guild is None:
             location = 'DMs'
         else:
-            location = f'the **{None, text=clean(ctx.guild.name)}** server'
+            location = f'the **{text=clean(None, ctx.guild.name)}** server'
         response = await ctx.send(f'Pong! We\'re in {location}.')
         delay = response.created_at - ctx.message.created_at
         await response.edit(
