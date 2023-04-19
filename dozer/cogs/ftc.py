@@ -9,7 +9,6 @@ import base64
 import aiohttp
 import async_timeout
 import discord
-import pprint
 from discord.ext import commands
 from discord.utils import escape_markdown
 
@@ -58,6 +57,20 @@ class FTCEventsClient:
                 tries += 1
                 if tries > 3:
                     raise
+    
+    async def reqjson(self, endpoint, season=None, on_400=None, on_other=None):
+        """Reqjson."""
+        res = await self.req(endpoint, season=season)
+        async with res:
+            if res.status == 400 and on_400:
+                await on_400(res)
+                return None
+            elif res.status >= 400:
+                if on_other:
+                    await on_other(res)
+                return None
+            return await res.json(content_type=None)
+
 
     @staticmethod
     def get_season():
@@ -197,7 +210,7 @@ class FTCInfo(Cog):
             if res.status == 400:
                 await ctx.send("This team either did not compete this season, or it does not exist!")
                 return
-            team_data = (await res.json(content_type=None))
+            team_data = await res.json(content_type=None)
             if not team_data:
                 await ctx.send(f"FTC-Events returned nothing on request with HTTP response code {res.status}.")
                 return
@@ -228,17 +241,13 @@ class FTCInfo(Cog):
     async def matches(self, ctx: DozerContext, team_num: int, event_name: str = "latest"):
         """Get a match schedule, defaulting to the latest listed event on FTC-Events"""
         szn = FTCEventsClient.get_season()
-        req = await self.ftcevents.req("events?" + urlencode({'teamNumber': str(team_num)}))
-        events = []
-        async with req:
-            if req.status == 400:
-                await ctx.send("This team either did not compete this season, or it does not exist!")
-                return
-            elif req.status > 400:
-                await ctx.send(f"FTC-Events returned an HTTP error status of: {req.status}. Something is broken.")
-                return
-            events = (await req.json())['events']
+        events = await self.ftcevents.reqjson("events?" + urlencode({'teamNumber': str(team_num)}), 
+            on_400=lambda r: ctx.send("This team either did not compete this season, or it does not exist!"), 
+            on_other=lambda r: ctx.send(f"FTC-Events returned an HTTP error status of: {r.status}. Something is broken."))
+        if events is None:
+            return
         
+        events = events['events']
         if len(events) == 0:
             await ctx.send("This team did not attend any events this season!")
             return
@@ -273,50 +282,51 @@ class FTCInfo(Cog):
             if event is None:
                 await ctx.send(f"Team {team_num} did not attend {event_name}!")
                 return
-        print(f"Event for {team_num}:")
-        pprint.pprint(event)
         # 
         event_url = f"https://ftc-events.firstinspires.org/{szn}/{event['code']}"
         
         # fetch the rankings
-        req = await self.ftcevents.req(f"rankings/{event['code']}?" + urlencode({'teamNumber': str(team_num)}))
-        async with req:
-            if req.status == 400:
-                await ctx.send(f"This team somehow competed at an event ({event_url}) that it is not ranked in -- did it no show?")
-                return
-            elif req.status > 400:
-                await ctx.send(f"FTC-Events returned an HTTP error status of: {req.status}. Something is broken.")
-                return
-            rank_res = (await req.json())['Rankings']
+        rank_res = await self.ftcevents.reqjson(f"rankings/{event['code']}?" + urlencode({'teamNumber': str(team_num)}), 
+            on_400=lambda r: ctx.send(f"This team somehow competed at an event ({event_url}) that it is not ranked in -- did it no show?"),
+            on_other=lambda r: ctx.send(f"FTC-Events returned an HTTP error status of: {r.status}. Something is broken.")
+        )
+        if rank_res is None:
+            return
+        rank_res = rank_res['Rankings']
 
-            if not rank_res:
-                rank = None
-                description = "_Match schedule has not been published yet._"
-            else:
-                rank = rank_res[0]
-                description = f"Rank **{rank['rank']}**\nWLT **{rank['wins']}-{rank['losses']}-{rank['ties']}**\n"\
-                              f"QP/TBP1 **{rank['sortOrder1']} / {rank['sortOrder2']}** "
+        if not rank_res:
+            rank = None
+            description = "_No rankings are available for this event._"
+        else:
+            rank = rank_res[0]
+            description = f"Rank **{rank['rank']}**\nWLT **{rank['wins']}-{rank['losses']}-{rank['ties']}**\n"\
+                            f"QP/TBP1 **{rank['sortOrder1']} / {rank['sortOrder2']}** "
         
         embed = discord.Embed(color=embed_color, title=f"FTC Team {team_num} @ {event['name']}", url=event_url, description=description)
-        if not rank:
-            await ctx.send(embed=embed)
-            return
+        has_matches_at_all = False
         
         # fetch the quals match schedule
-        req = await self.ftcevents.req(f"schedule/{event['code']}/qual/hybrid")
-        async with req:
-            if req.status >= 400:
-                await ctx.send(f"FTC-Events returned an HTTP error status of: {req.status}. Something is broken.")
-                return
-            FTCEventsClient.add_schedule_to_embed(embed, (await req.json())['schedule'], team_num, szn, event['code'])
+        req = await self.ftcevents.reqjson(f"schedule/{event['code']}/qual/hybrid", 
+            on_other=lambda r: ctx.send(f"FTC-Events returned an HTTP error status of: {req.status}. Something is broken."))
+
+        if req is None:
+            return
+        res = req['schedule']
+        has_matches_at_all = has_matches_at_all or bool(res)
+        FTCEventsClient.add_schedule_to_embed(embed, res, team_num, szn, event['code'])
 
         # fetch the playoffs match schedule
-        req = await self.ftcevents.req(f"schedule/{event['code']}/playoff/hybrid")
-        async with req:
-            if req.status >= 400:
-                await ctx.send(f"FTC-Events returned an HTTP error status of: {req.status}. Something is broken.")
-                return
-            FTCEventsClient.add_schedule_to_embed(embed, (await req.json())['schedule'], team_num, szn, event['code'])
+        req = await self.ftcevents.reqjson(f"schedule/{event['code']}/playoff/hybrid", 
+            on_other=lambda r: ctx.send(f"FTC-Events returned an HTTP error status of: {req.status}. Something is broken."))
+
+        if req is None:
+            return
+        res = req['schedule']
+        has_matches_at_all = has_matches_at_all or bool(res)
+        FTCEventsClient.add_schedule_to_embed(embed, res, team_num, szn, event['code'])
+        
+        if not has_matches_at_all:
+            embed.description = "_No match schedule is available yet._"
             
         await ctx.send(embed=embed)
 
