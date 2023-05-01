@@ -1,9 +1,13 @@
+"""Provides the ability to add commands to user profiles in servers"""
 import discord
 from discord.ext import commands
 from discord import app_commands
 
 
 class ProfileMenus(commands.Cog):
+    """
+    Creates a profile menu object for the bot
+    """
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         self.ctx_menu = app_commands.ContextMenu(
@@ -16,6 +20,7 @@ class ProfileMenus(commands.Cog):
         self.bot.tree.remove_command(self.ctx_menu.name, type = self.ctx_menu.type)
 
     async def profile(self, interaction: discord.Interaction, member: discord.Member):
+        """Creates the ephemeral response that will be sent to the user when they interact with the 'View Profile' button"""
         # await interaction.response.send_message(f'{member} joined at {discord.utils.format_dt(member.joined_at)}',
         # ephemeral = False)  # temp false for testing
         if member is None:
