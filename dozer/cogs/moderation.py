@@ -177,23 +177,16 @@ class Moderation(Cog):
             except discord.NotFound:
                 logger.warning(f"Guild {r.guild_id} not found, skipping punishment timer")
                 continue
-            try:
-                actor = await guild.fetch_member(r.actor_id)
-            except discord.NotFound:
-                actor = None
-            try:
-                target = await guild.fetch_member(r.target_id)
-            except discord.NotFound:
-                logger.warning(f"Target {r.target_id} not found, skipping punishment timer")
-                continue
+            actor = guild.get_member(r.actor_id)
+            target = guild.get_member(r.target_id)
             orig_channel = self.bot.get_channel(r.orig_channel_id)
             punishment_type = r.type_of_punishment
             reason = r.reason or ""
             seconds = max(int(r.target_ts - time.time()), 0.01)
-            # await PunishmentTimerRecords.delete(id=r.id)
+            await PunishmentTimerRecords.delete(id=r.id)
             self.bot.loop.create_task(
                 self.punishment_timer(seconds, target, PunishmentTimerRecords.type_map[punishment_type], reason, actor,
-                                      orig_channel, timer_id=r.id))
+                                      orig_channel))
             logger.info(
                 f"Restarted {PunishmentTimerRecords.type_map[punishment_type].__name__} of {target} in {guild}")
 
@@ -210,7 +203,7 @@ class Moderation(Cog):
 
     async def punishment_timer(self, seconds: int, target: discord.Member, punishment, reason: str,
                                actor: discord.Member, orig_channel=None,
-                               global_modlog: bool = True, timer_id: int = None):
+                               global_modlog: bool = True):
         """Asynchronous task that sleeps for a set time to unmute/undeafen a member for a set period of time."""
 
         # Add this task to the list of active timer tasks
@@ -223,22 +216,18 @@ class Moderation(Cog):
         if seconds == 0:
             return
 
-        if timer_id is None:
-            # register the timer
-            ent = PunishmentTimerRecords(
-                guild_id=target.guild.id,
-                actor_id=actor.id,
-                target_id=target.id,
-                orig_channel_id=orig_channel.id if orig_channel else 0,
-                type_of_punishment=punishment.type,
-                reason=reason,
-                target_ts=int(seconds + time.time()),
-                self_inflicted=not global_modlog
-            )
-            await ent.update_or_add()
-        else:
-            ent = (await PunishmentTimerRecords.get_by(id=timer_id))[0]
-            seconds = max(int(ent.target_ts - time.time()), 0.01)
+        # register the timer
+        ent = PunishmentTimerRecords(
+            guild_id=target.guild.id,
+            actor_id=actor.id,
+            target_id=target.id,
+            orig_channel_id=orig_channel.id if orig_channel else 0,
+            type_of_punishment=punishment.type,
+            reason=reason,
+            target_ts=int(seconds + time.time()),
+            self_inflicted=not global_modlog
+        )
+        await ent.update_or_add()
 
         await asyncio.sleep(seconds)
 
