@@ -18,10 +18,10 @@ class QA(commands.Cog):
         super().__init__()
         self.bot = bot
 
-    @commands.hybrid_command(name="qa", aliases=["ftcqa", "ftcqaforum", "qaforum"], pass_context=True)
+    @commands.hybrid_command(name="ftcqa", aliases=["ftcqaforum"], pass_context=True)
     @bot_has_permissions(embed_links = True)
     @app_commands.describe(question = "The number of the question you want to look up")
-    async def qa(self, ctx: DozerContext, question: int):
+    async def ftcqa(self, ctx: DozerContext, question: int):
         """
         Shows Answers from the FTC Q&A
         """
@@ -67,10 +67,62 @@ class QA(commands.Cog):
             a += "\nhttps://ftc-qa.firstinspires.org/qa/" + question
             await ctx.send(a, ephemeral = True)
 
-    qa.example_usage = """
-    `{prefix}qa 19` - show information on FTC Q&A #19
+    ftcqa.example_usage = """
+    `{prefix}ftcqa 19` - show information on FTC Q&A #19
     """
 
+    @commands.hybrid_command(name="frcqa", aliases=["frcqaforum"], pass_context=True)
+    @bot_has_permissions(embed_links = True)
+    @app_commands.describe(question = "The number of the question you want to look up")
+    async def frcqa(self, ctx: DozerContext, question: int):
+        """
+        Shows Answers from the FTC Q&A
+        """
+        async with self.ses.get('https://frc-qa.firstinspires.org/onepage.html') as response:
+            html_data = await response.text()
+
+        answers = BeautifulSoup(html_data, 'html.parser').get_text()
+
+        start = answers.find('Q' + str(question) + ' ')
+        a = ""
+        if start > 0:
+
+            finish = answers.find('answered', start) + 24
+            a = answers[start:finish]
+
+            # remove newlines
+            a = a.replace("\n", " ")
+
+            # remove multiple spaces
+            a = " ".join(a.split())
+
+            embed = discord.Embed(
+                title = a[:a.find(" Q: ")],
+                url = "https://frc-qa.firstinspires.org/qa/" + str(question),
+                color = discord.Color.blue())
+
+            embed.add_field(name = "Question",
+                            value = a[a.find(" Q: ") + 1:a.find(" A: ")],
+                            inline = False)
+            embed.add_field(name = "Answer",
+                            value = a[a.find(" A: ") + 1:a.find(" ( Asked by ")],
+                            inline = False)
+
+            embed.set_footer(
+                text = a[a.find(" ( Asked by ") + 1:])
+
+            await ctx.send(embed = embed, ephemeral = True)
+
+        else:
+            a = "That question was not answered or does not exist."
+
+            # add url
+            a += "\nhttps://frc-qa.firstinspires.org/qa/" + question
+            await ctx.send(a, ephemeral = True)
+
+    frcqa.example_usage = """
+    `{prefix}frcqa 19` - show information on FRC Q&A #19
+    """
 
 async def setup(bot):
     """Adds the QA cog to the bot."""
