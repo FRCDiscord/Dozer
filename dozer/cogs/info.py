@@ -3,6 +3,8 @@ import math
 import typing
 from datetime import timezone, datetime, date
 from difflib import SequenceMatcher
+import time
+import re
 
 import discord
 import humanize
@@ -30,10 +32,7 @@ class Info(Cog):
     def __init__(self, bot):
         super().__init__(bot)
         self.bot = bot
-
-class Info(Cog):
-    """Commands for getting information about people and things on Discord."""
-
+        
     @command(aliases=['user', 'memberinfo', 'userinfo'])
     @guild_only()
     @bot_has_permissions(embed_links=True)
@@ -212,32 +211,6 @@ class Info(Cog):
     stats.example_usage = """
     `{prefix}stats` - get current bot/host stats
     """
-
-    @commands.hybrid_command(aliases = ['roleinfo'])
-    @guild_only()
-    @cooldown(1, 10, BucketType.channel)
-    async def role(self, ctx: DozerContext, role: discord.Role):
-        """Retrieve info about a role in this guild"""
-        embed = discord.Embed(title = f"Info for role: {role.name}", description = f"{role.mention} ({role.id})",
-                              color = role.color)
-        embed.add_field(name = "Created on", value = discord.utils.format_dt(role.created_at))
-        embed.add_field(name = "Position", value = role.position)
-        embed.add_field(name = "Color", value = str(role.color).upper())
-        embed.add_field(name = "Assigned members", value = f"{len(role.members)}", inline = False)
-        await ctx.send(embed = embed, ephemeral = True)
-
-    @commands.hybrid_command(aliases = ['withrole'])
-    @guild_only()
-    async def rolemembers(self, ctx: DozerContext, role: discord.Role):
-        """Retrieve members who have this role"""
-        await ctx.defer(ephemeral = True)
-        embeds = []
-        for page_num, page in enumerate(chunk(role.members, 10)):
-            embed = discord.Embed(title = f"Members for role: {role.name}", color = role.color)
-            embed.description = "\n".join(f"{member.mention}({member.id})" for member in page)
-            embed.set_footer(text = f"Page {page_num + 1} of {math.ceil(len(role.members) / 10)}")
-            embeds.append(embed)
-        await paginate(ctx, embeds)
 
     
 
