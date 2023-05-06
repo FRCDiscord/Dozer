@@ -74,7 +74,7 @@ class Info(Cog):
             embed.add_field(name='Roles', value=', '.join(role.mention for role in roles) or 'None', inline=False)
         footers.append(f"Color: {str(member.color).upper()}")
         embed.set_footer(text="; ".join(footers))
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, ephemeral=True)
 
     member.example_usage = """
     `{prefix}member`: show your member info
@@ -153,33 +153,79 @@ class Info(Cog):
 
     @guild_only()
     @cooldown(1, 10, BucketType.channel)
-    @command(aliases=['server', 'guildinfo', 'serverinfo'])
+    @commands.hybrid_command(name = "server", aliases = ['guild', 'guildinfo', 'serverinfo'])
     async def guild(self, ctx: DozerContext):
         """Retrieve information about this guild."""
         guild = ctx.guild
         static_emoji = sum(not e.animated for e in ctx.guild.emojis)
         animated_emoji = sum(e.animated for e in ctx.guild.emojis)
-        embed = discord.Embed(title=f"Info for guild: {guild.name}", description=f"Members: {guild.member_count}",
-                              color=blurple)
-
-        embed.set_thumbnail(url=guild.icon.url if guild.icon is not None else None)
-
-        embed.add_field(name='Created on', value=f"<t:{int(guild.created_at.timestamp())}:f>")
-        embed.add_field(name='Owner', value=guild.owner)
-        embed.add_field(name='Emoji', value=f"{static_emoji} static, {animated_emoji} animated")
-        embed.add_field(name='Roles', value=str(len(guild.roles) - 1))  # Remove @everyone
-        embed.add_field(name='Channels', value=str(len(guild.channels)))
-        embed.add_field(name='Nitro Boost Info', value=f'Level {ctx.guild.premium_tier}, '
-                                                       f'{ctx.guild.premium_subscription_count} booster(s), '
-                                                       f'{ctx.guild.filesize_limit // 1024 ** 2}MiB files, '
-                                                       f'{ctx.guild.bitrate_limit / 1000:0.1f}kbps voice')
-
-        await ctx.send(embed=embed)
+        e = discord.Embed(color = blurple)
+        e.set_thumbnail(url = guild.icon.url if guild.icon else None)
+        e.title = guild.name
+        e.description = f"{guild.member_count} members, {len(guild.channels)} channels, {len(guild.roles) - 1} roles"
+        e.add_field(name = 'ID', value = guild.id)
+        e.add_field(name = 'Created on', value = discord.utils.format_dt(guild.created_at))
+        e.add_field(name = 'Owner', value = guild.owner.mention)
+        e.add_field(name = 'Emoji', value = f"{static_emoji} static, {animated_emoji} animated")
+        e.add_field(name = 'Nitro Boost', value = f'Level {ctx.guild.premium_tier}, '
+                                                  f'{ctx.guild.premium_subscription_count} booster(s)\n'
+                                                  f'{ctx.guild.filesize_limit // 1024**2}MiB files, '
+                                                  f'{ctx.guild.bitrate_limit / 1000:0.1f}kbps voice')
+        await ctx.send(embed = e, ephemeral = True)
 
     guild.example_usage = """
     `{prefix}guild` - get information about this guild
     """
 
+    @commands.hybrid_command()
+    async def stats(self, ctx: DozerContext):
+        """Get current running internal/host stats for the bot"""
+        info = await ctx.bot.application_info()
+
+        frame = "\n".join(
+            map(lambda x: f"{str(x[0]):<24}{str(x[1])}", {
+                "Users:": len(ctx.bot.users),
+                "Channels:": len(list(ctx.bot.get_all_channels())),
+                "Servers:": len(ctx.bot.guilds),
+                "": "",
+                f"{' Host stats ':=^48}": "",
+                "Operating system:": os_name,
+                "Process uptime": str(datetime.timedelta(seconds = round(time.time() - startup_time)))
+            }.items()))
+        embed = discord.Embed(title = f"Stats for {info.name}", description = f"Bot owner: {info.owner.mention}```{frame}```", color = blurple)
+        await ctx.send(embed=embed, ephemeral = True)
+
+    stats.example_usage = """
+    `{prefix}stats` - get current bot/host stats
+    """
+
+    @commands.hybrid_command(aliases = ['roleinfo'])
+    @guild_only()
+    @cooldown(1, 10, BucketType.channel)
+    async def role(self, ctx: DozerContext, role: discord.Role):
+        """Retrieve info about a role in this guild"""
+        embed = discord.Embed(title = f"Info for role: {role.name}", description = f"{role.mention} ({role.id})",
+                              color = role.color)
+        embed.add_field(name = "Created on", value = discord.utils.format_dt(role.created_at))
+        embed.add_field(name = "Position", value = role.position)
+        embed.add_field(name = "Color", value = str(role.color).upper())
+        embed.add_field(name = "Assigned members", value = f"{len(role.members)}", inline = False)
+        await ctx.send(embed = embed, ephemeral = True)
+
+    @commands.hybrid_command(aliases = ['withrole'])
+    @guild_only()
+    async def rolemembers(self, ctx: DozerContext, role: discord.Role):
+        """Retrieve members who have this role"""
+        await ctx.defer(ephemeral = True)
+        embeds = []
+        for page_num, page in enumerate(chunk(role.members, 10)):
+            embed = discord.Embed(title = f"Members for role: {role.name}", color = role.color)
+            embed.description = "\n".join(f"{member.mention}({member.id})" for member in page)
+            embed.set_footer(text = f"Page {page_num + 1} of {math.ceil(len(role.members) / 10)}")
+            embeds.append(embed)
+        await paginate(ctx, embeds)
+
+    
 
 async def setup(bot):
     """Adds the info cog to the bot"""
