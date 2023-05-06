@@ -15,7 +15,21 @@ from .levels import MemberXP, GuildXPSettings
 
 blurple = discord.Color.blurple()
 datetime_format = '%Y-%m-%d %H:%M:%S\nUTC'
+startup_time = time.time()
 
+try:
+    with open("/etc/os-release") as f:
+        os_name = re.findall(r'PRETTY_NAME=\"(.+?)\"', f.read())[0]
+except Exception:
+    os_name = "Windows probably"
+
+
+class Info(Cog):
+    """Commands for getting information about people and things on Discord."""
+
+    def __init__(self, bot):
+        super().__init__(bot)
+        self.bot = bot
 
 class Info(Cog):
     """Commands for getting information about people and things on Discord."""
