@@ -11,7 +11,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from context import DozerContext
+from dozer.context import DozerContext
 from ._utils import *
 
 embed_color = discord.Color(0xf89808)
