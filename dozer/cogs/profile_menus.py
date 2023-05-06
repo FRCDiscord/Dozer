@@ -26,7 +26,7 @@ class ProfileMenus(commands.Cog):
         if member is None:
             member = interaction.user
 
-        icon_url = member_avatar_url(member)
+        icon_url = member.avatar.replace(static_format = 'png', size = 32) or None
 
         embed = discord.Embed(title = member.display_name, description = f'{member!s} ({member.id}) | {member.mention}',
                               color = member.color)
@@ -49,11 +49,3 @@ class ProfileMenus(commands.Cog):
 async def setup(bot):
     """Adds the profile context menus cog to the bot."""
     await bot.add_cog(ProfileMenus(bot))
-
-
-def member_avatar_url(m: discord.Member, static_format = 'png', size = 32):
-    """return avatar url"""
-    if m.avatar is not None:
-        return m.avatar.replace(static_format = static_format, size = size)
-    else:
-        return None
