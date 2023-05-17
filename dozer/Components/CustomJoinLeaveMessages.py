@@ -31,8 +31,8 @@ def format_join_leave(template: str, member: discord.Member):
     {user_id} = user's ID
     """
     template = template or "{user_mention}\n{user} ({user_id})"
-    return template.format(guild=member.guild, user=str(member), user_name=member.name,
-                            user_mention=member.mention, user_id=member.id)
+    return template.format(guild=member.guild.name, user=str(member), user_name=member.name,
+                           user_mention=member.mention, user_id=member.id)
 
 
 class CustomJoinLeaveMessages(db.DatabaseTable):
