@@ -2,11 +2,11 @@
 import discord
 import aiohttp
 
-from bs4 import BeautifulSoup
-from discord.ext import commands
-
-from context import DozerContext
 from ._utils import *
+from bs4 import BeautifulSoup
+
+from discord.ext import commands
+from dozer.context import DozerContext
 from discord import app_commands
 
 
