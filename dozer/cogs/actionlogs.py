@@ -300,7 +300,7 @@ class Actionlog(Cog):
         embed = discord.Embed(title="Message Edited",
                               description=f"[MESSAGE]({link}) From {mention}\nEdited In: {mchannel.mention}",
                               color=0xFFC400)
-        embed.set_author(name=f"{author['username']}#{author['discriminator']}", icon_url=avatar_link)
+        embed.set_author(name=f"{author['username']}{'#' + author['discriminator'] if author['discriminator'] != '0' else ''}", icon_url=avatar_link)
         embed.add_field(name="Original", value="N/A", inline=False)
         if content:
             embed.add_field(name="Edited", value=content[0:1023], inline=False)

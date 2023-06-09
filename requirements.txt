@@ -1,5 +1,5 @@
 asyncpg==0.26.0
-discord.py[speed,voice]==2.2.3
+git+https://github.com/Rapptz/discord.py
 aiotba~=0.0.3.post1
 tbapi~=1.3.1b5
 googlemaps~=4.4.2
@@ -12,5 +12,5 @@ sentry-sdk
 rstcloth~=0.3.1
 humanize~=3.8.0
 pre-commit~=2.20.0
-lavaplayer
+lavaplay.py
 loguru~=0.6.0

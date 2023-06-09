@@ -49,12 +49,12 @@ class StartModmailModal(ui.Modal):
             timestamp=datetime.datetime.utcnow(),
         )
         new_ticket_embed.set_footer(
-            text=f"{interaction.user.name}#{interaction.user.discriminator} | {interaction.user.id}",
+            text=f"{interaction.user.name}{'#' + interaction.user.discriminator if interaction.user.discriminator != '0' else ''} | {interaction.user.id}",
             icon_url=interaction.user.avatar.url if interaction.user.avatar is not None else None,
         )
         target_record = await ModmailConfig.get_by(guild_id=interaction.guild_id)
         mod_channel = interaction.client.get_channel(target_record[0].target_channel)
-        user_string = f"{interaction.user.name}#{interaction.user.discriminator} ({interaction.user.id})"
+        user_string = f"{interaction.user.name}{'#' + interaction.user.discriminator if interaction.user.discriminator != '0' else ''} ({interaction.user.id})"
         if len(user_string) > 100:
             user_string = user_string[:96] + "..."
         mod_message = await mod_channel.send(user_string)
@@ -105,7 +105,7 @@ class Modmail(Cog):
         if len(to_send) > 3071:
             embed.add_field(name="Message (continued)", value=to_send[3072:4000])
         embed.set_footer(
-            text=f"{author.name}#{author.discriminator} | {author.id} | {guild.name}",
+            text=f"{author.name}{'#' + author.discriminator if author.discriminator != '0' else ''} | {author.id} | {guild.name}",
             icon_url=author.avatar.url if author.avatar is not None else None,
         )
         files = []

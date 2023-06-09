@@ -29,7 +29,6 @@ class Info(Cog):
          **This command works without mentions.** Remove the '@' before your mention so you don't ping the person unnecessarily.
          You can pick a member by:
          - Username (`cooldude`)
-         - Username and discriminator (`cooldude#1234`)
          - ID (`326749693969301506`)
          - Nickname - must be exact and is case-sensitive (`"Mr. Cool Dude III | Team 1234"`)
          - Mention (not recommended) (`@Mr Cool Dude III | Team 1234`)

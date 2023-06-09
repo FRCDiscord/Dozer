@@ -1,5 +1,5 @@
 """Music commands, currently disabled"""
-import lavaplayer
+import lavaplay
 from discord.ext import commands
 from loguru import logger
 
@@ -15,7 +15,7 @@ class Music(commands.Cog):
             return
 
         llconfig = self.bot.config['lavalink']
-        self.lavalink = lavaplayer.Lavalink(
+        self.lavalink = lavaplay.Lavalink(
             host=llconfig['host'],
             port=llconfig['port'],
             password=llconfig['password'],
@@ -46,10 +46,10 @@ class Music(commands.Cog):
 
         if not tracks:
             return await ctx.send("No results found.")
-        elif isinstance(tracks, lavaplayer.TrackLoadFailed):
+        elif isinstance(tracks, lavaplay.TrackLoadFailed):
             await ctx.send("Track load failed. Try again.\n```" + tracks.message + "```")
         # Playlist
-        elif isinstance(tracks, lavaplayer.PlayList):
+        elif isinstance(tracks, lavaplay.PlayList):
             msg = await ctx.send("Playlist found, Adding to queue, Please wait...")
             await self.lavalink.add_to_queue(ctx.guild.id, tracks.tracks, ctx.author.id)
             await msg.edit(content=f"Added to queue, tracks: {len(tracks.tracks)}, name: {tracks.name}")
