@@ -25,13 +25,12 @@ async def send_log(member):
 def format_join_leave(template: str, member: discord.Member):
     """Formats join leave message templates
     {guild} = guild name
-    {user} = user's name plus discriminator ex. SnowPlow#5196
-    {user_name} = user's name without discriminator
+    {user} = user's name
     {user_mention} = user's mention
     {user_id} = user's ID
     """
     template = template or "{user_mention}\n{user} ({user_id})"
-    return template.format(guild=member.guild.name, user=str(member), user_name=member.name,
+    return template.format(guild=member.guild.name, user=str(member),
                            user_mention=member.mention, user_id=member.id)
 
 

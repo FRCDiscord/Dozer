@@ -547,8 +547,7 @@ class Actionlog(Cog):
         e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         e.description = """
         `{guild}` = guild name
-        `{user}` = user's name plus discriminator ex. SnowPlow#5196
-        `{user_name}` = user's name without discriminator
+        `{user}` = user's name
         `{user_mention}` = user's mention
         `{user_id}` = user's ID
         """
