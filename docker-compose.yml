@@ -12,7 +12,6 @@ services:
   dozer:
     depends_on: 
       - postgres
-      - lavalink
     build: .
     volumes:
       - ".:/app"
