@@ -49,12 +49,16 @@ class StartModmailModal(ui.Modal):
             timestamp=datetime.datetime.utcnow(),
         )
         new_ticket_embed.set_footer(
-            text=f"{interaction.user.name}{'#' + interaction.user.discriminator if interaction.user.discriminator != '0' else ''} | {interaction.user.id}",
+            text=f"{interaction.user.name}"
+                 f"{'#' + interaction.user.discriminator if interaction.user.discriminator != '0' else ''} "
+                 f"| {interaction.user.id}",
             icon_url=interaction.user.avatar.url if interaction.user.avatar is not None else None,
         )
         target_record = await ModmailConfig.get_by(guild_id=interaction.guild_id)
         mod_channel = interaction.client.get_channel(target_record[0].target_channel)
-        user_string = f"{interaction.user.name}{'#' + interaction.user.discriminator if interaction.user.discriminator != '0' else ''} ({interaction.user.id})"
+        user_string = f"{interaction.user.name}" \
+                      f"{'#' + interaction.user.discriminator if interaction.user.discriminator != '0' else ''} " \
+                      f"({interaction.user.id})"
         if len(user_string) > 100:
             user_string = user_string[:96] + "..."
         mod_message = await mod_channel.send(user_string)

@@ -12,5 +12,4 @@ sentry-sdk
 rstcloth~=0.3.1
 humanize~=3.8.0
 pre-commit~=2.20.0
-lavaplay.py
 loguru~=0.6.0
