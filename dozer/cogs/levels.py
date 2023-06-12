@@ -687,7 +687,6 @@ class Levels(Cog):
         If no member is passed, the caller's ranking is shown.
         """
         member = member or ctx.author
-        # embed = discord.Embed(color=member.color)
 
         guild_settings = self.guild_settings.get(ctx.guild.id)
         if guild_settings is None or not guild_settings.enabled:
@@ -719,16 +718,12 @@ class Levels(Cog):
             else:
                 rank = count
             img = self.make_new_rank_card(member, True, level, total_xp, level_floor, rank, count, level_xp)
-            # embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
-            #                      f"#{rank} of {count} in this server")
 
         arr = BytesIO()
         img.save(arr, format='PNG')
         arr.seek(0)
         file = discord.File(fp=arr, filename=f'{member}.png')
         await ctx.send(file=file)
-        # embed.set_author(name=member.display_name, icon_url=member.display_avatar.replace(format='png', size=64))
-        # await ctx.send(embed=embed)
 
     rank.example_usage = """
     `{prefix}rank`: show your ranking
