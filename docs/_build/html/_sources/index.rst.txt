@@ -5,15 +5,19 @@ Welcome to Dozer's documentation!
     Actionlog <Actionlog.rst>
     Development <Development.rst>
     Filter <Filter.rst>
+    FTC <FTC.rst>
+    FTCInfo <FTCInfo.rst>
     Fun <Fun.rst>
     General <General.rst>
     Info <Info.rst>
     Levels <Levels.rst>
     Maintenance <Maintenance.rst>
+    Management <Management.rst>
     Moderation <Moderation.rst>
-    Music <Music.rst>
+    Modmail <Modmail.rst>
     NameGame <NameGame.rst>
     News <News.rst>
+    Polls <Polls.rst>
     Roles <Roles.rst>
     Shortcuts <Shortcuts.rst>
     Starboard <Starboard.rst>
