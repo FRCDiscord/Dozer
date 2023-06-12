@@ -1,17 +1,20 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
     <title>Actionlog &#8212; Dozer  documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Development" href="Development.html" />
@@ -32,65 +35,75 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="actionlog">
-<h1>Actionlog<a class="headerlink" href="#actionlog" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="messagelogconfig">
-<h2>messagelogconfig<a class="headerlink" href="#messagelogconfig" title="Permalink to this headline">¶</a></h2>
+  <section id="actionlog">
+<h1>Actionlog<a class="headerlink" href="#actionlog" title="Permalink to this heading">¶</a></h1>
+<section id="messagelogconfig">
+<h2>messagelogconfig<a class="headerlink" href="#messagelogconfig" title="Permalink to this heading">¶</a></h2>
 <p>Set the modlog channel for a server by passing the channel id</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}messagelogconfig #orwellian-dystopia` - set a channel named #orwellian-dystopia to log message edits/deletions
 </pre></div>
 </div>
-</div>
-<div class="section" id="memberlogconfig">
-<h2>memberlogconfig<a class="headerlink" href="#memberlogconfig" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="memberlogconfig">
+<h2>memberlogconfig<a class="headerlink" href="#memberlogconfig" title="Permalink to this heading">¶</a></h2>
 <p>Command group to configure Join/Leave logs</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}memberlogconfig setchannel channel`: Sets the member log channel
+`{prefix}memberlogconfig toggleping`: Toggles whenever members are pinged upon joining the guild
+`{prefix}memberlogconfig setjoinmessage template`: Sets join template
+`{prefix}memberlogconfig setleavemessage template`: Sets leave template
+`{prefix}memberlogconfig help`: Returns the template formatting key
 </pre></div>
 </div>
-<p><cite>{prefix}memberlogconfig toggleping</cite>: Toggles whenever members are pinged upon joining the guild
-<cite>{prefix}memberlogconfig setjoinmessage template</cite>: Sets join template
-<cite>{prefix}memberlogconfig setleavemessage template</cite>: Sets leave template
-<cite>{prefix}memberlogconfig help</cite>: Returns the template formatting key
-setleavemessage
-+++++++++++++++
-Configure custom leave message template</p>
-</div>
-<div class="section" id="setjoinmessage">
-<h2>setjoinmessage<a class="headerlink" href="#setjoinmessage" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="setjoinmessage">
+<h2>setjoinmessage<a class="headerlink" href="#setjoinmessage" title="Permalink to this heading">¶</a></h2>
 <p>Configure custom join message template</p>
-</div>
-<div class="section" id="help">
-<h2>help<a class="headerlink" href="#help" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="help">
+<h2>help<a class="headerlink" href="#help" title="Permalink to this heading">¶</a></h2>
 <p>Displays message formatting key</p>
-</div>
-<div class="section" id="toggleping">
-<h2>toggleping<a class="headerlink" href="#toggleping" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="toggleping">
+<h2>toggleping<a class="headerlink" href="#toggleping" title="Permalink to this heading">¶</a></h2>
 <p>Toggles whenever a new member gets pinged on join</p>
-</div>
-<div class="section" id="disable">
-<h2>disable<a class="headerlink" href="#disable" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="setleavemessage">
+<h2>setleavemessage<a class="headerlink" href="#setleavemessage" title="Permalink to this heading">¶</a></h2>
+<p>Configure custom leave message template</p>
+</section>
+<section id="togglesendonverify">
+<h2>togglesendonverify<a class="headerlink" href="#togglesendonverify" title="Permalink to this heading">¶</a></h2>
+<p>Toggles if a join log is sent on user joining or on completing
+verification</p>
+</section>
+<section id="viewconfig">
+<h2>viewconfig<a class="headerlink" href="#viewconfig" title="Permalink to this heading">¶</a></h2>
+<p>Command to view Join/Leave logs configuration.</p>
+</section>
+<section id="disable">
+<h2>disable<a class="headerlink" href="#disable" title="Permalink to this heading">¶</a></h2>
 <p>Disables Join/Leave logging</p>
-</div>
-<div class="section" id="setchannel">
-<h2>setchannel<a class="headerlink" href="#setchannel" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="setchannel">
+<h2>setchannel<a class="headerlink" href="#setchannel" title="Permalink to this heading">¶</a></h2>
 <p>Configure join/leave channel</p>
-</div>
-<div class="section" id="locknickname">
-<h2>locknickname<a class="headerlink" href="#locknickname" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="locknickname">
+<h2>locknickname<a class="headerlink" href="#locknickname" title="Permalink to this heading">¶</a></h2>
 <p>Locks a members nickname to a particular string, in essence revoking
 nickname change perms</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}locknickname @Snowplow#5196 Dozer`: Locks user snowplows nickname to &quot;dozer&quot;
 </pre></div>
 </div>
-</div>
-<div class="section" id="unlocknickname">
-<h2>unlocknickname<a class="headerlink" href="#unlocknickname" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="unlocknickname">
+<h2>unlocknickname<a class="headerlink" href="#unlocknickname" title="Permalink to this heading">¶</a></h2>
 <p>Removes nickname lock from member</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}unlocknickname @Snowplow#5196`: Removes nickname lock from user dozer
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -109,7 +122,7 @@ nickname change perms</p>
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#"> Actionlog</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#messagelogconfig">messagelogconfig</a></li>
@@ -117,6 +130,9 @@ nickname change perms</p>
 <li class="toctree-l2"><a class="reference internal" href="#setjoinmessage">setjoinmessage</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#help">help</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#toggleping">toggleping</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#setleavemessage">setleavemessage</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#togglesendonverify">togglesendonverify</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#viewconfig">viewconfig</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#disable">disable</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#setchannel">setchannel</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#locknickname">locknickname</a></li>
@@ -135,6 +151,7 @@ nickname change perms</p>
 <li class="toctree-l1"><a class="reference internal" href="NameGame.html"> NameGame</a></li>
 <li class="toctree-l1"><a class="reference internal" href="News.html"> News</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Roles.html"> Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Shortcuts.html"> Shortcuts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Starboard.html"> Starboard</a></li>
 <li class="toctree-l1"><a class="reference internal" href="TBA.html"> TBA</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Teams.html"> Teams</a></li>
@@ -155,12 +172,12 @@ nickname change perms</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -177,8 +194,8 @@ nickname change perms</p>
       &copy;2021, Dozer Development Team.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.4</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |
       <a href="_sources/Actionlog.rst.txt"

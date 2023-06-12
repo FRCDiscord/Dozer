@@ -1,17 +1,20 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
     <title>TBA &#8212; Dozer  documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="Teams" href="Teams.html" />
@@ -32,70 +35,71 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="tba">
-<h1>TBA<a class="headerlink" href="#tba" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="id1">
-<h2>tba<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
+  <section id="tba">
+<h1>TBA<a class="headerlink" href="#tba" title="Permalink to this heading">¶</a></h1>
+<section id="id1">
+<h2>tba<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h2>
 <p>Get FRC-related information from The Blue Alliance. If no subcommand is
 specified, the <cite>team</cite> subcommand is inferred, and the argument is taken
 as a team number.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}tba 5052` - show information on team 5052, the RoboLobos
 </pre></div>
 </div>
-</div>
-<div class="section" id="media">
-<h2>media<a class="headerlink" href="#media" title="Permalink to this headline">¶</a></h2>
-<p>Get media of a team for a given year. Defaults to current year.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}tba media 971 2016` - show available media from team 971 Spartan Robotics in 2016
-</pre></div>
-</div>
-</div>
-<div class="section" id="awards">
-<h2>awards<a class="headerlink" href="#awards" title="Permalink to this headline">¶</a></h2>
-<p>Gets a list of awards the specified team has won during a year.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}tba awards 1114` - list all the awards team 1114 Simbotics has ever gotten.
-</pre></div>
-</div>
-</div>
-<div class="section" id="team">
-<h2>team<a class="headerlink" href="#team" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="team">
+<h2>team<a class="headerlink" href="#team" title="Permalink to this heading">¶</a></h2>
 <p>Get information on an FRC team by number.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}tba team 4131` - show information on team 4131, the Iron Patriots
 </pre></div>
 </div>
-</div>
-<div class="section" id="raw">
-<h2>raw<a class="headerlink" href="#raw" title="Permalink to this headline">¶</a></h2>
-<p>Get raw TBA API output for a team. This command is really only useful
-for development.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}tba raw 4150` - show raw information on team 4150, FRobotics
+</section>
+<section id="awards">
+<h2>awards<a class="headerlink" href="#awards" title="Permalink to this heading">¶</a></h2>
+<p>Gets a list of awards the specified team has won during a year.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}tba awards 1114` - list all the awards team 1114 Simbotics has ever gotten.
 </pre></div>
 </div>
+</section>
+<section id="media">
+<h2>media<a class="headerlink" href="#media" title="Permalink to this heading">¶</a></h2>
+<p>Get media of a team for a given year. Defaults to current year.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}tba media 971 2016` - show available media from team 971 Spartan Robotics in 2016
+</pre></div>
 </div>
-<div class="section" id="eventsfor">
-<h2>eventsfor<a class="headerlink" href="#eventsfor" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="eventsfor">
+<h2>eventsfor<a class="headerlink" href="#eventsfor" title="Permalink to this heading">¶</a></h2>
 <p>Get the events a team is registered for a given year. Defaults to
 current (or upcoming) year.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}tba eventsfor 1533` - show the currently registered events for team 1533, Triple Strange
 </pre></div>
 </div>
+</section>
+<section id="raw">
+<h2>raw<a class="headerlink" href="#raw" title="Permalink to this heading">¶</a></h2>
+<p>Get raw TBA API output for a team. This command is really only useful
+for development.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}tba raw 1339` - show raw information on team 1339, AngelBotics
+</pre></div>
 </div>
-<div class="section" id="weather">
-<h2>weather<a class="headerlink" href="#weather" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="weather">
+<h2>weather<a class="headerlink" href="#weather" title="Permalink to this heading">¶</a></h2>
 <p>Finds the current weather for a given team.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}weather frc 5052` - show the current weather for FRC team 5052, The RoboLobos
+`{prefix}weather ftc 15470` - show the current weather for FTC team 15470
 </pre></div>
 </div>
-<p><cite>{prefix}weather ftc 15470</cite> - show the current weather for FTC team 15470
-timezone
-++++++++
-Get the timezone of a team based on the team number.</p>
+</section>
+<section id="timezone">
+<h2>timezone<a class="headerlink" href="#timezone" title="Permalink to this heading">¶</a></h2>
+<p>Get the timezone of a team based on the team number.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}timezone frc 5052` - show the local time of FRC team 5052, The RoboLobos
+`{prefix}timezone ftc 15470` - show the local time of FTC team 15470
 </pre></div>
 </div>
-<p><cite>{prefix}timezone ftc 15470</cite> - show the local time of FTC team 15470</p>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -114,7 +118,7 @@ Get the timezone of a team based on the team number.</p>
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Actionlog.html"> Actionlog</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Development.html"> Development</a></li>
@@ -129,15 +133,17 @@ Get the timezone of a team based on the team number.</p>
 <li class="toctree-l1"><a class="reference internal" href="NameGame.html"> NameGame</a></li>
 <li class="toctree-l1"><a class="reference internal" href="News.html"> News</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Roles.html"> Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Shortcuts.html"> Shortcuts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Starboard.html"> Starboard</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#"> TBA</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#id1">tba</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#media">media</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#awards">awards</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#team">team</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#raw">raw</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#awards">awards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#media">media</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#eventsfor">eventsfor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#raw">raw</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#weather">weather</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#timezone">timezone</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="Teams.html"> Teams</a></li>
@@ -158,12 +164,12 @@ Get the timezone of a team based on the team number.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -180,8 +186,8 @@ Get the timezone of a team based on the team number.</p>
       &copy;2021, Dozer Development Team.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.4</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |
       <a href="_sources/TBA.rst.txt"

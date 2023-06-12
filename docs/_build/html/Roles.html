@@ -1,20 +1,23 @@
 
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
     <title>Roles &#8212; Dozer  documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Starboard" href="Starboard.html" />
+    <link rel="next" title="Shortcuts" href="Shortcuts.html" />
     <link rel="prev" title="News" href="News.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
@@ -32,122 +35,129 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="roles">
-<h1>Roles<a class="headerlink" href="#roles" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="giveme">
-<h2>giveme<a class="headerlink" href="#giveme" title="Permalink to this headline">¶</a></h2>
+  <section id="roles">
+<h1>Roles<a class="headerlink" href="#roles" title="Permalink to this heading">¶</a></h1>
+<section id="giveme">
+<h2>giveme<a class="headerlink" href="#giveme" title="Permalink to this heading">¶</a></h2>
 <p>Give you one or more giveable roles, separated by commas.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}giveme Java` - gives you the role called Java, if it exists
+`{prefix}giveme Java, Python` - gives you the roles called Java and Python, if they exist
 </pre></div>
 </div>
-<p><cite>{prefix}giveme Java, Python</cite> - gives you the roles called Java and Python, if they exist
-add
-+++
-Makes an existing role giveable, or creates one if it doesn’t exist.
-Name must not contain commas. Similar to create, but will use an
-existing role if one exists.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}giveme add Java` - creates or finds a role named &quot;Java&quot; and makes it giveable
+</section>
+<section id="purge">
+<h2>purge<a class="headerlink" href="#purge" title="Permalink to this heading">¶</a></h2>
+<p>Force a purge of giveme roles that no longer exist in the guild</p>
+</section>
+<section id="create">
+<h2>create<a class="headerlink" href="#create" title="Permalink to this heading">¶</a></h2>
+<p>Create a giveable role. Name must not contain commas. Similar to add,
+but will always create a new role.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}giveme create Python` - creates a role named &quot;Python&quot; and makes it giveable
+`{prefix}giveme Python` - gives you the Python role that was just created
 </pre></div>
 </div>
-<p><cite>{prefix}giveme Java</cite> - gives you the Java role that was just found or created
-delete
-++++++
-Deletes and removes a giveable role.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}giveme removefromlist Java` - removes the role &quot;Java&quot; from the list of giveable roles but does not remove it from the server or members who have it
-</pre></div>
-</div>
-</div>
-<div class="section" id="list">
-<h2>list<a class="headerlink" href="#list" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="list">
+<h2>list<a class="headerlink" href="#list" title="Permalink to this heading">¶</a></h2>
 <p>Lists all giveable roles for this server.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}giveme list` - lists all giveable roles
 </pre></div>
 </div>
-</div>
-<div class="section" id="create">
-<h2>create<a class="headerlink" href="#create" title="Permalink to this headline">¶</a></h2>
-<p>Create a giveable role. Name must not contain commas. Similar to add,
-but will always create a new role.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}giveme create Python` - creates a role named &quot;Python&quot; and makes it giveable
+</section>
+<section id="delete">
+<h2>delete<a class="headerlink" href="#delete" title="Permalink to this heading">¶</a></h2>
+<p>Deletes and removes a giveable role.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}giveme removefromlist Java` - removes the role &quot;Java&quot; from the list of giveable roles but does not remove it from the server or members who have it
 </pre></div>
 </div>
-<p><cite>{prefix}giveme Python</cite> - gives you the Python role that was just created
-purge
-+++++
-Force a purge of giveme roles that no longer exist in the guild</p>
-</div>
-<div class="section" id="removefromlist">
-<h2>removefromlist<a class="headerlink" href="#removefromlist" title="Permalink to this headline">¶</a></h2>
-<p>Deletes and removes a giveable role.</p>
-</div>
-<div class="section" id="remove">
-<h2>remove<a class="headerlink" href="#remove" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="remove">
+<h2>remove<a class="headerlink" href="#remove" title="Permalink to this heading">¶</a></h2>
 <p>Removes multiple giveable roles from you. Names must be separated by
 commas.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}giveme remove Java` - removes the role called &quot;Java&quot; from you (if it can be given with `{prefix}giveme`)
+`{prefix}giveme remove Java, Python` - removes the roles called &quot;Java&quot; and &quot;Python&quot; from you
 </pre></div>
 </div>
-<p><cite>{prefix}giveme remove Java, Python</cite> - removes the roles called “Java” and “Python” from you
-tempgive
-++++++++
-Temporarily gives a member a role for a set time. Not restricted to
+</section>
+<section id="removefromlist">
+<h2>removefromlist<a class="headerlink" href="#removefromlist" title="Permalink to this heading">¶</a></h2>
+<p>Deletes and removes a giveable role.</p>
+</section>
+<section id="add">
+<h2>add<a class="headerlink" href="#add" title="Permalink to this heading">¶</a></h2>
+<p>Makes an existing role giveable, or creates one if it doesn’t exist.
+Name must not contain commas. Similar to create, but will use an
+existing role if one exists.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}giveme add Java` - creates or finds a role named &quot;Java&quot; and makes it giveable
+`{prefix}giveme Java` - gives you the Java role that was just found or created
+</pre></div>
+</div>
+</section>
+<section id="role">
+<h2>role<a class="headerlink" href="#role" title="Permalink to this heading">¶</a></h2>
+<p>Give you one or more giveable roles, separated by commas.</p>
+</section>
+<section id="tempgive">
+<h2>tempgive<a class="headerlink" href="#tempgive" title="Permalink to this heading">¶</a></h2>
+<p>Temporarily gives a member a role for a set time. Not restricted to
 giveable roles.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}tempgive cooldude#1234 1h Java` - gives cooldude any role, giveable or not, named Java for one hour
 </pre></div>
 </div>
-</div>
-<div class="section" id="give">
-<h2>give<a class="headerlink" href="#give" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="give">
+<h2>give<a class="headerlink" href="#give" title="Permalink to this heading">¶</a></h2>
 <p>Gives a member a role. Not restricted to giveable roles.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}give cooldude#1234 Java` - gives cooldude any role, giveable or not, named Java
 </pre></div>
 </div>
-</div>
-<div class="section" id="take">
-<h2>take<a class="headerlink" href="#take" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="take">
+<h2>take<a class="headerlink" href="#take" title="Permalink to this heading">¶</a></h2>
 <p>Takes a role from a member. Not restricted to giveable roles.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}take cooldude#1234 Java` - takes any role named Java, giveable or not, from cooldude
 </pre></div>
 </div>
-</div>
-<div class="section" id="rolemenu">
-<h2>rolemenu<a class="headerlink" href="#rolemenu" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="rolemenu">
+<h2>rolemenu<a class="headerlink" href="#rolemenu" title="Permalink to this heading">¶</a></h2>
 <p>Base command for setting up and tracking reaction roles</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}rolemenu createmenu #roles Example role menu`: Creates an empty role menu embed
+`{prefix}rolemenu addrole &lt;message id&gt; @robots 🤖:` adds the reaction role &#39;robots&#39; to the target message
+`{prefix}rolemenu delrole &lt;message id&gt; @robots:` removes the reaction role &#39;robots&#39; from the target message
 </pre></div>
 </div>
-<p><cite>{prefix}rolemenu addrole &lt;message id&gt; &#64;robots 🤖:</cite> adds the reaction role ‘robots’ to the target message
-<cite>{prefix}rolemenu delrole &lt;message id&gt; &#64;robots:</cite> removes the reaction role ‘robots’ from the target message
-createmenu
-++++++++++
-Creates a blank reaction role menu</p>
+</section>
+<section id="createmenu">
+<h2>createmenu<a class="headerlink" href="#createmenu" title="Permalink to this heading">¶</a></h2>
+<p>Creates a blank reaction role menu</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}rolemenu createmenu #roles Example role menu`: Creates an empty role menu embed
 </pre></div>
 </div>
-</div>
-<div class="section" id="addrole">
-<h2>addrole<a class="headerlink" href="#addrole" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="addrole">
+<h2>addrole<a class="headerlink" href="#addrole" title="Permalink to this heading">¶</a></h2>
 <p>Adds a reaction role to a message or a role menu</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>  -----To target a role menu use this format-----
-`{prefix}rolemenu addrole &lt;message id&gt; &lt;@robots or &quot;Robots&quot;&gt; 🤖`
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>-----To target a role menu use this format-----
+ `{prefix}rolemenu addrole &lt;message id&gt; &lt;@robots or &quot;Robots&quot;&gt; 🤖`
+-----To target a custom message use this format-----
+ `{prefix}rolemenu addrole &lt;channel&gt; &lt;message id&gt; &lt;@robots or &quot;Robots&quot;&gt; 🤖`
 </pre></div>
 </div>
-<dl class="simple">
-<dt>—–To target a custom message use this format—–</dt><dd><p><cite>{prefix}rolemenu addrole &lt;channel&gt; &lt;message id&gt; &lt;&#64;robots or “Robots”&gt; 🤖</cite></p>
-</dd>
-</dl>
-</div>
-<div class="section" id="delrole">
-<h2>delrole<a class="headerlink" href="#delrole" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="delrole">
+<h2>delrole<a class="headerlink" href="#delrole" title="Permalink to this heading">¶</a></h2>
 <p>Removes a reaction role from a message or a role menu</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-----</span><span class="n">To</span> <span class="n">target</span> <span class="n">a</span> <span class="n">role</span> <span class="n">menu</span> <span class="n">use</span> <span class="n">this</span> <span class="nb">format</span><span class="o">-----</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>-----To target a role menu use this format-----
+`{prefix}rolemenu delrole &lt;message id&gt; &lt;@robots or &quot;Robots&quot;&gt;`
+-----To target a custom message use this format-----
+`{prefix}rolemenu delrole &lt;channel&gt; &lt;message id&gt; &lt;@robots or &quot;Robots&quot;&gt;`
 </pre></div>
 </div>
-<p><cite>{prefix}rolemenu delrole &lt;message id&gt; &lt;&#64;robots or “Robots”&gt;</cite>
-—–To target a custom message use this format—–
-<cite>{prefix}rolemenu delrole &lt;channel&gt; &lt;message id&gt; &lt;&#64;robots or “Robots”&gt;</cite></p>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -166,7 +176,7 @@ Creates a blank reaction role menu</p>
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Actionlog.html"> Actionlog</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Development.html"> Development</a></li>
@@ -182,17 +192,24 @@ Creates a blank reaction role menu</p>
 <li class="toctree-l1"><a class="reference internal" href="News.html"> News</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#"> Roles</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#giveme">giveme</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#list">list</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#purge">purge</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#create">create</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#removefromlist">removefromlist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#list">list</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#delete">delete</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#remove">remove</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#removefromlist">removefromlist</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#add">add</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#role">role</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#tempgive">tempgive</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#give">give</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#take">take</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#rolemenu">rolemenu</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#createmenu">createmenu</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#addrole">addrole</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#delrole">delrole</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="Shortcuts.html"> Shortcuts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Starboard.html"> Starboard</a></li>
 <li class="toctree-l1"><a class="reference internal" href="TBA.html"> TBA</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Teams.html"> Teams</a></li>
@@ -205,7 +222,7 @@ Creates a blank reaction role menu</p>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
       <li>Previous: <a href="News.html" title="previous chapter">News</a></li>
-      <li>Next: <a href="Starboard.html" title="next chapter">Starboard</a></li>
+      <li>Next: <a href="Shortcuts.html" title="next chapter">Shortcuts</a></li>
   </ul></li>
 </ul>
 </div>
@@ -213,12 +230,12 @@ Creates a blank reaction role menu</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
 </div>
-<script>$('#searchbox').show(0);</script>
+<script>document.getElementById('searchbox').style.display = "block"</script>
 
 
 
@@ -235,8 +252,8 @@ Creates a blank reaction role menu</p>
       &copy;2021, Dozer Development Team.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.4</a>
-      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 5.3.0</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
       
       |
       <a href="_sources/Roles.rst.txt"

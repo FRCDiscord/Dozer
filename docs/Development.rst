@@ -16,7 +16,7 @@ eval
 Evaluates Python. Await is valid and `{ctx}` is the command context.
 ::
    `{prefix}eval 0.1 + 0.2` - calculates 0.1 + 0.2
-`{prefix}eval await ctx.send('Hello world!')` - send "Hello World!" to this channel
+   `{prefix}eval await ctx.send('Hello world!')` - send "Hello World!" to this channel
 su
 ++
 Execute a command as another user.

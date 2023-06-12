@@ -7,11 +7,11 @@ Configures AutoPtt limit for when members join/leave voice channels ptt
 is enabled
 ::
    `{prefix}autoptt "General #1" 15 - sets up Dozer to give force Push-To-Talk when more than 15 users joins a voice channel.
-`{prefix}autoptt "General #1" 0 - disables AutoPTT for General #1.
+   `{prefix}autoptt "General #1" 0 - disables AutoPTT for General #1.
 voicebind
 +++++++++
-Associates a voice channel with a role, so users joining a voice channel
-will automatically be given a specified role or roles.
+Binds a voice channel with a role, so users joining voice channels will
+be given desired role(s).
 ::
    `{prefix}voicebind "General #1" voice-general-1` - sets up Dozer to give users  `voice-general-1` when they join voice channel "General #1", which will be removed when they leave.
 voiceunbind

@@ -6,7 +6,7 @@ schedulesend
 Allows a message to be sent at a particular time Commands: add, delete,
 list
 ::
-   
+
 list
 ++++
 Displays currently scheduled messages

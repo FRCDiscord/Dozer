@@ -43,14 +43,16 @@ class Development(Cog):
     async def document(self, ctx: DozerContext):
         """Dump documentation for Sphinx processing"""
         for x in self.bot.cogs:
-            cog = ctx.bot.get_cog(x)
-            comrst = rstcloth.RstCloth()
-            comrst.title(x)
-            for command in cog.walk_commands():
-                comrst.h4(command.name)
-                comrst.content(command.help)
-                comrst.codeblock(command.example_usage)
-            comrst.write(f"docs/{x}.rst")
+            with open(f"docs/{x}.rst", "w") as f:
+                cog = ctx.bot.get_cog(x)
+                comrst = rstcloth.RstCloth(stream=f)
+                comrst.title(x)
+                for command in cog.walk_commands():
+                    comrst.h4(command.name)
+                    comrst.content(command.help)
+                    comrst.codeblock(command.example_usage)
+                f.close()
+
         # make a call to Sphinx to build
         subprocess.call("make html", shell=True, cwd='docs')
         await ctx.send("Documentation cycle run")

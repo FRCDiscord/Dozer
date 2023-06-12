@@ -23,7 +23,7 @@ prune
 Bulk delete a set number of messages from the current channel.
 ::
    `{prefix}prune 10` - Delete the last 10 messages in the current channel.
-`{prefix}prune 786324930378727484` - Deletes all messages up to that message ID
+   `{prefix}prune 786324930378727484` - Deletes all messages up to that message ID
 punishments
 +++++++++++
 List currently active mutes and deafens in a guild
@@ -63,7 +63,7 @@ reading messages.
 selfdeafen
 ++++++++++
 Deafen yourself for a given time period to prevent you from reading or
-sending messages; useful as a study tool.
+sending messages.
 ::
    `{prefix}selfdeafen time (1h5m, both optional) reason`: deafens you if you need to get work done
 undeafen
@@ -81,18 +81,24 @@ purgenm
 +++++++
 Manually run a new member purge
 ::
-   
+
 modlogconfig
 ++++++++++++
 Set the modlog channel for a server by passing the channel id
 ::
    `{prefix}modlogconfig #join-leave-logs` - set a channel named #join-leave-logs to log joins/leaves 
+verifymember
+++++++++++++
+Command to verify a member who may not have a team number set, or who
+hasn't sent the required verification message.
+::
+
 nmconfig
 ++++++++
 Sets the config for the new members channel
 ::
    `{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel 
-so if someone types "I have read the rules and regulations" it assigns them the Member role. 
+   so if someone types "I have read the rules and regulations" it assigns them the Member role. 
 nmpurgeconfig
 +++++++++++++
 Sets the config for the new members purge
@@ -105,34 +111,39 @@ the timeout command. It should be a role that all members of the server
 have.
 ::
    `{prefix}memberconfig Members` - set a role called "Members" as the member role
-`{prefix}memberconfig @everyone` - set the default role as the member role
-`{prefix}memberconfig everyone` - set the default role as the member role (ping-safe)
-`{prefix}memberconfig @ everyone` - set the default role as the member role (ping-safe)
-`{prefix}memberconfig @.everyone` - set the default role as the member role (ping-safe)
-`{prefix}memberconfig @/everyone` - set the default role as the member role (ping-safe)
+   `{prefix}memberconfig @everyone` - set the default role as the member role
+   `{prefix}memberconfig everyone` - set the default role as the member role (ping-safe)
+   `{prefix}memberconfig @ everyone` - set the default role as the member role (ping-safe)
+   `{prefix}memberconfig @.everyone` - set the default role as the member role (ping-safe)
+   `{prefix}memberconfig @/everyone` - set the default role as the member role (ping-safe)
 linkscrubconfig
 +++++++++++++++
 Set a role that users must have in order to post links. This accepts the
 safe default role conventions that the memberconfig command does.
 ::
    `{prefix}linkscrubconfig Links` - set a role called "Links" as the link role
-`{prefix}linkscrubconfig @everyone` - set the default role as the link role
-`{prefix}linkscrubconfig everyone` - set the default role as the link role (ping-safe)
-`{prefix}linkscrubconfig @ everyone` - set the default role as the link role (ping-safe)
-`{prefix}linkscrubconfig @.everyone` - set the default role as the link role (ping-safe)
-`{prefix}linkscrubconfig @/everyone` - set the default role as the link role (ping-safe)
+   `{prefix}linkscrubconfig @everyone` - set the default role as the link role
+   `{prefix}linkscrubconfig everyone` - set the default role as the link role (ping-safe)
+   `{prefix}linkscrubconfig @ everyone` - set the default role as the link role (ping-safe)
+   `{prefix}linkscrubconfig @.everyone` - set the default role as the link role (ping-safe)
+   `{prefix}linkscrubconfig @/everyone` - set the default role as the link role (ping-safe)
 crossbans
 +++++++++
 Cross ban
 ::
-   
-subscribe
+
+view_subs
 +++++++++
-Subscribe to a guild to cross ban from
+View crossban subscriptions for the current server
 ::
-   
+
 unsubscribe
 +++++++++++
 Remove cross ban subscription
 ::
-   
+
+subscribe
++++++++++
+Subscribe to a guild to cross ban from
+::
+
