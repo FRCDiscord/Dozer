@@ -87,7 +87,7 @@ class Info(Cog):
             embed.add_field(name='Roles', value=', '.join(role.mention for role in roles) or 'None', inline=False)
         footers.append(f"Color: {str(member.color).upper()}")
         embed.set_footer(text="; ".join(footers))
-        await ctx.send(embed=embed, ephemeral=True)
+        await ctx.send(embed=embed)
 
     member.example_usage = """
     `{prefix}member`: show your member info
@@ -184,7 +184,7 @@ class Info(Cog):
                                                   f'{ctx.guild.premium_subscription_count} booster(s)\n'
                                                   f'{ctx.guild.filesize_limit // 1024**2}MiB files, '
                                                   f'{ctx.guild.bitrate_limit / 1000:0.1f}kbps voice')
-        await ctx.send(embed = e, ephemeral = True)
+        await ctx.send(embed = e)
 
     guild.example_usage = """
     `{prefix}guild` - get information about this guild
@@ -206,7 +206,7 @@ class Info(Cog):
                 "Process uptime": str(datetime.timedelta(seconds = round(time.time() - startup_time)))
             }.items()))
         embed = discord.Embed(title = f"Stats for {info.name}", description = f"Bot owner: {info.owner.mention}```{frame}```", color = blurple)
-        await ctx.send(embed=embed, ephemeral = True)
+        await ctx.send(embed=embed)
 
     stats.example_usage = """
     `{prefix}stats` - get current bot/host stats
