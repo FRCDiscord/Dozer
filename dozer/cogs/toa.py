@@ -85,7 +85,7 @@ class TOA(commands.Cog):
                     value=', '.join((team_data['city'], team_data['state_prov'], team_data['country'])))
         e.add_field(name='Website', value=team_data['website'] or 'n/a')
         e.add_field(name='Team Info Page', value=f'https://theorangealliance.org/teams/{team_data["team_key"]}')
-        await ctx.send('', embed=e, ephemeral=True)
+        await ctx.send('', embed=e)
 
     team.example_usage = """
     `{prefix}toa team 12670` - show information on team 12670, Eclipse
