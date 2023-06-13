@@ -25,15 +25,14 @@ async def send_log(member):
 def format_join_leave(template: str, member: discord.Member):
     """Formats join leave message templates
     {guild} = guild name
-    {user} = user's name plus discriminator ex. SnowPlow#5196
-    {user_name} = user's name without discriminator
+    {user} = user's name
     {user_mention} = user's mention
     {user_id} = user's ID
     """
     template = template or "{user_mention}\n{user} ({user_id})"
+
     subst = [("{guild}", member.guild.name),
              ("{user}", member),  
-             ("{user_name}", member.name),
              ("{user_mention}", member.mention),
              ("{user_id}", member.id)]
     
@@ -51,7 +50,6 @@ def format_join_leave(template: str, member: discord.Member):
         # breadth is limited by template size (indirectly limited by discord message size)
         return str(cur[1]).join([helper(bit, subst[1:]) for bit in s.split(cur[0])])
     return helper(template, subst)
-
 
 class CustomJoinLeaveMessages(db.DatabaseTable):
     """Holds custom join leave messages"""

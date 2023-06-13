@@ -9,16 +9,9 @@ services:
       - "5432:5432"
     volumes:
       - database:/var/lib/postgresql/data
-  lavalink:
-    image: fredboat/lavalink:latest
-    environment:
-      LAVALINK_SERVER_PASSWORD: youshallnotpass
-      SERVER_PORT: 2333
-      SERVER_HOST: 0.0.0.0
   dozer:
     depends_on: 
       - postgres
-      - lavalink
     build: .
     volumes:
       - ".:/app"
