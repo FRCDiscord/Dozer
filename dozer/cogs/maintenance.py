@@ -3,28 +3,31 @@
 import os
 
 from discord.ext.commands import NotOwner
+from discord.ext import commands
 from loguru import logger
 
 from dozer.context import DozerContext
-from ._utils import *
 
 
-class Maintenance(Cog):
+class Maintenance(commands.Cog):
     """
     Commands for performing maintenance on the bot.
     These commands are restricted to bot developers.
     """
+    def __init__(self, bot: commands.Bot) -> None:
+        super().__init__()
+        self.bot = bot
 
     def cog_check(self, ctx: DozerContext):  # All of this cog is only available to devs
         if ctx.author.id not in ctx.bot.config['developers']:
-            raise NotOwner('you are not a developer!')
+            raise NotOwner('You are not a developer!')
         return True
 
-    @command()
+    @commands.hybrid_command()
     async def shutdown(self, ctx: DozerContext):
         """Force-stops the bot."""
         await ctx.send('Shutting down')
-        logger.info(f'Shutting down at request of {ctx.author.name}{"#" + ctx.author.discriminator if ctx.author.discriminator != "0" else ""} '
+        logger.info(f'Shutting down at request of {ctx.author.name}{"#" + ctx.author.discriminator if ctx.author.discriminator != "0" else ""}'
                     f'(in {ctx.guild.name}, #{ctx.channel.name})')
         await self.bot.shutdown()
 
@@ -32,7 +35,7 @@ class Maintenance(Cog):
     `{prefix}shutdown` - stop the bot
     """
 
-    @command()
+    @commands.hybrid_command(name = "restart", aliases = ["reboot"])
     async def restart(self, ctx: DozerContext):
         """Restarts the bot."""
         await ctx.send('Restarting')
@@ -42,7 +45,7 @@ class Maintenance(Cog):
     `{prefix}restart` - restart the bot
     """
 
-    @command()
+    @commands.hybrid_command(name = "update", aliases = ["pull"])
     async def update(self, ctx: DozerContext):
         """
         Pulls code from GitHub and restarts.
