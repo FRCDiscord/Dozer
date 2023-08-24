@@ -49,6 +49,8 @@ class TOAParser:
             try:
                 async with async_timeout.timeout(5) as _, self.http.get(urljoin(self.base, endpoint),
                                                                         headers=self.headers) as response:
+                    if response.status == 404:
+                        return "[]"
                     return await response.text()
             except aiohttp.ClientError:
                 tries += 1
