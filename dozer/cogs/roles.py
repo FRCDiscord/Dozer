@@ -12,6 +12,7 @@ from discord.utils import escape_markdown
 from dozer.context import DozerContext
 from ._utils import *
 from .actionlogs import CustomJoinLeaveMessages
+from .moderation import MemberRole
 from .. import db
 from ..db import *
 
@@ -152,6 +153,17 @@ class Roles(Cog):
         if len(restore) == 0:
             return  # New member - nothing to restore
 
+        # try and prioritize the member role first for Speed
+        member_role_id = None
+        stg = await MemberRole.get_by(guild_id=member.guild.id)
+        if stg:
+            member_role_id = stg[0].member_role
+            member_role =  member.guild.get_role(member_role_id)
+            if member_role is not None and any(s.role_id == member_role_id for s in restore) and member_role.position <= top_restorable:
+                await member.add_roles(member_role)
+            else:
+                member_role_id = None
+
         valid, cant_give, missing = set(), set(), set()
         for missing_role in restore:
             role = member.guild.get_role(missing_role.role_id)
@@ -159,7 +171,7 @@ class Roles(Cog):
                 missing.add(missing_role.role_name)
             elif role.position > top_restorable:
                 cant_give.add(role.name)
-            else:
+            elif role.id != member_role_id:
                 valid.add(role)
         for entry in restore:
             # Not missing anymore - remove the record to free up the primary key

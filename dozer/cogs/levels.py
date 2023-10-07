@@ -734,6 +734,7 @@ class Levels(Cog):
     @guild_only()
     async def levels(self, ctx: DozerContext, start: typing.Optional[discord.Member]):
         """Show the XP leaderboard for this server. Leaderboard refreshes every 5 minutes or so"""
+        await ctx.defer()
 
         # Order by total_xp needs a tiebreaker, otherwise all records with equal XP will have the same rank
         # This causes rankings like #1, #1, #1, #4, #4, #6, ...

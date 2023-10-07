@@ -6,6 +6,7 @@ from asyncio import sleep
 import discord
 from discord import ui
 from discord.ext.commands import has_permissions
+from loguru import logger
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -48,12 +49,18 @@ class StartModmailModal(ui.Modal):
             timestamp=datetime.datetime.utcnow(),
         )
         new_ticket_embed.set_footer(
-            text=f"{interaction.user.name}#{interaction.user.discriminator} | {interaction.user.id}",
+            text=f"{interaction.user.name}"
+                 f"{'#' + interaction.user.discriminator if interaction.user.discriminator != '0' else ''} "
+                 f"| {interaction.user.id}",
             icon_url=interaction.user.avatar.url if interaction.user.avatar is not None else None,
         )
         target_record = await ModmailConfig.get_by(guild_id=interaction.guild_id)
         mod_channel = interaction.client.get_channel(target_record[0].target_channel)
-        user_string = f"{interaction.user.name}#{interaction.user.discriminator} ({interaction.user.id})"
+        user_string = f"{interaction.user.name}" \
+                      f"{'#' + interaction.user.discriminator if interaction.user.discriminator != '0' else ''} " \
+                      f"({interaction.user.id})"
+        if len(user_string) > 100:
+            user_string = user_string[:96] + "..."
         mod_message = await mod_channel.send(user_string)
         mod_thread = await mod_channel.create_thread(name=f"{user_string}: {subject}", message=mod_message)
         await mod_thread.send(embed=new_ticket_embed)
@@ -102,7 +109,7 @@ class Modmail(Cog):
         if len(to_send) > 3071:
             embed.add_field(name="Message (continued)", value=to_send[3072:4000])
         embed.set_footer(
-            text=f"{author.name}#{author.discriminator} | {author.id} | {guild.name}",
+            text=f"{author.name}{'#' + author.discriminator if author.discriminator != '0' else ''} | {author.id} | {guild.name}",
             icon_url=author.avatar.url if author.avatar is not None else None,
         )
         files = []
