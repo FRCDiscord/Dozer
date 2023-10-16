@@ -7,9 +7,8 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 
-from ._utils import *
 from dozer.context import DozerContext
-
+from ._utils import *
 
 
 async def data(ctx: DozerContext, level: str, question: int) -> Union[str, None]:
