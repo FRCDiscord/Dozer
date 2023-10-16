@@ -1,16 +1,15 @@
 """Provides commands that pull information from First Q&A Form."""
 from typing import Union
 
+import aiohttp
+from bs4 import BeautifulSoup
 import discord
 from discord.ext import commands
 from discord import app_commands
 
-import aiohttp
-
-from bs4 import BeautifulSoup
-
 from ._utils import *
 from dozer.context import DozerContext
+
 
 
 async def data(ctx: DozerContext, level: str, question: int) -> Union[str, None]:
