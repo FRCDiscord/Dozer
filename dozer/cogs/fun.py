@@ -60,7 +60,8 @@ class Fun(commands.Cog):
             "**{opponent}** had their roborio bricked by **{attacker}**",
             # this and the following messages are thanks to J-Man from the CHS discord server, who expended their
             # creative powers on these statements.
-            "**{opponent}** extended too far outside their field perimeter in front of **{attacker}**",
+            "**{opponent}** extended too far outside their field perimeter in front of **{attacker}**", #FTC
+            "**{opponent}** extended too far outside their frame perimeter in front of **{attacker}**", #FRC
             "**{opponent}** lost a coffee-drinking competition against **{attacker}**",
             "**{opponent}** was a no-show against **{attacker}**",
             "**{opponent}** fell asleep before a match against **{attacker}**",
@@ -91,7 +92,7 @@ class Fun(commands.Cog):
             opp_idx = (turn + 1) % 2
             damage = random.choice(damages)
             if players[turn].id in ctx.bot.config['developers'] or players[turn] == ctx.bot.user or players[turn].id == 675726066018680861:
-                damage = damage * 1.5
+                damage = damage * 1.5 #reduce amount of damage done by bot, devs(both in config and hardcoded)
             hps[opp_idx] = max(hps[opp_idx] - damage, 0)
             messages.append(
                 await ctx.send(
