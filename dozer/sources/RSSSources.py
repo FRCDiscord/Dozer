@@ -33,8 +33,6 @@ class RSSSource(Source):
     async def first_run(self):
         """Fetch the current posts in the feed and add them to the guids_seen set"""
         response = await self.fetch()
-        if isinstance(self, CDLatest):
-            print("response")
         self.parse(response, True)
 
     async def get_new_posts(self):
