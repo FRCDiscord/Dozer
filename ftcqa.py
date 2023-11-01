@@ -6,6 +6,8 @@ from bs4 import BeautifulSoup
 from discord.ext import commands
 
 from context import DozerContext
+
+from dozer.cogs._utils import bot_has_permissions, command
 from ._utils import *
 from discord import app_commands
 
@@ -18,9 +20,9 @@ class QA(commands.Cog):
         super().__init__()
         self.bot = bot
 
-    @commands.hybrid_command(name="ftcqa", aliases=["ftcqaforum"], pass_context=True)
-    @bot_has_permissions(embed_links = True)
-    @app_commands.describe(question = "The number of the question you want to look up")
+    @command(name="ftcqa", aliases=["ftcqaforum"], pass_context=True)
+    @bot_has_permissions(embed_links=True)
+    @app_commands.describe(question="The number of the question you want to look up")
     async def ftcqa(self, ctx: DozerContext, question: int):
         """
         Shows Answers from the FTC Q&A
@@ -44,36 +46,36 @@ class QA(commands.Cog):
             a = " ".join(a.split())
 
             embed = discord.Embed(
-                title = a[:a.find(" Q: ")],
-                url = "https://ftc-qa.firstinspires.org/qa/" + str(question),
-                color = discord.Color.blue())
+                title=a[:a.find(" Q: ")],
+                url="https://ftc-qa.firstinspires.org/qa/" + str(question),
+                color=discord.Color.blue())
 
-            embed.add_field(name = "Question",
-                            value = a[a.find(" Q: ") + 1:a.find(" A: ")],
-                            inline = False)
-            embed.add_field(name = "Answer",
-                            value = a[a.find(" A: ") + 1:a.find(" ( Asked by ")],
-                            inline = False)
+            embed.add_field(name="Question",
+                            value=a[a.find(" Q: ") + 1:a.find(" A: ")],
+                            inline=False)
+            embed.add_field(name="Answer",
+                            value=a[a.find(" A: ") + 1:a.find(" ( Asked by ")],
+                            inline=False)
 
             embed.set_footer(
-                text = a[a.find(" ( Asked by ") + 1:])
+                text=a[a.find(" ( Asked by ") + 1:])
 
-            await ctx.send(embed = embed, ephemeral = True)
+            await ctx.send(embed=embed, ephemeral=True)
 
         else:
             a = "That question was not answered or does not exist."
 
             # add url
             a += "\nhttps://ftc-qa.firstinspires.org/qa/" + question
-            await ctx.send(a, ephemeral = True)
+            await ctx.send(a, ephemeral=True)
 
     ftcqa.example_usage = """
     `{prefix}ftcqa 19` - show information on FTC Q&A #19
     """
 
-    @commands.hybrid_command(name="frcqa", aliases=["frcqaforum"], pass_context=True)
-    @bot_has_permissions(embed_links = True)
-    @app_commands.describe(question = "The number of the question you want to look up")
+    @command(name="frcqa", aliases=["frcqaforum"], pass_context=True)
+    @bot_has_permissions(embed_links=True)
+    @app_commands.describe(question="The number of the question you want to look up")
     async def frcqa(self, ctx: DozerContext, question: int):
         """
         Shows Answers from the FTC Q&A
@@ -97,32 +99,33 @@ class QA(commands.Cog):
             a = " ".join(a.split())
 
             embed = discord.Embed(
-                title = a[:a.find(" Q: ")],
-                url = "https://frc-qa.firstinspires.org/qa/" + str(question),
-                color = discord.Color.blue())
+                title=a[:a.find(" Q: ")],
+                url="https://frc-qa.firstinspires.org/qa/" + str(question),
+                color=discord.Color.blue())
 
-            embed.add_field(name = "Question",
-                            value = a[a.find(" Q: ") + 1:a.find(" A: ")],
-                            inline = False)
-            embed.add_field(name = "Answer",
-                            value = a[a.find(" A: ") + 1:a.find(" ( Asked by ")],
-                            inline = False)
+            embed.add_field(name="Question",
+                            value=a[a.find(" Q: ") + 1:a.find(" A: ")],
+                            inline=False)
+            embed.add_field(name="Answer",
+                            value=a[a.find(" A: ") + 1:a.find(" ( Asked by ")],
+                            inline=False)
 
             embed.set_footer(
-                text = a[a.find(" ( Asked by ") + 1:])
+                text=a[a.find(" ( Asked by ") + 1:])
 
-            await ctx.send(embed = embed, ephemeral = True)
+            await ctx.send(embed=embed, ephemeral=True)
 
         else:
             a = "That question was not answered or does not exist."
 
             # add url
             a += "\nhttps://frc-qa.firstinspires.org/qa/" + question
-            await ctx.send(a, ephemeral = True)
+            await ctx.send(a, ephemeral=True)
 
     frcqa.example_usage = """
     `{prefix}frcqa 19` - show information on FRC Q&A #19
     """
+
 
 async def setup(bot):
     """Adds the QA cog to the bot."""
