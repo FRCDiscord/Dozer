@@ -25,15 +25,31 @@ async def send_log(member):
 def format_join_leave(template: str, member: discord.Member):
     """Formats join leave message templates
     {guild} = guild name
-    {user} = user's name plus discriminator ex. SnowPlow#5196
-    {user_name} = user's name without discriminator
+    {user} = user's name
     {user_mention} = user's mention
     {user_id} = user's ID
     """
     template = template or "{user_mention}\n{user} ({user_id})"
-    return template.format(guild=member.guild.name, user=str(member), user_name=member.name,
-                           user_mention=member.mention, user_id=member.id)
 
+    subst = [("{guild}", member.guild.name),
+             ("{user}", member),  
+             ("{user_mention}", member.mention),
+             ("{user_id}", member.id)]
+    
+    def helper(s: str, subst: list):
+        if not subst:
+            # base case: return self
+            return s
+        cur = subst[0]
+        # split the current string on cur[0]. 
+        # for each split segment call the helper on the rest of the substitutions.
+        # then rejoin on the substitutions (this avoids the substituted values from matching substitution keywords)
+
+        # we could make this not recursive but there's an O(1) number of possible recursions anyway
+        # recursion depth is limited to 5 since the subst list is limited
+        # breadth is limited by template size (indirectly limited by discord message size)
+        return str(cur[1]).join([helper(bit, subst[1:]) for bit in s.split(cur[0])])
+    return helper(template, subst)
 
 class CustomJoinLeaveMessages(db.DatabaseTable):
     """Holds custom join leave messages"""
