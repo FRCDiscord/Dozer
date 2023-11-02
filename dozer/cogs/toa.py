@@ -66,7 +66,7 @@ class TOA(commands.Cog):
         self.http_session = bot.add_aiohttp_ses(aiohttp.ClientSession())
         self.parser = TOAParser(bot.config['toa']['key'], self.http_session, app_name=bot.config['toa']['app_name'])
 
-    @commands.hybrid_command(name="toateam", aliases=["toa", "ftcteam", "ftcteaminfo"])
+    @command(name="toateam", aliases=["toa", "ftcteam", "ftcteaminfo"])
     @bot_has_permissions(embed_links=True)
     @app_commands.describe(team_num="The team you want to see toa info about")
     async def team(self, ctx: DozerContext, team_num: int):
