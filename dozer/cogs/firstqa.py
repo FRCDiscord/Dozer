@@ -107,9 +107,19 @@ class QA(commands.Cog):
     async def frcrule(self, ctx: DozerContext, rule: str):
         letter_part = ''.join([char for char in rule if char.isalpha()])
         number_part = ''.join([char for char in rule if char.isdigit()])
+        embed = discord.Embed(
+            title=f"Rule {letter_part.upper()}{number_part}",
+            url=f"https://frc-qa.firstinspires.org/manual/rule/{letter_part.upper()}/{number_part}",
+            color=discord.Color.blue()
+        )
+
 
         if not re.match(r'^[a-zA-Z]\d{3}$', rule):
-            await ctx.send("Invalid rule number")
+
+            embed.add_field(
+                name="Error",
+                value="Invalid rule number"
+            )
             
         else:  
             async with ctx.cog.ses.get('https://firstfrc.blob.core.windows.net/frc2023/Manual/HTML/2023FRCGameManual.htm') as response:
@@ -118,10 +128,18 @@ class QA(commands.Cog):
 
             result = ruleSoup.find("a", attrs={"name": f"{letter_part.upper()}{number_part}"})
             if result is not None:
-                await ctx.send(f"{result.parent.get_text()}\n[Read More](https://frc-qa.firstinspires.org/manual/rule/{letter_part.upper()}/{number_part})")
-            else:
-                await ctx.send("No such rule")
+                embed.add_field(
+                    name="Summary",
+                    value=result.parent.get_text()
+                )
 
+            else:
+                embed.add_field(
+                    name="Error",
+                    value="No such rule"
+                )
+
+        await ctx.send(embed=embed)
     frcrule.example_usage = """
     `{prefix}frcrule g301` - sends the summary and link to rule G301
     """
