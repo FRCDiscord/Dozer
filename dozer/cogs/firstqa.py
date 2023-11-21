@@ -108,7 +108,7 @@ class QA(commands.Cog):
         number_part = ''.join([char for char in rule if char.isdigit()])
         
         if not letter_part or not number_part:
-           await ctx.send("Not a valid rule.")
+           await ctx.send("Not a valid rule.", ephemeral=True)
         else:  
             # Construct the URL
             url = f"https://frc-qa.firstinspires.org/manual/rule/{letter_part.upper()}/{number_part}"
