@@ -105,6 +105,9 @@ class QA(commands.Cog):
     @bot_has_permissions(embed_links = True)
     @app_commands.describe(rule = "The rule number")
     async def frcrule(self, ctx: DozerContext, rule: str):
+        """
+        Shows rules from a rule number
+        """
         letter_part = ''.join([char for char in rule if char.isalpha()])
         number_part = ''.join([char for char in rule if char.isdigit()])
         embed = discord.Embed(
