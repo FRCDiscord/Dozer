@@ -100,6 +100,23 @@ class QA(commands.Cog):
     """
 
 
+    @commands.hybrid_command(name = "frcrule", pass_context = True)
+    @bot_has_permissions(embed_links = True)
+    @app_commands.describe(rule = "The rule number")
+    async def frcrule(self, ctx: DozerContext, rule: str):
+        letter_part = ''.join([char for char in rule if char.isalpha()])
+        number_part = ''.join([char for char in rule if char.isdigit()])
+        
+        if not letter_part or not number_part:
+           await ctx.send("Not a valid rule.")
+        else:  
+            # Construct the URL
+            url = f"https://frc-qa.firstinspires.org/manual/rule/{letter_part.upper()}/{number_part}"
+            await ctx.send(url)
+    frcrule.example_usage = """
+    `{prefix}frcrule G301` - sends a link to rule G301
+    """
+
 async def setup(bot):
     """Adds the QA cog to the bot."""
     await bot.add_cog(QA(bot))
