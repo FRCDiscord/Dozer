@@ -1,5 +1,6 @@
 """Provides commands that pull information from First Q&A Form."""
 from typing import Union
+import re
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -106,15 +107,23 @@ class QA(commands.Cog):
     async def frcrule(self, ctx: DozerContext, rule: str):
         letter_part = ''.join([char for char in rule if char.isalpha()])
         number_part = ''.join([char for char in rule if char.isdigit()])
-        
-        if not letter_part or not number_part:
-           await ctx.send("Not a valid rule.", ephemeral=True)
+
+        if not re.match(r'^[a-zA-Z]\d{3}$', rule):
+            await ctx.send("Invalid rule number")
+            
         else:  
-            # Construct the URL
-            url = f"https://frc-qa.firstinspires.org/manual/rule/{letter_part.upper()}/{number_part}"
-            await ctx.send(url)
+            async with ctx.cog.ses.get('https://firstfrc.blob.core.windows.net/frc2023/Manual/HTML/2023FRCGameManual.htm') as response:
+                html_data = await response.content.read()
+            ruleSoup = BeautifulSoup(html_data, 'html.parser')
+
+            result = ruleSoup.find("a", attrs={"name": f"{letter_part.upper()}{number_part}"})
+            if result is not None:
+                await ctx.send(f"{result.parent.get_text()}\n[Read More](https://frc-qa.firstinspires.org/manual/rule/{letter_part.upper()}/{number_part})")
+            else:
+                await ctx.send("No such rule")
+
     frcrule.example_usage = """
-    `{prefix}frcrule G301` - sends a link to rule G301
+    `{prefix}frcrule g301` - sends the summary and link to rule G301
     """
 
 async def setup(bot):
