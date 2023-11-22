@@ -127,7 +127,7 @@ class QA(commands.Cog):
         else:  
             letter_part = matches.group('letter')
             number_part = matches.group('number')
-            year = datetime.datetime.now().year + 1
+            year = datetime.datetime.now().year 
             async with ctx.cog.ses.get(f'https://firstfrc.blob.core.windows.net/frc{year}/Manual/HTML/{year}FRCGameManual.htm') as response:
                 html_data = await response.content.read()
             
@@ -142,7 +142,7 @@ class QA(commands.Cog):
                 )
                 embed.add_field(
                     name="Summary",
-                    value=result.parent.get_text()
+                    value=' '.join(result.parent.get_text().splitlines())
                 )
 
             else:
