@@ -110,6 +110,7 @@ class QA(commands.Cog):
         Shows rules from a rule number
         """
         matches = re.match(r'^(?P<letter>[a-zA-Z])(?P<number>\d{3})$', rule)
+        ephemeral = False
 
         embed = discord.Embed(
             title=f"Error",
@@ -117,7 +118,7 @@ class QA(commands.Cog):
         )
 
         if matches is None:
-
+            ephemeral = True
             embed.add_field(
                 name="Error",
                 value="Invalid rule number"
@@ -145,12 +146,13 @@ class QA(commands.Cog):
                 )
 
             else:
+                ephemeral = True
                 embed.add_field(
                     name="Error",
                     value="No such rule"
                 )
 
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, ephemeral=ephemeral)
     frcrule.example_usage = """
     `{prefix}frcrule g301` - sends the summary and link to rule G301
     """
