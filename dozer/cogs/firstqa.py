@@ -1,5 +1,7 @@
 """Provides commands that pull information from First Q&A Form."""
 from typing import Union
+import re
+import datetime
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -99,6 +101,61 @@ class QA(commands.Cog):
     `{prefix}frcqa 19` - show information on FRC Q&A #19
     """
 
+
+    @commands.hybrid_command(name = "frcrule", pass_context = True)
+    @bot_has_permissions(embed_links = True)
+    @app_commands.describe(rule = "The rule number")
+    async def frcrule(self, ctx: DozerContext, rule: str):
+        """
+        Shows rules from a rule number
+        """
+        matches = re.match(r'^(?P<letter>[a-zA-Z])(?P<number>\d{3})$', rule)
+        ephemeral = False
+
+        embed = discord.Embed(
+            title="Error",
+            color=discord.Color.blue()
+        )
+
+        if matches is None:
+            ephemeral = True
+            embed.add_field(
+                name="Error",
+                value="Invalid rule number"
+            )
+            
+        else:  
+            letter_part = matches.group('letter')
+            number_part = matches.group('number')
+            year = datetime.datetime.now().year 
+            async with ctx.cog.ses.get(f'https://firstfrc.blob.core.windows.net/frc{year}/Manual/HTML/{year}FRCGameManual.htm') as response:
+                html_data = await response.content.read()
+            
+            ruleSoup = BeautifulSoup(html_data, 'html.parser')
+
+            result = ruleSoup.find("a", attrs={"name": f"{letter_part.upper()}{number_part}"})
+            if result is not None:
+                embed = discord.Embed(
+                    title=f"Rule {letter_part.upper()}{number_part}",
+                    url=f"https://frc-qa.firstinspires.org/manual/rule/{letter_part.upper()}/{number_part}",
+                    color=discord.Color.blue()
+                )
+                embed.add_field(
+                    name="Summary",
+                    value=' '.join(result.parent.get_text().splitlines())
+                )
+
+            else:
+                ephemeral = True
+                embed.add_field(
+                    name="Error",
+                    value="No such rule"
+                )
+
+        await ctx.send(embed=embed, ephemeral=ephemeral)
+    frcrule.example_usage = """
+    `{prefix}frcrule g301` - sends the summary and link to rule G301
+    """
 
 async def setup(bot):
     """Adds the QA cog to the bot."""
