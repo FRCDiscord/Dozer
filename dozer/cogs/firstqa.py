@@ -1,6 +1,7 @@
 """Provides commands that pull information from First Q&A Form."""
 from typing import Union
 import re
+import datetime
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -108,16 +109,14 @@ class QA(commands.Cog):
         """
         Shows rules from a rule number
         """
-        letter_part = ''.join([char for char in rule if char.isalpha()])
-        number_part = ''.join([char for char in rule if char.isdigit()])
+        matches = re.match(r'^(?P<letter>[a-zA-Z])(?P<number>\d{3})$', rule)
+
         embed = discord.Embed(
-            title=f"Rule {letter_part.upper()}{number_part}",
-            url=f"https://frc-qa.firstinspires.org/manual/rule/{letter_part.upper()}/{number_part}",
+            title=f"Error",
             color=discord.Color.blue()
         )
 
-
-        if not re.match(r'^[a-zA-Z]\d{3}$', rule):
+        if matches is None:
 
             embed.add_field(
                 name="Error",
@@ -125,12 +124,21 @@ class QA(commands.Cog):
             )
             
         else:  
-            async with ctx.cog.ses.get('https://firstfrc.blob.core.windows.net/frc2023/Manual/HTML/2023FRCGameManual.htm') as response:
+            letter_part = matches.group('letter')
+            number_part = matches.group('number')
+            current_year = datetime.datetime.now().year + 1
+            async with ctx.cog.ses.get(f'https://firstfrc.blob.core.windows.net/frc{current_year}/Manual/HTML/{current_year}FRCGameManual.htm') as response:
                 html_data = await response.content.read()
+            
             ruleSoup = BeautifulSoup(html_data, 'html.parser')
 
             result = ruleSoup.find("a", attrs={"name": f"{letter_part.upper()}{number_part}"})
             if result is not None:
+                embed = discord.Embed(
+                    title=f"Rule {letter_part.upper()}{number_part}",
+                    url=f"https://frc-qa.firstinspires.org/manual/rule/{letter_part.upper()}/{number_part}",
+                    color=discord.Color.blue()
+                )
                 embed.add_field(
                     name="Summary",
                     value=result.parent.get_text()
