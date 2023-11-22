@@ -113,7 +113,7 @@ class QA(commands.Cog):
         ephemeral = False
 
         embed = discord.Embed(
-            title=f"Error",
+            title="Error",
             color=discord.Color.blue()
         )
 
@@ -127,8 +127,8 @@ class QA(commands.Cog):
         else:  
             letter_part = matches.group('letter')
             number_part = matches.group('number')
-            current_year = datetime.datetime.now().year + 1
-            async with ctx.cog.ses.get(f'https://firstfrc.blob.core.windows.net/frc{current_year}/Manual/HTML/{current_year}FRCGameManual.htm') as response:
+            year = datetime.datetime.now().year + 1
+            async with ctx.cog.ses.get(f'https://firstfrc.blob.core.windows.net/frc{year}/Manual/HTML/{year}FRCGameManual.htm') as response:
                 html_data = await response.content.read()
             
             ruleSoup = BeautifulSoup(html_data, 'html.parser')
