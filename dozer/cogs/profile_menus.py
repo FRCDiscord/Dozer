@@ -104,3 +104,4 @@ class TeamNumbers(db.DatabaseTable):
                               team_type = result.get("team_type"))
             result_list.append(obj)
         return result_list
+        
