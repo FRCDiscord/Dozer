@@ -5,7 +5,7 @@ from discord import app_commands
 from discord.utils import escape_markdown
 
 
-import db
+from .. import db
 
 embed_color = discord.Color(0xed791e)
 
