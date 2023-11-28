@@ -117,7 +117,8 @@ class Fun(commands.Cog):
     @guild_only()
     @discord.ext.commands.cooldown(1, 5, BucketType.channel)
     @discord.ext.commands.max_concurrency(1, per=BucketType.channel, wait=False)
-    @commands.command()
+    @command(name="fight", aliases= ["brawl", "battlebot"])
+    @app_commands.describe(wager = "How much xp you want to wager on this fight", opponent = "The person (or bot) you want to fight")
     async def fight(self, ctx: DozerContext, opponent: discord.Member, wager: int = 0):
         """Start a fight with another user."""
 
