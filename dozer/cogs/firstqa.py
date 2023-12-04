@@ -121,9 +121,9 @@ class QA(commands.Cog):
     @commands.hybrid_command(name = "frcrule", pass_context = True)
     @bot_has_permissions(embed_links = True)
     @app_commands.describe(rule = "The rule number")
-    async def frcrule(self, ctx: DozerContext, rule: str):
+    async def frcrule(self, ctx: DozerContext, *, rule: str):
         """
-        Shows rules from a rule number
+        Shows rules from a rule number or search query
         """
         matches = re.match(r'^(?P<letter>[a-zA-Z])(?P<number>\d{3})$', rule)
         ephemeral = False
@@ -137,7 +137,6 @@ class QA(commands.Cog):
             await ctx.defer()
             async with ctx.cog.ses.post(f'https://search.grahamsh.com/search',json={'query': rule}) as response:
                 json_data = await response.content.read()
-            print(json_data)
             json_parsed = json.loads(json_data)
             
             if "error" not in json_parsed:
@@ -174,6 +173,8 @@ class QA(commands.Cog):
         await ctx.send(embed=embed, ephemeral=ephemeral)
     frcrule.example_usage = """
     `{prefix}frcrule g301` - sends the summary and link to rule G301
+    `{prefix}frcrule can i cross the line before teleop` - sends the summary and link to the rule matching the query
+
     """
 
 async def setup(bot):
