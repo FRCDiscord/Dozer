@@ -2,10 +2,10 @@
 from typing import Union
 import re
 import datetime
+import json
 
 import aiohttp
 from bs4 import BeautifulSoup
-import json
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -60,6 +60,7 @@ async def data(ctx: DozerContext, level: str, question: int) -> Union[str, None]
         return f"That question was not answered or does not exist.\n{forum_url + str(question)}"
 
 def createRuleEmbed(rulenumber, text): 
+    """Returns an embed for a given rule number and text"""
     year = datetime.datetime.now().year 
     embed = discord.Embed(
         title=f"Rule {rulenumber}",
@@ -135,15 +136,15 @@ class QA(commands.Cog):
 
         if matches is None:
             await ctx.defer()
-            async with ctx.cog.ses.post(f'https://search.grahamsh.com/search',json={'query': rule}) as response:
+            async with ctx.cog.ses.post('https://search.grahamsh.com/search',json={'query': rule}) as response:
                 json_data = await response.content.read()
             json_parsed = json.loads(json_data)
             
             if "error" not in json_parsed:
                 embeds = []
                 page = 1
-                for rule in json_parsed["data"]:
-                    currEmbed = createRuleEmbed(rule["text"], rule["textContent"])
+                for currRule in json_parsed["data"]:
+                    currEmbed = createRuleEmbed(currRule["text"], currRule["textContent"])
                     currEmbed.set_footer(text=f"Page {page} of 5")
                     embeds.append(currEmbed)
                     
