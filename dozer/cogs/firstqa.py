@@ -67,7 +67,7 @@ class QA(commands.Cog):
         super().__init__()
         self.bot = bot
 
-    @commands.hybrid_command(name="ftcqa", aliases=["ftcqaforum"], pass_context=True)
+    @command(name="ftcqa", aliases=["ftcqaforum"], pass_context=True)
     @bot_has_permissions(embed_links=True)
     @app_commands.describe(question="The number of the question you want to look up")
     async def ftcqa(self, ctx: DozerContext, question: int):
@@ -84,7 +84,7 @@ class QA(commands.Cog):
     `{prefix}ftcqa 19` - show information on FTC Q&A #19
     """
 
-    @commands.hybrid_command(name = "frcqa", aliases = ["frcqaforum"], pass_context = True)
+    @command(name = "frcqa", aliases = ["frcqaforum"], pass_context = True)
     @bot_has_permissions(embed_links = True)
     @app_commands.describe(question = "The number of the question you want to look up")
     async def frcqa(self, ctx: DozerContext, question: int):
@@ -102,7 +102,7 @@ class QA(commands.Cog):
     """
 
 
-    @commands.hybrid_command(name = "frcrule", pass_context = True)
+    @command(name = "frcrule", pass_context = True)
     @bot_has_permissions(embed_links = True)
     @app_commands.describe(rule = "The rule number")
     async def frcrule(self, ctx: DozerContext, rule: str):
