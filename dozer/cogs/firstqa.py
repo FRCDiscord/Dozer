@@ -2,6 +2,7 @@
 from typing import Union
 import re
 import datetime
+import json
 
 import aiohttp
 from bs4 import BeautifulSoup
@@ -58,6 +59,22 @@ async def data(ctx: DozerContext, level: str, question: int) -> Union[str, None]
     else:
         return f"That question was not answered or does not exist.\n{forum_url + str(question)}"
 
+def createRuleEmbed(rulenumber, text): 
+    """Returns an embed for a given rule number and text"""
+    year = datetime.datetime.now().year 
+    embed = discord.Embed(
+        title=f"Rule {rulenumber}",
+        url=f"https://rules-search.pages.dev/{year}/rule/{rulenumber}",
+        color=discord.Color.blue()
+    )
+    
+    truncated_text = "```\n" + ' '.join(text[:1016].splitlines()) + "```"
+    embed.add_field(
+        name="Summary",
+        value=truncated_text
+    )
+    return embed
+
 
 class QA(commands.Cog):
     """QA commands"""
@@ -105,9 +122,9 @@ class QA(commands.Cog):
     @command(name = "frcrule", pass_context = True)
     @bot_has_permissions(embed_links = True)
     @app_commands.describe(rule = "The rule number")
-    async def frcrule(self, ctx: DozerContext, rule: str):
+    async def frcrule(self, ctx: DozerContext, *, rule: str):
         """
-        Shows rules from a rule number
+        Shows rules from a rule number or search query
         """
         matches = re.match(r'^(?P<letter>[a-zA-Z])(?P<number>\d{3})$', rule)
         ephemeral = False
@@ -118,32 +135,34 @@ class QA(commands.Cog):
         )
 
         if matches is None:
-            ephemeral = True
-            embed.add_field(
-                name="Error",
-                value="Invalid rule number"
-            )
+            await ctx.defer()
+            async with ctx.cog.ses.post('https://search.grahamsh.com/search',json={'query': rule}) as response:
+                json_data = await response.content.read()
+            json_parsed = json.loads(json_data)
+            
+            if "error" not in json_parsed:
+                embeds = []
+                page = 1
+                for currRule in json_parsed["data"]:
+                    currEmbed = createRuleEmbed(currRule["text"], currRule["textContent"])
+                    currEmbed.set_footer(text=f"Page {page} of 5")
+                    embeds.append(currEmbed)
+                    
+            await paginate(ctx, embeds)
+            return
             
         else:  
             letter_part = matches.group('letter')
             number_part = matches.group('number')
             year = datetime.datetime.now().year 
-            async with ctx.cog.ses.get(f'https://firstfrc.blob.core.windows.net/frc{year}/Manual/HTML/{year}FRCGameManual.htm') as response:
-                html_data = await response.content.read()
+            async with ctx.cog.ses.get(f'https://rules-search.pages.dev/api/rule?query={letter_part}{number_part}') as response:
+                json_data = await response.content.read()
             
-            ruleSoup = BeautifulSoup(html_data, 'html.parser')
-
-            result = ruleSoup.find("a", attrs={"name": f"{letter_part.upper()}{number_part}"})
-            if result is not None:
-                embed = discord.Embed(
-                    title=f"Rule {letter_part.upper()}{number_part}",
-                    url=f"https://frc-qa.firstinspires.org/manual/rule/{letter_part.upper()}/{number_part}",
-                    color=discord.Color.blue()
-                )
-                embed.add_field(
-                    name="Summary",
-                    value=' '.join(result.parent.get_text().splitlines())
-                )
+            json_parsed = json.loads(json_data)
+            
+            if "error" not in json_parsed:
+                text = json_parsed["textContent"]
+                embed = createRuleEmbed(letter_part.upper() + number_part, text)
 
             else:
                 ephemeral = True
@@ -155,6 +174,8 @@ class QA(commands.Cog):
         await ctx.send(embed=embed, ephemeral=ephemeral)
     frcrule.example_usage = """
     `{prefix}frcrule g301` - sends the summary and link to rule G301
+    `{prefix}frcrule can i cross the line before teleop` - sends the summary and link to the rule matching the query
+
     """
 
 async def setup(bot):
