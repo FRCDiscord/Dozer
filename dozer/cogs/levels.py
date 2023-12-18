@@ -344,6 +344,7 @@ class Levels(Cog):
         unsorted = self._level_roles.get(ctx.guild.id)
         embed = discord.Embed(title=f"Level roles for {ctx.guild}", color=blurple)
         if unsorted:
+            await ctx.defer()
             roles = sorted(unsorted, key=lambda entry: entry.level)  # Sort roles based on level
             embeds = []
 
