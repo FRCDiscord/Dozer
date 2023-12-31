@@ -36,7 +36,6 @@ class StartModmailModal(ui.Modal):
     message = ui.TextInput(label='Message', style=discord.TextStyle.paragraph, custom_id="message")
 
     def __init__(self, *args, **kwargs):
-        subject = ui.TextInput(label='Subject', custom_id="subject")
 
         super().__init__(title="New Modmail")
         for key, value in kwargs.items():
