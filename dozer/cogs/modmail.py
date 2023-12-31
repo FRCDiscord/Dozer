@@ -163,7 +163,7 @@ class Modmail(Cog):
         """Start modmail with a user, should be used in channel with modmail button"""
         target_record = await ModmailConfig.get_by(guild_id=ctx.interaction.guild_id)
         if len(target_record) == 0:
-           await ctx.reply("Sorry, this server has not configured modmail correctly yet!", ephemeral=True)
+            await ctx.reply("Sorry, this server has not configured modmail correctly yet!", ephemeral=True)
         else:
             await ctx.interaction.response.send_modal(StartModmailModal(custom_user=member))
 
