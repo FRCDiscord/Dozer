@@ -161,7 +161,7 @@ class Modmail(Cog):
     @has_permissions(manage_roles=True)
     async def start_modmail_with_user(self, ctx: DozerContext, member: discord.Member):
         """Start modmail with a user, should be used in channel with modmail button"""
-        if (ctx.interaction is not None):
+        if ctx.interaction is not None:
             target_record = await ModmailConfig.get_by(guild_id=ctx.interaction.guild_id)
             if len(target_record) == 0:
                 await ctx.reply("Sorry, this server has not configured modmail correctly yet!", ephemeral=True)
