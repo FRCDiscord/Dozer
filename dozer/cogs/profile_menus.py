@@ -19,6 +19,10 @@ class ProfileMenus(commands.Cog):
         bot.tree.add_command(profile)
         bot.tree.add_command(onteam)
 
+    async def cog_unload(self) -> None:
+        self.bot.tree.remove_command(profile)
+        self.bot.tree.remove_command(onteam)
+        
 
 @app_commands.context_menu(name = 'View Profile')
 async def profile(interaction: discord.Interaction, member: discord.Member):
