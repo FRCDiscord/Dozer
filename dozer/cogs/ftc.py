@@ -2,13 +2,14 @@
 
 import json
 from asyncio import sleep
-import datetime
+from datetime import datetime
 from urllib.parse import urljoin, urlencode
 import base64
 
 import aiohttp
 import async_timeout
 import discord
+from discord import app_commands
 from discord.ext import commands
 from discord.utils import escape_markdown
 
@@ -30,11 +31,11 @@ class FTCEventsClient:
 
     def __init__(self, username: str, token: str, aiohttp_session: aiohttp.ClientSession, base_url: str = "https://ftc-api.firstinspires.org/v2.0",
                  ratelimit: bool = True):
-        self.last_req: datetime.datetime = datetime.datetime.now()
+        self.last_req: datetime = datetime.now()
         self.ratelimit: bool = ratelimit
         self.base: str = base_url
         self.http: aiohttp.ClientSession = aiohttp_session
-        self.headers: dict = { 'Authorization': 'Basic ' + base64.b64encode(f"{username}:{token}".encode()).decode() }
+        self.headers: dict = {'Authorization': 'Basic ' + base64.b64encode(f"{username}:{token}".encode()).decode()}
 
     async def req(self, endpoint, season=None):
         """Make an async request at the specified endpoint, waiting to let the ratelimit cool off."""
@@ -44,7 +45,7 @@ class FTCEventsClient:
 
         if self.ratelimit:
             # this will delay a request to avoid the ratelimit
-            now = datetime.datetime.now()
+            now = datetime.now()
             diff = (now - self.last_req).total_seconds()
             self.last_req = now
             if diff < 0.5:  # have a 200 ms fudge factor
@@ -75,10 +76,11 @@ class FTCEventsClient:
     @staticmethod
     def get_season():
         """Fetches the current season, based on typical kickoff date."""
-        today = datetime.datetime.today()
+        today = datetime.today()
         year = today.year
         # ftc kickoff is always the 2nd saturday of september
-        kickoff = [d for d in [datetime.datetime(year=year, month=9, day=i) for i in range(8, 15)] if d.weekday() == 5][0]
+        kickoff = [d for d in [datetime(year=year, month=9, day=i) for i in range(8, 15)] if d.weekday() == 5][
+            0]
         if kickoff > today:
             return today.year - 1
         return today.year
@@ -86,8 +88,8 @@ class FTCEventsClient:
     @staticmethod
     def date_parse(date_str):
         """Takes in date strings from FTC-Events and parses them into a datetime.datetime"""
-        return datetime.datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S")
-    
+        return datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S")
+
     @staticmethod
     def team_fmt(team, team_num=None):
         """TBA-formats a team."""
@@ -102,7 +104,7 @@ class FTCEventsClient:
             # cross out the team
             t = f"~~{t}~~"
         return t
-    
+
     @staticmethod
     def get_url_for_match(szn: int, ecode: str, match: dict):
         """Produces a URL for a match dict + some other info."""
@@ -113,7 +115,7 @@ class FTCEventsClient:
             return base + f"final/{match['series']}/{match['matchNumber']}"
         else:
             return base + f"qualifications/{match['matchNumber']}"
-    
+
     @staticmethod
     def add_schedule_to_embed(embed: discord.Embed, schedule: list, team_num: int, szn: int, ecode: str):
         """Adds a schedule to an embed conditioned on a team number."""
@@ -177,7 +179,41 @@ class FTCEventsClient:
             field_desc = field_desc + f" {wincode} {red_score}-{blu_score}"
             embed.add_field(name=field_title, value=f"[{field_desc}]({FTCEventsClient.get_url_for_match(szn, ecode, m)})", inline=False)
             
+class ScoutParser:
+    """
+    A class to make async requests to FTCScout.
+    """
 
+    def __init__(self, aiohttp_session, base_url: str = "https://api.ftcscout.org/rest/v1/",
+                 ratelimit: bool = True):
+        self.last_req = datetime.now()
+        self.ratelimit = ratelimit
+        self.base = base_url
+        self.http = aiohttp_session
+        self.headers = {
+            'Content-Type': 'application/json'
+        }
+
+    async def req(self, endpoint):
+        """Make an async request at the specified endpoint, waiting to let the ratelimit cool off.
+        For FTCDashboard ratelimit probably unnecessary, but polite"""
+        if self.ratelimit:
+            # this will delay a request to avoid the ratelimit
+            now = datetime.now()
+            diff = (now - self.last_req).total_seconds()
+            self.last_req = now
+            if diff < 2.2:  # have a 200 ms fudge factor
+                await sleep(2.2 - diff)
+        tries = 0
+        while True:
+            try:
+                async with async_timeout.timeout(5) as _:
+                    return await self.http.get(urljoin(self.base, endpoint),
+                                               headers=self.headers)
+            except aiohttp.ClientError:
+                tries += 1
+                if tries > 3:
+                    raise
 
 class FTCInfo(Cog):
     """Commands relating specifically to fetching information about FTC teams."""
@@ -185,9 +221,11 @@ class FTCInfo(Cog):
     def __init__(self, bot: commands.Bot):
         super().__init__(bot)
         self.http_session = bot.add_aiohttp_ses(aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(5)))
-        self.ftcevents = FTCEventsClient(bot.config['ftc-events']['username'], bot.config['ftc-events']['token'], self.http_session)
+        self.ftcevents = FTCEventsClient(bot.config['ftc-events']['username'], bot.config['ftc-events']['token'],
+                                         self.http_session)
+        self.scparser = ScoutParser(self.http_session)
 
-    @group(invoke_without_command=True)
+    @group(invoke_without_command=True, aliases=["ftcteam", "toa", "toateam", "ftcteaminfo"])
     async def ftc(self, ctx: DozerContext, team_num: int):
         """
         Get information on an FTC team from FTC-Events.
@@ -201,12 +239,14 @@ class FTCInfo(Cog):
 
     @ftc.command()
     @bot_has_permissions(embed_links=True)
+    @app_commands.describe(team_num = "The number of the team you're interested in getting info")
     async def team(self, ctx: DozerContext, team_num: int):
         """Get information on an FTC team by number."""
         if team_num < 1:
             await ctx.send("Invalid team number specified!")
         res = await self.ftcevents.req("teams?" + urlencode({'teamNumber': str(team_num)}))
-        async with res:
+        sres = await self.scparser.req(f"teams/{team_num}/quick-stats")
+        async with res, sres:
             if res.status == 400:
                 await ctx.send("This team either did not compete this season, or it does not exist!")
                 return
@@ -230,6 +270,19 @@ class FTCInfo(Cog):
                         value=', '.join((team_data['city'], team_data['stateProv'], team_data['country'])) or "Unknown")
             e.add_field(name='Org/Sponsors', value=team_data.get('nameFull', "").strip() or "_ _")
             e.add_field(name='Website', value=website or 'n/a')
+            e.add_field(name='Team Info Page', value=f'https://ftcscout.org/teams/{team_num}')
+
+            if sres.status != 404:
+                team_stats = await sres.json(content_type=None)
+                e.add_field(name='Total OPR', value=str(round(team_stats['tot']['value'], 1)) + ", rank #" + str(
+                    team_stats['tot']['rank']))
+                e.add_field(name='Auto OPR', value=str(round(team_stats['auto']['value'], 1)) + ", rank #" + str(
+                    team_stats['auto']['rank']))
+                e.add_field(name='Teleop OPR',
+                            value=str(round(team_stats['dc']['value'], 1)) + ", rank #" + str(team_stats['dc']['rank']))
+                e.add_field(name='Endgame OPR',
+                            value=str(round(team_stats['eg']['value'], 1)) + ", rank #" + str(team_stats['eg']['rank']))
+
             await ctx.send(embed=e)
 
     team.example_usage = """
@@ -238,12 +291,15 @@ class FTCInfo(Cog):
 
     @ftc.command()
     @bot_has_permissions(embed_links=True)
+    @app_commands.describe(team_num = "The number of the team you're interested in getting matches for", event_name = "The official name of the event")
     async def matches(self, ctx: DozerContext, team_num: int, event_name: str = "latest"):
         """Get a match schedule, defaulting to the latest listed event on FTC-Events"""
         szn = FTCEventsClient.get_season()
-        events = await self.ftcevents.reqjson("events?" + urlencode({'teamNumber': str(team_num)}), 
-            on_400=lambda r: ctx.send("This team either did not compete this season, or it does not exist!"), 
-            on_other=lambda r: ctx.send(f"FTC-Events returned an HTTP error status of: {r.status}. Something is broken."))
+        events = await self.ftcevents.reqjson("events?" + urlencode({'teamNumber': str(team_num)}),
+                                              on_400=lambda r: ctx.send(
+                                                  "This team either did not compete this season, or it does not exist!"),
+                                              on_other=lambda r: ctx.send(
+                                                  f"FTC-Events returned an HTTP error status of: {r.status}. Something is broken."))
         if events is None:
             return
         
@@ -286,10 +342,12 @@ class FTCInfo(Cog):
         event_url = f"https://ftc-events.firstinspires.org/{szn}/{event['code']}"
         
         # fetch the rankings
-        rank_res = await self.ftcevents.reqjson(f"rankings/{event['code']}?" + urlencode({'teamNumber': str(team_num)}), 
-            on_400=lambda r: ctx.send(f"This team somehow competed at an event ({event_url}) that it is not ranked in -- did it no show?"),
-            on_other=lambda r: ctx.send(f"FTC-Events returned an HTTP error status of: {r.status}. Something is broken.")
-        )
+        rank_res = await self.ftcevents.reqjson(f"rankings/{event['code']}?" + urlencode({'teamNumber': str(team_num)}),
+                                                on_400=lambda r: ctx.send(
+                                                    f"This team somehow competed at an event ({event_url}) that it is not ranked in -- did it no show?"),
+                                                on_other=lambda r: ctx.send(
+                                                    f"FTC-Events returned an HTTP error status of: {r.status}. Something is broken.")
+                                                )
         if rank_res is None:
             return
         rank_res = rank_res['Rankings']
@@ -299,16 +357,17 @@ class FTCInfo(Cog):
             description = "_No rankings are available for this event._"
         else:
             rank = rank_res[0]
-            description = f"Rank **{rank['rank']}**\nWLT **{rank['wins']}-{rank['losses']}-{rank['ties']}**\n"\
-                            f"QP/TBP1 **{rank['sortOrder1']} / {rank['sortOrder2']}** "
-        
-        embed = discord.Embed(color=embed_color, title=f"FTC Team {team_num} @ {event['name']}", url=event_url, description=description)
-        has_matches_at_all = False
-        
-        # fetch the quals match schedule
-        req = await self.ftcevents.reqjson(f"schedule/{event['code']}/qual/hybrid", 
-            on_other=lambda r: ctx.send(f"FTC-Events returned an HTTP error status of: {req.status}. Something is broken."))
+            description = f"Rank **{rank['rank']}**\nWLT **{rank['wins']}-{rank['losses']}-{rank['ties']}**\n" \
+                          f"QP/TBP1 **{rank['sortOrder1']} / {rank['sortOrder2']}** "
 
+        embed = discord.Embed(color=embed_color, title=f"FTC Team {team_num} @ {event['name']}", url=event_url,
+                              description=description)
+        has_matches_at_all = False
+
+        # fetch the quals match schedule
+        req = await self.ftcevents.reqjson(f"schedule/{event['code']}/qual/hybrid",
+                                           on_other=lambda r: ctx.send(
+                                               f"FTC-Events returned an HTTP error status of: {req.status}. Something is broken."))
         if req is None:
             return
         res = req['schedule']
@@ -316,9 +375,9 @@ class FTCInfo(Cog):
         FTCEventsClient.add_schedule_to_embed(embed, res, team_num, szn, event['code'])
 
         # fetch the playoffs match schedule
-        req = await self.ftcevents.reqjson(f"schedule/{event['code']}/playoff/hybrid", 
-            on_other=lambda r: ctx.send(f"FTC-Events returned an HTTP error status of: {req.status}. Something is broken."))
-
+        req = await self.ftcevents.reqjson(f"schedule/{event['code']}/playoff/hybrid",
+                                           on_other=lambda r: ctx.send(
+                                               f"FTC-Events returned an HTTP error status of: {req.status}. Something is broken."))
         if req is None:
             return
         res = req['schedule']
