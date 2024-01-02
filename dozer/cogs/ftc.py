@@ -177,7 +177,8 @@ class FTCEventsClient:
                 blu_score = f"__{blu_score}__"
 
             field_desc = field_desc + f" {wincode} {red_score}-{blu_score}"
-            embed.add_field(name=field_title, value=f"[{field_desc}]({FTCEventsClient.get_url_for_match(szn, ecode, m)})", inline=False)
+            embed.add_field(name=field_title, value=f"[{field_desc}]({FTCEventsClient.get_url_for_match(szn, ecode, m)})",
+                            inline=False)
             
 class ScoutParser:
     """
@@ -291,7 +292,8 @@ class FTCInfo(Cog):
 
     @ftc.command()
     @bot_has_permissions(embed_links=True)
-    @app_commands.describe(team_num = "The number of the team you're interested in getting matches for", event_name = "The official name of the event")
+    @app_commands.describe(team_num = "The number of the team you're interested in getting matches for", 
+                           event_name = "The official name of the event")
     async def matches(self, ctx: DozerContext, team_num: int, event_name: str = "latest"):
         """Get a match schedule, defaulting to the latest listed event on FTC-Events"""
         szn = FTCEventsClient.get_season()
@@ -344,9 +346,11 @@ class FTCInfo(Cog):
         # fetch the rankings
         rank_res = await self.ftcevents.reqjson(f"rankings/{event['code']}?" + urlencode({'teamNumber': str(team_num)}),
                                                 on_400=lambda r: ctx.send(
-                                                    f"This team somehow competed at an event ({event_url}) that it is not ranked in -- did it no show?"),
+                                                    f"This team somehow competed at an event ({event_url}) that it is "
+                                                    f"not ranked in -- did it no show?"),
                                                 on_other=lambda r: ctx.send(
-                                                    f"FTC-Events returned an HTTP error status of: {r.status}. Something is broken.")
+                                                    f"FTC-Events returned an HTTP error status of: {r.status}. "
+                                                    f"Something is broken.")
                                                 )
         if rank_res is None:
             return
