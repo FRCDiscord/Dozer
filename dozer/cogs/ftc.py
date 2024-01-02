@@ -274,15 +274,15 @@ class FTCInfo(Cog):
             e.add_field(name='Team Info Page', value=f'https://ftcscout.org/teams/{team_num}')
 
             if sres.status != 404:
-                team_stats = await sres.json(content_type=None)
-                e.add_field(name='Total OPR', value=str(round(team_stats['tot']['value'], 1)) + ", rank #" + str(
-                    team_stats['tot']['rank']))
-                e.add_field(name='Auto OPR', value=str(round(team_stats['auto']['value'], 1)) + ", rank #" + str(
-                    team_stats['auto']['rank']))
-                e.add_field(name='Teleop OPR',
-                            value=str(round(team_stats['dc']['value'], 1)) + ", rank #" + str(team_stats['dc']['rank']))
-                e.add_field(name='Endgame OPR',
-                            value=str(round(team_stats['eg']['value'], 1)) + ", rank #" + str(team_stats['eg']['rank']))
+                team_stats = await sres.json(content_type = None)
+                e.add_field(name = 'Total OPR',
+                            value = f"{team_stats['tot']['value']:.0f}, rank #{team_stats['tot']['rank']:.0f}")
+                e.add_field(name = 'Auto OPR',
+                            value = f"{team_stats['auto']['value']:.0f}, rank #{team_stats['auto']['rank']:.0f}")
+                e.add_field(name = 'Teleop OPR',
+                            value = f"{team_stats['dc']['value']:.0f}, rank #{team_stats['dc']['rank']:.0f}")
+                e.add_field(name = 'Endgame OPR',
+                            value = f"{team_stats['eg']['value']:.0f}, rank #{team_stats['eg']['rank']:.0f}")
 
             await ctx.send(embed=e)
 
