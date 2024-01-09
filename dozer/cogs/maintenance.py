@@ -49,11 +49,26 @@ class Maintenance(Cog):
         This pulls from whatever repository `origin` is linked to.
         If there are changes to download, and the download is successful, the bot restarts to apply changes.
         """
+        msg = await ctx.send("Updating...")
         res = os.popen("git pull").read()
         if res.startswith('Already up to date.') or "CONFLICT (content):" in res:
             await ctx.send('```\n' + res + '```')
         else:
             await ctx.send('```\n' + res + '```')
+            # Run pip update on requirements.txt
+            res = os.popen("pip install -r requirements.txt").read()
+            new_res = ""
+            for line in res.split('\n'):
+                if line.startswith('Requirement already satisfied'):
+                    new_res += "Requirement already satisfied...\n"
+                else:
+                    new_res += line + '\n'
+            if len(new_res) > 2000:
+                await ctx.send("```\n" + new_res[:2000] + "```")
+                await ctx.send("```\n" + new_res[2000:3999] + "```")
+            else:
+                await ctx.send('```\n' + new_res + '```')
+            await msg.edit(content="Restarting...")
             await ctx.bot.get_command('restart').callback(self, ctx)
 
     update.example_usage = """
