@@ -22,7 +22,7 @@ __all__ = ['FTCEventsClient', 'FTCInfo', 'setup']
 
 def get_none_strip(s, key):
     """Ensures that a get always returns a stripped string.""" 
-    return (str(s.get(key, "")) or "").strip()
+    return str(s.get(key, "") or "").strip()
 
 class FTCEventsClient:
     """
@@ -271,7 +271,7 @@ class FTCInfo(Cog):
                         value=', '.join((team_data['city'], team_data['stateProv'], team_data['country'])) or "Unknown")
             e.add_field(name='Org/Sponsors', value=team_data.get('nameFull', "").strip() or "_ _")
             e.add_field(name='Website', value=website or 'n/a')
-            e.add_field(name='Team Info Page', value=f'https://ftcscout.org/teams/{team_num}')
+            e.add_field(name='FTCScout Page', value=f'https://ftcscout.org/teams/{team_num}')
 
             if sres.status != 404:
                 team_stats = await sres.json(content_type = None)
