@@ -124,9 +124,8 @@ class News(Cog):
         if self.http_source:
             await self.http_source.close()
         self.http_source = aiohttp.ClientSession(
-            headers={'Connection': 'keep-alive', 'User-Agent': 'Dozer RSS Feed Reader'})
+            headers={'Connection': 'keep-alive'})
         self.bot.add_aiohttp_ses(self.http_source)
-        # JVN's blog will 403 you if you use the default user agent, so replacing it with this will yield a parsable result.
         for source in self.enabled_sources:
             try:
                 self.sources[source.short_name] = source(aiohttp_session=self.http_source, bot=self.bot)

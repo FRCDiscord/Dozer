@@ -35,8 +35,16 @@ class StartModmailModal(ui.Modal):
     subject = ui.TextInput(label='Subject', custom_id="subject")
     message = ui.TextInput(label='Message', style=discord.TextStyle.paragraph, custom_id="message")
 
+    def __init__(self, *args, **kwargs):
+
+        super().__init__(title="New Modmail")
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
     async def on_submit(self, interaction: discord.Interaction):  # pylint: disable=arguments-differ
         """Handles when a modal is submitted"""
+        user = self.custom_user if hasattr(self, "custom_user") else interaction.user
+
         subject = interaction.data['components'][0]['components'][0]['value']
         message = interaction.data['components'][1]['components'][0]['value']
 
@@ -49,12 +57,16 @@ class StartModmailModal(ui.Modal):
             timestamp=datetime.datetime.utcnow(),
         )
         new_ticket_embed.set_footer(
-            text=f"{interaction.user.name}#{interaction.user.discriminator} | {interaction.user.id}",
-            icon_url=interaction.user.avatar.url if interaction.user.avatar is not None else None,
+            text=f"{user.name}"
+                 f"{'#' + user.discriminator if user.discriminator != '0' else ''} "
+                 f"| {user.id}",
+            icon_url=user.avatar.url if user.avatar is not None else None,
         )
         target_record = await ModmailConfig.get_by(guild_id=interaction.guild_id)
         mod_channel = interaction.client.get_channel(target_record[0].target_channel)
-        user_string = f"{interaction.user.name}#{interaction.user.discriminator} ({interaction.user.id})"
+        user_string = f"{user.name}" \
+                      f"{'#' + user.discriminator if user.discriminator != '0' else ''} " \
+                      f"({user.id})"
         if len(user_string) > 100:
             user_string = user_string[:96] + "..."
         mod_message = await mod_channel.send(user_string)
@@ -63,7 +75,7 @@ class StartModmailModal(ui.Modal):
 
         await interaction.response.send_message("Creating private modmail thread!", ephemeral=True)
         user_thread = await interaction.channel.create_thread(name=subject)
-        await user_thread.add_user(interaction.user)
+        await user_thread.add_user(user)
         await user_thread.join()
         await user_thread.send(embed=new_ticket_embed)
         thread_record = ModmailThreads(user_thread=user_thread.id, mod_thread=mod_thread.id)
@@ -105,7 +117,7 @@ class Modmail(Cog):
         if len(to_send) > 3071:
             embed.add_field(name="Message (continued)", value=to_send[3072:4000])
         embed.set_footer(
-            text=f"{author.name}#{author.discriminator} | {author.id} | {guild.name}",
+            text=f"{author.name}{'#' + author.discriminator if author.discriminator != '0' else ''} | {author.id} | {guild.name}",
             icon_url=author.avatar.url if author.avatar is not None else None,
         )
         files = []
@@ -144,6 +156,21 @@ class Modmail(Cog):
         config = ModmailConfig(ctx.guild.id, int(target_channel))
         await config.update_or_add()
         await ctx.reply("Configuration saved!")
+
+    @command()
+    @has_permissions(manage_roles=True)
+    async def start_modmail_with_user(self, ctx: DozerContext, member: discord.Member):
+        """Start modmail with a user, should be used in channel with modmail button"""
+        if ctx.interaction is not None:
+            target_record = await ModmailConfig.get_by(guild_id=ctx.interaction.guild_id)
+            if len(target_record) == 0:
+                await ctx.reply("Sorry, this server has not configured modmail correctly yet!", ephemeral=True)
+            else:
+                await ctx.interaction.response.send_modal(StartModmailModal(custom_user=member))
+        else: 
+            await ctx.reply("This command only works via slash command")
+        
+
 
     @command()
     @has_permissions(administrator=True)

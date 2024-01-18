@@ -8,8 +8,8 @@ from urllib.parse import urljoin
 import aiohttp
 import async_timeout
 import discord
+from discord import app_commands
 from discord.ext import commands
-from discord.utils import escape_markdown
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -49,6 +49,8 @@ class TOAParser:
             try:
                 async with async_timeout.timeout(5) as _, self.http.get(urljoin(self.base, endpoint),
                                                                         headers=self.headers) as response:
+                    if response.status == 404:
+                        return "[]"
                     return await response.text()
             except aiohttp.ClientError:
                 tries += 1
@@ -56,28 +58,17 @@ class TOAParser:
                     raise
 
 
-class TOA(Cog):
+class TOA(commands.Cog):
     """TOA commands"""
 
     def __init__(self, bot: commands.Bot):
-        super().__init__(bot)
+        super().__init__()
         self.http_session = bot.add_aiohttp_ses(aiohttp.ClientSession())
         self.parser = TOAParser(bot.config['toa']['key'], self.http_session, app_name=bot.config['toa']['app_name'])
 
-    @group(invoke_without_command=True)
-    async def toa(self, ctx: DozerContext, team_num: int):
-        """
-        Get FTC-related information from The Orange Alliance.
-        If no subcommand is specified, the `team` subcommand is inferred, and the argument is taken as a team number.
-        """
-        await self.team.callback(self, ctx, team_num)  # This works but Pylint throws an error
-
-    toa.example_usage = """
-    `{prefix}toa 5667` - show information on team 5667, Robominers
-    """
-
-    @toa.command()
+    @command(name="toateam", aliases=["toa", "ftcteam", "ftcteaminfo"])
     @bot_has_permissions(embed_links=True)
+    @app_commands.describe(team_num="The team you want to see toa info about")
     async def team(self, ctx: DozerContext, team_num: int):
         """Get information on an FTC team by number."""
         res = json.loads(await self.parser.req("team/" + str(team_num)))
@@ -96,7 +87,6 @@ class TOA(Cog):
                     value=', '.join((team_data['city'], team_data['state_prov'], team_data['country'])))
         e.add_field(name='Website', value=team_data['website'] or 'n/a')
         e.add_field(name='Team Info Page', value=f'https://theorangealliance.org/teams/{team_data["team_key"]}')
-        e.set_footer(text='Triggered by ' + escape_markdown(ctx.author.display_name))
         await ctx.send('', embed=e)
 
     team.example_usage = """

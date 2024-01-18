@@ -26,8 +26,6 @@ from ..Components.TeamNumbers import TeamNumbers
 MAX_PURGE = 1000
 
 
-
-
 class SafeRoleConverter(RoleConverter):
     """Allows for @everyone to be specified without pinging everyone"""
 
@@ -118,6 +116,13 @@ class Moderation(Cog):
                     await orig_channel.send("Failed to DM modlog to user")
                 else:
                     logger.warning(f"Failed to DM modlog to user {target} ({target.id})")
+            except discord.HTTPException as e:
+                if orig_channel is not None:
+                    await orig_channel.send(f"Failed to DM modlog to user: `{e}`")
+                else:
+                    logger.warning(f"Failed to DM modlog to user {target} ({target.id}): {e}")
+            except AttributeError:
+                pass
             finally:
                 modlog_embed.remove_field(2)
         modlog_channel = await GuildModLog.get_by(guild_id=actor.guild.id) if guild_override is None else \
@@ -140,16 +145,31 @@ class Moderation(Cog):
 
     async def perm_override(self, member: discord.Member, **overwrites):
         """Applies the given overrides to the given member in their guild."""
-        for channel in member.guild.channels:
+        logger.debug(f"Applying overrides to {member} ({member.id})")
+        overwrite_count = 0
+        guild = await self.bot.fetch_guild(member.guild.id)
+        channels = await guild.fetch_channels()
+        # For some reason guild.me is returning None only sometimes, so this is a workaround to get perm_overrides working
+        me = await guild.fetch_member(self.bot.user.id)
+        for channel in channels:
             overwrite = channel.overwrites_for(member)
-            if channel.permissions_for(member.guild.me).manage_roles:
+            if channel.permissions_for(me).manage_roles:
                 overwrite.update(**overwrites)
                 try:
                     await channel.set_permissions(target=member, overwrite=None if overwrite.is_empty() else overwrite)
+                    overwrite_count += 1
                 except discord.Forbidden as e:
                     logger.error(
                         f"Failed to catch missing perms in {channel} ({channel.id}) Guild: {channel.guild.id}; Error: {e}")
-
+                except discord.HTTPException as e:
+                    logger.error(
+                        f"Failed to catch discords horrid permissions system in "
+                        f"{channel} ({channel.id}) Guild: {channel.guild.id}; Error: {e}")
+                except Exception as e:
+                    logger.error(f"Failed to catch some unknown or unexpected error: {e}")
+            else:
+                logger.warning(f"Missing permissions to manage roles in {channel} ({channel.id})")
+        logger.debug(f"Applied {overwrite_count}/({len(channels)}) overrides to {member} ({member.id})")
 
     hm_regex = re.compile(r"((?P<years>\d+)y)?((?P<months>\d+)M)?((?P<weeks>\d+)w)?((?P<days>\d+)d)?((?P<hours>\d+)h)?((?P<minutes>\d+)m)?(("
                           r"?P<seconds>\d+)s)?")
@@ -177,16 +197,23 @@ class Moderation(Cog):
             except discord.NotFound:
                 logger.warning(f"Guild {r.guild_id} not found, skipping punishment timer")
                 continue
-            actor = guild.get_member(r.actor_id)
-            target = guild.get_member(r.target_id)
+            try:
+                actor = await guild.fetch_member(r.actor_id)
+            except discord.NotFound:
+                actor = None
+            try:
+                target = await guild.fetch_member(r.target_id)
+            except discord.NotFound:
+                logger.warning(f"Target {r.target_id} not found, skipping punishment timer")
+                continue
             orig_channel = self.bot.get_channel(r.orig_channel_id)
             punishment_type = r.type_of_punishment
             reason = r.reason or ""
             seconds = max(int(r.target_ts - time.time()), 0.01)
-            await PunishmentTimerRecords.delete(id=r.id)
+            # await PunishmentTimerRecords.delete(id=r.id)
             self.bot.loop.create_task(
                 self.punishment_timer(seconds, target, PunishmentTimerRecords.type_map[punishment_type], reason, actor,
-                                      orig_channel))
+                                      orig_channel, timer_id=r.id))
             logger.info(
                 f"Restarted {PunishmentTimerRecords.type_map[punishment_type].__name__} of {target} in {guild}")
 
@@ -203,7 +230,7 @@ class Moderation(Cog):
 
     async def punishment_timer(self, seconds: int, target: discord.Member, punishment, reason: str,
                                actor: discord.Member, orig_channel=None,
-                               global_modlog: bool = True):
+                               global_modlog: bool = True, timer_id: int = None):
         """Asynchronous task that sleeps for a set time to unmute/undeafen a member for a set period of time."""
 
         # Add this task to the list of active timer tasks
@@ -216,36 +243,48 @@ class Moderation(Cog):
         if seconds == 0:
             return
 
-        # register the timer
-        ent = PunishmentTimerRecords(
-            guild_id=target.guild.id,
-            actor_id=actor.id,
-            target_id=target.id,
-            orig_channel_id=orig_channel.id if orig_channel else 0,
-            type_of_punishment=punishment.type,
-            reason=reason,
-            target_ts=int(seconds + time.time()),
-            self_inflicted=not global_modlog
-        )
-        await ent.update_or_add()
+        if timer_id is None:
+            # register the timer
+            ent = PunishmentTimerRecords(
+                guild_id=target.guild.id,
+                actor_id=actor.id,
+                target_id=target.id,
+                orig_channel_id=orig_channel.id if orig_channel else 0,
+                type_of_punishment=punishment.type,
+                reason=reason,
+                target_ts=int(seconds + time.time()),
+                self_inflicted=not global_modlog
+            )
+            await ent.update_or_add()
+        else:
+            ent = (await PunishmentTimerRecords.get_by(id=timer_id))[0]
+            # seconds = max(int(ent.target_ts - time.time()), 0.01)
 
         await asyncio.sleep(seconds)
+        logger.info(f"Finished{' self' if not global_modlog else ''} {punishment.__name__} "
+                    f"timer of \"{target}\" in \"{target.guild}\", preforming un-punishment")
 
         user = await punishment.get_by(member_id=target.id)
-        if len(user) != 0:
-            await self.mod_log(actor=actor,
-                               action="un" + punishment.past_participle,
-                               target=target,
-                               reason=reason,
-                               orig_channel=orig_channel,
-                               embed_color=discord.Color.green(),
-                               global_modlog=global_modlog)
+        try:
+            if len(user) != 0:
+                await self.mod_log(actor=actor,
+                                   action="un" + punishment.past_participle,
+                                   target=target,
+                                   reason=reason,
+                                   orig_channel=orig_channel,
+                                   embed_color=discord.Color.green(),
+                                   global_modlog=global_modlog)
+                self.punishment_timer_tasks.remove(asyncio.current_task())
+                self.bot.loop.create_task(coro=punishment.finished_callback(self, target))
+            else:
+                logger.warning(f"User {target} was not found in the {punishment.__name__} database, skipping un-punishment")
 
-            self.punishment_timer_tasks.remove(asyncio.current_task())
-            self.bot.loop.create_task(coro=punishment.finished_callback(self, target))
-        if ent:
-            await PunishmentTimerRecords.delete(guild_id=target.guild.id, target_id=target.id,
-                                                type_of_punishment=punishment.type)
+            if ent:
+                await PunishmentTimerRecords.delete(guild_id=target.guild.id, target_id=target.id,
+                                                    type_of_punishment=punishment.type)
+        except Exception as e:
+            logger.error(f"Error while un-punishing {target} in {target.guild}, {e}")
+            logger.exception(e)
 
     async def _check_links_warn(self, msg: discord.Message, role: discord.Role):
         """Warns a user that they can't send links."""
@@ -1327,7 +1366,7 @@ class PunishmentTimerRecords(db.DatabaseTable):
             )""")
 
     def __init__(self, guild_id: int, actor_id: int, target_id: int, type_of_punishment: int, target_ts: int,
-                 orig_channel_id: int = None, reason: str = None, input_id: int = None, self_inflicted: bool =False):
+                 orig_channel_id: int = None, reason: str = None, input_id: int = None, self_inflicted: bool = False):
         super().__init__()
         self.id = input_id
         self.guild_id = guild_id

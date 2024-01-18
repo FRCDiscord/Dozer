@@ -3,9 +3,12 @@ import math
 import typing
 from datetime import timezone, datetime, date
 from difflib import SequenceMatcher
+import time
+import re
 
 import discord
 import humanize
+from discord.ext import commands
 from discord.ext.commands import cooldown, BucketType, guild_only
 from discord.utils import escape_markdown
 
@@ -15,10 +18,21 @@ from .levels import MemberXP, GuildXPSettings
 
 blurple = discord.Color.blurple()
 datetime_format = '%Y-%m-%d %H:%M:%S\nUTC'
+startup_time = time.time()
+
+try:
+    with open("/etc/os-release") as f:
+        os_name = re.findall(r'PRETTY_NAME=\"(.+?)\"', f.read())[0]
+except Exception:
+    os_name = "Windows probably"
 
 
 class Info(Cog):
     """Commands for getting information about people and things on Discord."""
+
+    def __init__(self, bot):
+        super().__init__(bot)
+        self.bot = bot
 
     @command(aliases=['user', 'memberinfo', 'userinfo'])
     @guild_only()
@@ -29,7 +43,6 @@ class Info(Cog):
          **This command works without mentions.** Remove the '@' before your mention so you don't ping the person unnecessarily.
          You can pick a member by:
          - Username (`cooldude`)
-         - Username and discriminator (`cooldude#1234`)
          - ID (`326749693969301506`)
          - Nickname - must be exact and is case-sensitive (`"Mr. Cool Dude III | Team 1234"`)
          - Mention (not recommended) (`@Mr Cool Dude III | Team 1234`)
@@ -42,7 +55,8 @@ class Info(Cog):
         levels_settings = await GuildXPSettings.get_by(guild_id=ctx.guild.id)
         levels_enabled = levels_settings[0].enabled if len(levels_settings) else False
 
-        embed = discord.Embed(title=escape_markdown(member.display_name), description=f'{member!s} ({member.id})', color=member.color)
+        embed = discord.Embed(title=escape_markdown(member.display_name), description=f'{member!s} ({member.id})',
+                              color=member.color)
         embed.set_thumbnail(url=member.display_avatar)
         embed.add_field(name='Bot Created' if member.bot else 'Account Created',
                         value=f"<t:{int(member.created_at.timestamp())}:f>", inline=True)
@@ -131,7 +145,8 @@ class Info(Cog):
     @cooldown(1, 10, BucketType.channel)
     async def role(self, ctx: DozerContext, role: discord.Role):
         """Retrieve info about a role in this guild"""
-        embed = discord.Embed(title=f"Info for role: {role.name}", description=f"{role.mention} ({role.id})", color=role.color)
+        embed = discord.Embed(title=f"Info for role: {role.name}", description=f"{role.mention} ({role.id})",
+                              color=role.color)
         embed.add_field(name="Created on", value=f"<t:{int(role.created_at.timestamp())}:f>")
         embed.add_field(name="Position", value=role.position)
         embed.add_field(name="Color", value=str(role.color).upper())
@@ -153,31 +168,51 @@ class Info(Cog):
 
     @guild_only()
     @cooldown(1, 10, BucketType.channel)
-    @command(aliases=['server', 'guildinfo', 'serverinfo'])
+    @command(name="server", aliases=['guild', 'guildinfo', 'serverinfo'])
     async def guild(self, ctx: DozerContext):
         """Retrieve information about this guild."""
         guild = ctx.guild
         static_emoji = sum(not e.animated for e in ctx.guild.emojis)
         animated_emoji = sum(e.animated for e in ctx.guild.emojis)
-        embed = discord.Embed(title=f"Info for guild: {guild.name}", description=f"Members: {guild.member_count}",
-                              color=blurple)
-
-        embed.set_thumbnail(url=guild.icon.url if guild.icon is not None else None)
-
-        embed.add_field(name='Created on', value=f"<t:{int(guild.created_at.timestamp())}:f>")
-        embed.add_field(name='Owner', value=guild.owner)
-        embed.add_field(name='Emoji', value=f"{static_emoji} static, {animated_emoji} animated")
-        embed.add_field(name='Roles', value=str(len(guild.roles) - 1))  # Remove @everyone
-        embed.add_field(name='Channels', value=str(len(guild.channels)))
-        embed.add_field(name='Nitro Boost Info', value=f'Level {ctx.guild.premium_tier}, '
-                                                       f'{ctx.guild.premium_subscription_count} booster(s), '
-                                                       f'{ctx.guild.filesize_limit // 1024 ** 2}MiB files, '
-                                                       f'{ctx.guild.bitrate_limit / 1000:0.1f}kbps voice')
-
-        await ctx.send(embed=embed)
+        e = discord.Embed(color=blurple)
+        e.set_thumbnail(url=guild.icon.url if guild.icon else None)
+        e.title = guild.name
+        e.description = f"{guild.member_count} members, {len(guild.channels)} channels, {len(guild.roles) - 1} roles"
+        e.add_field(name='ID', value=guild.id)
+        e.add_field(name='Created on', value=discord.utils.format_dt(guild.created_at))
+        e.add_field(name='Owner', value=guild.owner.mention)
+        e.add_field(name='Emoji', value=f"{static_emoji} static, {animated_emoji} animated")
+        e.add_field(name='Nitro Boost', value=f'Level {ctx.guild.premium_tier}, '
+                                              f'{ctx.guild.premium_subscription_count} booster(s)\n'
+                                              f'{ctx.guild.filesize_limit // 1024 ** 2}MiB files, '
+                                              f'{ctx.guild.bitrate_limit / 1000:0.1f}kbps voice')
+        await ctx.send(embed=e)
 
     guild.example_usage = """
     `{prefix}guild` - get information about this guild
+    """
+
+    @command()
+    async def stats(self, ctx: DozerContext):
+        """Get current running internal/host stats for the bot"""
+        info = await ctx.bot.application_info()
+
+        frame = "\n".join(
+            map(lambda x: f"{str(x[0]):<24}{str(x[1])}", {
+                "Users:": len(ctx.bot.users),
+                "Channels:": len(list(ctx.bot.get_all_channels())),
+                "Servers:": len(ctx.bot.guilds),
+                "": "",
+                f"{' Host stats ':=^48}": "",
+                "Operating system:": os_name,
+                "Process uptime": str(datetime.timedelta(seconds=round(time.time() - startup_time)))
+            }.items()))
+        embed = discord.Embed(title=f"Stats for {info.name}",
+                              description=f"Bot owner: {info.owner.mention}```{frame}```", color=blurple)
+        await ctx.send(embed=embed)
+
+    stats.example_usage = """
+    `{prefix}stats` - get current bot/host stats
     """
 
 
