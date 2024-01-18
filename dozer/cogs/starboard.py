@@ -39,7 +39,7 @@ def make_starboard_embed(msg: discord.Message, reaction_count: int):
     """Makes a starboard embed."""
     e = discord.Embed(color=msg.author.color, title=f"New Starred Message in #{msg.channel.name}",
                       description=msg.content, url=msg.jump_url)
-    e.set_author(name=escape_markdown(msg.author.display_name), icon_url=msg.author.display_avatar)
+    e.set_author(name=escape_markdown(msg.author.display_name).replace('\\', ''), icon_url=msg.author.display_avatar)
 
     view_link = f" [[view]]({msg.jump_url})"
     e.add_field(name="Link:", value=view_link)
@@ -254,8 +254,8 @@ class Starboard(Cog):
     @bot_has_permissions(add_reactions=True, embed_links=True)
     @starboard.command()
     async def config(self, ctx: DozerContext, channel: discord.TextChannel,
-                     star_emoji: discord.Emoji,
-                     threshold: int, cancel_emoji: discord.Emoji = None):
+                     star_emoji,
+                     threshold: int, cancel_emoji = None):
         """Modify the settings for this server's starboard"""
         if str(star_emoji) == str(cancel_emoji):
             await ctx.send("The Star Emoji and Cancel Emoji cannot be the same!")
@@ -263,14 +263,15 @@ class Starboard(Cog):
         for emoji in [emoji for emoji in [star_emoji, cancel_emoji] if emoji is not None]:
             try:
                 # try adding it to make sure it's a real emoji. This covers both custom emoijs & unicode emojis
-                await ctx.message.add_reaction(emoji)
-                await ctx.message.remove_reaction(emoji, ctx.guild.me)
+                message = await channel.send('Testing Reaction')
+                await message.add_reaction(emoji)
+                await message.remove_reaction(emoji, ctx.guild.me)
                 if isinstance(emoji, discord.Emoji) and emoji.guild_id != ctx.guild.id:
                     await ctx.send(f"The emoji {emoji} is a custom emoji not from this server!")
                     return
-            except discord.HTTPException:
+            except discord.HTTPException as err:
                 await ctx.send(f"{ctx.author.mention}, bad argument: '{emoji}' is not an emoji, or isn't from a server "
-                               f"{ctx.me.name} is in.")
+                               f"{ctx.me.name} is in, error: {err}")
                 return
 
         config = StarboardConfig(guild_id=ctx.guild.id, channel_id=channel.id, star_emoji=str(star_emoji),
