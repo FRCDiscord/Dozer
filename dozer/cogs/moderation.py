@@ -657,6 +657,7 @@ class Moderation(Cog):
     @bot_has_permissions(ban_members=True)
     async def ban(self, ctx: DozerContext, user_mention: discord.User, *, reason: str = "No reason provided"):
         """Bans the user mentioned."""
+        await ctx.defer()
         try:
             orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
             await self.mod_log(actor=ctx.author, action="banned", target=user_mention, reason=reason,
