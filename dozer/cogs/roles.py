@@ -652,10 +652,11 @@ class Roles(Cog):
     @bot_has_permissions(manage_roles=True, embed_links=True)
     @has_permissions(manage_roles=True)
     @guild_only()
-    async def addrole(self, ctx: DozerContext, channel: typing.Optional[discord.TextChannel], message_id: int,
+    async def addrole(self, ctx: DozerContext, channel: typing.Optional[discord.TextChannel], message_id,
                       role: discord.Role,
                       emoji):
         """Adds a reaction role to a message or a role menu"""
+        message_id = int(message_id)
         try:
             emoji_id = int(emoji.split(":")[-1][:-1])  # Extracting ID from the string
             server_emoji_ids = [(emoji.name, str(emoji.id)) for emoji in await ctx.guild.fetch_emojis()]
