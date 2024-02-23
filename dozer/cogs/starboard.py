@@ -3,7 +3,7 @@ import asyncio
 
 import discord
 from discord.ext import commands
-from discord.ext.commands import guild_only, has_permissions
+from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.utils import escape_markdown
 from loguru import logger
 
