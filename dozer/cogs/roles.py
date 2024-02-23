@@ -654,12 +654,19 @@ class Roles(Cog):
     @guild_only()
     async def addrole(self, ctx: DozerContext, channel: typing.Optional[discord.TextChannel], message_id,
                       role: discord.Role,
-                      emoji: discord.Emoji):
+                      emoji):
         """Adds a reaction role to a message or a role menu"""
         message_id = int(message_id)
-        if isinstance(emoji, discord.Emoji) and emoji.guild_id != ctx.guild.id:
-            raise BadArgument(f"The emoji {emoji} is a custom emoji not from this server!")
+        try:
+            emoji_id = int(emoji.split(":")[-1][:-1])  # Extracting ID from the string
+            server_emoji_ids = [(emoji.name, str(emoji.id)) for emoji in await ctx.guild.fetch_emojis()]
 
+            if (emoji.split(":")[1], str(emoji_id)) not in server_emoji_ids:
+                raise BadArgument("That emoji is not from this server!")
+
+        except ValueError:
+            pass
+        
         if role > ctx.author.top_role:
             raise BadArgument('Cannot give roles higher than your top role!')
 
