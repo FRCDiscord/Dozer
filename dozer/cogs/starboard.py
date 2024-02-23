@@ -266,9 +266,15 @@ class Starboard(Cog):
                 message = await channel.send('Testing Reaction')
                 await message.add_reaction(emoji)
                 await message.remove_reaction(emoji, ctx.guild.me)
-                if isinstance(emoji, discord.Emoji) and emoji.guild_id != ctx.guild.id:
-                    await ctx.send(f"The emoji {emoji} is a custom emoji not from this server!")
-                    return
+                try:
+                    emoji_id = int(emoji.split(":")[-1][:-1])  # Extracting ID from the string
+                    server_emoji_ids = [(emoji.name, str(emoji.id)) for emoji in await ctx.guild.fetch_emojis()]
+
+                    if (emoji.split(":")[1], str(emoji_id)) not in server_emoji_ids:
+                        raise BadArgument("That emoji is not from this server!")
+
+                except ValueError:
+                    pass
             except discord.HTTPException as err:
                 await ctx.send(f"{ctx.author.mention}, bad argument: '{emoji}' is not an emoji, or isn't from a server "
                                f"{ctx.me.name} is in, error: {err}")
