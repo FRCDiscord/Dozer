@@ -69,10 +69,6 @@ def createRuleEmbed(rulenumber, text):
     )
     
     truncated_text = "```\n" + ' '.join(text[:1016].splitlines()) + "```"
-    embed.add_field(
-        name="Summary",
-        value=truncated_text
-    )
     return embed
 
 
@@ -163,7 +159,7 @@ class QA(commands.Cog):
             if "error" not in json_parsed:
                 text = json_parsed["textContent"]
                 embed = createRuleEmbed(letter_part.upper() + number_part, text)
-
+                embed.set_image(url=f"https://imagen.frctools.com/rule/{letter_part.upper() + number_part}/image.png")
             else:
                 ephemeral = True
                 embed.add_field(
