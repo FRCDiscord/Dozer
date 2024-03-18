@@ -250,10 +250,11 @@ class FTCInfo(Cog):
         """Get information on an FTC team by number."""
         if team_num < 1:
             await ctx.send("Invalid team number specified!")
+            return
         res = await self.ftcevents.req("teams?" + urlencode({'teamNumber': str(team_num)}))
         async with res:
             if res.status == 400:
-                await ctx.send("This team either did not compete this season, or it does not exist!")
+                await ctx.send(f"Team {team_num} either did not compete this season, or it does not exist!")
                 return
             team_data = await res.json(content_type=None)
             if not team_data:
@@ -282,6 +283,13 @@ class FTCInfo(Cog):
 
             await ctx.send(embed=e)
 
+    @command()
+    @bot_has_permissions(embed_links=True)
+    @app_commands.describe(team_num="The number of the team you're interested in getting info")
+    async def topr(self, ctx: DozerContext, team_num: int):
+        """Get information with OPR on an FTC team by number."""
+        await self.opr.callback(self, ctx, team_num)
+
     @ftc.command()
     @bot_has_permissions(embed_links=True)
     @app_commands.describe(team_num="The number of the team you're interested in getting info")
@@ -289,11 +297,12 @@ class FTCInfo(Cog):
         """Get information with OPR on an FTC team by number."""
         if team_num < 1:
             await ctx.send("Invalid team number specified!")
+            return
         res = await self.ftcevents.req("teams?" + urlencode({'teamNumber': str(team_num)}))
         sres = await self.scparser.req(f"teams/{team_num}/quick-stats")
         async with res, sres:
             if res.status == 400:
-                await ctx.send("This team either did not compete this season, or it does not exist!")
+                await ctx.send(f"Team {team_num} either did not compete this season, or it does not exist!")
                 return
             team_data = await res.json(content_type=None)
             if not team_data:
@@ -334,10 +343,6 @@ class FTCInfo(Cog):
                      "OPR data from FTCScout.")
 
             await ctx.send(embed=e)
-
-
-
-
 
     @ftc.command()
     @bot_has_permissions(embed_links=True)
