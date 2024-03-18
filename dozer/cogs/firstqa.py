@@ -43,16 +43,34 @@ async def data(ctx: DozerContext, level: str, question: int) -> Union[str, None]
             url=forum_url + str(question),
             color=discord.Color.blue()
         )
-        embed.add_field(
-            name="Question",
-            value=a[a.find(" Q: ") + 1:a.find(" A: ")],
-            inline=False
-        )
-        embed.add_field(
-            name="Answer",
-            value=a[a.find(" A: ") + 1:a.find(" ( Asked by ")],
-            inline=False
-        )
+        ques = a[a.find(" Q: ") + 1:a.find(" A: ")]
+        ans = a[a.find(" A: ") + 1:a.find(" ( Asked by ")]
+        if len(ques) < 1024:
+            embed.add_field(
+                name="Question",
+                value=ques,
+                inline=False
+            )
+        else:
+            for i in range(0, len(ques), 1024):
+                embed.add_field(
+                    name="Question" if i == 0 else "",
+                    value=ques[i+2:i + 1024] if i == 0 else ques[i:i + 1024] or ques[i:],
+                    inline=False
+                )
+        if len(ans) < 1024:
+            embed.add_field(
+                name="Answer",
+                value=ans,
+                inline=False
+            )
+        else:
+            for i in range(0, len(ans), 1024):
+                embed.add_field(
+                    name="Answer" if i == 0 else "",
+                    value=ans[i+2:i + 1024] if i == 0 else ans[i:i + 1024] or ans[i:],
+                    inline=False
+                )
         embed.set_footer(text=a[a.find(" ( Asked by ") + 1:])
         return embed
 
