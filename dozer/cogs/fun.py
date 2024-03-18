@@ -1,34 +1,41 @@
 """Adds fun commands to the bot"""
-import asyncio
 import random
+import asyncio
 from asyncio import sleep
 
 import discord
+from discord import app_commands
 from discord.ext.commands import cooldown, BucketType, guild_only, BadArgument, MissingPermissions
+from discord.ext import commands
 from discord.utils import escape_markdown
 
 from dozer.context import DozerContext
 from ._utils import *
-from .general import blurple
+
+blurple = discord.Color.blurple()
 
 
-class Fun(Cog):
+class Fun(commands.Cog):
     """Fun commands"""
+
+    def __init__(self, bot: commands.Bot) -> None:
+        self.bot = bot
 
     async def battle(self, ctx: DozerContext, opponent: discord.Member, delete_result: bool = True):
         """Start a fight with another user."""
         attacks = [
+            # These were edited by FTC members to contain more FTC-related options
             "**{opponent}** was hit on the head by **{attacker}** ",
             "**{opponent}** was kicked by **{attacker}** ",
             "**{opponent}** was slammed into a wall by **{attacker}** ",
             "**{opponent}** was dropkicked by **{attacker}** ",
             "**{opponent}** was DDoSed by **{attacker}** ",
-            "**{opponent}** was chokeslammed by **{attacker}** ",
             "**{opponent}** was run over with a robot by **{attacker}** ",
             "**{opponent}** had their IQ dropped 15 points by **{attacker}**",
             "**{opponent}** had a heavy object dropped on them by **{attacker}**",
             "**{opponent}** was beat up by **{attacker}** ",
             "**{opponent}** was told to read the manual by **{attacker}** ",
+            "**{opponent}** was told to use Android Studio by **{attacker}**",
             "**{opponent}** was told to use windows by **{attacker}**",
             "**{opponent}** was forced to update windows by **{attacker}**",
             "**{opponent}** was E-stopped by **{attacker}** ",
@@ -36,7 +43,6 @@ class Fun(Cog):
             "**{opponent}** had their api token leaked by **{attacker}**",
             "**{opponent}** had a satellite dropped on them by **{attacker}**",
             "**{opponent}** lost connection to the field courtesy of **{attacker}**",
-            "**{opponent}** was knocked off the hab by **{attacker}**",
             "**{opponent}** had the scale dropped on them by **{attacker}**",
             "**{opponent}** had `git rm --force` executed on them by **{attacker}**",
             # this and the following messages up to the next comment are custom by @transorsmth#7483
@@ -50,10 +56,12 @@ class Fun(Cog):
             "**{opponent}** was knocked off the traversal bar by **{attacker}**",
             "**{opponent}** had their battery fall out out thanks to **{attacker}**",
             "**{opponent}** had their season ended by **{attacker}**",
+            "**{opponent}** had their control hub bricked by **{attacker}**",
             "**{opponent}** had their roborio bricked by **{attacker}**",
             # this and the following messages are thanks to J-Man from the CHS discord server, who expended their
             # creative powers on these statements.
-            "**{opponent}** extended too far outside their frame perimeter in front of **{attacker}**",
+            "**{opponent}** extended too far outside their field perimeter in front of **{attacker}**", #FTC
+            "**{opponent}** extended too far outside their frame perimeter in front of **{attacker}**", #FRC
             "**{opponent}** lost a coffee-drinking competition against **{attacker}**",
             "**{opponent}** was a no-show against **{attacker}**",
             "**{opponent}** fell asleep before a match against **{attacker}**",
@@ -63,8 +71,8 @@ class Fun(Cog):
             "**{opponent}** got a red card from **{attacker}**",
             "**{opponent}** got a yellow card from **{attacker}**",
             "**{opponent}** failed their robot's inspection by **{attacker}**",
-            "**{opponent}** had their firewall re-enabled by **{attacker}**",
             "**{opponent}** had their drill battery stolen by **{attacker}**",
+            "**{opponent}** had their firewall re-enabled by **{attacker}**",
             "**{opponent}** had their website hacked by **{attacker}**",
             "**{opponent}** got their head zipped in a power cube by **{attacker}**",
             "**{opponent}** lost their sponsorship to **{attacker}**",
@@ -74,30 +82,28 @@ class Fun(Cog):
             "**{opponent}** was found without adequate eye protection by **{attacker}**",
         ]
 
-        damages = [100, 150, 200, 300, 50, 250, 420]
+        damages = [50, 69, 100, 150, 200, 250, 300, 420]
         players = [ctx.author, opponent]
-        hps = [1400, 1400]
+        hps = [1500, 1500]
         turn = random.randint(0, 1)
 
         messages = []
         while hps[0] > 0 and hps[1] > 0:
             opp_idx = (turn + 1) % 2
             damage = random.choice(damages)
-            if players[turn].id in ctx.bot.config['developers'] or players[turn] == ctx.bot.user:
-                damage = damage * 2
+            if players[turn].id in ctx.bot.config['developers'] or players[turn] == ctx.bot.user or players[turn].id == 675726066018680861:
+                damage = damage * 1.5 #reduce amount of damage done by bot, devs(both in config and hardcoded)
             hps[opp_idx] = max(hps[opp_idx] - damage, 0)
             messages.append(
                 await ctx.send(
-                    f"{random.choice(attacks).format(opponent=players[opp_idx].name, attacker=players[turn].name)} *[-{damage} hp]"
+                    f"{random.choice(attacks).format(opponent = players[opp_idx].name, attacker = players[turn].name)} *[-{damage} hp]"
                     f" [{hps[opp_idx]} HP remaining]*"))
             await sleep(1.5)
             turn = opp_idx
-        win_embed = discord.Embed(description=f"{players[turn].mention} lost! GG {players[(turn + 1) % 2].mention}!",
-                                  color=blurple)
-        win_msg = await ctx.send(embed=win_embed)
+        win_embed = discord.Embed(description = f"{players[(turn + 1) % 2].mention} won! GG {players[turn].mention}!",
+                                  color = blurple)
+        await ctx.send(embed = win_embed)
         await sleep(5)
-        if delete_result:
-            await win_msg.delete()
         # bulk delete if we have the manage messages permission
         if ctx.channel.permissions_for(ctx.guild.get_member(ctx.bot.user.id)).manage_messages:
             await ctx.channel.delete_messages(messages)
@@ -111,7 +117,8 @@ class Fun(Cog):
     @guild_only()
     @discord.ext.commands.cooldown(1, 5, BucketType.channel)
     @discord.ext.commands.max_concurrency(1, per=BucketType.channel, wait=False)
-    @command()
+    @command(name="fight", aliases= ["brawl", "battlebot"])
+    @app_commands.describe(wager = "How much xp you want to wager on this fight", opponent = "The person (or bot) you want to fight")
     async def fight(self, ctx: DozerContext, opponent: discord.Member, wager: int = 0):
         """Start a fight with another user."""
 
@@ -216,7 +223,7 @@ class Fun(Cog):
          {prefix}fight @Snowplow#5196 670 - Initiates a fight with @Snowplow#5196 with a wager of 670xp`
         """
 
-
+    
 async def setup(bot):
     """Adds the fun cog to Dozer"""
     await bot.add_cog(Fun(bot))
