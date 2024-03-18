@@ -283,14 +283,8 @@ class FTCInfo(Cog):
 
             await ctx.send(embed=e)
 
-    @command()
-    @bot_has_permissions(embed_links=True)
-    @app_commands.describe(team_num="The number of the team you're interested in getting info")
-    async def topr(self, ctx: DozerContext, team_num: int):
-        """Get information with OPR on an FTC team by number."""
-        await self.opr.callback(self, ctx, team_num)
 
-    @ftc.command()
+    @ftc.command(aliases=["topr", "ftcopr"])
     @bot_has_permissions(embed_links=True)
     @app_commands.describe(team_num="The number of the team you're interested in getting info")
     async def opr(self, ctx: DozerContext, team_num: int):
@@ -343,6 +337,10 @@ class FTCInfo(Cog):
                      "OPR data from FTCScout.")
 
             await ctx.send(embed=e)
+
+    team.example_usage = """
+    `{prefix}ftc team 7244` - show information on team 7244, Out of the Box Robotics
+    """
 
     @ftc.command()
     @bot_has_permissions(embed_links=True)
