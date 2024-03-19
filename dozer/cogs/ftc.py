@@ -284,6 +284,14 @@ class FTCInfo(Cog):
             await ctx.send(embed=e)
 
 
+    @command()
+    @bot_has_permissions(embed_links=True)
+    @app_commands.describe(team_num="The number of the team you're interested in getting info")
+    async def topr(self, ctx: DozerContext, team_num: int):
+        """Get information with OPR on an FTC team by number."""
+        await self.opr.callback(self, ctx, team_num)
+
+
     @ftc.command(aliases=["topr", "ftcopr"])
     @bot_has_permissions(embed_links=True)
     @app_commands.describe(team_num="The number of the team you're interested in getting info")
