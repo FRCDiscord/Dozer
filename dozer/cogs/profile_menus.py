@@ -39,7 +39,6 @@ class View_Profile(discord.ui.View):
 @app_commands.context_menu(name = 'View Profile')
 async def profile(interaction: discord.Interaction, member: discord.Member):
     """Creates the ephemeral response that will be sent to the user when they interact with the 'View Profile' button"""
-"""Creates the ephemeral response that will be sent to the user when they interact with the 'View Profile' button"""
     if member is None:
         member = interaction.user
     teams = await TeamNumbers.get_by(user_id = member.id)
