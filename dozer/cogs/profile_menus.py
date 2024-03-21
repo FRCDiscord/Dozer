@@ -25,20 +25,24 @@ class ProfileMenus(commands.Cog):
 
 
 class View_Profile(discord.ui.View):
+    """Creates the view for the 'View Profile' button"""
     def __init__(self):
         super().__init__()
         self.value = None
 
     @discord.ui.button(style = discord.ButtonStyle.blurple, label = "View Teams", custom_id = "onteam")
     async def onteam_button(self, button: discord.ui.Button, interaction: discord.Interaction):
+        """Creates the button that will be used to view the teams a user is on"""
         self.value = True
         self.stop()
 
 @app_commands.context_menu(name = 'View Profile')
 async def profile(interaction: discord.Interaction, member: discord.Member):
     """Creates the ephemeral response that will be sent to the user when they interact with the 'View Profile' button"""
+"""Creates the ephemeral response that will be sent to the user when they interact with the 'View Profile' button"""
     if member is None:
         member = interaction.user
+    teams = await TeamNumbers.get_by(user_id = member.id)
 
     icon_url = member.avatar.replace(static_format = 'png', size = 32) or None
 
