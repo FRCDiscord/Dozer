@@ -53,5 +53,5 @@ attacks = [
     "**{opponent}** was given a tech foul by **{attacker}**",
     "**{opponent}** had their code corrupted by **{attacker}**",
     "**{opponent}** was found without adequate eye protection by **{attacker}**",
-    "**{opponent}** was knocked off the chain by **{attacker}**"
+    "**{opponent}** was knocked off the chain by **{attacker}**",
 ]
