@@ -478,7 +478,7 @@ class Moderation(Cog):
             custom_log_config = await CustomJoinLeaveMessages.get_by(guild_id=message.guild.id)
 
             await message.author.add_roles(message.guild.get_role(role_id))
-            if custom_log_config[0].send_on_verify:
+            if len(custom_log_config) > 0 and custom_log_config[0].send_on_verify:
                 await send_log(member=message.author)
 
     @Cog.listener('on_message_edit')
