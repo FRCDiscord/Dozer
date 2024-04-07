@@ -3,7 +3,7 @@ Levels
 ======
 meesyncs
 ++++++++
-Function to scrap ranking data from the mee6 api and save it to the
+Function to scrape ranking data from the mee6 api and save it to the
 database
 ::
    `{prefix}meesyncs`: Sync ranking data from the mee6 API to dozer's database
