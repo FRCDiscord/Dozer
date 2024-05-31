@@ -3,6 +3,7 @@
 import discord
 from discord.ext import commands
 from discord.ext.commands import BadArgument, guild_only, has_permissions
+from fuzzywuzzy import process, fuzz
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -133,25 +134,38 @@ class Shortcuts(Cog):
         """prefix scanner"""
         if not msg.guild or msg.author.bot:
             return
-        setting = await self.settings_cache.query_one(guild_id=msg.guild.id)
-        if setting is None:
+
+        setting = await ShortcutSetting.get_unique_by(guild_id = msg.guild.id)
+        if not setting:
             return
 
-        c = msg.content
-        if len(c) < len(setting.prefix):
-            return
-
-        if not c.startswith(setting.prefix):
-            return
-
-        shortcuts = await ShortcutEntry.get_by(guild_id=msg.guild.id)
-        if not shortcuts:
-            return
-
-        for shortcut in shortcuts:
-            if c.lower()[len(setting.prefix):] == shortcut.name.lower():
-                await msg.channel.send(shortcut.value)
+        # Extract the command part from the message if it starts with the prefix
+        if msg.content.startswith(setting.prefix):
+            cmd = msg.content.removeprefix(setting.prefix).casefold()
+        else:
+            # Otherwise, find the command part within the message content
+            cmd = msg.content.casefold()
+            if setting.prefix not in cmd:
                 return
+
+        # Retrieve all shortcut names for fuzzy matching
+        all_shortcuts = await ShortcutEntry.get_by(guild_id = msg.guild.id)
+        all_shortcuts = [s.name for s in all_shortcuts]
+        best_match = process.extractOne(cmd, all_shortcuts, scorer = fuzz.partial_ratio)
+        if best_match and best_match[1] > 90:  # Adjust the threshold as needed
+            shortcut_name = best_match[0]
+            shortcut = await ShortcutEntry.get_unique_by(guild_id = msg.guild.id, name = shortcut_name)
+            if msg.reference:
+                # Fetch the original message being replied to
+                original_message = await msg.channel.fetch_message(msg.reference.message_id)
+                if original_message:
+                    # Ping the original author in the new message
+                    await original_message.reply(f"{shortcut.value}")
+            else:
+                # Send the shortcut value without pinging if original message is not found
+                await msg.channel.send(shortcut.value)
+        else:
+            pass
 
 async def setup(bot):
     """Adds the shortcuts cog to the main bot project."""
