@@ -154,8 +154,8 @@ class RSSSource(Source):
 
 class FRCBlogPosts(RSSSource):
     """Official blog posts from the FIRST Robotics Competition"""
-    url: str = "https://www.firstinspires.org/robotics/frc/blog-rss"
-    base_url: str = "https://www.firstinspires.org/robotics/frc/blog/"
+    url: str = "https://community.firstinspires.org/topic/frc/rss.xml"
+    base_url: str = "https://community.firstinspires.org/topic/frc"
     full_name = "FRC Blog Posts"
     short_name = "frc"
     description = "Official blog posts from the FIRST Robotics Competition"
@@ -204,8 +204,8 @@ class FTCQA(RSSSource):
 
 class FTCBlogPosts(RSSSource):
     """The official FTC Blogspot blog"""
-    url = "http://firsttechchallenge.blogspot.com//feeds/posts/default"
-    base_url = "http://firsttechchallenge.blogspot.com/"
+    url = "https://community.firstinspires.org/topic/ftc/rss.xml"
+    base_url = "https://community.firstinspires.org/topic/ftc"
     full_name = "FTC Blog Posts"
     short_name = "ftc"
     description = "Official blog posts from the FIRST Tech Challenge"
