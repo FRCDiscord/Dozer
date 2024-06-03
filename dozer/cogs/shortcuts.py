@@ -130,7 +130,7 @@ class Shortcuts(Cog):
     """
 
     @Cog.listener()
-    async def on_message(self, msg):
+    async def on_message(self, msg: discord.Message):
         """prefix scanner"""
         if not msg.guild or msg.author.bot:
             return
@@ -139,32 +139,41 @@ class Shortcuts(Cog):
         if not setting:
             return
 
-        # Extract the command part from the message if it starts with the prefix
-        if msg.content.startswith(setting.prefix):
-            cmd = msg.content.removeprefix(setting.prefix).casefold()
-        else:
-            # Otherwise, find the command part within the message content
-            cmd = msg.content.casefold()
-            if setting.prefix not in cmd:
-                return
+        # Search for the prefix within the message content
+        prefix = setting.prefix
+        prefix_index = msg.content.find(prefix)
 
-        # Retrieve all shortcut names for fuzzy matching
-        all_shortcuts = await ShortcutEntry.get_by(guild_id = msg.guild.id)
-        all_shortcuts = [s.name for s in all_shortcuts]
-        best_match = process.extractOne(cmd, all_shortcuts, scorer = fuzz.partial_ratio)
-        if best_match and best_match[1] > 90:  # Adjust the threshold as needed
-            shortcut_name = best_match[0]
-            shortcut = await ShortcutEntry.get_unique_by(guild_id = msg.guild.id, name = shortcut_name)
-            if msg.reference:
-                # Fetch the original message being replied to
-                original_message = await msg.channel.fetch_message(msg.reference.message_id)
-                if original_message:
-                    # Ping the original author in the new message
-                    await original_message.reply(f"{shortcut.value}")
-            else:
-                # Send the shortcut value without pinging if original message is not found
-                await msg.channel.send(shortcut.value)
+        if prefix_index != -1:
+            # before running any chatgpt stuff, check if there's a space between prefix and shortcut
+            if prefix_index + len(prefix) < len(msg.content) and msg.content[prefix_index + len(prefix)] == ' ':
+                return  # there's a space, so it was probably meant to be used in text rather than call a shortcut
+            # Extract the command part from the message directly after the prefix
+            start_index = prefix_index + len(prefix)
+            remaining_content = msg.content[start_index:].strip()
+
+            # Check if the remaining content starts with a valid command name
+            all_shortcuts = await ShortcutEntry.get_by(guild_id = msg.guild.id)
+            all_shortcuts = [s.name for s in all_shortcuts]
+
+            best_match = process.extractOne(remaining_content, all_shortcuts, scorer = fuzz.partial_ratio)
+
+            if best_match and best_match[1] > 90:  # Adjust the threshold as needed
+                shortcut_name = best_match[0]
+
+                # Ensure the command follows immediately after the prefix without any intervening characters
+                if remaining_content.startswith(shortcut_name.casefold()):
+                    shortcut = await ShortcutEntry.get_unique_by(guild_id = msg.guild.id, name = shortcut_name)
+                    if msg.reference:
+                        # Fetch the original message being replied to
+                        original_message = await msg.channel.fetch_message(msg.reference.message_id)
+                        if original_message:
+                            # Ping the original author in the new message
+                            await original_message.reply(f"{shortcut.value}")
+                    else:
+                        # Send the shortcut value without pinging if original message is not found
+                        await msg.channel.send(shortcut.value)
         else:
+            # If the prefix is not found in the message, do nothing
             pass
 
 async def setup(bot):
