@@ -984,6 +984,20 @@ class Moderation(Cog):
     `{prefix}linkscrubconfig @/everyone` - set the default role as the link role (ping-safe)
     """
 
+    @command()
+    @has_permissions(manage_messages=True)
+    @bot_has_permissions(send_messages=True)
+    async def say_the_line(self, ctx: DozerContext, user: discord.User):
+        """
+        Says the line.
+        "Welcome to the server! Please set your team affiliation in your nickname."
+        """
+        await ctx.send(f"Welcome to the server {user.mention}! Please set your team affiliation in your nickname.")
+
+    say_the_line.example_usage = """
+    `{prefix}say_the_line @tweirtx` - Says the line mentioning @tweirtx
+    """
+
     @group(invoke_without_command=True)
     @has_permissions(manage_messages=True)
     async def crossbans(self, ctx: DozerContext):
