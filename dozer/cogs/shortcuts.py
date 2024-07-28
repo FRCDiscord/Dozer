@@ -3,6 +3,7 @@
 import discord
 from discord.ext import commands
 from discord.ext.commands import BadArgument, guild_only, has_permissions
+from fuzzywuzzy import process, fuzz
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -129,29 +130,51 @@ class Shortcuts(Cog):
     """
 
     @Cog.listener()
-    async def on_message(self, msg):
+    async def on_message(self, msg: discord.Message):
         """prefix scanner"""
         if not msg.guild or msg.author.bot:
             return
-        setting = await self.settings_cache.query_one(guild_id=msg.guild.id)
-        if setting is None:
+
+        setting = await ShortcutSetting.get_unique_by(guild_id = msg.guild.id)
+        if not setting:
             return
 
-        c = msg.content
-        if len(c) < len(setting.prefix):
-            return
+        # Search for the prefix within the message content
+        prefix = setting.prefix
+        prefix_index = msg.content.find(prefix)
 
-        if not c.startswith(setting.prefix):
-            return
 
-        shortcuts = await ShortcutEntry.get_by(guild_id=msg.guild.id)
-        if not shortcuts:
-            return
+        if prefix_index != -1:
+            # before running any chatgpt stuff, check if there's a space between prefix and shortcut
+            if prefix_index + len(prefix) < len(msg.content) and msg.content[prefix_index + len(prefix)] == ' ':
+                return  # there's a space, so it was probably meant to be used in text rather than call a shortcut
+            # Extract the word immediately after the prefix
+            start_index = prefix_index + len(prefix)
+            remaining_content = msg.content[start_index:].strip()
+            first_word = remaining_content.split()[0] if remaining_content else ''
 
-        for shortcut in shortcuts:
-            if c.lower()[len(setting.prefix):] == shortcut.name.lower():
-                await msg.channel.send(shortcut.value)
-                return
+            # Check if the first word is a valid command name
+            all_shortcuts = await ShortcutEntry.get_by(guild_id=msg.guild.id)
+            all_shortcuts = [s.name for s in all_shortcuts]
+
+            best_match = process.extractOne(first_word, all_shortcuts, scorer=fuzz.partial_ratio)
+
+            if best_match and best_match[1] > 80:  # Adjust the threshold as needed
+                shortcut_name = best_match[0]
+
+                shortcut = await ShortcutEntry.get_unique_by(guild_id=msg.guild.id, name=shortcut_name)
+                if msg.reference:
+                    # Fetch the original message being replied to
+                    original_message = await msg.channel.fetch_message(msg.reference.message_id)
+                    if original_message:
+                        # Ping the original author in the new message
+                        await original_message.reply(f"{shortcut.value}")
+                else:
+                    # Send the shortcut value without pinging if original message is not found
+                    await msg.channel.send(shortcut.value)
+        else:
+            # If the prefix is not found in the message, do nothing
+            pass
 
 async def setup(bot):
     """Adds the shortcuts cog to the main bot project."""
