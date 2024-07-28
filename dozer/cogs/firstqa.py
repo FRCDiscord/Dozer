@@ -159,8 +159,10 @@ class QA(commands.Cog):
                 page = 1
                 for currRule in json_parsed["data"]:
                     currEmbed = createRuleEmbed(currRule["text"], currRule["textContent"])
+                    currEmbed.set_image(url=f"https://imagen.frctools.com/rule/{currRule['text']}/image.png")
                     currEmbed.set_footer(text=f"Page {page} of 5")
                     embeds.append(currEmbed)
+                    page += 1
                     
             await paginate(ctx, embeds)
             return
