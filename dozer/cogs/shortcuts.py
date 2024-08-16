@@ -3,7 +3,7 @@
 import discord
 from discord.ext import commands
 from discord.ext.commands import BadArgument, guild_only, has_permissions
-from fuzzywuzzy import process, fuzz
+# from fuzzywuzzy import process, fuzz
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -143,26 +143,27 @@ class Shortcuts(Cog):
         prefix = setting.prefix
         prefix_index = msg.content.find(prefix)
 
+        # Check for the presence of the prefix anywhere in the message
+        prefix_index = msg.content.find(prefix)
 
         if prefix_index != -1:
-            # before running any chatgpt stuff, check if there's a space between prefix and shortcut
+            # Ensure there's no space directly after the prefix
             if prefix_index + len(prefix) < len(msg.content) and msg.content[prefix_index + len(prefix)] == ' ':
                 return  # there's a space, so it was probably meant to be used in text rather than call a shortcut
-            # Extract the word immediately after the prefix
+
+            # Extract the command part from the message directly after the prefix
             start_index = prefix_index + len(prefix)
             remaining_content = msg.content[start_index:].strip()
-            first_word = remaining_content.split()[0] if remaining_content else ''
 
-            # Check if the first word is a valid command name
-            all_shortcuts = await ShortcutEntry.get_by(guild_id=msg.guild.id)
+            # Extract the command name before any spaces or punctuation
+            command_name = remaining_content.split()[0] if remaining_content.split() else ""
+
+            # Check if the extracted command name matches any valid shortcuts
+            all_shortcuts = await ShortcutEntry.get_by(guild_id = msg.guild.id)
             all_shortcuts = [s.name for s in all_shortcuts]
 
-            best_match = process.extractOne(first_word, all_shortcuts, scorer=fuzz.partial_ratio)
-
-            if best_match and best_match[1] > 80:  # Adjust the threshold as needed
-                shortcut_name = best_match[0]
-
-                shortcut = await ShortcutEntry.get_unique_by(guild_id=msg.guild.id, name=shortcut_name)
+            if command_name in all_shortcuts:
+                shortcut = await ShortcutEntry.get_unique_by(guild_id = msg.guild.id, name = command_name)
                 if msg.reference:
                     # Fetch the original message being replied to
                     original_message = await msg.channel.fetch_message(msg.reference.message_id)
