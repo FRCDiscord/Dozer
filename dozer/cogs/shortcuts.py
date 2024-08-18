@@ -3,7 +3,6 @@
 import discord
 from discord.ext import commands
 from discord.ext.commands import BadArgument, guild_only, has_permissions
-# from fuzzywuzzy import process, fuzz
 
 from dozer.context import DozerContext
 from ._utils import *
@@ -143,9 +142,6 @@ class Shortcuts(Cog):
         prefix = setting.prefix
         prefix_index = msg.content.find(prefix)
 
-        # Check for the presence of the prefix anywhere in the message
-        prefix_index = msg.content.find(prefix)
-
         if prefix_index != -1:
             # Ensure there's no space directly after the prefix
             if prefix_index + len(prefix) < len(msg.content) and msg.content[prefix_index + len(prefix)] == ' ':
@@ -156,7 +152,10 @@ class Shortcuts(Cog):
             remaining_content = msg.content[start_index:].strip()
 
             # Extract the command name before any spaces or punctuation
-            command_name = remaining_content.split()[0] if remaining_content.split() else ""
+            message_segments = remaining_content.split()
+            if not message_segments:
+                return
+            command_name = message_segments[0]
 
             # Check if the extracted command name matches any valid shortcuts
             all_shortcuts = await ShortcutEntry.get_by(guild_id = msg.guild.id)
@@ -171,11 +170,8 @@ class Shortcuts(Cog):
                         # Ping the original author in the new message
                         await original_message.reply(f"{shortcut.value}")
                 else:
-                    # Send the shortcut value without pinging if original message is not found
+                    # Send the shortcut value as a non-reply message if msg is not a reply 
                     await msg.channel.send(shortcut.value)
-        else:
-            # If the prefix is not found in the message, do nothing
-            pass
 
 async def setup(bot):
     """Adds the shortcuts cog to the main bot project."""
@@ -247,3 +243,15 @@ class ShortcutEntry(db.DatabaseTable):
                                 value=result.get("value"))
             result_list.append(obj)
         return result_list
+
+    @classmethod
+    async def get_unique_by(cls, **kwargs) -> Optional[Self]:
+        # In the rare case that get_by gives us tons of records this will be very inefficient,
+        # but that is never expected to happen, so it should be fine.
+        settings = await cls.get_by(**kwargs)
+        if not settings:
+            return None
+
+        assert len(settings) == 1
+
+        return settings[0]
