@@ -251,10 +251,8 @@ class Levels(Cog):
     def _fmt_member(self, guild: discord.Guild, user_id: int):
         member = guild.get_member(user_id)
         if member:
-            if member.status == discord.Status.offline:
-                return f"[{escape_markdown(member.display_name)}](https://discordapp.com/users/{member.id})"
-            else:
-                return str(member.mention)  # This only works if presence intents are enabled
+            return f"{escape_markdown(member.display_name)} {(member.mention)}"
+
         else:  # Still try to see if the bot can find the user to get their name
             user = self.bot.get_user(user_id)
             if user:
@@ -719,7 +717,7 @@ class Levels(Cog):
             embeds = []
             for page_num, page in enumerate(chunk(records, 10)):
                 embed = discord.Embed(title=f"Rankings for {ctx.guild}", color=discord.Color.blue())
-                embed.description = '\n'.join(f"#{rank}: {(self._fmt_member(ctx.guild, user_id))}"
+                embed.description = '\n'.join(f"#{rank}: {(self._fmt_member(ctx.guild, user_id))} |"
                                               f" (lvl {self.level_for_total_xp(total_xp)}, {total_xp} XP)"
                                               for (user_id, total_xp, rank) in page)
                 embed.set_footer(text=f"Page {page_num + 1} of {math.ceil(len(records) / 10)}")
