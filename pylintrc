@@ -466,7 +466,7 @@ max-statements=100
 min-public-methods=0
 
 # Maximum number of positional arguments
-max-positional-args=15
+max-positional-arguments=15
 
 
 [IMPORTS]
