@@ -77,16 +77,15 @@ async def data(ctx: DozerContext, level: str, question: int) -> Union[str, None]
     else:
         return f"That question was not answered or does not exist.\n{forum_url + str(question)}"
 
-def createRuleEmbed(rulenumber, text): 
+def createRuleEmbed(rulenumber): 
     """Returns an embed for a given rule number and text"""
     year = datetime.datetime.now().year 
     embed = discord.Embed(
         title=f"Rule {rulenumber}",
-        url=f"https://rules-search.pages.dev/{year}/rule/{rulenumber}",
+        url=f"https://frctools.com/{year}/rule/{rulenumber}",
         color=discord.Color.blue()
     )
     
-    truncated_text = "```\n" + ' '.join(text[:1016].splitlines()) + "```"
     return embed
 
 
@@ -150,17 +149,17 @@ class QA(commands.Cog):
 
         if matches is None:
             await ctx.defer()
-            async with ctx.cog.ses.post('https://search.grahamsh.com/search',json={'query': rule}) as response:
+            async with ctx.cog.ses.get(f'https://frctools.com/api/search?query={rule}') as response:
                 json_data = await response.content.read()
             json_parsed = json.loads(json_data)
             
             if "error" not in json_parsed:
                 embeds = []
                 page = 1
-                for currRule in json_parsed["data"]:
-                    currEmbed = createRuleEmbed(currRule["text"], currRule["textContent"])
-                    currEmbed.set_image(url=f"https://imagen.frctools.com/rule/{currRule['text']}/image.png")
-                    currEmbed.set_footer(text=f"Page {page} of 5")
+                for currRule in json_parsed["hits"]:
+                    currEmbed = createRuleEmbed(currRule["name"])
+                    currEmbed.set_image(url=f"https://imagen.frctools.com/rule/{currRule['name']}/image.png")
+                    currEmbed.set_footer(text=f"Page {page} of {len(json_parsed)}")
                     embeds.append(currEmbed)
                     page += 1
                     
@@ -171,14 +170,14 @@ class QA(commands.Cog):
             letter_part = matches.group('letter')
             number_part = matches.group('number')
             year = datetime.datetime.now().year 
-            async with ctx.cog.ses.get(f'https://rules-search.pages.dev/api/rule?query={letter_part}{number_part}') as response:
+            async with ctx.cog.ses.get(f'https://frctools.com/api/rule?query={letter_part}{number_part}') as response:
                 json_data = await response.content.read()
             
             json_parsed = json.loads(json_data)
             
             if "error" not in json_parsed:
                 text = json_parsed["textContent"]
-                embed = createRuleEmbed(letter_part.upper() + number_part, text)
+                embed = createRuleEmbed(letter_part.upper() + number_part)
                 embed.set_image(url=f"https://imagen.frctools.com/rule/{letter_part.upper() + number_part}/image.png")
             else:
                 ephemeral = True
