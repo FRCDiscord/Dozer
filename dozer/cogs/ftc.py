@@ -3,10 +3,8 @@ import asyncio
 import json
 from asyncio import sleep
 from datetime import datetime
-from urllib.parse import urljoin, urlencode
+from urllib.parse import urljoin, urlencode, quote as urlquote
 import base64
-
-from urllib.parse import quote as urlquote, urljoin
 
 import aiohttp
 import async_timeout
