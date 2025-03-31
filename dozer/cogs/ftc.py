@@ -6,6 +6,8 @@ from datetime import datetime
 from urllib.parse import urljoin, urlencode
 import base64
 
+from urllib.parse import quote as urlquote, urljoin
+
 import aiohttp
 import async_timeout
 import discord
@@ -516,6 +518,7 @@ class FTCInfo(Cog):
 
 
     def create_team_callback(self, ctx, team_num):
+        """Creates a callback for the search interaction buttons"""
         async def callback(interaction):
             await self.team.callback(self, ctx, team_num)
             await interaction.response.defer()
