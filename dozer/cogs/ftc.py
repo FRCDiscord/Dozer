@@ -314,8 +314,9 @@ class FTCInfo(Cog):
 
             e = discord.Embed(color=embed_color, title=f"FTC Team Search: {team_name}")
             for team in team_data:
-                e.add_field(name = f"Team {team['number']}", value = team['name'], inline = False)
-
+                e.add_field(name = f"Team {team['number']} - **{team['name']}**",
+                            value = f"{team['city']}, {(team['state'] + ', ') if not team['state'].isdigit() else ''}{team['country']}",
+                            inline = False)
             e.set_footer(text = "Team information from FTCScout")
 
         view = discord.ui.View()
