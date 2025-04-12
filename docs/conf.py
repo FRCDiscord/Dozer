@@ -18,7 +18,7 @@
 # -- Project information -----------------------------------------------------
 
 project = 'Dozer'
-copyright = '2024, Dozer Development Team'
+copyright = '2025, Dozer Development Team'
 author = 'Dozer Development Team'
 
 # -- General configuration ---------------------------------------------------
