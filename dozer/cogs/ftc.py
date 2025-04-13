@@ -1,9 +1,9 @@
 """Provides commands that pull information from The Orange Alliance, an FTC info API."""
-
+import asyncio
 import json
 from asyncio import sleep
 from datetime import datetime
-from urllib.parse import urljoin, urlencode
+from urllib.parse import urljoin, urlencode, quote as urlquote
 import base64
 
 import aiohttp
@@ -232,12 +232,12 @@ class FTCInfo(Cog):
         self.scparser = ScoutParser(self.http_session)
 
     @group(invoke_without_command=True, aliases=["ftcteam", "toa", "toateam", "ftcteaminfo"])
-    async def ftc(self, ctx: DozerContext, team_num: int):
+    async def ftc(self, ctx: DozerContext, *, team_name: str):
         """
         Get information on an FTC team from FTC-Events.
         If no subcommand is specified, the `team` subcommand is inferred, and the argument is taken as a team number.
         """
-        await self.team.callback(self, ctx, team_num)  # This works but Pylint throws an error
+        await self.searchteam.callback(self, ctx, team_name)  # This works but Pylint throws an error
 
     ftc.example_usage = """
     `{prefix}ftc 5667` - show information on team 5667, Robominers
@@ -282,6 +282,63 @@ class FTCInfo(Cog):
                 text="Team information from FTC-Events.")
 
             await ctx.send(embed=e)
+
+    
+    @ftc.command(aliases=["teamsearch", "ftcsearch", "search"])
+    @bot_has_permissions(embed_links=True)
+    @app_commands.describe(team_name="The name of the team you're interested in searching for")
+    async def searchteam(self, ctx: DozerContext, team_name: str):
+        """Search for an FTC team by name."""
+        if team_name.isdigit():
+            await self.team.callback(self, ctx, int(team_name))
+            return
+        if len(team_name) < 3:
+            await ctx.send("Please provide a longer team name to search for.")
+            return
+        res = await self.scparser.req(f"teams/search?limit=5&searchText={urlquote(team_name)}")
+        async with res:
+            if res.status == 404:
+                await ctx.send("No teams found with that name!")
+                return
+            team_data = await res.json(content_type=None)
+            if len(team_data) == 1:
+                await self.team.callback(self, ctx, team_data[0]['number'])
+                return
+            manyteams = False
+            if len(team_data) > 5: # funny thing, ?limit doesn't work, confirmed with ftcscout devs, so we do it ourselves
+                team_data = team_data[:5]
+                manyteams = True
+            if not team_data:
+                await ctx.send(f"FTCScout returned nothing on request with HTTP response code {res.status}.")
+                return
+
+            e = discord.Embed(color=embed_color, title=f"FTC Team Search: {team_name}")
+            for team in team_data:
+                e.add_field(name = f"Team {team['number']} - **{team['name']}**",
+                            value = f"{team['city']}, {(team['state'] + ', ') if not team['state'].isdigit() else ''}{team['country']}",
+                            inline = False)
+            e.set_footer(text = "Team information from FTCScout")
+
+        view = discord.ui.View()
+
+        for team in team_data:
+            button = discord.ui.Button(label = f"Team {team['number']}", style = discord.ButtonStyle.primary)
+            button.callback = self.create_team_callback(ctx, team['number'])
+            view.add_item(button)
+
+        if manyteams:
+            e.description = "More than 5 teams were found. If the team you want is not in this list, please refine your search"
+        e.set_footer(text="Team information from FTCScout")
+        message = await ctx.reply(embed = e, view = view, ephemeral = True, mention_author = False)
+
+        await asyncio.sleep(180)  # 3 minutes
+        for item in view.children:
+            item.disabled = True
+        await message.edit(view=view)
+
+    searchteam.example_usage = """
+    `{prefix}ftc search warbots` - show first 5 teams with "warbots" in their name
+    """
 
 
     @command()
@@ -457,6 +514,15 @@ class FTCInfo(Cog):
     `{prefix}ftc matches 16377` - show matches for the latest event by team 16377, Spicy Ketchup
     `{prefix}ftc matches 8393 USPACMP` - show matches for the Pennsylvania championship by team 8393, BrainSTEM
     """
+
+
+    def create_team_callback(self, ctx, team_num):
+        """Creates a callback for the search interaction buttons"""
+        async def callback(interaction):
+            await self.team.callback(self, ctx, team_num)
+            await interaction.response.defer()
+
+        return callback
 
 
 async def setup(bot):
