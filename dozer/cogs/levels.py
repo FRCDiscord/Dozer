@@ -7,9 +7,12 @@ import math
 import random
 import typing
 from datetime import timedelta, timezone, datetime
+from io import BytesIO
 
 import aiohttp
 import discord
+from PIL import Image, ImageFont
+from PIL import ImageDraw
 from discord.ext.commands import guild_only, has_permissions, BadArgument
 from discord.ext.tasks import loop
 from discord.utils import escape_markdown
@@ -638,6 +641,43 @@ class Levels(Cog):
                                                                                 f"Notification channel: {lvl_up_msgs}")
             await ctx.send(embed=embed)
 
+    def make_new_rank_card(self, member: discord.Member, levels_enabled: bool, level: int = 0, total_xp: int = 0, level_floor: int = 0, rank: int = 0,
+                           count: int = 0, level_xp: int = 0):
+        img = Image.new('RGB', (400, 100), (44, 47, 51))
+
+        avatar = Image.open(BytesIO(await member.display_avatar.with_size(64).read()))
+        bigsize = (avatar.size[0] * 3, avatar.size[1] * 3)
+        mask = Image.new('L', bigsize, 0)
+        draw = ImageDraw.Draw(mask)
+        draw.ellipse((0, 0) + bigsize, fill=255)
+        mask = mask.resize(avatar.size, Image.ANTIALIAS)
+        avatar.putalpha(mask)
+
+        img.paste(avatar, (18, 18))
+        draw = ImageDraw.Draw(img)
+        draw.text((100, 18), member.display_name, font=ImageFont.truetype('DejaVuSans.ttf', 20))
+
+        def new_bar(x, y, width, height, progress, bg=(129, 66, 97), fg=(211, 211, 211), fg2=(15, 15, 15)):
+            # Draw the background
+            draw.rectangle((x + (height / 2), y, x + width + (height / 2), y + height), fill=fg2, width=10)
+            draw.ellipse((x + width, y, x + height + width, y + height), fill=fg2)
+            draw.ellipse((x, y, x + height, y + height), fill=fg2)
+            width = int(width * progress)
+
+            # Draw the part of the progress bar that is actually filled
+            draw.rectangle((x + (height / 2), y, x + width + (height / 2), y + height), fill=fg, width=10)
+            draw.ellipse((x + width, y, x + height + width, y + height), fill=fg)
+            draw.ellipse((x, y, x + height, y + height), fill=fg)
+
+        if levels_enabled:
+            draw.text((100, 42), f'Level {level}, {total_xp - level_floor}/{level_xp} XP to level up. Level {level}.  ')
+            draw.text((100, 55), f'#{rank} of {count} in this server')
+
+            new_bar(100, 73, 250, 12, (total_xp - level_floor) / level_xp)
+        else:
+            draw.text((100, 42), "Levels are not enabled in this server")
+        return img
+
     @command(aliases=["rnak", "level"])
     @guild_only()
     @discord.ext.commands.cooldown(rate=1, per=5, type=discord.ext.commands.BucketType.user)
@@ -646,12 +686,11 @@ class Levels(Cog):
         If no member is passed, the caller's ranking is shown.
         """
         member = member or ctx.author
-        embed = discord.Embed(color=member.color)
 
         guild_settings = self.guild_settings.get(ctx.guild.id)
-
         if guild_settings is None or not guild_settings.enabled:
-            embed.description = "Levels are not enabled in this server"
+            img = self.make_new_rank_card(member, levels_enabled=False)
+
         else:
             cache_record = await self.load_member(ctx.guild.id,
                                                   member.id)  # Grab member from cache to make sure we have the most up to date values
@@ -677,11 +716,13 @@ class Levels(Cog):
                 rank = db_record.get("rank")
             else:
                 rank = count
+            img = self.make_new_rank_card(member, True, level, total_xp, level_floor, rank, count, level_xp)
 
-            embed.description = (f"Level {level}, {total_xp - level_floor}/{level_xp} XP to level up ({total_xp} total)\n"
-                                 f"#{rank} of {count} in this server")
-        embed.set_author(name=member.display_name, icon_url=member.display_avatar.replace(format='png', size=64))
-        await ctx.send(embed=embed)
+        arr = BytesIO()
+        img.save(arr, format='PNG')
+        arr.seek(0)
+        file = discord.File(fp=arr, filename=f'{member}.png')
+        await ctx.send(file=file)
 
     rank.example_usage = """
     `{prefix}rank`: show your ranking
