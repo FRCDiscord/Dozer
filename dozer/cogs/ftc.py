@@ -471,7 +471,7 @@ class FTCInfo(Cog):
                                                 )
         if rank_res is None:
             return
-        rank_res = rank_res['Rankings']
+        rank_res = rank_res['rankings']
 
         if not rank_res:
             rank = None
