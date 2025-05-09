@@ -152,7 +152,7 @@ class Moderation(Cog):
         # For some reason guild.me is returning None only sometimes, so this is a workaround to get perm_overrides working
         me = await guild.fetch_member(self.bot.user.id)
         for channel in channels:
-            if exclude_readonly and (channel.id in self.bot.config['deafen_excluded_channels_and_categories'] or channel.category.id in self.bot.config['deafen_excluded_channels_and_categories']):
+            if exclude_readonly and (channel.id in self.bot.config['deafen_excluded_channels_and_categories'] or channel.category in self.bot.config['deafen_excluded_channels_and_categories']):
                 logger.debug(f"Skipping {channel} ({channel.id}) override for {member} ({member.id}) because either the channel was excluded from deafen ({channel.id in self.bot.config['deafen_excluded_channels_and_categories']}) or it was part of an excluded category ({channel.category.id in self.bot.config['deafen_excluded_channels_and_categories']})")
                 continue
             overwrite = channel.overwrites_for(member)
