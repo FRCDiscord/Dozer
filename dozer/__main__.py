@@ -49,6 +49,7 @@ config = {
     'is_backup': False,
     'invite_override': "",
     "sentry_url": "",
+    "deafen_excluded_channels_and_categories": [],
     "disabled_cogs": []
 }
 config_file = 'config.json'
