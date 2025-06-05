@@ -154,10 +154,13 @@ class Moderation(Cog):
         for channel in channels:
             logger.debug(f"Start of deafen logic. Current channel: {channel} ({channel.id}) which is a part of the category {channel.category}. Is TextChannel? {isinstance(channel, discord.TextChannel)} Is voice channel? {isinstance(channel, discord.VoiceChannel)} Is category channel? {isinstance(channel, discord.CategoryChannel)}")
             if exclude_readonly:
-                if channel.id in self.bot.config['deafen_excluded_channels_and_categories']: #or channel.category in self.bot.config['deafen_excluded_channels_and_categories']):
+                if channel.id in self.bot.config['deafen_excluded_channels_and_categories']:
                     logger.debug(f"Skipping {channel} ({channel.id}) override for {member} ({member.id}) because the channel was directly excluded from deafen")
                     continue
                 elif channel is not isinstance(channel, discord.CategoryChannel):
+                    if channel.id in self.bot.config['deafen_excluded_channels_and_categories']:
+                        logger.debug(f"Skipping {channel} ({channel.id}) override for {member} ({member.id}) because the channel was directly excluded from deafen (inner)")
+                        continue
                     if channel.category_id in self.bot.config['deafen_excluded_channels_and_categories']:
                         logger.debug (f"Skipping {channel} ({channel.id}) override for {member} ({member.id}) because the channel was in an excluded category")
                         continue
