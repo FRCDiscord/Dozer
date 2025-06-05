@@ -153,7 +153,6 @@ class Moderation(Cog):
         me = await guild.fetch_member(self.bot.user.id)
         for channel in channels:
             if exclude_readonly:
-                logger.debug(f"Start of deafen logic. Current channel: {channel} ({channel.id}) which is a part of the category {channel.category}. Is Text Channel? {isinstance(channel, discord.TextChannel)} Is voice channel? {isinstance(channel, discord.VoiceChannel)} Is category channel? {isinstance(channel, discord.CategoryChannel)}")
                 if isinstance(channel, discord.CategoryChannel):
                     #Skip overriding categories themselves. I am not convinced that there is a legitimate case that the category itself needs to be overridden. 
                     #All the voice, forum & text channels will also be overridden individually, and overriding categories can only cause conflicts when trying to exclude channels from being hidden in a deafen.
@@ -166,7 +165,7 @@ class Moderation(Cog):
                     if channel.category_id in self.bot.config['deafen_excluded_channels_and_categories']:
                         logger.debug (f"Skipping {channel} ({channel.id}) override for {member} ({member.id}) because the channel is in an excluded category")
                         continue
-                logger.debug(f"Continuing with permission override on {channel} ({channel.id}) for {member} ({member.id}) ")
+                logger.debug(f"Overriding on {channel} ({channel.id}) for {member} ({member.id})")
             overwrite = channel.overwrites_for(member)
             if channel.permissions_for(me).manage_roles:
                 overwrite.update(**overwrites)
