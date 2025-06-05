@@ -153,9 +153,14 @@ class Moderation(Cog):
         me = await guild.fetch_member(self.bot.user.id)
         for channel in channels:
             logger.debug(f"Start of deafen logic. Current channel: {channel} ({channel.id}) which is a part of the category {channel.category}. Is TextChannel? {isinstance(channel, discord.TextChannel)} Is voice channel? {isinstance(channel, discord.VoiceChannel)} Is category channel? {isinstance(channel, discord.CategoryChannel)}")
-            if exclude_readonly and ((channel.id in self.bot.config['deafen_excluded_channels_and_categories'] )or channel.category in self.bot.config['deafen_excluded_channels_and_categories']):
-                logger.debug(f"Skipping {channel} ({channel.id}) override for {member} ({member.id}) because either the channel was excluded from deafen ({channel.id in self.bot.config['deafen_excluded_channels_and_categories']}) or it was part of an excluded category ({channel.category in self.bot.config['deafen_excluded_channels_and_categories']})")
-                continue
+            if exclude_readonly:
+                if channel.id in self.bot.config['deafen_excluded_channels_and_categories']: #or channel.category in self.bot.config['deafen_excluded_channels_and_categories']):
+                    logger.debug(f"Skipping {channel} ({channel.id}) override for {member} ({member.id}) because the channel was directly excluded from deafen")
+                    continue
+                elif channel is not isinstance(channel, discord.CategoryChannel):
+                    if channel.category_id in self.bot.config['deafen_excluded_channels_and_categories']:
+                        logger.debug (f"Skipping {channel} ({channel.id}) override for {member} ({member.id}) because the channel was in an excluded category")
+                        continue
             overwrite = channel.overwrites_for(member)
             if channel.permissions_for(me).manage_roles:
                 overwrite.update(**overwrites)
