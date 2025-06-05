@@ -154,7 +154,7 @@ class Moderation(Cog):
         for channel in channels:
             if exclude_readonly:
                 logger.debug(f"Start of deafen logic. Current channel: {channel} ({channel.id}) which is a part of the category {channel.category}. Is Text Channel? {isinstance(channel, discord.TextChannel)} Is voice channel? {isinstance(channel, discord.VoiceChannel)} Is category channel? {isinstance(channel, discord.CategoryChannel)}")
-                if channel is isinstance(channel, discord.CategoryChannel):
+                if isinstance(channel, discord.CategoryChannel):
                     #Skip overriding categories themselves. I am not convinced that there is a legitimate case that the category itself needs to be overridden. 
                     #All the voice, forum & text channels will also be overridden individually, and overriding categories can only cause conflicts when trying to exclude channels from being hidden in a deafen.
                     logger.debug(f"Skipping category override {channel} ({channel.id})")
