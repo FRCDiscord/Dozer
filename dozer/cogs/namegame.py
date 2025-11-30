@@ -169,7 +169,7 @@ class NameGame(Cog):
         super().__init__(bot)
         with gzip.open("ftc_teams.pickle.gz") as f:
             raw_teams = pickle.load(f)
-            self.ftc_teams = {team: data['seasons'][0]['name'] for (team, data) in raw_teams.items()}
+            self.ftc_teams = {number: name for (number, name) in raw_teams.items()}
         self.games = {}
 
         tba_config = bot.config['tba']
