@@ -503,6 +503,7 @@ class Moderation(Cog):
     @has_permissions(kick_members=True)
     async def customlog(self, ctx: DozerContext, *, reason: str):
         """Sends a message to the mod log with custom text."""
+        await ctx.defer()
         orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
         await self.mod_log(actor=ctx.author, action="", target=None, orig_channel=orig_channel, reason=reason,
                            embed_color=0xFFC400)
