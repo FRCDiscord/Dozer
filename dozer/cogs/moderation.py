@@ -719,6 +719,7 @@ class Moderation(Cog):
     @bot_has_permissions(manage_permissions=True)
     async def mute(self, ctx: DozerContext, member_mentions: discord.Member, *, reason: str = "No reason provided"):
         """Mute a user to prevent them from sending messages"""
+        await ctx.defer()
         orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
@@ -741,6 +742,7 @@ class Moderation(Cog):
     @bot_has_permissions(manage_permissions=True)
     async def unmute(self, ctx: DozerContext, member_mentions: discord.Member, *, reason="No reason provided"):
         """Unmute a user to allow them to send messages again."""
+        await ctx.defer()
         orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
         async with ctx.typing():
             if await self._unmute(member_mentions):
@@ -758,6 +760,7 @@ class Moderation(Cog):
     @bot_has_permissions(manage_permissions=True)
     async def deafen(self, ctx: DozerContext, member_mentions: discord.Member, *, reason: str = "No reason provided"):
         """Deafen a user to prevent them from both sending messages but also reading messages."""
+        await ctx.defer()
         orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
@@ -783,6 +786,7 @@ class Moderation(Cog):
                                    type=discord.ext.commands.BucketType.guild)  # 10 seconds per 2 members in the guild
     async def selfdeafen(self, ctx: DozerContext, *, reason: str = "No reason provided"):
         """Deafen yourself for a given time period to prevent you from reading or sending messages."""
+        await ctx.defer()
         orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
         async with ctx.typing():
             seconds = self.hm_to_seconds(reason)
@@ -807,6 +811,7 @@ class Moderation(Cog):
     @bot_has_permissions(manage_permissions=True)
     async def undeafen(self, ctx: DozerContext, member_mentions: discord.Member, *, reason: str = "No reason provided"):
         """Undeafen a user to allow them to see message and send message again."""
+        await ctx.defer()
         orig_channel = ctx.interaction.followup if ctx.interaction else ctx.channel
         async with ctx.typing():
             result = await self._undeafen(member_mentions)
