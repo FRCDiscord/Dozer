@@ -3,7 +3,7 @@ Levels
 ======
 meesyncs
 ++++++++
-Function to scrape ranking data from the mee6 api and save it to the
+Function to scrap ranking data from the mee6 api and save it to the
 database
 ::
    `{prefix}meesyncs`: Sync ranking data from the mee6 API to dozer's database
@@ -25,6 +25,11 @@ Swaps Snowplow's xp with Dozer's xp
    `{prefix}adjustlevels transferxp <@Snowplow or "Snowplow"> <@Dozer or "Dozer">`:
 Adds Snowplow's xp to dozer's xp
    
+setlevel
+++++++++
+Changes a members level to requested level
+::
+   
 transferxp
 ++++++++++
 Adds xp from one member to another member
@@ -33,11 +38,6 @@ Adds xp from one member to another member
 swapxp
 ++++++
 Swap xp stats between two members in a guild
-::
-   
-setlevel
-++++++++
-Changes a members level to requested level
 ::
    
 adjustxp
@@ -58,36 +58,6 @@ Configures dozer ranks:tm:
 `{prefix}configureranks notificationsoff`: Turns off notification channel
 `{prefix}configureranks setrolelevel role level`: Adds a level role
 `{prefix}configureranks delrolelevel role`: Deletes a level role 
-notificationsoff
-++++++++++++++++
-Turns off level up messages
-::
-   
-setcooldown
-+++++++++++
-Set the time in seconds between messages before xp is calculated again
-::
-   
-keeproles
-+++++++++
-Toggles whenever old level role roles will be kept on level up
-::
-   
-removerolelevel
-+++++++++++++++
-Removes a levelrole
-::
-   `{prefix}removerolelevel level 2 `: Will remove role "level 2" from level roles
-toggle
-++++++
-Toggle dozer ranks
-::
-   
-setrolelevel
-++++++++++++
-Sets a role to be given to a user when they reach a certain level
-::
-   `{prefix}setrolelevel "level 2" 2`: Will configure the role "level 2" to be given to users who reach level 2` 
 notificationchannel
 +++++++++++++++++++
 Set up the channel where level up messages are sent
@@ -96,6 +66,41 @@ Set up the channel where level up messages are sent
 xprange
 +++++++
 Set the range of a servers levels random xp
+::
+   
+setrolelevel
+++++++++++++
+Sets a role to be given to a user when they reach a certain level
+::
+   `{prefix}setrolelevel "level 2" 2`: Will configure the role "level 2" to be given to users who reach level 2` 
+notificationsoff
+++++++++++++++++
+Turns off level up messages
+::
+   
+toggle
+++++++
+Toggle dozer ranks
+::
+   
+view_config
++++++++++++
+Shows dozer ranks:tm: config.
+::
+   
+removerolelevel
++++++++++++++++
+Removes a levelrole
+::
+   `{prefix}removerolelevel level 2 `: Will remove role "level 2" from level roles
+keeproles
++++++++++
+Toggles whenever old level role roles will be kept on level up
+::
+   
+setcooldown
++++++++++++
+Set the time in seconds between messages before xp is calculated again
 ::
    
 rank

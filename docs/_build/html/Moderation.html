@@ -4,11 +4,12 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Moderation &#8212; Dozer  documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
@@ -32,32 +33,32 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="moderation">
+  <section id="moderation">
 <h1>Moderation<a class="headerlink" href="#moderation" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="warn">
+<section id="warn">
 <h2>warn<a class="headerlink" href="#warn" title="Permalink to this headline">¶</a></h2>
 <p>Sends a message to the mod log specifying the member has been warned
 without punishment.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}`warn @user reason - warns a user for &quot;reason&quot;
 </pre></div>
 </div>
-</div>
-<div class="section" id="customlog">
+</section>
+<section id="customlog">
 <h2>customlog<a class="headerlink" href="#customlog" title="Permalink to this headline">¶</a></h2>
 <p>Sends a message to the mod log with custom text.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}`customlog reason - warns a user for &quot;reason&quot;
 </pre></div>
 </div>
-</div>
-<div class="section" id="timeout">
+</section>
+<section id="timeout">
 <h2>timeout<a class="headerlink" href="#timeout" title="Permalink to this headline">¶</a></h2>
 <p>Set a timeout (no sending messages or adding reactions) on the current
 channel.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}timeout 60` - prevents sending messages in this channel for 1 minute (60s)
 </pre></div>
 </div>
-</div>
-<div class="section" id="prune">
+</section>
+<section id="prune">
 <h2>prune<a class="headerlink" href="#prune" title="Permalink to this headline">¶</a></h2>
 <p>Bulk delete a set number of messages from the current channel.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}prune 10` - Delete the last 10 messages in the current channel.
@@ -70,85 +71,90 @@ List currently active mutes and deafens in a guild</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}punishments:` Lists currently active punishments in current guild
 </pre></div>
 </div>
-</div>
-<div class="section" id="ban">
+</section>
+<section id="ban">
 <h2>ban<a class="headerlink" href="#ban" title="Permalink to this headline">¶</a></h2>
 <p>Bans the user mentioned.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}ban @user reason - ban @user for a given (optional) reason
 </pre></div>
 </div>
-</div>
-<div class="section" id="unban">
+</section>
+<section id="unban">
 <h2>unban<a class="headerlink" href="#unban" title="Permalink to this headline">¶</a></h2>
 <p>Unbans the user mentioned.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}unban user_id reason - unban the user corresponding to the ID for a given (optional) reason
 </pre></div>
 </div>
-</div>
-<div class="section" id="kick">
+</section>
+<section id="kick">
 <h2>kick<a class="headerlink" href="#kick" title="Permalink to this headline">¶</a></h2>
 <p>Kicks the user mentioned.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}kick @user reason - kick @user for a given (optional) reason
 </pre></div>
 </div>
-</div>
-<div class="section" id="mute">
+</section>
+<section id="mute">
 <h2>mute<a class="headerlink" href="#mute" title="Permalink to this headline">¶</a></h2>
 <p>Mute a user to prevent them from sending messages</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}mute @user 1h reason` - mute @user for 1 hour for a given reason, the timing component (1h) and reason is optional.
 </pre></div>
 </div>
-</div>
-<div class="section" id="unmute">
+</section>
+<section id="unmute">
 <h2>unmute<a class="headerlink" href="#unmute" title="Permalink to this headline">¶</a></h2>
 <p>Unmute a user to allow them to send messages again.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}unmute @user reason - unmute @user for a given (optional) reason
 </pre></div>
 </div>
-</div>
-<div class="section" id="deafen">
+</section>
+<section id="deafen">
 <h2>deafen<a class="headerlink" href="#deafen" title="Permalink to this headline">¶</a></h2>
 <p>Deafen a user to prevent them from both sending messages but also
 reading messages.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}deafen @user 1h reason` - deafen @user for 1 hour for a given reason, the timing component (1h) is optional.
 </pre></div>
 </div>
-</div>
-<div class="section" id="selfdeafen">
+</section>
+<section id="selfdeafen">
 <h2>selfdeafen<a class="headerlink" href="#selfdeafen" title="Permalink to this headline">¶</a></h2>
 <p>Deafen yourself for a given time period to prevent you from reading or
-sending messages; useful as a study tool.</p>
+sending messages.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}selfdeafen time (1h5m, both optional) reason`: deafens you if you need to get work done
 </pre></div>
 </div>
-</div>
-<div class="section" id="undeafen">
+</section>
+<section id="undeafen">
 <h2>undeafen<a class="headerlink" href="#undeafen" title="Permalink to this headline">¶</a></h2>
 <p>Undeafen a user to allow them to see message and send message again.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}undeafen @user reason - undeafen @user for a given (optional) reason
 </pre></div>
 </div>
-</div>
-<div class="section" id="voicekick">
+</section>
+<section id="voicekick">
 <h2>voicekick<a class="headerlink" href="#voicekick" title="Permalink to this headline">¶</a></h2>
 <p>Kick a user from voice chat. This is most useful if their perms to
 rejoin have already been removed.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}voicekick @user reason` - kick @user out of voice
 </pre></div>
 </div>
-</div>
-<div class="section" id="purgenm">
+</section>
+<section id="purgenm">
 <h2>purgenm<a class="headerlink" href="#purgenm" title="Permalink to this headline">¶</a></h2>
 <p>Manually run a new member purge</p>
-</div>
-<div class="section" id="modlogconfig">
+</section>
+<section id="modlogconfig">
 <h2>modlogconfig<a class="headerlink" href="#modlogconfig" title="Permalink to this headline">¶</a></h2>
 <p>Set the modlog channel for a server by passing the channel id</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}modlogconfig #join-leave-logs` - set a channel named #join-leave-logs to log joins/leaves
 </pre></div>
 </div>
-</div>
-<div class="section" id="nmconfig">
+</section>
+<section id="verifymember">
+<h2>verifymember<a class="headerlink" href="#verifymember" title="Permalink to this headline">¶</a></h2>
+<p>Command to verify a member who may not have a team number set, or who
+hasn’t sent the required verification message.</p>
+</section>
+<section id="nmconfig">
 <h2>nmconfig<a class="headerlink" href="#nmconfig" title="Permalink to this headline">¶</a></h2>
 <p>Sets the config for the new members channel</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}nmconfig #new_members Member I have read the rules and regulations` - Configures the #new_members channel
@@ -161,8 +167,8 @@ Sets the config for the new members purge</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}nmpurgeconfig Members 90: Kicks everyone who doesn&#39;t have the members role 90 days after they join.
 </pre></div>
 </div>
-</div>
-<div class="section" id="memberconfig">
+</section>
+<section id="memberconfig">
 <h2>memberconfig<a class="headerlink" href="#memberconfig" title="Permalink to this headline">¶</a></h2>
 <p>Set the member role for the guild. The member role is the role used for
 the timeout command. It should be a role that all members of the server
@@ -187,19 +193,31 @@ safe default role conventions that the memberconfig command does.</p>
 <cite>{prefix}linkscrubconfig &#64; everyone</cite> - set the default role as the link role (ping-safe)
 <cite>{prefix}linkscrubconfig &#64;.everyone</cite> - set the default role as the link role (ping-safe)
 <cite>{prefix}linkscrubconfig &#64;/everyone</cite> - set the default role as the link role (ping-safe)
-crossbans
-+++++++++
-Cross ban</p>
+say_the_line
+++++++++++++
+Says the line. “Welcome to the server! Please set your team affiliation
+in your nickname.”</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}say_the_line @tweirtx` - Says the line mentioning @tweirtx
+</pre></div>
 </div>
-<div class="section" id="subscribe">
+</section>
+<section id="crossbans">
+<h2>crossbans<a class="headerlink" href="#crossbans" title="Permalink to this headline">¶</a></h2>
+<p>Cross ban</p>
+</section>
+<section id="subscribe">
 <h2>subscribe<a class="headerlink" href="#subscribe" title="Permalink to this headline">¶</a></h2>
 <p>Subscribe to a guild to cross ban from</p>
-</div>
-<div class="section" id="unsubscribe">
+</section>
+<section id="unsubscribe">
 <h2>unsubscribe<a class="headerlink" href="#unsubscribe" title="Permalink to this headline">¶</a></h2>
 <p>Remove cross ban subscription</p>
-</div>
-</div>
+</section>
+<section id="view-subs">
+<h2>view_subs<a class="headerlink" href="#view-subs" title="Permalink to this headline">¶</a></h2>
+<p>View crossban subscriptions for the current server</p>
+</section>
+</section>
 
 
           </div>
@@ -218,7 +236,7 @@ Cross ban</p>
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Actionlog.html"> Actionlog</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Development.html"> Development</a></li>
@@ -244,16 +262,20 @@ Cross ban</p>
 <li class="toctree-l2"><a class="reference internal" href="#voicekick">voicekick</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#purgenm">purgenm</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#modlogconfig">modlogconfig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#verifymember">verifymember</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#nmconfig">nmconfig</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#memberconfig">memberconfig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#crossbans">crossbans</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#subscribe">subscribe</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#unsubscribe">unsubscribe</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#view-subs">view_subs</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="Music.html"> Music</a></li>
 <li class="toctree-l1"><a class="reference internal" href="NameGame.html"> NameGame</a></li>
 <li class="toctree-l1"><a class="reference internal" href="News.html"> News</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Roles.html"> Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Shortcuts.html"> Shortcuts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Starboard.html"> Starboard</a></li>
 <li class="toctree-l1"><a class="reference internal" href="TBA.html"> TBA</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Teams.html"> Teams</a></li>
@@ -274,7 +296,7 @@ Cross ban</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -293,10 +315,10 @@ Cross ban</p>
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2021, Dozer Development Team.
+      &copy;2025, Dozer Development Team.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.4</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

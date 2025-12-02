@@ -121,7 +121,7 @@ class Dozer(commands.Bot):
                               c=context, recipient=context.channel.recipient, content=context.message.content))
             logger.error(''.join(traceback.format_exception(type(exception), exception, exception.__traceback__)))
 
-    async def on_error(self, event_method, *args, **kwargs):
+    async def on_error(self, event_method, /, *args, **kwargs):
         """Don't ignore the error, causing Sentry to capture it."""
         print(f'Ignoring exception in {event_method}', file=sys.stderr)
         traceback.print_exc()

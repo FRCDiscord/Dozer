@@ -4,18 +4,19 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Starboard &#8212; Dozer  documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="TBA" href="TBA.html" />
-    <link rel="prev" title="Roles" href="Roles.html" />
+    <link rel="prev" title="Shortcuts" href="Shortcuts.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -32,9 +33,9 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="starboard">
+  <section id="starboard">
 <h1>Starboard<a class="headerlink" href="#starboard" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="id1">
+<section id="id1">
 <h2>starboard<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h2>
 <p>Show the current server’s starboard configuration. A starboard (or a
 hall of fame) is a channel the bot will repost messages in if they
@@ -43,29 +44,37 @@ a starboard, use the <cite>starboard config</cite> subcommand.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}starboard` - Get the current starboard settings for this server
 </pre></div>
 </div>
-</div>
-<div class="section" id="config">
-<h2>config<a class="headerlink" href="#config" title="Permalink to this headline">¶</a></h2>
-<p>Modify the settings for this server’s starboard</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}starboard config #hall-of-fame 🌟 5` - Set the bot to repost messages that have 5 star reactions to `#hall-of-fame
+</section>
+<section id="showconfig">
+<h2>showconfig<a class="headerlink" href="#showconfig" title="Permalink to this headline">¶</a></h2>
+<p>Show the current server’s starboard configuration. A starboard (or a
+hall of fame) is a channel the bot will repost messages in if they
+receive a certain number         of configured reactions.  To configure
+a starboard, use the <cite>starboard config</cite> subcommand.</p>
+</section>
+<section id="disable">
+<h2>disable<a class="headerlink" href="#disable" title="Permalink to this headline">¶</a></h2>
+<p>Turn off the starboard if it is enabled</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}starboard disable` - disables the starboard for the current server
 </pre></div>
 </div>
-<p><cite>{prefix}starboard config #hall-of-fame 🌟 5 ❌</cite> - Same as above, but with a extra X cancel emoji
-add
-+++
-Add a message to the starboard manually</p>
+</section>
+<section id="add">
+<h2>add<a class="headerlink" href="#add" title="Permalink to this headline">¶</a></h2>
+<p>Add a message to the starboard manually</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}starboard add 1285719825125 #channel` - add message with id `1285719825125` in `#channel` to the starboard
 </pre></div>
 </div>
 <p>manually.
-disable
-+++++++
-Turn off the starboard if it is enabled</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}starboard disable` - disables the starboard for the current server
+config
+++++++
+Modify the settings for this server’s starboard</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}starboard config #hall-of-fame 🌟 5` - Set the bot to repost messages that have 5 star reactions to `#hall-of-fame
 </pre></div>
 </div>
-</div>
-</div>
+<p><cite>{prefix}starboard config #hall-of-fame 🌟 5 ❌</cite> - Same as above, but with a extra X cancel emoji</p>
+</section>
+</section>
 
 
           </div>
@@ -84,7 +93,7 @@ Turn off the starboard if it is enabled</p>
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Actionlog.html"> Actionlog</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Development.html"> Development</a></li>
@@ -99,9 +108,12 @@ Turn off the starboard if it is enabled</p>
 <li class="toctree-l1"><a class="reference internal" href="NameGame.html"> NameGame</a></li>
 <li class="toctree-l1"><a class="reference internal" href="News.html"> News</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Roles.html"> Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Shortcuts.html"> Shortcuts</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#"> Starboard</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#id1">starboard</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#config">config</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#showconfig">showconfig</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#disable">disable</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#add">add</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="TBA.html"> TBA</a></li>
@@ -114,7 +126,7 @@ Turn off the starboard if it is enabled</p>
 <h3>Related Topics</h3>
 <ul>
   <li><a href="index.html">Documentation overview</a><ul>
-      <li>Previous: <a href="Roles.html" title="previous chapter">Roles</a></li>
+      <li>Previous: <a href="Shortcuts.html" title="previous chapter">Shortcuts</a></li>
       <li>Next: <a href="TBA.html" title="next chapter">TBA</a></li>
   </ul></li>
 </ul>
@@ -123,7 +135,7 @@ Turn off the starboard if it is enabled</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -142,10 +154,10 @@ Turn off the starboard if it is enabled</p>
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2021, Dozer Development Team.
+      &copy;2025, Dozer Development Team.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.4</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
