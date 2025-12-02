@@ -4,11 +4,12 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Voice &#8212; Dozer  documentation</title>
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
@@ -31,9 +32,9 @@
 
           <div class="body" role="main">
             
-  <div class="section" id="voice">
+  <section id="voice">
 <h1>Voice<a class="headerlink" href="#voice" title="Permalink to this headline">¶</a></h1>
-<div class="section" id="autoptt">
+<section id="autoptt">
 <h2>autoptt<a class="headerlink" href="#autoptt" title="Permalink to this headline">¶</a></h2>
 <p>Configures AutoPtt limit for when members join/leave voice channels ptt
 is enabled</p>
@@ -43,28 +44,28 @@ is enabled</p>
 <p><a href="#id1"><span class="problematic" id="id2">`</span></a>{prefix}autoptt “General #1” 0 - disables AutoPTT for General #1.
 voicebind
 +++++++++
-Associates a voice channel with a role, so users joining a voice channel
-will automatically be given a specified role or roles.</p>
+Binds a voice channel with a role, so users joining voice channels will
+be given desired role(s).</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}voicebind &quot;General #1&quot; voice-general-1` - sets up Dozer to give users  `voice-general-1` when they join voice channel &quot;General #1&quot;, which will be removed when they leave.
 </pre></div>
 </div>
-</div>
-<div class="section" id="voiceunbind">
+</section>
+<section id="voiceunbind">
 <h2>voiceunbind<a class="headerlink" href="#voiceunbind" title="Permalink to this headline">¶</a></h2>
 <p>Dissasociates a voice channel with a role previously binded with the
 voicebind command.</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}voiceunbind &quot;General #1&quot;` - Removes automatic role-giving for users in &quot;General #1&quot;.
 </pre></div>
 </div>
-</div>
-<div class="section" id="voicebindlist">
+</section>
+<section id="voicebindlist">
 <h2>voicebindlist<a class="headerlink" href="#voicebindlist" title="Permalink to this headline">¶</a></h2>
 <p>Lists all the voice channel to role bindings for the current server</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span>`{prefix}voicebindlist` - Lists all the voice channel to role bindings for the current server bound with the voicebind command.
 </pre></div>
 </div>
-</div>
-</div>
+</section>
+</section>
 
 
           </div>
@@ -83,7 +84,7 @@ voicebind command.</p>
 
 
 <h3>Navigation</h3>
-<p class="caption"><span class="caption-text">Contents:</span></p>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="Actionlog.html"> Actionlog</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Development.html"> Development</a></li>
@@ -98,6 +99,7 @@ voicebind command.</p>
 <li class="toctree-l1"><a class="reference internal" href="NameGame.html"> NameGame</a></li>
 <li class="toctree-l1"><a class="reference internal" href="News.html"> News</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Roles.html"> Roles</a></li>
+<li class="toctree-l1"><a class="reference internal" href="Shortcuts.html"> Shortcuts</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Starboard.html"> Starboard</a></li>
 <li class="toctree-l1"><a class="reference internal" href="TBA.html"> TBA</a></li>
 <li class="toctree-l1"><a class="reference internal" href="Teams.html"> Teams</a></li>
@@ -122,7 +124,7 @@ voicebind command.</p>
   <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
       <input type="submit" value="Go" />
     </form>
     </div>
@@ -141,10 +143,10 @@ voicebind command.</p>
       <div class="clearer"></div>
     </div>
     <div class="footer">
-      &copy;2021, Dozer Development Team.
+      &copy;2025, Dozer Development Team.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 3.5.4</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.5.0</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
