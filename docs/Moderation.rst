@@ -63,7 +63,7 @@ reading messages.
 selfdeafen
 ++++++++++
 Deafen yourself for a given time period to prevent you from reading or
-sending messages; useful as a study tool.
+sending messages.
 ::
    `{prefix}selfdeafen time (1h5m, both optional) reason`: deafens you if you need to get work done
 undeafen
@@ -87,6 +87,12 @@ modlogconfig
 Set the modlog channel for a server by passing the channel id
 ::
    `{prefix}modlogconfig #join-leave-logs` - set a channel named #join-leave-logs to log joins/leaves 
+verifymember
+++++++++++++
+Command to verify a member who may not have a team number set, or who
+hasn't sent the required verification message.
+::
+   
 nmconfig
 ++++++++
 Sets the config for the new members channel
@@ -121,6 +127,12 @@ safe default role conventions that the memberconfig command does.
 `{prefix}linkscrubconfig @ everyone` - set the default role as the link role (ping-safe)
 `{prefix}linkscrubconfig @.everyone` - set the default role as the link role (ping-safe)
 `{prefix}linkscrubconfig @/everyone` - set the default role as the link role (ping-safe)
+say_the_line
+++++++++++++
+Says the line. "Welcome to the server! Please set your team affiliation
+in your nickname."
+::
+   `{prefix}say_the_line @tweirtx` - Says the line mentioning @tweirtx
 crossbans
 +++++++++
 Cross ban
@@ -134,5 +146,10 @@ Subscribe to a guild to cross ban from
 unsubscribe
 +++++++++++
 Remove cross ban subscription
+::
+   
+view_subs
++++++++++
+View crossban subscriptions for the current server
 ::
    

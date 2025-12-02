@@ -15,16 +15,6 @@ Command group to configure Join/Leave logs
 `{prefix}memberlogconfig setjoinmessage template`: Sets join template
 `{prefix}memberlogconfig setleavemessage template`: Sets leave template
 `{prefix}memberlogconfig help`: Returns the template formatting key
-setleavemessage
-+++++++++++++++
-Configure custom leave message template
-::
-   
-setjoinmessage
-++++++++++++++
-Configure custom join message template
-::
-   
 help
 ++++
 Displays message formatting key
@@ -35,6 +25,22 @@ toggleping
 Toggles whenever a new member gets pinged on join
 ::
    
+setleavemessage
++++++++++++++++
+Configure custom leave message template
+::
+   
+viewconfig
+++++++++++
+Command to view Join/Leave logs configuration.
+::
+   
+togglesendonverify
+++++++++++++++++++
+Toggles if a join log is sent on user joining or on completing
+verification
+::
+   
 disable
 +++++++
 Disables Join/Leave logging
@@ -43,6 +49,11 @@ Disables Join/Leave logging
 setchannel
 ++++++++++
 Configure join/leave channel
+::
+   
+setjoinmessage
+++++++++++++++
+Configure custom join message template
 ::
    
 locknickname

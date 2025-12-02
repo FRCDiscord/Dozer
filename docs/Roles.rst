@@ -15,16 +15,11 @@ existing role if one exists.
 ::
    `{prefix}giveme add Java` - creates or finds a role named "Java" and makes it giveable
 `{prefix}giveme Java` - gives you the Java role that was just found or created
-delete
-++++++
-Deletes and removes a giveable role.
-::
-   `{prefix}giveme removefromlist Java` - removes the role "Java" from the list of giveable roles but does not remove it from the server or members who have it 
-list
+role
 ++++
-Lists all giveable roles for this server.
+Give you one or more giveable roles, separated by commas.
 ::
-   `{prefix}giveme list` - lists all giveable roles
+   
 create
 ++++++
 Create a giveable role. Name must not contain commas. Similar to add,
@@ -32,14 +27,19 @@ but will always create a new role.
 ::
    `{prefix}giveme create Python` - creates a role named "Python" and makes it giveable
 `{prefix}giveme Python` - gives you the Python role that was just created
+list
+++++
+Lists all giveable roles for this server.
+::
+   `{prefix}giveme list` - lists all giveable roles
+delete
+++++++
+Deletes and removes a giveable role.
+::
+   `{prefix}giveme removefromlist Java` - removes the role "Java" from the list of giveable roles but does not remove it from the server or members who have it 
 purge
 +++++
 Force a purge of giveme roles that no longer exist in the guild
-::
-   
-removefromlist
-++++++++++++++
-Deletes and removes a giveable role.
 ::
    
 remove
@@ -49,6 +49,11 @@ commas.
 ::
    `{prefix}giveme remove Java` - removes the role called "Java" from you (if it can be given with `{prefix}giveme`)
 `{prefix}giveme remove Java, Python` - removes the roles called "Java" and "Python" from you
+removefromlist
+++++++++++++++
+Deletes and removes a giveable role.
+::
+   
 tempgive
 ++++++++
 Temporarily gives a member a role for a set time. Not restricted to
@@ -72,6 +77,14 @@ Base command for setting up and tracking reaction roles
    `{prefix}rolemenu createmenu #roles Example role menu`: Creates an empty role menu embed
 `{prefix}rolemenu addrole <message id> @robots 🤖:` adds the reaction role 'robots' to the target message 
 `{prefix}rolemenu delrole <message id> @robots:` removes the reaction role 'robots' from the target message
+delrole
++++++++
+Removes a reaction role from a message or a role menu
+::
+   -----To target a role menu use this format-----
+`{prefix}rolemenu delrole <message id> <@robots or "Robots">`
+-----To target a custom message use this format-----
+`{prefix}rolemenu delrole <channel> <message id> <@robots or "Robots">`
 createmenu
 ++++++++++
 Creates a blank reaction role menu
@@ -86,11 +99,3 @@ Adds a reaction role to a message or a role menu
 -----To target a custom message use this format-----
  `{prefix}rolemenu addrole <channel> <message id> <@robots or "Robots"> 🤖`
  
-delrole
-+++++++
-Removes a reaction role from a message or a role menu
-::
-   -----To target a role menu use this format-----
-`{prefix}rolemenu delrole <message id> <@robots or "Robots">`
------To target a custom message use this format-----
-`{prefix}rolemenu delrole <channel> <message id> <@robots or "Robots">`
