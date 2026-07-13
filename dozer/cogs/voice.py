@@ -40,14 +40,14 @@ class Voice(Cog):
                 if len(config) != 0:
                     role_to_remove = member.guild.get_role(config[0].role_id)
                     if role_to_remove is not None:
-                        await member.remove_roles()
+                        await member.remove_roles(role_to_remove)
             if after.channel is not None:
                 # join event, give role
                 config = await Voicebinds.get_by(channel_id=after.channel.id)
                 if len(config) != 0:
                     role_to_add = member.guild.get_role(config[0].role_id)
                     if role_to_add is not None:
-                        await member.add_roles()
+                        await member.add_roles(role_to_add)
 
     @Cog.listener('on_voice_state_update')  # Used for auto PTT
     async def on_PTT_check(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
