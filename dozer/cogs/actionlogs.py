@@ -280,6 +280,8 @@ class Actionlog(Cog):
         if payload.cached_message:
             return
         mchannel = self.bot.get_channel(int(payload.channel_id))
+        if mchannel is None:
+            return
         guild = mchannel.guild
         try:
             content = payload.data['content']

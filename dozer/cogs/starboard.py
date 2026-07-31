@@ -185,8 +185,10 @@ class Starboard(Cog):
                     logger.warning(f"Cannot find Starboard Message {db_msgs[0].starboard_message_id} to remove")
                     starboard_msg = discord.Object(db_msgs[0].starboard_message_id)
                 await self.remove_from_starboard(config, starboard_msg, True)
-
-        self.locked_messages.remove(msg)
+        try:
+            self.locked_messages.remove(msg)
+        except KeyError:
+            return
 
     @Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
