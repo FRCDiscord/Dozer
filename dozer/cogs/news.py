@@ -101,10 +101,16 @@ class News(Cog):
                         continue
                     if kind == 'embed':
                         for embed in posts[data]['embed']:
-                            await channel.send(embed=embed)
+                            try:
+                                await channel.send(embed=embed)
+                            except:
+                                continue
                     elif kind == 'plain':
                         for post in posts[data]['plain']:
-                            await channel.send(post)
+                            try:
+                                await channel.send(post)
+                            except:
+                                continue
 
         next_run = self.get_new_posts.next_iteration
         logger.debug(f"Done with getting news. Next run in "
