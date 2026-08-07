@@ -83,8 +83,7 @@ Setup configuration options:
          Alternatively, on Windows, go to the directory in the File Explorer app. Click the bar that is circled in the image below and type `cmd`. Press enter and the command line should open up within that directory. Also, you can use an integrated terminal with an IDE of your choice.
          ![open the cmd within a directory](static/fileExplorerBar.png)
 
-3. Install dependencies with `python -m pip install -Ur requirements.txt` in your command line interface.
-   1. If that doesn't work, try replacing `python` with `python3`.
+3. [Install uv](https://docs.astral.sh/uv/getting-started/installation/), then install dependencies with `uv sync` in your command line interface.
 
 4. Run the bot once with `python -m dozer`. This will crash, but generate a default config file.
    1. Dozer uses [json](http://www.json.org/) for its config file
@@ -138,10 +137,10 @@ install the psycopg2 pip package, then change the `db_url` key in `config.json` 
 ## Development
 
 1. pylint
-   1. Pylint should be installed with ```pip install pylint```, if it is not already installed. 
+   1. Pylint is installed by `uv sync` with the development dependencies.
    2. Before code can be merged, it must pass pylint with a score of 100%. 
    3. You can run a pylint check manually, or it will be run by pre-commit before you commit.
 2. pre-commit
-   1. pre-commit should be installed with ```pip install pre-commit```
-   2. You should then install the pre-commit hooks with ```pre-commit install```
+   1. Run `uv run pre-commit install` to install the configured hooks.
+   2. The hooks now run when you commit.
    3. When you commit this will only check the files you edited this commit, you may still fail a full pylint check. 
