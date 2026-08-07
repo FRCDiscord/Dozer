@@ -103,13 +103,13 @@ class News(Cog):
                         for embed in posts[data]['embed']:
                             try:
                                 await channel.send(embed=embed)
-                            except:
+                            except discord.HTTPException:
                                 continue
                     elif kind == 'plain':
                         for post in posts[data]['plain']:
                             try:
                                 await channel.send(post)
-                            except:
+                            except discord.HTTPException:
                                 continue
 
         next_run = self.get_new_posts.next_iteration
