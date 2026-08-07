@@ -1,2 +1,2 @@
 #!/bin/sh
-pylint dozer
+uv run --group dev pylint dozer
