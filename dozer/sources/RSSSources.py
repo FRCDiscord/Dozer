@@ -1,12 +1,16 @@
 """Given an arbitrary RSS feed, get new posts from it"""
 import datetime
+import logging
 import re
-import xml.etree.ElementTree
+from time import mktime
 
 import aiohttp
 import discord
+import feedparser
 
 from .AbstractSources import Source
+
+LOGGER = logging.getLogger()
 
 
 def clean_html(raw_html):
@@ -46,9 +50,8 @@ class RSSSource(Source):
             }
         }
         for item in items:
-            data = self.get_data(item)
-            new_posts['source']['embed'].append(self.generate_embed(data))
-            new_posts['source']['plain'].append(self.generate_plain_text(data))
+            new_posts['source']['embed'].append(self.generate_embed(item))
+            new_posts['source']['plain'].append(self.generate_plain_text(item))
         return new_posts
 
     async def fetch(self):
@@ -57,19 +60,16 @@ class RSSSource(Source):
         return await response.text()
 
     def parse(self, response, first_time=False):
-        """Use xml ElementTrees to get individual Elements for new posts"""
+        """Use feedparser to get individual Elements for new posts"""
         new_items = set()
-        root = xml.etree.ElementTree.fromstring(response)
-        channel = root[0]
-        for child in channel:
-            if child.tag == 'item':
-                guid = child.find('guid')
-                if first_time:
-                    self.guids_seen.add(guid.text)
-                    continue
-                new = self.determine_if_new(guid.text)
-                if new:
-                    new_items.add(child)
+        feed = feedparser.parse(response)
+        for item in feed.entries:
+            if first_time:
+                self.guids_seen.add(item.id)
+                continue
+            new = self.determine_if_new(item.id)
+            if new:
+                new_items.add(item)
         return new_items
 
     def determine_if_new(self, guid):
@@ -80,76 +80,41 @@ class RSSSource(Source):
         else:
             return False
 
-    def get_data(self, item):
-        """Given a xml Element, extract it into readable data"""
-        types = {
-            'title': 'title',
-            'url': 'url',
-            '{http://purl.org/dc/elements/1.1/}creator': 'author',
-            'description': 'description'
-        }
-        data = {}
-        for key, value in types.items():
-            element = item.find(key)
-            if element is not None:
-                data[value] = element.text
-            else:
-                data[value] = None
-
-        if data['url'] is None:
-            if item.find('link') is not None:
-                data['url'] = item.find('link').text
-            elif item.find('guid').attrib['isPermaLink'] == 'true':
-                data['url'] = item.find('guid').text
-
-        date_string = item.find('pubDate')
-        if date_string is not None:
-            formatted = False
-            for date_format in self.date_formats:
-                try:
-                    data['date'] = datetime.datetime.strptime(date_string.text, date_format)
-                    formatted = True
-                except ValueError:
-                    continue
-            if not formatted:
-                data['data'] = datetime.datetime.now()
-        else:
-            data['date'] = datetime.datetime.now()
-
-        desc = clean_html(data['description'])
+    def truncate_and_clean(self, content):
+        """Truncate a string to 500 characters after cleaning"""
+        desc = clean_html(content)
         # length = 1024 - len(self.read_more_str)
         length = 500
         if len(desc) >= length:
-            data['description'] = desc[0:length] + self.read_more_str
-        else:
-            data['description'] = desc
+            desc = desc[0:length] + self.read_more_str
 
-        return data
+        return desc
 
-    def generate_embed(self, data):
+
+    def generate_embed(self, item):
         """Given a dictionary of data, generate a discord.Embed using that data"""
         embed = discord.Embed()
         embed.title = f"New Post From {self.full_name}!"
         embed.colour = self.color
 
-        embed.description = f"[{data['title']}]({data['url']})"
+        embed.description = f"[{item.title}]({item.link})"
 
         embed.url = self.base_url
 
-        embed.add_field(name="Description", value=data['description'])
+        embed.add_field(name="Description", value=self.truncate_and_clean(item.summary))
 
-        embed.set_author(name=data['author'])
+        embed.set_author(name=item.author)
 
-        embed.timestamp = data['date']
+        embed.timestamp = datetime.datetime.fromtimestamp(mktime(item.published_parsed))
 
         return embed
 
-    def generate_plain_text(self, data):
+    def generate_plain_text(self, item):
         """Given a dictionary of data, generate a string using that data"""
-        return f"New Post from {self.full_name} from {data['author']}:\n" \
-               f"{data['title']}\n" \
-               f">>> {data['description']}\n" \
-               f"Read more at {data['url']}"
+        return f"New Post from {self.full_name} from {item.author}:\n" \
+               f"{item.title}\n" \
+               f">>> {self.truncate_and_clean(item.summary)}\n" \
+               f"Read more at {item.link}"
 
 
 class FRCBlogPosts(RSSSource):
@@ -194,8 +159,8 @@ class FRCQA(RSSSource):
 
 class FTCQA(RSSSource):
     """Answers from the official FIRST Tech Challenge Q&A system"""
-    url = "https://ftc-qa.firstinspires.org/rss/answers.rss"
-    base_url = "https://ftc-qa.firstinspires.org/"
+    url = "https://ftc-qa.firstinspires.org/answers.atom"
+    base_url = "https://game-qa.firstinspires.org"
     full_name = "FTC Q&A Answers"
     short_name = "ftc-qa"
     description = "Answers from the official FIRST Tech Challenge Q&A system"
@@ -214,35 +179,12 @@ class FTCBlogPosts(RSSSource):
 
 class FTCForum(RSSSource):
     """The official FTC Forum posts"""
-    url = "https://ftcforum.firstinspires.org/external?type=rss2&nodeid=1"
-    base_url = "https://ftcforum.firstinspires.org/"
+    url = "https://ftc-community.firstinspires.org/latest.rss"
+    base_url = "https://ftc-community.firstinspires.org/"
     full_name = "FTC Forum Posts"
     short_name = "ftcforum"
     description = "The official FTC Forum Posts"
     color = discord.colour.Color.orange()
-
-
-class JVNBlog(RSSSource):
-    """Blog posts by John V Neun, 148 Head Engineer"""
-    url = "https://johnvneun.com/blog?format=rss"
-    base_url = "https://johnvneun.com/"
-    full_name = "JVN's Blog"
-    short_name = "jvn"
-    aliases = '148', 'robowranglers'
-    description = "Blog posts by John V Neun, 148 Head Engineer"
-    color = discord.colour.Color(value=000000)
-    disabled = True # He locked his blog
-
-
-class SpectrumBlog(RSSSource):
-    """Blog Posts from team 3847, Spectrum"""
-    url = "http://spectrum3847.org/feed/"
-    base_url = "http://spectrum3847.org/category/blog/"
-    full_name = "Spectrum Blog"
-    short_name = "spectrum"
-    aliases = '3847'
-    description = "Blog Posts from team 3847, Spectrum"
-    color = discord.colour.Color.purple()
 
 
 class TestSource(RSSSource):
