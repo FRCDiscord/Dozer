@@ -1,5 +1,5 @@
 version = 1
-revision = 5
+revision = 3
 requires-python = "==3.10.*"
 
 [[package]]
@@ -395,7 +395,7 @@ requires-dist = [
     { name = "discord-py", extras = ["speed", "voice"], specifier = "==2.7.1" },
     { name = "feedparser" },
     { name = "fuzzywuzzy", specifier = "~=0.18.0" },
-    { name = "geopy", specifier = "~=2.0.0" },
+    { name = "geopy", specifier = "~=2.5.0" },
     { name = "googlemaps", specifier = "~=4.4.2" },
     { name = "humanize", specifier = ">=4.16.0" },
     { name = "loguru", specifier = "~=0.6.0" },
@@ -485,14 +485,14 @@ wheels = [
 
 [[package]]
 name = "geopy"
-version = "2.0.0"
+version = "2.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "geographiclib" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f3/c0/fd2ee60dee697708fd4af26ff9b8105a9b9cbf6fa42e3724ca1a28388b2b/geopy-2.0.0.tar.gz", hash = "sha256:b88e189f0d2e0051da45b6311d5b2ced59afaf1378eb27ebb57eaf37c166a03b", size = 107026, upload-time = "2020-06-27T20:42:38.377Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/da/0c/b4e42a0495293f6c94364baba4c657c68bc8d8efec784259cc943f4ba28b/geopy-2.5.0.tar.gz", hash = "sha256:7b6c849f18108dcce4faa3d614e2801107b465f7b05fd3c1db9db12e225ae950", size = 122254, upload-time = "2026-07-12T19:50:06.051Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/07/e1/9c72de674d5c2b8fcb0738a5ceeb5424941fefa080bfe4e240d0bacb5a38/geopy-2.0.0-py3-none-any.whl", hash = "sha256:fdc596bab67d9f4828f43bf9e97c4e0a1d1518b7c2357485cef0e1c3cf470220", size = 111879, upload-time = "2020-06-27T20:42:36.154Z" },
+    { url = "https://files.pythonhosted.org/packages/66/e5/de8b557b279e31cdfb2070ac83eb45dc7e29bd93cd544128756f658e52c7/geopy-2.5.0-py3-none-any.whl", hash = "sha256:8ad8cc226b505ca4d272ae9a2eeba08b8a2c565fc9a04eaefc33ad49c32b51aa", size = 114619, upload-time = "2026-07-12T19:50:04.839Z" },
 ]
 
 [[package]]
