@@ -11,7 +11,7 @@ dependencies = [
     "discord.py[speed,voice]==2.7.1",
     "feedparser",
     "fuzzywuzzy~=0.18.0",
-    "geopy~=2.0.0",
+    "geopy~=2.5.0",
     "googlemaps~=4.4.2",
     "humanize>=4.16.0",
     "loguru~=0.6.0",
