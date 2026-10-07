@@ -1,5 +1,5 @@
-FROM python:3.10.19
+FROM ghcr.io/astral-sh/uv:debian
 WORKDIR /app
 COPY . /app
-RUN pip install -Ur requirements.txt
-ENTRYPOINT ["python3", "-m",  "dozer"]
+RUN uv sync --locked
+ENTRYPOINT ["uv", "run",  "-m",  "dozer"]

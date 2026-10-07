@@ -16,7 +16,8 @@ from .. import db
 class Buttons(discord.ui.View):
     """Buttons? Buttons."""
 
-    def __init__(self, *, timeout=None):  # timeout should be None for persistence
+    def __init__(self, *, timeout=None):  # pylint: disable=useless-parent-delegation
+        # timeout should be None for persistence
         super().__init__(timeout=timeout)
 
     @discord.ui.button(label="Start Modmail", style=discord.ButtonStyle.blurple, custom_id="modmail_button")

@@ -1,2 +1,2 @@
 #!/bin/sh
-pylint dozer
+uv run --locked --group dev pylint dozer
