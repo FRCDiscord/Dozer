@@ -77,16 +77,71 @@ async def data(ctx: DozerContext, level: str, question: int) -> Union[str, None]
     else:
         return f"That question was not answered or does not exist.\n{forum_url + str(question)}"
 
-def createRuleEmbed(rulenumber): 
+def ftc_season_year() -> int:
+    """Returns the year the current FTC season ends in; seasons run September to May"""
+    now = datetime.datetime.now()
+    return now.year + 1 if now.month >= 9 else now.year
+
+
+def createRuleEmbed(rulenumber, year):
     """Returns an embed for a given rule number and text"""
-    year = datetime.datetime.now().year 
     embed = discord.Embed(
         title=f"Rule {rulenumber}",
         url=f"https://frctools.com/{year}/rule/{rulenumber}",
         color=discord.Color.blue()
     )
-    
+
     return embed
+
+
+async def rule_lookup(ctx: DozerContext, rule: str, year: str):
+    """Sends the rule(s) matching a rule number or search query for the given year"""
+    matches = re.match(r'^(?P<letter>[a-zA-Z])(?P<number>\d{3})$', rule)
+    ephemeral = False
+
+    embed = discord.Embed(
+        title="Error",
+        color=discord.Color.blue()
+    )
+
+    if matches is None:
+        await ctx.defer()
+        async with ctx.cog.ses.get('https://frctools.com/api/search', params={'query': rule, 'year': year, 'semantic': 'false'}) as response:
+            json_data = await response.content.read()
+        json_parsed = json.loads(json_data)
+
+        if "error" not in json_parsed:
+            embeds = []
+            page = 1
+            for currRule in json_parsed["hits"]:
+                currEmbed = createRuleEmbed(currRule["name"], year)
+                currEmbed.set_image(url=f"https://imagen.frctools.com/rule/{currRule['name']}/image.png?year={year}")
+                currEmbed.set_footer(text=f"Page {page} of {len(json_parsed)}")
+                embeds.append(currEmbed)
+                page += 1
+
+        await paginate(ctx, embeds)
+        return
+
+    else:
+        letter_part = matches.group('letter')
+        number_part = matches.group('number')
+        async with ctx.cog.ses.get('https://frctools.com/api/rule', params={'query': f'{letter_part}{number_part}', 'year': year, 'semantic': 'true'}) as response:
+            json_data = await response.content.read()
+
+        json_parsed = json.loads(json_data)
+
+        if "error" not in json_parsed:
+            embed = createRuleEmbed(letter_part.upper() + number_part, year)
+            embed.set_image(url=f"https://imagen.frctools.com/rule/{letter_part.upper() + number_part}/image.png?year={year}")
+        else:
+            ephemeral = True
+            embed.add_field(
+                name="Error",
+                value="No such rule"
+            )
+
+    await ctx.send(embed=embed, ephemeral=ephemeral)
 
 
 class QA(commands.Cog):
@@ -139,57 +194,24 @@ class QA(commands.Cog):
         """
         Shows rules from a rule number or search query
         """
-        matches = re.match(r'^(?P<letter>[a-zA-Z])(?P<number>\d{3})$', rule)
-        ephemeral = False
-
-        embed = discord.Embed(
-            title="Error",
-            color=discord.Color.blue()
-        )
-
-        if matches is None:
-            await ctx.defer()
-            async with ctx.cog.ses.get(f'https://frctools.com/api/search?query={rule}') as response:
-                json_data = await response.content.read()
-            json_parsed = json.loads(json_data)
-            
-            if "error" not in json_parsed:
-                embeds = []
-                page = 1
-                for currRule in json_parsed["hits"]:
-                    currEmbed = createRuleEmbed(currRule["name"])
-                    currEmbed.set_image(url=f"https://imagen.frctools.com/rule/{currRule['name']}/image.png")
-                    currEmbed.set_footer(text=f"Page {page} of {len(json_parsed)}")
-                    embeds.append(currEmbed)
-                    page += 1
-                    
-            await paginate(ctx, embeds)
-            return
-            
-        else:  
-            letter_part = matches.group('letter')
-            number_part = matches.group('number')
-            year = datetime.datetime.now().year 
-            async with ctx.cog.ses.get(f'https://frctools.com/api/rule?query={letter_part}{number_part}') as response:
-                json_data = await response.content.read()
-            
-            json_parsed = json.loads(json_data)
-            
-            if "error" not in json_parsed:
-                text = json_parsed["textContent"]
-                embed = createRuleEmbed(letter_part.upper() + number_part)
-                embed.set_image(url=f"https://imagen.frctools.com/rule/{letter_part.upper() + number_part}/image.png")
-            else:
-                ephemeral = True
-                embed.add_field(
-                    name="Error",
-                    value="No such rule"
-                )
-
-        await ctx.send(embed=embed, ephemeral=ephemeral)
+        await rule_lookup(ctx, rule, datetime.datetime.now().year)
     frcrule.example_usage = """
     `{prefix}frcrule g301` - sends the summary and link to rule G301
     `{prefix}frcrule can i cross the line before teleop` - sends the summary and link to the rule matching the query
+
+    """
+
+    @command(name = "ftcrule", pass_context = True)
+    @bot_has_permissions(embed_links = True)
+    @app_commands.describe(rule = "The rule number")
+    async def ftcrule(self, ctx: DozerContext, *, rule: str):
+        """
+        Shows rules from a rule number or search query
+        """
+        await rule_lookup(ctx, rule, f"{ftc_season_year()}-ftc")
+    ftcrule.example_usage = """
+    `{prefix}ftcrule g301` - sends the summary and link to rule G301
+    `{prefix}ftcrule can i cross the line before teleop` - sends the summary and link to the rule matching the query
 
     """
 
