@@ -83,11 +83,11 @@ def ftc_season_year() -> int:
     return now.year + 1 if now.month >= 9 else now.year
 
 
-def createRuleEmbed(rulenumber, year):
+def create_rule_embed(rule_number, year):
     """Returns an embed for a given rule number and text"""
     embed = discord.Embed(
-        title=f"Rule {rulenumber}",
-        url=f"https://frctools.com/{year}/rule/{rulenumber}",
+        title=f"Rule {rule_number}",
+        url=f"https://frctools.com/{year}/rule/{rule_number}",
         color=discord.Color.blue()
     )
 
@@ -96,52 +96,55 @@ def createRuleEmbed(rulenumber, year):
 
 async def rule_lookup(ctx: DozerContext, rule: str, year: str):
     """Sends the rule(s) matching a rule number or search query for the given year"""
-    matches = re.match(r'^(?P<letter>[a-zA-Z])(?P<number>\d{3})$', rule)
-    ephemeral = False
+    is_rule_id = re.fullmatch(r'[a-zA-Z]\d{3}', rule) is not None
 
-    embed = discord.Embed(
+    error_embed = discord.Embed(
         title="Error",
         color=discord.Color.blue()
     )
 
-    if matches is None:
-        await ctx.defer()
-        async with ctx.cog.ses.get('https://frctools.com/api/search', params={'query': rule, 'year': year, 'semantic': 'false'}) as response:
-            json_data = await response.content.read()
-        json_parsed = json.loads(json_data)
-
-        if "error" not in json_parsed:
-            embeds = []
-            page = 1
-            for currRule in json_parsed["hits"]:
-                currEmbed = createRuleEmbed(currRule["name"], year)
-                currEmbed.set_image(url=f"https://imagen.frctools.com/rule/{currRule['name']}/image.png?year={year}")
-                currEmbed.set_footer(text=f"Page {page} of {len(json_parsed)}")
-                embeds.append(currEmbed)
-                page += 1
-
-        await paginate(ctx, embeds)
-        return
-
-    else:
-        letter_part = matches.group('letter')
-        number_part = matches.group('number')
-        async with ctx.cog.ses.get('https://frctools.com/api/rule', params={'query': f'{letter_part}{number_part}', 'year': year, 'semantic': 'true'}) as response:
+    if is_rule_id:
+        rule_id = rule.upper()
+        params = {'query': rule_id, 'year': year}
+        async with ctx.cog.ses.get('https://frctools.com/api/rule', params=params) as response:
             json_data = await response.content.read()
 
         json_parsed = json.loads(json_data)
 
         if "error" not in json_parsed:
-            embed = createRuleEmbed(letter_part.upper() + number_part, year)
-            embed.set_image(url=f"https://imagen.frctools.com/rule/{letter_part.upper() + number_part}/image.png?year={year}")
+            embed = create_rule_embed(rule_id, year)
+            embed.set_image(url=f"https://imagen.frctools.com/rule/{rule_id}/image.png?year={year}")
+            await ctx.send(embed=embed)
         else:
-            ephemeral = True
-            embed.add_field(
+            error_embed.add_field(
                 name="Error",
                 value="No such rule"
             )
+            await ctx.send(embed=error_embed, ephemeral=True)
 
-    await ctx.send(embed=embed, ephemeral=ephemeral)
+    else:
+        await ctx.defer()
+        async with ctx.cog.ses.get('https://frctools.com/api/search', params={'query': rule, 'year': year, 'semantic': 'true'}) as response:
+            json_data = await response.content.read()
+        json_parsed = json.loads(json_data)
+
+        hits = json_parsed.get("hits", [])
+        if not hits or "error" in json_parsed:
+            error_embed.add_field(
+                name="Error",
+                value="No matching rules"
+            )
+            await ctx.send(embed=error_embed, ephemeral=True)
+            return
+
+        embeds = []
+        for page, current_rule in enumerate(hits, start=1):
+            current_embed = create_rule_embed(current_rule["name"], year)
+            current_embed.set_image(url=f"https://imagen.frctools.com/rule/{current_rule['name']}/image.png?year={year}")
+            current_embed.set_footer(text=f"Page {page} of {len(hits)}")
+            embeds.append(current_embed)
+
+        await paginate(ctx, embeds)
 
 
 class QA(commands.Cog):
