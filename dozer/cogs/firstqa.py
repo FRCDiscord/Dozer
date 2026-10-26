@@ -46,19 +46,24 @@ async def data(ctx: DozerContext, level: str, question: int) -> Union[discord.Em
         questions = await response.json()
 
     match = next((q for q in questions if q["number"] == question), None)
-    if match is None or match.get("answer") is None:
-        return f"That question was not answered or does not exist.\n{board_url}"
+    if match is None:
+        return f"That question does not exist.\n{board_url}"
 
+    answer = match.get("answer")
     embed = discord.Embed(
         title=f"Q{question}: {match['title']}"[:256],
         url=f"{board_url}/qa/{question}",
-        color=discord.Color.blue()
+        color=discord.Color.blue() if answer else discord.Color.light_grey()
     )
     add_chunked_field(embed, "Question", html_to_text(match["content"]))
-    add_chunked_field(embed, "Answer", html_to_text(match["answer"]["content"]))
     details = [f"{label}: {match[key]}" for label, key in (("Rule", "rule"), ("Topic", "topic")) if match.get(key)]
-    answered = datetime.datetime.fromtimestamp(match["answer"]["createdAt"] / 1000, datetime.timezone.utc)
-    details.append(f"Answered {answered:%Y-%m-%d}")
+    if answer:
+        add_chunked_field(embed, "Answer", html_to_text(answer["content"]))
+        answered = datetime.datetime.fromtimestamp(answer["createdAt"] / 1000, datetime.timezone.utc)
+        details.append(f"Answered {answered:%Y-%m-%d}")
+    else:
+        embed.add_field(name="Answer", value="This question hasn't been answered yet. Open the link above to follow it.", inline=False)
+        details.append("Unanswered")
     embed.set_footer(text=" | ".join(details))
     return embed
 
