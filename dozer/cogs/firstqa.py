@@ -14,74 +14,63 @@ from dozer.context import DozerContext
 from ._utils import *
 
 
-async def data(ctx: DozerContext, level: str, question: int) -> Union[str, None]:
+def html_to_text(html: str) -> str:
+    """Converts the HTML used for questions and answers to plain text"""
+    soup = BeautifulSoup(html, 'html.parser')
+    for item in soup.find_all("li"):
+        item.insert_before("\n- ")
+    for item in soup.find_all(["p", "br", "ol", "ul"]):
+        item.insert_after("\n")
+    lines = (" ".join(line.split()) for line in soup.get_text().split("\n"))
+    return "\n".join(line for line in lines if line).strip()
+
+
+def add_chunked_field(embed: discord.Embed, name: str, text: str) -> None:
+    """Adds text to an embed, splitting it across fields to respect the 1024 character limit"""
+    for i in range(0, max(len(text), 1), 1024):
+        embed.add_field(name=name if i == 0 else "\u200b", value=text[i:i + 1024] or "\u200b", inline=False)
+
+
+async def data(ctx: DozerContext, level: str, question: int) -> Union[discord.Embed, str, None]:
     """Returns QA Forum info for specified FTC/FRC"""
-    if level.lower() == "ftc":
-        async with ctx.cog.ses.get('https://ftc-qa.firstinspires.org/onepage.html') as response:
-            html_data = await response.text()
-        forum_url = "https://ftc-qa.firstinspires.org/qa/"
-    elif level.lower() == "frc":
-        async with ctx.cog.ses.get('https://frc-qa.firstinspires.org/onepage.html') as response:
-            html_data = await response.text()
-        forum_url = "https://frc-qa.firstinspires.org/qa/"
-    else:
+    level = level.lower()
+    if level not in ("ftc", "frc"):
         return None
 
-    answers = BeautifulSoup(html_data, 'html.parser').get_text()
+    year = ftc_season_year() if level == "ftc" else datetime.datetime.now().year
+    board_url = f"https://game-qa.firstinspires.org/boards/{year}/{level.upper()}/QA"
+    # boards that don't exist yet redirect to a login page instead of returning an error
+    async with ctx.cog.ses.get(f"{board_url}/questions", allow_redirects=False) as response:
+        if response.status != 200:
+            return f"The {level.upper()} {year} Q&A board is not available.\n{board_url}"
+        questions = await response.json()
 
-    start = answers.find(f'Q{question} ')
-    a = ""
-    if start > 0:
-        finish = answers.find('answered', start) + 24
-        a = answers[start:finish]
-        # remove newlines
-        a = a.replace("\n", " ")
-        # remove multiple spaces
-        a = " ".join(a.split())
-        embed = discord.Embed(
-            title=a[:a.find(" Q: ")],
-            url=forum_url + str(question),
-            color=discord.Color.blue()
-        )
-        ques = a[a.find(" Q: ") + 1:a.find(" A: ")]
-        ans = a[a.find(" A: ") + 1:a.find(" ( Asked by ")]
-        if len(ques) < 1024:
-            embed.add_field(
-                name="Question",
-                value=ques,
-                inline=False
-            )
-        else:
-            for i in range(0, len(ques), 1024):
-                embed.add_field(
-                    name="Question" if i == 0 else "",
-                    value=ques[i+2:i + 1024] if i == 0 else ques[i:i + 1024] or ques[i:],
-                    inline=False
-                )
-        if len(ans) < 1024:
-            embed.add_field(
-                name="Answer",
-                value=ans,
-                inline=False
-            )
-        else:
-            for i in range(0, len(ans), 1024):
-                embed.add_field(
-                    name="Answer" if i == 0 else "",
-                    value=ans[i+2:i + 1024] if i == 0 else ans[i:i + 1024] or ans[i:],
-                    inline=False
-                )
-        embed.set_footer(text=a[a.find(" ( Asked by ") + 1:])
-        return embed
+    match = next((q for q in questions if q["number"] == question), None)
+    if match is None:
+        return f"That question does not exist.\n{board_url}"
 
+    answer = match.get("answer")
+    embed = discord.Embed(
+        title=f"Q{question}: {match['title']}"[:256],
+        url=f"{board_url}/qa/{question}",
+        color=discord.Color.blue() if answer else discord.Color.light_grey()
+    )
+    add_chunked_field(embed, "Question", html_to_text(match["content"]))
+    details = [f"{label}: {match[key]}" for label, key in (("Rule", "rule"), ("Topic", "topic")) if match.get(key)]
+    if answer:
+        add_chunked_field(embed, "Answer", html_to_text(answer["content"]))
+        answered = datetime.datetime.fromtimestamp(answer["createdAt"] / 1000, datetime.timezone.utc)
+        details.append(f"Answered {answered:%Y-%m-%d}")
     else:
-        return f"That question was not answered or does not exist.\n{forum_url + str(question)}"
+        embed.add_field(name="Answer", value="This question hasn't been answered yet. Open the link above to follow it.", inline=False)
+        details.append("Unanswered")
+    embed.set_footer(text=" | ".join(details))
+    return embed
 
 def ftc_season_year() -> int:
     """Returns the year the current FTC season ends in; seasons run September to May"""
     now = datetime.datetime.now()
     return now.year + 1 if now.month >= 9 else now.year
-
 
 def create_rule_embed(rule_number, year):
     """Returns an embed for a given rule number and text"""
