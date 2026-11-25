@@ -18,7 +18,7 @@ from ._utils import *
 
 embed_color = discord.Color(0xed791e)
 
-__all__ = ['FTCEventsClient', 'FTCInfo', 'setup']
+__all__ = ['FTCEventsClient', 'FTCVideosClient', 'FTCInfo', 'setup']
 
 
 def get_none_strip(s, key):
@@ -119,8 +119,10 @@ class FTCEventsClient:
             return base + f"qualifications/{match['matchNumber']}"
 
     @staticmethod
-    def add_schedule_to_embed(embed: discord.Embed, schedule: list, team_num: int, szn: int, ecode: str):
-        """Adds a schedule to an embed conditioned on a team number."""
+    def add_schedule_to_embed(embed: discord.Embed, schedule: list, team_num: int, szn: int, ecode: str,
+                              videos: dict = None):
+        """Adds a schedule to an embed conditioned on a team number.
+        videos optionally maps (tournamentLevel, series, matchNumber) to a match video URL."""
         for m in schedule:
             played = m['scoreRedFinal'] is not None
             red_alliance = []
@@ -179,9 +181,15 @@ class FTCEventsClient:
                 blu_score = f"__{blu_score}__"
 
             field_desc = field_desc + f" {wincode} {red_score}-{blu_score}"
-            embed.add_field(name=field_title,
-                            value=f"[{field_desc}]({FTCEventsClient.get_url_for_match(szn, ecode, m)})",
-                            inline=False)
+            field_value = f"[{field_desc}]({FTCEventsClient.get_url_for_match(szn, ecode, m)})"
+            video = (videos or {}).get((m['tournamentLevel'], m['series'], m['matchNumber']))
+            if video:
+                video = f" [▶ Video]({video})"
+                # stay within Discord's limits of 1024 characters per field and 6000 per embed
+                if len(field_value) + len(video) <= 1024 and \
+                        len(embed) + len(field_title) + len(field_value) + len(video) <= 6000:
+                    field_value += video
+            embed.add_field(name=field_title, value=field_value, inline=False)
 
 
 class ScoutParser:
@@ -221,6 +229,49 @@ class ScoutParser:
                     raise
 
 
+class FTCVideosClient:
+    """
+    A class to make async requests to FTCVideos, which has videos of FTC matches and robots.
+    It is optional: on any error the requests return None, and commands show what they showed without it.
+    """
+
+    def __init__(self, aiohttp_session: aiohttp.ClientSession, base_url: str = "https://ftcvideos.org/api/v1/"):
+        self.base = base_url
+        self.http = aiohttp_session
+
+    async def reqjson(self, endpoint: str, **params):
+        """Fetches JSON from FTCVideos, or None if it is down or has nothing."""
+        try:
+            async with async_timeout.timeout(3):
+                async with self.http.get(urljoin(self.base, endpoint), params=params) as res:
+                    if res.status != 200:
+                        return None
+                    return await res.json(content_type=None)
+        except Exception:
+            return None
+
+    async def event_videos(self, szn: int, ecode: str) -> dict:
+        """Maps (tournamentLevel, series, matchNumber) to the video URL of each match of an event that has one."""
+        data = await self.reqjson("event", season=str(szn), event=ecode)
+        videos = {}
+        try:
+            for m in data['matches']:
+                url = m['video']['url']
+                if url.startswith("https://"):
+                    videos[(m['level'], m['series'], m['number'])] = url
+        except (KeyError, TypeError, AttributeError):
+            pass
+        return videos
+
+    async def robot(self, szn: int, team_num: int):
+        """Returns the robot GIF of a team as {gif, pageUrl}, or None."""
+        data = await self.reqjson("robot", season=str(szn), team=str(team_num))
+        if not isinstance(data, dict) or not str(data.get('gif', '')).startswith("https://") \
+                or not str(data.get('pageUrl', '')).startswith("https://"):
+            return None
+        return data
+
+
 class FTCInfo(Cog):
     """Commands relating specifically to fetching information about FTC teams."""
 
@@ -230,6 +281,7 @@ class FTCInfo(Cog):
         self.ftcevents = FTCEventsClient(bot.config['ftc-events']['username'], bot.config['ftc-events']['token'],
                                          self.http_session)
         self.scparser = ScoutParser(self.http_session)
+        self.ftcvideos = FTCVideosClient(self.http_session)
 
     @group(invoke_without_command=True, aliases=["ftcteam", "toa", "toateam", "ftcteaminfo"])
     async def ftc(self, ctx: DozerContext, *, team_name: str):
@@ -278,8 +330,13 @@ class FTCInfo(Cog):
             e.add_field(name='Website', value=website or 'n/a')
             e.add_field(name='FTCScout Page', value=f'https://ftcscout.org/teams/{team_num}')
 
-            e.set_footer(
-                text="Team information from FTC-Events.")
+            footer = "Team information from FTC-Events."
+            robot = await self.ftcvideos.robot(FTCEventsClient.get_season(), team_num)
+            if robot:
+                e.add_field(name='FTCVideos Page', value=f"[Robot on FTCVideos]({robot['pageUrl']})")
+                e.set_image(url=robot['gif'])
+                footer += " Robot GIF from FTCVideos."
+            e.set_footer(text=footer)
 
             await ctx.send(embed=e)
 
@@ -484,6 +541,7 @@ class FTCInfo(Cog):
         embed = discord.Embed(color=embed_color, title=f"FTC Team {team_num} @ {event['name']}", url=event_url,
                               description=description)
         has_matches_at_all = False
+        videos = await self.ftcvideos.event_videos(szn, event['code'])
 
         # fetch the quals match schedule
         req = await self.ftcevents.reqjson(f"schedule/{event['code']}/qual/hybrid",
@@ -493,7 +551,7 @@ class FTCInfo(Cog):
             return
         res = req['schedule']
         has_matches_at_all = has_matches_at_all or bool(res)
-        FTCEventsClient.add_schedule_to_embed(embed, res, team_num, szn, event['code'])
+        FTCEventsClient.add_schedule_to_embed(embed, res, team_num, szn, event['code'], videos)
 
         # fetch the playoffs match schedule
         req = await self.ftcevents.reqjson(f"schedule/{event['code']}/playoff/hybrid",
@@ -503,10 +561,12 @@ class FTCInfo(Cog):
             return
         res = req['schedule']
         has_matches_at_all = has_matches_at_all or bool(res)
-        FTCEventsClient.add_schedule_to_embed(embed, res, team_num, szn, event['code'])
+        FTCEventsClient.add_schedule_to_embed(embed, res, team_num, szn, event['code'], videos)
 
         if not has_matches_at_all:
             embed.description = "_No match schedule is available yet._"
+        if any("[▶ Video](" in field.value for field in embed.fields):
+            embed.set_footer(text="Match videos from FTCVideos.")
 
         await ctx.send(embed=embed)
 
